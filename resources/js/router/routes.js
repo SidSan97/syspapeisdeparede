@@ -36,6 +36,11 @@ const routes = [
                 name: 'CollectionModels',
                 component: () => import('../views/colecao-arts/CollectionModels.vue'),
             },
+            {
+                path: '/modelos',
+                name: 'Models',
+                component: () => import('../views/models/Models.vue'),
+            },
             ...settings,
         ]
     },
