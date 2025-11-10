@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora do Revendedor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #343532;
+            color: #bfbaba;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #444;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-group button {
+            width: 100%;
+            padding: 10px;
+            background-color: #7ab5b2;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #555;
+            border-radius: 5px;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Calculadora do Revendedor</h2>
+        <div class="form-group">
+            <label for="largura">Largura da parede (m):</label>
+            <input type="text" id="largura" placeholder="Digite a largura">
+        </div>
+        <div class="form-group">
+            <label for="altura">Altura da parede (m):</label>
+            <input type="text" id="altura" placeholder="Digite a altura">
+        </div>
+        <div class="form-group">
+            <button onclick="calcular()">Calcular</button>
+        </div>
+        <div class="result" id="resultado"></div>
+    </div>
+
+    <script>
+        // Definição de preços (fácil de atualizar!)
+        const precoVista = 41.90;
+        const precoPrazo = 47.90;
+
+        function formatNumber(number) {
+            return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('.', ',');
+        }
+
+        function calcular() {
+            let largura = parseFloat(document.getElementById('largura').value.replace(',', '.'));
+            let altura = parseFloat(document.getElementById('altura').value.replace(',', '.'));
+
+            if (isNaN(largura) || isNaN(altura)) {
+                document.getElementById('resultado').innerHTML = "Por favor, insira valores válidos.";
+                return;
+            }
+
+            let numeroFaixas = Math.ceil(largura / 0.6);
+            let alturasFaixas = [1.00, 1.20, 1.50, 1.70, 2.00, 2.20, 2.50, 2.70, 3.00, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00];
+            let alturaFaixas = alturasFaixas.find(alt => alt >= (altura + 0.09));
+
+            if (alturaFaixas >= 6) {
+                numeroFaixas = Math.ceil(numeroFaixas);
+                if (numeroFaixas % 2 !== 0) {
+                    numeroFaixas += 1;
+                }
+            }
+
+            let valorVista = numeroFaixas * alturaFaixas * precoVista;
+            let valorPrazo = numeroFaixas * alturaFaixas * precoPrazo;
+
+            document.getElementById('resultado').innerHTML =
+                `Você precisará de <span style="color: white; font-weight: bold;">${numeroFaixas} faixas de ${formatNumber(alturaFaixas)}m</span>.<br>
+                 O valor total <span style="color: white; font-weight: bold;">à vista</span> é de <span style="color: white; font-weight: bold;">R$ ${formatNumber(valorVista)}</span> ou <span style="color: white; font-weight: bold;">a prazo</span> no valor de <span style="color: white; font-weight: bold;">R$ ${formatNumber(valorPrazo)}</span>.`;
+        }
+    </script>
+</body>
+</html>
+
