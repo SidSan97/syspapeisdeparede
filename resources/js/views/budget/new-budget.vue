@@ -340,6 +340,9 @@
                                                             </div>
                                                             <div class="mb-2">
                                                                 <strong>{{ model.displayName }}</strong>
+                                                                <div v-if="model.typeName" class="text-muted small">
+                                                                    {{ model.typeName }}
+                                                                </div>
                                                             </div>
                                                             <div class="small text-muted">
                                                                 <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>
@@ -610,13 +613,23 @@ const normalizeCollectionModel = (model = {}) => {
           }))
         : [];
 
-    const displayName = model.comment?.trim()
-        ? model.comment.trim()
-        : `Modelo ${model.id}`;
+    const name = (model.name ?? '').toString().trim();
+    const typeName =
+        model.type?.name ??
+        model.type_name ??
+        model.typeModelName ??
+        null;
+
+    const displayName = name.length > 0
+        ? name
+        : model.comment?.trim()
+            ? model.comment.trim()
+            : `Modelo ${model.id}`;
 
     return {
         id: Number(model.id),
         displayName,
+        typeName,
         value: Number(model.value ?? 0),
         deadline: Number(model.deadline ?? 0),
         requests: {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\V1\{
     BudgetController,
     CollectionModelController,
+    ModelTypeController,
     ProfileController,
     UserController,
 };
@@ -81,6 +82,8 @@ Route::prefix('v1')->group(function () {
         'users' => UserController::class,
         'collection-models' => CollectionModelController::class,
     ]);
+
+    Route::get('model-types', [ModelTypeController::class, 'index']);
 
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
