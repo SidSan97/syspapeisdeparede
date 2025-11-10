@@ -40,7 +40,7 @@
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                      <button class="dropdown-item" type="button">
+                      <button class="dropdown-item" type="button" @click="openDetailsModal(budget)">
                         Ver detalhes
                       </button>
                     </li>
@@ -62,6 +62,12 @@
         </div>
       </div>
     </Page>
+
+    <BudgetDetailsModal
+      :visible="showDetailsModal"
+      :budget="budgetToView"
+      @close="closeDetailsModal"
+    />
 
     <Teleport v-if="showCancelModal" to="body">
       <div>
@@ -192,6 +198,7 @@
 import { computed, onMounted, ref } from 'vue';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
+import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
 import axios from 'axios';
 
 const budgets = ref([]);
@@ -200,6 +207,8 @@ const showCancelModal = ref(false);
 const budgetToCancel = ref(null);
 const cancelling = ref(false);
 const cancelError = ref('');
+const showDetailsModal = ref(false);
+const budgetToView = ref(null);
 const showPdfModal = ref(false);
 const budgetToGeneratePdf = ref(null);
 const pdfPercentage = ref(0);
@@ -281,6 +290,16 @@ function openCancelModal(budget) {
   budgetToCancel.value = budget;
   cancelError.value = '';
   showCancelModal.value = true;
+}
+
+function openDetailsModal(budget) {
+  budgetToView.value = budget;
+  showDetailsModal.value = true;
+}
+
+function closeDetailsModal() {
+  showDetailsModal.value = false;
+  budgetToView.value = null;
 }
 
 function closeCancelModal() {
