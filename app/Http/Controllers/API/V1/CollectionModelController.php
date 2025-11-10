@@ -109,8 +109,6 @@ class CollectionModelController extends BaseController
             'request_link' => $shouldRequestLink,
             'request_comment' => $shouldRequestComment,
             'request_file' => $shouldRequestFile,
-            'link' => $shouldRequestLink ? $request->input('link') : null,
-            'comment' => $shouldRequestComment ? $request->input('comment') : null,
         ];
     }
 }

@@ -21,21 +21,17 @@ class CollectionModelRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             'value' => ['required', 'numeric', 'min:0'],
             'deadline' => ['required', 'integer', 'min:0'],
             'requests.link' => ['sometimes', 'boolean'],
             'requests.comment' => ['sometimes', 'boolean'],
             'requests.file' => ['sometimes', 'boolean'],
-            'link' => ['nullable', 'url', 'required_if:requests.link,true'],
-            'comment' => ['nullable', 'string', 'max:5000', 'required_if:requests.comment,true'],
             'reference_files' => ['nullable', 'array'],
             'reference_files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp'],
             'files_to_delete' => ['nullable', 'array'],
             'files_to_delete.*' => ['integer', 'exists:collection_model_files,id'],
         ];
-
-        return $rules;
     }
 
     /**
@@ -45,7 +41,7 @@ class CollectionModelRequest extends FormRequest
     {
         $requests = $this->input('requests', []);
 
-        $this->merge([
+        $normalized = [
             'value' => $this->prepareNumeric($this->input('value')),
             'deadline' => is_numeric($this->input('deadline')) ? (int) $this->input('deadline') : $this->input('deadline'),
             'requests' => [
@@ -53,44 +49,13 @@ class CollectionModelRequest extends FormRequest
                 'comment' => $this->prepareBoolean($requests['comment'] ?? false),
                 'file' => $this->prepareBoolean($requests['file'] ?? false),
             ],
-            'files_to_delete' => $this->prepareArrayOfIntegers($this->input('files_to_delete', [])),
-        ]);
-    }
+        ];
 
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            $shouldRequestFile = data_get($this->input('requests', []), 'file', false);
+        if ($this->has('files_to_delete')) {
+            $normalized['files_to_delete'] = $this->prepareArrayOfIntegers($this->input('files_to_delete', []));
+        }
 
-            if (! $shouldRequestFile) {
-                return;
-            }
-
-            $uploadedFiles = $this->file('reference_files', []);
-            $uploadedCount = is_array($uploadedFiles) ? count($uploadedFiles) : 0;
-
-            if ($this->isMethod('post')) {
-                if ($uploadedCount === 0) {
-                    $validator->errors()->add('reference_files', 'Envie pelo menos um arquivo.');
-                }
-
-                return;
-            }
-
-            $model = $this->route('collection_model');
-
-            if (! $model) {
-                return;
-            }
-
-            $existingCount = $model->files()->count();
-            $filesMarkedForDeletion = count($this->input('files_to_delete', []));
-            $remaining = $existingCount - $filesMarkedForDeletion;
-
-            if ($remaining <= 0 && $uploadedCount === 0) {
-                $validator->errors()->add('reference_files', 'Envie pelo menos um arquivo.');
-            }
-        });
+        $this->merge($normalized);
     }
 
     protected function prepareBoolean($value): bool

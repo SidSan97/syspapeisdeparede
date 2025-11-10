@@ -18,10 +18,6 @@ return new class extends Migration
             $table->boolean('request_link')->default(false);
             $table->boolean('request_comment')->default(false);
             $table->boolean('request_file')->default(false);
-            $table->string('link')->nullable();
-            $table->text('comment')->nullable();
-            $table->string('reference_file_name')->nullable();
-            $table->string('reference_file_path')->nullable();
             $table->timestamps();
         });
     }

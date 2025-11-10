@@ -106,120 +106,6 @@
           </div>
         </div>
 
-        <div class="row g-3 mt-2">
-          <div
-            v-if="form.requests.link"
-            class="col-md-6 col-lg-4"
-          >
-            <label for="linkPlaceholder" class="form-label">
-              Link (opcional)
-            </label>
-            <input
-              id="linkPlaceholder"
-              v-model="form.link"
-              type="url"
-              class="form-control"
-              placeholder="https://"
-            />
-          </div>
-          <div
-            v-if="form.requests.comment"
-            class="col-12"
-          >
-            <label for="commentPlaceholder" class="form-label">
-              Comentário
-            </label>
-            <textarea
-              id="commentPlaceholder"
-              v-model="form.comment"
-              rows="4"
-              class="form-control"
-              placeholder="Insira instruções ou observações relevantes"
-            />
-          </div>
-          <div
-            v-if="form.requests.file"
-            class="col-12"
-          >
-            <label for="filePlaceholder" class="form-label">
-              Arquivos de referência
-            </label>
-            <input
-              id="filePlaceholder"
-              ref="fileInput"
-              type="file"
-              class="form-control"
-              multiple
-              accept="image/*"
-              @change="handleFileChange"
-            />
-            <small class="text-muted d-block mt-2">
-              Selecione uma ou mais imagens (JPG, JPEG, PNG ou WEBP).
-            </small>
-
-            <div v-if="hasExistingFiles" class="file-list mt-3">
-              <h6 class="text-muted text-uppercase small mb-2">
-                Arquivos atuais
-              </h6>
-              <ul class="list-unstyled mb-0">
-                <li
-                  v-for="file in form.files"
-                  :key="file.id"
-                  class="d-flex align-items-center justify-content-between"
-                >
-                  <div class="me-3 flex-grow-1">
-                    <a
-                      v-if="file.url"
-                      :href="file.url"
-                      class="text-decoration-none"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      {{ file.name }}
-                    </a>
-                    <span v-else>{{ file.name }}</span>
-                    <span
-                      v-if="file.marked"
-                      class="badge bg-warning-subtle text-warning ms-2"
-                    >
-                      Será removido
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-link btn-sm text-danger text-nowrap"
-                    @click="toggleExistingFile(file)"
-                  >
-                    {{ file.marked ? 'Desfazer' : 'Remover' }}
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div v-if="hasNewFiles" class="file-list mt-3">
-              <h6 class="text-muted text-uppercase small mb-2">
-                Novos arquivos selecionados
-              </h6>
-              <ul class="list-unstyled mb-0">
-                <li
-                  v-for="(file, index) in newFiles"
-                  :key="file.id"
-                  class="d-flex align-items-center justify-content-between"
-                >
-                  <span class="me-3 flex-grow-1">{{ file.name }}</span>
-                  <button
-                    type="button"
-                    class="btn btn-link btn-sm text-danger text-nowrap"
-                    @click="removeNewFile(index)"
-                  >
-                    Remover
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         <div class="mt-5 d-flex justify-content-end gap-3">
           <button
             type="button"
@@ -264,7 +150,6 @@
               <th>Solicita link?</th>
               <th>Solicita comentário?</th>
               <th>Solicita arquivo?</th>
-              <th>Anotações</th>
               <th class="text-end">Ações</th>
             </tr>
           </thead>
@@ -289,51 +174,6 @@
                   class="fa"
                   :class="model.requests.file ? 'fa-check text-success' : 'fa-times text-muted'"
                 />
-              </td>
-              <td>
-                <ul class="list-unstyled mb-0 small text-muted">
-                  <li v-if="model.link">
-                    <strong>Link:</strong>
-                    <a :href="model.link" target="_blank" rel="noopener">
-                      {{ model.link }}
-                    </a>
-                  </li>
-                  <li v-if="model.comment">
-                    <strong>Comentário:</strong> {{ model.comment }}
-                  </li>
-                  <li v-if="model.files && model.files.length">
-                    <strong>Arquivos:</strong>
-                    <ul class="list-unstyled ms-3 mb-0">
-                      <li
-                        v-for="file in model.files"
-                        :key="file.id || file.name"
-                      >
-                        <a
-                          v-if="file.url"
-                          :href="file.url"
-                          target="_blank"
-                          rel="noopener"
-                        >
-                          {{ file.name }}
-                        </a>
-                        <span v-else>{{ file.name }}</span>
-                      </li>
-                    </ul>
-                  </li>
-                  <li v-else-if="model.fileName">
-                    <strong>Arquivo:</strong> {{ model.fileName }}
-                  </li>
-                  <li
-                    v-if="
-                      !model.link &&
-                      !model.comment &&
-                      (!model.files || !model.files.length) &&
-                      !model.fileName
-                    "
-                  >
-                    Sem informações adicionais
-                  </li>
-                </ul>
               </td>
               <td class="text-end">
                 <div class="btn-group btn-group-sm" role="group">
@@ -366,7 +206,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalSuccess, swalError, swalConfirmation } from '../../../utils/alerts';
 
@@ -382,9 +222,7 @@ const isEditing = ref(false);
 const isLoading = ref(false);
 const isSaving = ref(false);
 const deletingId = ref(null);
-const fileInput = ref(null);
 const editingId = ref(null);
-const selectedFiles = ref([]);
 
 const initialState = () => ({
   value: null,
@@ -394,25 +232,12 @@ const initialState = () => ({
     comment: false,
     file: false,
   },
-  link: '',
-  comment: '',
-  files: [],
-  filesToDelete: [],
 });
 
 const form = reactive(initialState());
 
 const totalModels = computed(() => pagination.value.total ?? models.value.length);
 const hasModels = computed(() => models.value.length > 0);
-const hasExistingFiles = computed(() => form.files.length > 0);
-const newFiles = computed(() =>
-  selectedFiles.value.map((file, index) => ({
-    id: `${file.name}-${index}`,
-    name: file.name,
-  }))
-);
-const hasNewFiles = computed(() => newFiles.value.length > 0);
-
 const normalizeFile = (file = {}) => ({
   id: file.id ?? null,
   name: file.name ?? file.fileName ?? file.file_name ?? '',
@@ -516,45 +341,6 @@ const cancelForm = () => {
   isFormVisible.value = false;
 };
 
-const handleFileChange = (event) => {
-  const files = Array.from(event.target.files ?? []);
-  if (!files.length) {
-    return;
-  }
-
-  selectedFiles.value = [...selectedFiles.value, ...files];
-
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
-};
-
-const removeNewFile = (index) => {
-  if (index < 0 || index >= selectedFiles.value.length) {
-    return;
-  }
-
-  const updated = [...selectedFiles.value];
-  updated.splice(index, 1);
-  selectedFiles.value = updated;
-};
-
-const toggleExistingFile = (file) => {
-  if (!file || !file.id) {
-    return;
-  }
-
-  file.marked = !file.marked;
-
-  if (file.marked) {
-    if (!form.filesToDelete.includes(file.id)) {
-      form.filesToDelete.push(file.id);
-    }
-  } else {
-    form.filesToDelete = form.filesToDelete.filter((id) => id !== file.id);
-  }
-};
-
 const buildFormData = () => {
   const formData = new FormData();
 
@@ -563,24 +349,6 @@ const buildFormData = () => {
   formData.append('requests[link]', form.requests.link ? 1 : 0);
   formData.append('requests[comment]', form.requests.comment ? 1 : 0);
   formData.append('requests[file]', form.requests.file ? 1 : 0);
-
-  if (form.requests.link && form.link) {
-    formData.append('link', form.link);
-  }
-
-  if (form.requests.comment && form.comment) {
-    formData.append('comment', form.comment);
-  }
-
-  if (form.requests.file) {
-    selectedFiles.value.forEach((file) => {
-      formData.append('reference_files[]', file);
-    });
-
-    form.filesToDelete.forEach((id) => {
-      formData.append('files_to_delete[]', id);
-    });
-  }
 
   return formData;
 };
@@ -653,63 +421,12 @@ const editModel = (model) => {
   form.requests.link = model.requests.link;
   form.requests.comment = model.requests.comment;
   form.requests.file = model.requests.file;
-  form.link = model.link || '';
-  form.comment = model.comment || '';
-  form.files = (model.files || []).map((file) => ({
-    ...file,
-    marked: false,
-  }));
-  form.filesToDelete = [];
-  selectedFiles.value = [];
-
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
 };
 
 const resetForm = () => {
   Object.assign(form, initialState());
   editingId.value = null;
-  selectedFiles.value = [];
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
 };
-
-watch(
-  () => form.requests.link,
-  (value) => {
-    if (!value) {
-      form.link = '';
-    }
-  }
-);
-
-watch(
-  () => form.requests.comment,
-  (value) => {
-    if (!value) {
-      form.comment = '';
-    }
-  }
-);
-
-watch(
-  () => form.requests.file,
-  (value) => {
-    if (value) {
-      return;
-    }
-
-    form.filesToDelete = form.files.map((file) => file.id).filter(Boolean);
-    form.files = [];
-    selectedFiles.value = [];
-
-    if (fileInput.value) {
-      fileInput.value.value = '';
-    }
-  }
-);
 
 const confirmDelete = async (model) => {
   if (deletingId.value !== null) {
@@ -812,19 +529,6 @@ onMounted(() => {
 .table td,
 .table th {
   vertical-align: middle;
-}
-
-.file-list ul li {
-  padding: 0.35rem 0;
-  border-bottom: 1px dashed var(--bs-border-color);
-}
-
-.file-list ul li:last-child {
-  border-bottom: none;
-}
-
-.file-list h6 {
-  letter-spacing: 0.04em;
 }
 
 .edit-button {

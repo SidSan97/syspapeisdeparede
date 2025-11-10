@@ -16,8 +16,6 @@ class CollectionModel extends Model
         'request_link',
         'request_comment',
         'request_file',
-        'link',
-        'comment',
     ];
 
     protected $casts = [
