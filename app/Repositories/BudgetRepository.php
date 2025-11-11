@@ -4,8 +4,10 @@ namespace App\Repositories;
 
 use App\Models\Budget;
 use App\Support\Budget\BudgetCalculator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class BudgetRepository {
 
@@ -56,6 +58,14 @@ class BudgetRepository {
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
                 'selected_carrier_delivery_time' => $selectedCarrier['deliveryTime'] ?? null,
                 'carriers_snapshot' => null,
+                'comment_referring_model' => $data['commentReferringModel'] ?? null,
+                'link_referring_model' => $data['linkReferringModel'] ?? null,
+                'files_referring_model' => isset($data['filesReferringModel'])
+                    ? (array) $data['filesReferringModel']
+                    : null,
+                'collection_referring_model' => $this->formatCollectionReferringModel(
+                    $data['collectionReferringModel'] ?? null
+                ),
                 'raw_payload' => $data,
                 'status' => null,
             ]);
@@ -107,5 +117,76 @@ class BudgetRepository {
         ]);
 
         return $budget->fresh(['rooms.walls']);
+    }
+
+    public function placeOrder(Budget $budget, array $data): Budget
+    {
+        $budget->loadMissing(['rooms.walls']);
+
+        $existingFiles = is_array($budget->files_referring_model)
+            ? $budget->files_referring_model
+            : [];
+
+        $uploadedFiles = [];
+
+        if (!empty($data['files_referring_model'])) {
+            foreach ($data['files_referring_model'] as $file) {
+                if ($file instanceof UploadedFile) {
+                    $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                }
+            }
+        }
+
+        $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
+
+        $updatePayload = [
+            'status' => 'pendente',
+        ];
+
+        if (array_key_exists('comment_referring_model', $data)) {
+            $comment = $data['comment_referring_model'];
+            $updatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
+        }
+
+        if (array_key_exists('link_referring_model', $data)) {
+            $link = $data['link_referring_model'];
+            $updatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
+        }
+
+        if (!empty($mergedFiles)) {
+            $updatePayload['files_referring_model'] = $mergedFiles;
+        } elseif (array_key_exists('files_referring_model', $data)) {
+            $updatePayload['files_referring_model'] = null;
+        }
+
+        $updatePayload['collection_referring_model'] = null;
+
+        $budget->update($updatePayload);
+
+        return $budget->fresh(['rooms.walls']);
+    }
+
+    protected function formatCollectionReferringModel($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_array($value)) {
+            $normalized = array_map(
+                static fn ($item) => trim((string) $item),
+                $value
+            );
+
+            $filtered = array_values(
+                array_filter($normalized, static fn ($item) => $item !== '')
+            );
+
+            return $filtered ? implode(',', array_unique($filtered)) : null;
+        }
+
+        $stringValue = trim((string) $value);
+
+        return $stringValue !== '' ? $stringValue : null;
     }
 }

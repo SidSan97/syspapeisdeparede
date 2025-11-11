@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Models\Budget;
 use App\Repositories\BudgetRepository;
@@ -80,6 +81,27 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao cancelar orçamento',
+            ], 500);
+        }
+    }
+
+    public function placeOrder(PlaceOrderRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        try {
+            $budget = Budget::with(['rooms.walls'])->findOrFail($data['id']);
+            $budgetUpdated = $this->repository->placeOrder($budget, $data);
+
+            return response()->json([
+                'success' => true,
+                'data' => $budgetUpdated,
+                'message' => 'Pedido registrado com sucesso',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao registrar pedido',
             ], 500);
         }
     }

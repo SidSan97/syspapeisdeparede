@@ -27,6 +27,10 @@ class Budget extends Model
         'carriers_snapshot',
         'primary_budget_room_id',
         'status',
+        'comment_referring_model',
+        'link_referring_model',
+        'files_referring_model',
+        'collection_referring_model',
     ];
 
     protected $casts = [
@@ -40,6 +44,8 @@ class Budget extends Model
         'carriers_snapshot' => 'array',
         'primary_budget_room_id' => 'integer',
         'status' => 'string',
+        'files_referring_model' => 'array',
+        'collection_referring_model' => 'string',
     ];
 
     public function user(): BelongsTo
