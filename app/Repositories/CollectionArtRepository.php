@@ -11,6 +11,7 @@ class CollectionArtRepository
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return CollectionArt::query()
+            ->withCount('images')
             ->orderByDesc('created_at')
             ->paginate($perPage);
     }
@@ -18,6 +19,7 @@ class CollectionArtRepository
     public function all(): Collection
     {
         return CollectionArt::query()
+            ->withCount('images')
             ->orderBy('name')
             ->get();
     }

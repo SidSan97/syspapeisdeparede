@@ -40,7 +40,7 @@ class CollectionArtController extends BaseController
 
     public function store(CollectionArtRequest $request): JsonResponse
     {
-        $collectionArt = $this->repository->create($request->validated());
+        $collectionArt = $this->repository->create($request->validated())->loadCount('images');
 
         return $this->sendResponse(
             new CollectionArtResource($collectionArt),
@@ -51,14 +51,14 @@ class CollectionArtController extends BaseController
     public function show(CollectionArt $collectionArt): JsonResponse
     {
         return $this->sendResponse(
-            new CollectionArtResource($collectionArt),
+            new CollectionArtResource($collectionArt->load(['images'])->loadCount('images')),
             'Tipo de arte recuperado com sucesso'
         );
     }
 
     public function update(CollectionArtRequest $request, CollectionArt $collectionArt): JsonResponse
     {
-        $updated = $this->repository->update($collectionArt, $request->validated());
+        $updated = $this->repository->update($collectionArt, $request->validated())->loadCount('images');
 
         return $this->sendResponse(
             new CollectionArtResource($updated),

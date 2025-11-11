@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\V1\{
     BudgetController,
     CollectionArtController,
+    CollectionImageController,
     CollectionModelController,
     ModelTypeController,
     ProfileController,
@@ -83,6 +84,7 @@ Route::prefix('v1')->group(function () {
         'users' => UserController::class,
         'collection-models' => CollectionModelController::class,
         'collection-arts' => CollectionArtController::class,
+        'collection-images' => CollectionImageController::class,
     ]);
 
     Route::get('model-types', [ModelTypeController::class, 'index']);
