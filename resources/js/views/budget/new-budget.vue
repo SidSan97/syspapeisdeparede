@@ -339,23 +339,11 @@
                                                                 </div>
                                                             </div>
                                                             <div class="mb-2">
-                                                                <strong>{{ model.displayName }}</strong>
-                                                                <div v-if="model.typeName" class="text-muted small">
-                                                                    {{ model.typeName }}
-                                                                </div>
+                                                                <strong>{{ model.typeName }}</strong>
                                                             </div>
                                                             <div class="small text-muted">
                                                                 <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>
                                                                 <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
-                                                                <div v-if="model.link">
-                                                                    <strong>Link:</strong>
-                                                                    <a :href="model.link" target="_blank" rel="noopener">
-                                                                        {{ model.link }}
-                                                                    </a>
-                                                                </div>
-                                                                <div v-if="model.comment">
-                                                                    <strong>Observação:</strong> {{ model.comment }}
-                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -544,6 +532,8 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import axios from 'axios';
+import Swal from 'sweetalert2';
+import { swalSuccess, swalError } from '../../../utils/alerts';
 
 const currentStep = ref(1);
 const calculatingFreight = ref(false);
@@ -578,6 +568,13 @@ const createDefaultWall = () => ({
     continueSameArt: false,
     continuations: []
 });
+
+const showWarning = (message) =>
+    Swal.fire({
+        title: 'Atenção',
+        text: message,
+        icon: 'warning'
+    });
 
 const extractItemsFromResponse = (payload) => {
     if (!payload) {
@@ -840,31 +837,88 @@ function validateStep() {
     switch (currentStep.value) {
         case 1:
             if (!budget.name) {
-                alert('Por favor, informe o nome do orçamento');
+                showWarning('Por favor, informe o nome do orçamento');
                 return false;
             }
             break;
         case 2:
             // Validar se há pelo menos um ambiente com pelo menos uma parede
             if (budget.rooms.length === 0) {
-                alert('Por favor, adicione pelo menos um ambiente');
+                showWarning('Por favor, adicione pelo menos um ambiente');
                 return false;
+            }
+
+            const isValidDimension = (value) =>
+                typeof value === 'number' && !Number.isNaN(value) && value > 0;
+
+            for (let roomIndex = 0; roomIndex < budget.rooms.length; roomIndex++) {
+                const room = budget.rooms[roomIndex];
+                const roomLabel = room.name?.trim() || `Ambiente ${roomIndex + 1}`;
+
+                if (!room.name || !room.name.toString().trim()) {
+                    showWarning(`Informe o nome do ${roomLabel}.`);
+                    return false;
+                }
+
+                if (!room.walls.length) {
+                    showWarning(`Adicione pelo menos uma parede em ${roomLabel}.`);
+                    return false;
+                }
+
+                for (let wallIndex = 0; wallIndex < room.walls.length; wallIndex++) {
+                    const wall = room.walls[wallIndex];
+                    const wallLabel = wall.name?.trim() || `Parede ${wallIndex + 1}`;
+
+                    if (!wall.name || !wall.name.toString().trim()) {
+                        showWarning(`Informe o nome da ${wallLabel} em ${roomLabel}.`);
+                        return false;
+                    }
+
+                    if (!isValidDimension(wall.width) || !isValidDimension(wall.height)) {
+                        showWarning(
+                            `Informe largura e altura válidas para ${wallLabel} em ${roomLabel}.`
+                        );
+                        return false;
+                    }
+
+                    if (wall.continueSameArt && Array.isArray(wall.continuations)) {
+                        for (
+                            let continuationIndex = 0;
+                            continuationIndex < wall.continuations.length;
+                            continuationIndex++
+                        ) {
+                            const continuation = wall.continuations[continuationIndex];
+                            if (!isValidDimension(continuation.width)) {
+                                showWarning(
+                                    `Informe a largura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
+                                );
+                                return false;
+                            }
+                            if (!isValidDimension(continuation.height)) {
+                                showWarning(
+                                    `Informe a altura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
+                                );
+                                return false;
+                            }
+                        }
+                    }
+                }
             }
             break;
         case 3:
             if (modelsLoading.value) {
-                alert('Aguarde o carregamento dos modelos antes de avançar.');
+                showWarning('Aguarde o carregamento dos modelos antes de avançar.');
                 return false;
             }
             if (!productModels.value.length) {
-                alert('Nenhum modelo disponível no momento.');
+                showWarning('Nenhum modelo disponível no momento.');
                 return false;
             }
             // Validar se todas as paredes têm um modelo selecionado
             for (let room of budget.rooms) {
                 for (let wall of room.walls) {
                     if (!wall.model) {
-                        alert('Por favor, selecione um modelo para todas as paredes');
+                        showWarning('Por favor, selecione um modelo para todas as paredes');
                         return false;
                     }
                 }
@@ -872,17 +926,17 @@ function validateStep() {
             break;
         case 4:
             if (!budget.cep || budget.cep.length < 8) {
-                alert('Por favor, informe um CEP válido');
+                showWarning('Por favor, informe um CEP válido');
                 return false;
             }
             if (budget.selectedCarrier === null) {
-                alert('Por favor, selecione uma transportadora');
+                showWarning('Por favor, selecione uma transportadora');
                 return false;
             }
             break;
         case 5:
             if (!budget.paymentMethod) {
-                alert('Por favor, selecione uma forma de pagamento');
+                showWarning('Por favor, selecione uma forma de pagamento');
                 return false;
             }
             break;
@@ -1120,12 +1174,12 @@ function saveBudget() {
     axios.post('v1/budgets', payload)
         .then(response => {
             console.log('Orçamento salvo:', response.data);
-            alert('Orçamento salvo com sucesso!');
+            swalSuccess('Orçamento salvo com sucesso!');
         })
         .catch(error => {
             console.error('Erro ao salvar orçamento:', error);
             const message = error.response?.data?.message || 'Tente novamente mais tarde.';
-            alert('Erro ao salvar orçamento: ' + message);
+            swalError('Erro ao salvar orçamento: ' + message);
         })
         .finally(() => {
             saving.value = false;

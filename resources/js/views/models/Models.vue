@@ -26,9 +26,9 @@
           <button
             type="button"
             class="btn btn-outline-secondary"
-            @click="cancelForm"
+            @click="resetForm"
           >
-            Cancelar
+            Limpar
           </button>
         </div>
         <form @submit.prevent="handleSubmit">
@@ -125,19 +125,18 @@
           </div>
 
           <div class="mt-5 d-flex justify-content-end gap-3">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              @click="resetForm"
-            >
-              Limpar
-            </button>
+          <button
+            type="button"
+            class="btn btn-subtle"
+            @click="cancelForm"
+          >
+            Cancelar
+          </button>
             <button
               type="submit"
-              class="btn btn-success"
+              class="btn btn-primary"
               :disabled="isSaving"
             >
-              <i class="fa fa-save me-2"></i>
               {{ isEditing ? 'Salvar alterações' : 'Salvar modelo' }}
             </button>
           </div>
@@ -621,6 +620,21 @@ onMounted(() => {
 
 .edit-button {
   margin-right: 10px;
+}
+
+.btn-subtle {
+  background-color: transparent;
+  border: none;
+  color: var(--bs-danger);
+  padding: 0.375rem 0.75rem;
+  transition: color 0.2s ease-in-out;
+}
+
+.btn-subtle:hover,
+.btn-subtle:focus {
+  background-color: transparent;
+  color: var(--bs-danger-hover, #bb2d3b);
+  text-decoration: underline;
 }
 </style>
 
