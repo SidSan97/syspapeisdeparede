@@ -26,9 +26,11 @@
                 </div>
               </div>
 
-              <div v-if="orderCollectionModelIds.length" class="mt-3">
+              <div v-if="orderCollectionModels.length" class="mt-3">
                 <div class="text-muted small mb-1">Modelos associados</div>
-                <div class="fw-semibold">{{ orderCollectionModelIds.join(', ') }}</div>
+                <div class="fw-semibold">
+                  {{ orderCollectionModels.map((item) => item.name).join(', ') }}
+                </div>
               </div>
 
               <div class="mt-4">
@@ -228,17 +230,17 @@ const orderSummary = computed(() => {
   };
 });
 
-const orderCollectionModelIds = computed(() => {
+const orderCollectionModels = computed(() => {
   if (!props.budget) {
     return [];
   }
 
-  return extractCollectionModelIdsFromBudget(props.budget);
+  return extractCollectionModelsFromBudget(props.budget);
 });
 
-const requiresComment = computed(() => orderCollectionModelIds.value.includes('1'));
-const requiresFiles = computed(() => orderCollectionModelIds.value.includes('2'));
-const requiresLink = computed(() => orderCollectionModelIds.value.includes('3'));
+const requiresComment = computed(() => hasRequirement('request_comment'));
+const requiresFiles = computed(() => hasRequirement('request_file'));
+const requiresLink = computed(() => hasRequirement('request_link'));
 const orderHasRequirements = computed(
   () => requiresComment.value || requiresFiles.value || requiresLink.value,
 );
@@ -295,26 +297,77 @@ function formatDeliveryTime(days) {
   return `${days} ${days === 1 ? 'dia' : 'dias'}`;
 }
 
-function extractCollectionModelIdsFromBudget(budget) {
+function extractCollectionModelsFromBudget(budget) {
   if (!budget || !Array.isArray(budget.rooms)) {
     return [];
   }
 
-  const ids = new Set();
+  const collection = new Map();
 
   budget.rooms.forEach((room) => {
     const walls = Array.isArray(room?.walls) ? room.walls : [];
 
     walls.forEach((wall) => {
-      const wallId = wall?.collection_model_id ?? wall?.collectionModelId ?? null;
+      const id =
+        wall?.collection_model_id ??
+        wall?.collectionModelId ??
+        wall?.collection_model?.id ??
+        null;
 
-      if (wallId !== null && wallId !== undefined && wallId !== '') {
-        ids.add(String(wallId));
+      if (id === null || id === undefined || id === '') {
+        return;
+      }
+
+      if (!collection.has(id)) {
+        collection.set(id, {
+          id: String(id),
+          name:
+            wall?.collection_model_name ??
+            wall?.collection_model?.model_type?.name ??
+            wall?.collectionModelName ??
+            `Modelo ${id}`,
+        });
       }
     });
   });
 
-  return Array.from(ids);
+  return Array.from(collection.values());
+}
+
+function hasRequirement(field) {
+  const budget = props.budget;
+
+  if (!budget || !Array.isArray(budget.rooms)) {
+    return false;
+  }
+
+  return budget.rooms.some((room) => {
+    const walls = Array.isArray(room?.walls) ? room.walls : [];
+
+    return walls.some((wall) => {
+      const collectionModel = wall?.collection_model ?? wall?.collectionModel ?? null;
+
+      if (!collectionModel || !(field in collectionModel)) {
+        return false;
+      }
+
+      const value = collectionModel[field];
+
+      if (typeof value === 'boolean') {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        return value === 'true' || value === '1';
+      }
+
+      if (typeof value === 'number') {
+        return value === 1 || value === 3;
+      }
+
+      return Boolean(value);
+    });
+  });
 }
 
 function handleClose() {
@@ -382,6 +435,15 @@ async function submitOrder() {
 
   if (requiresLink.value && !orderForm.link.trim()) {
     orderError.value = 'Informe o link de referência para prosseguir.';
+    return;
+  }
+
+  if (
+    requiresFiles.value &&
+    !orderExistingFiles.value.length &&
+    !orderNewFiles.value.length
+  ) {
+    orderError.value = 'Envie pelo menos um arquivo de referência para prosseguir.';
     return;
   }
 
