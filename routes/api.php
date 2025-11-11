@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\V1\{
     BudgetController,
+    CollectionArtController,
     CollectionModelController,
     ModelTypeController,
     ProfileController,
@@ -81,6 +82,7 @@ Route::prefix('v1')->group(function () {
     Route::apiResources([
         'users' => UserController::class,
         'collection-models' => CollectionModelController::class,
+        'collection-arts' => CollectionArtController::class,
     ]);
 
     Route::get('model-types', [ModelTypeController::class, 'index']);
