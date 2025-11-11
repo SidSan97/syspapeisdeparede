@@ -12,7 +12,6 @@ class CollectionModel extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
         'value',
         'deadline',
         'type_model_id',

@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('collection_models', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->decimal('value', 10, 2);
             $table->unsignedInteger('deadline');
             $table->foreignId('type_model_id')->constrained('models_types');

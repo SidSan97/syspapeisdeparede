@@ -35,15 +35,21 @@
           <div class="row">
             <div class="col-md-6 mb-2">
               <label for="modelName" class="form-label">Nome</label>
-              <input
-                id="modelName"
-                v-model="form.name"
-                type="text"
-                class="form-control"
-                maxlength="255"
-                required
-                placeholder="Digite um nome para o modelo"
-              />
+                <select
+                    id="modelType"
+                    v-model="form.type_model_id"
+                    class="form-select"
+                    required
+                >
+                    <option disabled value="">Selecione um tipo de modelo</option>
+                    <option
+                    v-for="type in modelTypes"
+                    :key="type.id"
+                    :value="type.id"
+                    >
+                    {{ type.name }}
+                    </option>
+                </select>
             </div>
             <div class="col-md-6 mb-2">
               <label for="modelValue" class="form-label">Valor</label>
@@ -70,24 +76,6 @@
                 class="form-control"
                 required
               />
-            </div>
-            <div class="col-md-6 mb-2">
-              <label for="modelType" class="form-label">Tipo</label>
-              <select
-                id="modelType"
-                v-model="form.type_model_id"
-                class="form-select"
-                required
-              >
-                <option disabled value="">Selecione um tipo de modelo</option>
-                <option
-                  v-for="type in modelTypes"
-                  :key="type.id"
-                  :value="type.id"
-                >
-                  {{ type.name }}
-                </option>
-              </select>
             </div>
           </div>
 
@@ -240,7 +228,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { swalSuccess, swalError, swalConfirmation } from '../../../utils/alerts';
 
@@ -274,6 +262,28 @@ const initialState = () => ({
 
 const form = reactive(initialState());
 
+const syncFormNameWithModelType = (typeId) => {
+  if (!typeId) {
+    form.name = '';
+    return;
+  }
+
+  const selectedType = modelTypes.value.find(
+    (type) => String(type.id) === String(typeId ?? '')
+  );
+
+  if (selectedType) {
+    form.name = selectedType.name ?? '';
+  }
+};
+
+watch(
+  () => form.type_model_id,
+  (newValue) => {
+    syncFormNameWithModelType(newValue);
+  }
+);
+
 const totalModels = computed(() => pagination.value.total ?? models.value.length);
 const hasModels = computed(() => models.value.length > 0);
 const normalizeFile = (file = {}) => ({
@@ -299,7 +309,7 @@ const normalizeModel = (model = {}) => {
 
   return {
     id: model.id,
-    name: model.name ?? '',
+    name: model.name ?? model.type?.name ?? '',
     value: Number(model.value ?? 0),
     deadline: Number(model.deadline ?? 0),
     type_model_id: (() => {
@@ -496,6 +506,8 @@ const editModel = (model) => {
   form.requests.link = model.requests.link;
   form.requests.comment = model.requests.comment;
   form.requests.file = model.requests.file;
+
+  syncFormNameWithModelType(form.type_model_id);
 };
 
 const resetForm = () => {

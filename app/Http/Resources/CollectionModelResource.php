@@ -29,7 +29,6 @@ class CollectionModelResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'name' => $this->name,
             'value' => (float) $this->value,
             'deadline' => (int) $this->deadline,
             'type_model_id' => (int) $this->type_model_id,

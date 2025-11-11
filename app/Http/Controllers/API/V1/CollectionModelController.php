@@ -104,7 +104,6 @@ class CollectionModelController extends BaseController
         $shouldRequestFile = (bool) ($requests['file'] ?? false);
 
         return [
-            'name' => (string) $request->input('name'),
             'value' => (float) $request->input('value'),
             'deadline' => (int) $request->input('deadline'),
             'type_model_id' => (int) $request->input('type_model_id'),
