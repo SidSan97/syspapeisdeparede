@@ -84,6 +84,9 @@ Route::prefix('v1')->group(function () {
     ]);
 
     Route::get('model-types', [ModelTypeController::class, 'index']);
+    Route::post('model-types', [ModelTypeController::class, 'store']);
+    Route::put('model-types/{id}', [ModelTypeController::class, 'update']);
+    Route::delete('model-types/{id}', [ModelTypeController::class, 'destroy']);
 
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');

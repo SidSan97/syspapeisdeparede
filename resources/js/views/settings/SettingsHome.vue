@@ -52,6 +52,12 @@ const availableItems = [
     to: '/modelos',
     icon: 'shapes',
   },
+  {
+    label: 'Arte',
+    description: 'Gerencie os tipos de arte disponíveis para os modelos.',
+    to: '/settings/arte',
+    icon: 'palette',
+  },
 ];
 
 const menuItems = computed(() =>
