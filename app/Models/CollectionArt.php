@@ -9,6 +9,8 @@ class CollectionArt extends Model
 {
     use HasFactory;
 
+    protected $table = 'collection_arts';
+
     protected $fillable = [
         'name',
     ];

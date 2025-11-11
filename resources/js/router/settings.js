@@ -15,6 +15,11 @@ export default [
         name: 'SettingsArtTypes',
         component: () => import('../views/settings/ModelTypes.vue'),
       },
+      {
+        path: 'colecoes',
+        name: 'SettingsCollections',
+        component: () => import('../views/settings/CollectionArts.vue'),
+      },
       ...users,
     ],
   },

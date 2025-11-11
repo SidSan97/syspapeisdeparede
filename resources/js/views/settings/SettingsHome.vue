@@ -58,6 +58,12 @@ const availableItems = [
     to: '/settings/arte',
     icon: 'palette',
   },
+  {
+    label: 'Coleções',
+    description: 'Administre as coleções cadastradas para as artes.',
+    to: '/settings/colecoes',
+    icon: 'layer-group',
+  },
 ];
 
 const menuItems = computed(() =>
@@ -72,8 +78,14 @@ onMounted(() => {
 <style scoped>
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+@media (min-width: 992px) {
+  .settings-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .settings-card {
