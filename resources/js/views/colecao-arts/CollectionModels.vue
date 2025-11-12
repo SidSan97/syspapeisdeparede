@@ -22,13 +22,7 @@
           @click="selectCollection(collection)"
         >
           <div class="collection-card__image-wrapper">
-            <img
-              :src="collection.cover"
-              :alt="collection.name"
-              class="collection-card__image"
-              loading="lazy"
-              @error="handleImageError($event)"
-            />
+            <div class="collection-card__image" :style="getCollectionBackground(collection)"></div>
             <div class="collection-card__image-overlay"></div>
           </div>
           <div class="collection-card__info">
@@ -148,6 +142,14 @@ const buildStorageUrl = (path) => {
   return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
 };
 
+const getCollectionBackground = (collection) => {
+  const cover = collection.cover && collection.cover !== DEFAULT_COVER ? collection.cover : DEFAULT_COVER;
+
+  return {
+    backgroundImage: `url("${cover}")`,
+  };
+};
+
 const formatCount = (count) => {
   const total = Number(count ?? 0);
   return total === 1 ? '1 imagem' : `${total} imagens`;
@@ -193,7 +195,20 @@ const fetchCollectionImages = async (collectionId) => {
     const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
     const payload = data?.data ?? data ?? {};
     const images = Array.isArray(payload.images) ? payload.images : [];
-    collectionImages[collectionId] = normalizeImages(images);
+    const normalized = normalizeImages(images);
+    collectionImages[collectionId] = normalized;
+
+    if (normalized.length > 0) {
+      const firstImage = normalized[0];
+      const index = collections.value.findIndex((item) => item.id === collectionId);
+      if (index !== -1 && firstImage.url) {
+        const updated = {
+          ...collections.value[index],
+          cover: firstImage.url,
+        };
+        collections.value.splice(index, 1, updated);
+      }
+    }
   } catch (error) {
     collectionImages[collectionId] = [];
     swalError('Não foi possível carregar as imagens desta coleção.');
@@ -266,12 +281,15 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .collection-card:hover .collection-card__image {
   transform: scale(1.05);
+  filter: brightness(1.05);
 }
 
 .collection-card__image-overlay {
