@@ -130,7 +130,6 @@
                   <i class="fa fa-trash"></i>
                 </button>
               </div>
-              <p class="image-name" :title="image.path_name">{{ image.path_name }}</p>
             </div>
           </div>
         </div>

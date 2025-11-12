@@ -88,7 +88,6 @@
               <i class="fa fa-times"></i>
             </button>
             <img :src="modalImage.url" :alt="modalImage.path_name" @error="handleImageError($event)" />
-            <p class="image-modal__caption">{{ modalImage.path_name }}</p>
           </div>
         </div>
       </Teleport>
