@@ -114,6 +114,19 @@
                   </label>
                 </div>
               </div>
+              <div class="col-md-3">
+                <div class="form-check form-switch">
+                  <input
+                    id="requiresCollection"
+                    v-model="form.requests.collection"
+                    class="form-check-input"
+                    type="checkbox"
+                  />
+                  <label class="form-check-label" for="requiresCollection">
+                    Escolher da coleção?
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -161,6 +174,7 @@
                 <th>Solicita link?</th>
                 <th>Solicita comentário?</th>
                 <th>Solicita arquivo?</th>
+                <th>Escolher da coleção?</th>
                 <th class="text-end">Ações</th>
               </tr>
             </thead>
@@ -185,6 +199,12 @@
                   <i
                     class="fa"
                     :class="model.requests.file ? 'fa-check text-success' : 'fa-times text-muted'"
+                  />
+                </td>
+                <td>
+                  <i
+                    class="fa"
+                    :class="model.requests.collection ? 'fa-check text-success' : 'fa-times text-muted'"
                   />
                 </td>
                 <td class="text-end">
@@ -244,6 +264,7 @@ const initialState = () => ({
     link: false,
     comment: false,
     file: false,
+    collection: false,
   },
 });
 
@@ -281,6 +302,11 @@ const normalizeModel = (model = {}) => {
       link: Boolean(model?.requests?.link),
       comment: Boolean(model?.requests?.comment),
       file: Boolean(model?.requests?.file),
+      collection: Boolean(
+        model?.requests?.collection ??
+        model?.requestCollection ??
+        model?.request_collection
+      ),
     },
     link: model.link ?? '',
     comment: model.comment ?? '',
@@ -364,7 +390,7 @@ const buildFormData = () => {
   formData.append('requests[link]', form.requests.link ? 1 : 0);
   formData.append('requests[comment]', form.requests.comment ? 1 : 0);
   formData.append('requests[file]', form.requests.file ? 1 : 0);
-
+  formData.append('requests[collection]', form.requests.collection ? 1 : 0);
   return formData;
 };
 
@@ -437,6 +463,11 @@ const editModel = (model) => {
   form.requests.link = model.requests.link;
   form.requests.comment = model.requests.comment;
   form.requests.file = model.requests.file;
+  form.requests.collection =
+    model.requests.collection ??
+    model.requestCollection ??
+    model.request_collection ??
+    false;
 };
 
 const resetForm = () => {

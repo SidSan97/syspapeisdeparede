@@ -102,6 +102,7 @@ class CollectionModelController extends BaseController
         $shouldRequestLink = (bool) ($requests['link'] ?? false);
         $shouldRequestComment = (bool) ($requests['comment'] ?? false);
         $shouldRequestFile = (bool) ($requests['file'] ?? false);
+        $shouldRequestCollection = (bool) ($requests['collection'] ?? false);
 
         return [
             'name' => (string) $request->input('name'),
@@ -110,6 +111,7 @@ class CollectionModelController extends BaseController
             'request_link' => $shouldRequestLink,
             'request_comment' => $shouldRequestComment,
             'request_file' => $shouldRequestFile,
+            'request_collection' => $shouldRequestCollection,
         ];
     }
 }

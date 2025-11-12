@@ -17,6 +17,7 @@ class CollectionModel extends Model
         'request_link',
         'request_comment',
         'request_file',
+        'request_collection',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class CollectionModel extends Model
         'request_link' => 'boolean',
         'request_comment' => 'boolean',
         'request_file' => 'boolean',
+        'request_collection' => 'boolean',
     ];
 
     public function files(): HasMany

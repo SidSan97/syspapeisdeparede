@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('request_link')->default(false);
             $table->boolean('request_comment')->default(false);
             $table->boolean('request_file')->default(false);
+            $table->boolean('request_collection')->default(false);
             $table->timestamps();
         });
     }

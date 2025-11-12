@@ -28,6 +28,7 @@ class CollectionModelRequest extends FormRequest
             'requests.link' => ['sometimes', 'boolean'],
             'requests.comment' => ['sometimes', 'boolean'],
             'requests.file' => ['sometimes', 'boolean'],
+            'requests.collection' => ['sometimes', 'boolean'],
             'reference_files' => ['nullable', 'array'],
             'reference_files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp'],
             'files_to_delete' => ['nullable', 'array'],
@@ -50,6 +51,7 @@ class CollectionModelRequest extends FormRequest
                 'link' => $this->prepareBoolean($requests['link'] ?? false),
                 'comment' => $this->prepareBoolean($requests['comment'] ?? false),
                 'file' => $this->prepareBoolean($requests['file'] ?? false),
+                'collection' => $this->prepareBoolean($requests['collection'] ?? false),
             ],
         ];
 
