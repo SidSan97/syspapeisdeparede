@@ -107,6 +107,103 @@
                   >
                 </div>
 
+                <div v-if="requiresCollection" class="mb-4">
+                  <h6 class="fw-semibold mb-3">Selecione uma arte da coleção para cada parede</h6>
+                  <div v-if="collectionLoading" class="alert alert-warning mb-0">
+                    Carregando coleções disponíveis...
+                  </div>
+                  <div v-else-if="collectionError" class="alert alert-danger mb-0">
+                    {{ collectionError }}
+                  </div>
+                  <div v-else-if="!collectionList.length" class="alert alert-info mb-0">
+                    Nenhuma coleção disponível. Entre em contato com o suporte para prosseguir.
+                  </div>
+                  <div v-else class="d-flex flex-column gap-3">
+                    <template v-for="wall in wallsRequiringCollection" :key="wall.key">
+                      <div v-if="wallSelections[wall.key]" class="collection-selection">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
+                          <div>
+                            <div class="fw-semibold">{{ wall.roomName }}</div>
+                            <div class="text-muted small">{{ wall.wallName }}</div>
+                          </div>
+                          <div class="w-100 w-md-50">
+                            <label :for="`collection-select-${wall.key}`" class="form-label">
+                              Coleção
+                            </label>
+                            <select
+                              :id="`collection-select-${wall.key}`"
+                              class="form-select"
+                              v-model="wallSelections[wall.key].collectionId"
+                              :disabled="orderSubmitting || collectionLoading"
+                              @change="handleCollectionSelectionChange(wall.key)"
+                            >
+                              <option :value="null">Selecione uma coleção</option>
+                              <option
+                                v-for="collection in collectionList"
+                                :key="collection.id"
+                                :value="collection.id"
+                              >
+                                {{ collection.name }}
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div v-if="wallSelections[wall.key].collectionId">
+                          <div
+                            v-if="
+                              getCollectionState(wallSelections[wall.key].collectionId).loading
+                            "
+                            class="text-muted small"
+                          >
+                            Carregando imagens...
+                          </div>
+                          <div
+                            v-else-if="
+                              getCollectionState(wallSelections[wall.key].collectionId).error
+                            "
+                            class="text-danger small"
+                          >
+                            {{ getCollectionState(wallSelections[wall.key].collectionId).error }}
+                          </div>
+                          <div
+                            v-else-if="
+                              !getCollectionState(wallSelections[wall.key].collectionId).items.length
+                            "
+                            class="text-muted small"
+                          >
+                            Nenhuma imagem disponível nesta coleção.
+                          </div>
+                          <div v-else class="collection-images-grid">
+                            <button
+                              v-for="image in getCollectionState(wallSelections[wall.key].collectionId).items"
+                              :key="image.id ?? `image-${wall.key}`"
+                              type="button"
+                              class="collection-image-button"
+                              :class="{
+                                selected: wallSelections[wall.key].imageId === image.id,
+                              }"
+                              @click="selectCollectionImage(wall.key, image.id)"
+                              :disabled="orderSubmitting"
+                            >
+                              <img
+                                :src="image.url"
+                                :alt="image.title"
+                                class="collection-image-thumb"
+                                @error="handleCollectionImageError"
+                              >
+
+                            </button>
+                          </div>
+                        </div>
+                        <div v-else class="text-muted small">
+                          Escolha uma coleção para visualizar as artes disponíveis.
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
                 <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
                   Nenhuma informação adicional é necessária para este orçamento. Confirme para continuar com o pedido.
                 </div>
@@ -241,10 +338,251 @@ const orderCollectionModels = computed(() => {
 const requiresComment = computed(() => hasRequirement('request_comment'));
 const requiresFiles = computed(() => hasRequirement('request_file'));
 const requiresLink = computed(() => hasRequirement('request_link'));
+const requiresCollection = computed(() => hasRequirement('request_collection'));
 const orderHasRequirements = computed(
-  () => requiresComment.value || requiresFiles.value || requiresLink.value,
+  () =>
+    requiresComment.value ||
+    requiresFiles.value ||
+    requiresLink.value ||
+    requiresCollection.value,
 );
 const orderNewFiles = computed(() => (Array.isArray(orderForm.files) ? orderForm.files : []));
+
+const wallSelections = reactive({});
+const collectionList = ref([]);
+const collectionAssets = reactive({});
+const collectionLoading = ref(false);
+const collectionError = ref('');
+const COLLECTION_IMAGE_PLACEHOLDER =
+  'https://via.placeholder.com/300x200/ced4da/212529?text=Sem+imagem';
+
+const wallsRequiringCollection = computed(() => {
+  if (!props.budget || !Array.isArray(props.budget.rooms)) {
+    return [];
+  }
+
+  const walls = [];
+
+  props.budget.rooms.forEach((room, roomIndex) => {
+    const roomName = room?.name ?? `Ambiente ${roomIndex + 1}`;
+    const roomId = room?.id ?? `room-${roomIndex}`;
+
+    (room?.walls ?? []).forEach((wall, wallIndex) => {
+      const collectionModel =
+        wall?.collection_model ??
+        wall?.collectionModel ??
+        null;
+
+      if (!collectionModel) {
+        return;
+      }
+
+      const requires =
+        collectionModel?.request_collection ??
+        collectionModel?.requestCollection ??
+        collectionModel?.requests?.collection ??
+        false;
+
+      if (!requires) {
+        return;
+      }
+
+      const wallName = wall?.name ?? `Parede ${wallIndex + 1}`;
+      const wallId = wall?.id ?? `wall-${wallIndex}`;
+
+      walls.push({
+        key: `${roomId}-${wallId}`,
+        roomName,
+        wallName,
+      });
+    });
+  });
+
+  return walls;
+});
+
+function syncWallSelections() {
+  const requiredKeys = new Set(wallsRequiringCollection.value.map((wall) => wall.key));
+
+  requiredKeys.forEach((key) => {
+    if (!wallSelections[key]) {
+      wallSelections[key] = {
+        collectionId: null,
+        imageId: null,
+      };
+    }
+  });
+
+  Object.keys(wallSelections).forEach((key) => {
+    if (!requiredKeys.has(key)) {
+      delete wallSelections[key];
+    }
+  });
+}
+
+async function ensureCollectionsLoaded() {
+  if (collectionLoading.value || collectionList.value.length) {
+    return;
+  }
+
+  collectionLoading.value = true;
+  collectionError.value = '';
+
+  try {
+    const { data } = await axios.get('v1/collection-arts', {
+      params: { per_page: 100 },
+    });
+
+    const payload = data?.data ?? data ?? {};
+    const items = payload.items ?? payload ?? [];
+
+    collectionList.value = Array.isArray(items)
+      ? items.map(normalizeCollectionSummary).filter((item) => item.id !== null)
+      : [];
+  } catch (error) {
+    collectionList.value = [];
+    collectionError.value =
+      'Não foi possível carregar as coleções. Atualize a página e tente novamente.';
+  } finally {
+    collectionLoading.value = false;
+  }
+}
+
+function normalizeCollectionSummary(item = {}) {
+  const rawId = item.id ?? item.collection_art_id ?? null;
+  const numericId = rawId === null ? null : Number(rawId);
+  const finalId = Number.isNaN(numericId) ? null : numericId;
+  const name = (item.name ?? '').toString().trim();
+
+  return {
+    id: finalId,
+    name: name.length ? name : 'Coleção sem nome',
+  };
+}
+
+function getCollectionState(collectionId) {
+  if (!collectionId) {
+    return {
+      loading: false,
+      items: [],
+      error: '',
+    };
+  }
+
+  if (!collectionAssets[collectionId]) {
+    collectionAssets[collectionId] = {
+      loading: false,
+      items: [],
+      error: '',
+    };
+  }
+
+  return collectionAssets[collectionId];
+}
+
+async function ensureCollectionAssets(collectionId) {
+  if (!collectionId) {
+    return;
+  }
+
+  const state = getCollectionState(collectionId);
+
+  if (state.loading || state.items.length || state.error) {
+    return;
+  }
+
+  state.loading = true;
+  state.error = '';
+
+  try {
+    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
+    const payload = data?.data ?? data ?? {};
+    const images = Array.isArray(payload.images)
+      ? payload.images.map(normalizeCollectionImage)
+      : [];
+
+    state.items = images;
+  } catch (error) {
+    state.error = 'Não foi possível carregar as imagens desta coleção.';
+  } finally {
+    state.loading = false;
+  }
+}
+
+function normalizeCollectionImage(image = {}) {
+  const resolvedUrl =
+    image.url ??
+    resolveStorageUrl(image.path_name ?? image.pathName ?? '') ??
+    COLLECTION_IMAGE_PLACEHOLDER;
+
+  const rawId =
+    image.id ??
+    image.collection_image_id ??
+    image.collectionImageId ??
+    image.collection_art_id ??
+    image.collectionArtId ??
+    null;
+
+  const numericId = rawId === null ? null : Number(rawId);
+  const finalId = Number.isNaN(numericId) ? null : numericId;
+
+  const finalUrl = !resolvedUrl || resolvedUrl === '#' ? COLLECTION_IMAGE_PLACEHOLDER : resolvedUrl;
+
+  return {
+    id: finalId,
+    url: finalUrl,
+    title: image.path_name ?? image.pathName ?? `Imagem #${image.id ?? ''}`,
+  };
+}
+
+function handleCollectionSelectionChange(wallKey) {
+  const selection = wallSelections[wallKey];
+
+  if (!selection) {
+    return;
+  }
+
+  selection.imageId = null;
+
+  if (selection.collectionId) {
+    ensureCollectionAssets(selection.collectionId);
+  }
+}
+
+function selectCollectionImage(wallKey, imageId) {
+  const selection = wallSelections[wallKey];
+
+  if (!selection) {
+    return;
+  }
+
+  selection.imageId = imageId;
+}
+
+function handleCollectionImageError(event) {
+  event.target.src = COLLECTION_IMAGE_PLACEHOLDER;
+}
+
+watch(
+  [requiresCollection, () => props.visible],
+  ([shouldLoad, visible]) => {
+    if (shouldLoad && visible) {
+      syncWallSelections();
+      ensureCollectionsLoaded();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  wallsRequiringCollection,
+  () => {
+    if (requiresCollection.value) {
+      syncWallSelections();
+    }
+  },
+  { deep: true },
+);
 
 function initializeForm() {
   const budget = props.budget ?? {};
@@ -264,6 +602,11 @@ function initializeForm() {
   if (orderFileInput.value) {
     orderFileInput.value.value = '';
   }
+
+  if (requiresCollection.value) {
+    syncWallSelections();
+    ensureCollectionsLoaded();
+  }
 }
 
 function resetForm() {
@@ -278,6 +621,10 @@ function resetForm() {
   if (orderFileInput.value) {
     orderFileInput.value.value = '';
   }
+
+  Object.keys(wallSelections).forEach((key) => {
+    delete wallSelections[key];
+  });
 }
 
 function formatCurrency(value) {
@@ -438,6 +785,18 @@ async function submitOrder() {
     return;
   }
 
+  if (requiresCollection.value) {
+    const pendingWall = wallsRequiringCollection.value.find((wall) => {
+      const selection = wallSelections[wall.key];
+      return !selection?.collectionId || !selection?.imageId;
+    });
+
+    if (pendingWall) {
+      orderError.value = `Selecione uma arte da coleção para ${pendingWall.roomName} - ${pendingWall.wallName}.`;
+      return;
+    }
+  }
+
   if (
     requiresFiles.value &&
     !orderExistingFiles.value.length &&
@@ -466,6 +825,16 @@ async function submitOrder() {
       orderNewFiles.value.forEach((file) => {
         formData.append('files_referring_model[]', file);
       });
+    }
+
+    if (requiresCollection.value) {
+      const selectedImages = wallsRequiringCollection.value
+        .map((wall) => wallSelections[wall.key]?.imageId)
+        .filter((value) => value !== null && value !== undefined);
+
+      if (selectedImages.length) {
+        formData.append('collection_referring_model', selectedImages.join(','));
+      }
     }
 
     formData.append('terms_accepted', orderForm.termsAccepted ? '1' : '0');
@@ -511,4 +880,56 @@ async function submitOrder() {
   }
 }
 </script>
+
+<style scoped>
+.collection-selection {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.25rem rgba(15, 15, 15, 0.06);
+}
+
+.collection-images-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+.collection-image-button {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--bs-body-bg);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.collection-image-button:hover,
+.collection-image-button:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
+}
+
+.collection-image-button.selected {
+  border-color: var(--bs-success);
+  box-shadow: 0 0.5rem 1rem rgba(25, 135, 84, 0.2);
+}
+
+.collection-image-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.35rem;
+}
+
+.collection-image-name {
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--bs-body-color);
+}
+</style>
 

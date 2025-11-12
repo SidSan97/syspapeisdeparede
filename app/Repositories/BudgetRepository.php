@@ -159,7 +159,10 @@ class BudgetRepository {
             $updatePayload['files_referring_model'] = null;
         }
 
-        $updatePayload['collection_referring_model'] = null;
+        if (array_key_exists('collection_referring_model', $data)) {
+            $collection = $data['collection_referring_model'];
+            $updatePayload['collection_referring_model'] = $collection !== null && $collection !== '' ? $collection : null;
+        }
 
         $budget->update($updatePayload);
 
