@@ -62,7 +62,7 @@
 
         .totals {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(1, minmax(0, 1fr));
             gap: 16px;
         }
 
@@ -85,6 +85,20 @@
             font-size: 16px;
             font-weight: 700;
             color: #111827;
+        }
+
+        .total-item.highlight {
+            background: #2563eb;
+            border-color: #1d4ed8;
+            color: #ffffff;
+        }
+
+        .total-item.highlight .label {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .total-item.highlight .value {
+            color: #ffffff;
         }
 
         table {
@@ -155,7 +169,7 @@
 <body>
     <header class="header">
         <div>
-            <div class="branding">{{ config('app.name', 'Wallpaper') }}</div>
+            <div class="branding">Papel de Parede</div>
             <div>Relatório de Orçamento</div>
         </div>
         <div style="text-align: right;">
@@ -191,16 +205,8 @@
     <section class="card">
         <h3>Detalhes financeiros</h3>
         <div class="totals" style="margin-top: 16px;">
-            <div class="total-item">
-                <div class="label">Valor original</div>
-                <div class="value">{{ $financial['original_formatted'] }}</div>
-            </div>
-            <div class="total-item">
-                <div class="label">Acréscimo aplicado</div>
-                <div class="value">{{ $financial['increase_percentage_display'] }} ({{ $financial['increase_formatted'] }})</div>
-            </div>
-            <div class="total-item" style="grid-column: span 2;">
-                <div class="label">Valor total com acréscimo</div>
+            <div class="total-item highlight">
+                <div class="label">Valor Total</div>
                 <div class="value">{{ $financial['total_formatted'] }}</div>
             </div>
         </div>
@@ -252,7 +258,6 @@
     <section>
         <h3>Observações</h3>
         <p class="notes">
-            O valor apresentado considera o acréscimo informado no momento da geração deste documento e pode variar conforme alterações futuras.
             Este orçamento é válido por 30 dias a partir da data de emissão, salvo ajustes negociados entre as partes.
         </p>
     </section>

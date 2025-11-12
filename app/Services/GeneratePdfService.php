@@ -24,11 +24,6 @@ class GeneratePdfService
         $filename = sprintf('orcamento-%s.pdf', $budget->id);
 
         $financial = [
-            'original' => $originalTotal,
-            'original_formatted' => $this->formatMoney($originalTotal),
-            'increase_percentage' => $percentage,
-            'increase_percentage_display' => number_format($percentage, 2, ',', '.') . '%',
-            'increase_formatted' => $this->formatMoney($surcharge),
             'total' => $updatedTotal,
             'total_formatted' => $this->formatMoney($updatedTotal),
         ];
