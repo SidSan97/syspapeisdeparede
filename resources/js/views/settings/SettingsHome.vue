@@ -53,12 +53,6 @@ const availableItems = [
     icon: 'shapes',
   },
   {
-    label: 'Arte',
-    description: 'Gerencie os tipos de arte disponíveis para os modelos.',
-    to: '/settings/arte',
-    icon: 'palette',
-  },
-  {
     label: 'Coleções',
     description: 'Administre as coleções cadastradas para as artes.',
     to: '/settings/colecoes',

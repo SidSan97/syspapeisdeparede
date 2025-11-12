@@ -147,7 +147,7 @@ class BudgetController extends Controller
 
     protected function transformBudget(Budget $budget): array
     {
-        $budget->loadMissing(['rooms.walls.collectionModel.modelType']);
+        $budget->loadMissing(['rooms.walls.collectionModel']);
 
         $data = $budget->toArray();
 
@@ -155,8 +155,7 @@ class BudgetController extends Controller
             foreach ($data['rooms'] as &$room) {
                 if (!empty($room['walls']) && is_array($room['walls'])) {
                     foreach ($room['walls'] as &$wall) {
-                        $wall['collection_model_name'] = $wall['collection_model']['model_type']['name'] ?? null;
-                        $wall['collection_model_type_id'] = $wall['collection_model']['model_type']['id'] ?? null;
+                        $wall['collection_model_name'] = $wall['collection_model']['name'] ?? null;
                     }
                     unset($wall);
                 }

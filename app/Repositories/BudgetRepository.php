@@ -13,7 +13,7 @@ class BudgetRepository {
 
     public function all()
     {
-        return Budget::with('rooms.walls.collectionModel.modelType')->get();
+        return Budget::with('rooms.walls.collectionModel')->get();
     }
 
     public function create(array $data)
@@ -104,7 +104,7 @@ class BudgetRepository {
                 $budget->update(['primary_budget_room_id' => $primaryRoomId]);
             }
 
-            return $budget->load(['rooms.walls.collectionModel.modelType']);
+            return $budget->load(['rooms.walls.collectionModel']);
         });
 
         return $budget;
@@ -116,12 +116,12 @@ class BudgetRepository {
             'status' => 'cancelado',
         ]);
 
-        return $budget->fresh(['rooms.walls.collectionModel.modelType']);
+        return $budget->fresh(['rooms.walls.collectionModel']);
     }
 
     public function placeOrder(Budget $budget, array $data): Budget
     {
-        $budget->loadMissing(['rooms.walls.collectionModel.modelType']);
+        $budget->loadMissing(['rooms.walls.collectionModel']);
 
         $existingFiles = is_array($budget->files_referring_model)
             ? $budget->files_referring_model
@@ -163,7 +163,7 @@ class BudgetRepository {
 
         $budget->update($updatePayload);
 
-        return $budget->fresh(['rooms.walls.collectionModel.modelType']);
+        return $budget->fresh(['rooms.walls.collectionModel']);
     }
 
     protected function formatCollectionReferringModel($value): ?string

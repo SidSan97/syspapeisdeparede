@@ -58,7 +58,7 @@ class CollectionModelController extends BaseController
     public function show(CollectionModel $collectionModel): JsonResponse
     {
         return $this->sendResponse(
-            new CollectionModelResource($collectionModel->load(['files', 'modelType'])),
+            new CollectionModelResource($collectionModel->load('files')),
             'Modelo recuperado com sucesso'
         );
     }
@@ -104,9 +104,9 @@ class CollectionModelController extends BaseController
         $shouldRequestFile = (bool) ($requests['file'] ?? false);
 
         return [
+            'name' => (string) $request->input('name'),
             'value' => (float) $request->input('value'),
             'deadline' => (int) $request->input('deadline'),
-            'type_model_id' => (int) $request->input('type_model_id'),
             'request_link' => $shouldRequestLink,
             'request_comment' => $shouldRequestComment,
             'request_file' => $shouldRequestFile,

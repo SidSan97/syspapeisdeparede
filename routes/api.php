@@ -5,7 +5,6 @@ use App\Http\Controllers\API\V1\{
     CollectionArtController,
     CollectionImageController,
     CollectionModelController,
-    ModelTypeController,
     ProfileController,
     UserController,
 };
@@ -86,12 +85,6 @@ Route::prefix('v1')->group(function () {
         'collection-arts' => CollectionArtController::class,
         'collection-images' => CollectionImageController::class,
     ]);
-
-    Route::get('model-types', [ModelTypeController::class, 'index']);
-    Route::post('model-types', [ModelTypeController::class, 'store']);
-    Route::put('model-types/{id}', [ModelTypeController::class, 'update']);
-    Route::delete('model-types/{id}', [ModelTypeController::class, 'destroy']);
-
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');

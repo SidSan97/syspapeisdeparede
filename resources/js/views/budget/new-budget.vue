@@ -307,39 +307,8 @@
                                                         style="cursor: pointer;"
                                                     >
                                                         <div class="card-body d-flex flex-column">
-                                                            <div v-if="model.files.length" class="model-preview mb-3 position-relative">
-                                                                <img
-                                                                    :src="model.files[modelSlides[model.id] || 0]?.url"
-                                                                    :alt="model.files[modelSlides[model.id] || 0]?.name"
-                                                                    class="img-fluid rounded w-100"
-                                                                />
-                                                                <button
-                                                                    v-if="model.files.length > 1"
-                                                                    type="button"
-                                                                    class="carousel-control prev"
-                                                                    @click.stop="showPrevImage(model.id)"
-                                                                >
-                                                                    <i class="fa fa-chevron-left"></i>
-                                                                </button>
-                                                                <button
-                                                                    v-if="model.files.length > 1"
-                                                                    type="button"
-                                                                    class="carousel-control next"
-                                                                    @click.stop="showNextImage(model.id)"
-                                                                >
-                                                                    <i class="fa fa-chevron-right"></i>
-                                                                </button>
-                                                                <div v-if="model.files.length > 1" class="carousel-indicators">
-                                                                    <span
-                                                                        v-for="(file, index) in model.files"
-                                                                        :key="file.id || file.name || index"
-                                                                        :class="{ active: (modelSlides[model.id] || 0) === index }"
-                                                                        @click.stop="modelSlides[model.id] = index"
-                                                                    />
-                                                                </div>
-                                                            </div>
                                                             <div class="mb-2">
-                                                                <strong>{{ model.typeName }}</strong>
+                                                                <strong>{{ model.displayName }}</strong>
                                                             </div>
                                                             <div class="small text-muted">
                                                                 <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>

@@ -22,9 +22,9 @@ class CollectionModelRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'name' => ['required', 'string', 'max:255'],
             'value' => ['required', 'numeric', 'min:0'],
             'deadline' => ['required', 'integer', 'min:0'],
-            'type_model_id' => ['required', 'integer', 'exists:models_types,id'],
             'requests.link' => ['sometimes', 'boolean'],
             'requests.comment' => ['sometimes', 'boolean'],
             'requests.file' => ['sometimes', 'boolean'],
@@ -43,9 +43,9 @@ class CollectionModelRequest extends FormRequest
         $requests = $this->input('requests', []);
 
         $normalized = [
+            'name' => $this->prepareString($this->input('name')),
             'value' => $this->prepareNumeric($this->input('value')),
             'deadline' => is_numeric($this->input('deadline')) ? (int) $this->input('deadline') : $this->input('deadline'),
-            'type_model_id' => is_numeric($this->input('type_model_id')) ? (int) $this->input('type_model_id') : $this->input('type_model_id'),
             'requests' => [
                 'link' => $this->prepareBoolean($requests['link'] ?? false),
                 'comment' => $this->prepareBoolean($requests['comment'] ?? false),
@@ -80,6 +80,19 @@ class CollectionModelRequest extends FormRequest
         }
 
         return $value;
+    }
+
+    protected function prepareString($value): string
+    {
+        if (is_string($value)) {
+            return trim($value);
+        }
+
+        if (is_null($value)) {
+            return '';
+        }
+
+        return trim((string) $value);
     }
 
     protected function prepareArrayOfIntegers($value): array

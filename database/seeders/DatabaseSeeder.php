@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             TypeUserSeeder::class,
             DefaultUserSeeder::class,
-            ModelTypeSeeder::class,
+            CollectionArtSeeder::class,
         ]);
     }
 }

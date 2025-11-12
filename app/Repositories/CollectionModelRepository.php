@@ -13,28 +13,28 @@ class CollectionModelRepository
 {
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
-        return CollectionModel::with(['files', 'modelType'])
+        return CollectionModel::with('files')
             ->orderByDesc('created_at')
             ->paginate($perPage);
     }
 
     public function all(): Collection
     {
-        return CollectionModel::with(['files', 'modelType'])
+        return CollectionModel::with('files')
             ->orderBy('value')
             ->get();
     }
 
     public function create(array $attributes): CollectionModel
     {
-        return CollectionModel::create($attributes)->load(['files', 'modelType']);
+        return CollectionModel::create($attributes)->load('files');
     }
 
     public function update(CollectionModel $model, array $attributes): CollectionModel
     {
         $model->update($attributes);
 
-        return $model->load(['files', 'modelType']);
+        return $model->load('files');
     }
 
     public function delete(CollectionModel $model): bool

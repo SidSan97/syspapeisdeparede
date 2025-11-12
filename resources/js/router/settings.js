@@ -11,11 +11,6 @@ export default [
         component: () => import('../views/settings/SettingsHome.vue'),
       },
       {
-        path: 'arte',
-        name: 'SettingsArtTypes',
-        component: () => import('../views/settings/ModelTypes.vue'),
-      },
-      {
         path: 'colecoes',
         name: 'SettingsCollections',
         component: () => import('../views/settings/CollectionArts.vue'),

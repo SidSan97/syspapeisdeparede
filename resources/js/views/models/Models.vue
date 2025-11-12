@@ -35,21 +35,14 @@
           <div class="row">
             <div class="col-md-6 mb-2">
               <label for="modelName" class="form-label">Nome</label>
-                <select
-                    id="modelType"
-                    v-model="form.type_model_id"
-                    class="form-select"
-                    required
-                >
-                    <option disabled value="">Selecione um tipo de modelo</option>
-                    <option
-                    v-for="type in modelTypes"
-                    :key="type.id"
-                    :value="type.id"
-                    >
-                    {{ type.name }}
-                    </option>
-                </select>
+              <input
+                id="modelName"
+                v-model.trim="form.name"
+                type="text"
+                class="form-control"
+                placeholder="Ex: Painel fotográfico"
+                required
+              />
             </div>
             <div class="col-md-6 mb-2">
               <label for="modelValue" class="form-label">Valor</label>
@@ -165,7 +158,6 @@
                 <th>Nome</th>
                 <th>Valor</th>
                 <th>Prazo (dias)</th>
-                <th>Tipo</th>
                 <th>Solicita link?</th>
                 <th>Solicita comentário?</th>
                 <th>Solicita arquivo?</th>
@@ -177,7 +169,6 @@
                 <td>{{ model.name }}</td>
                 <td>R$ {{ model.value.toFixed(2) }}</td>
                 <td>{{ model.deadline }}</td>
-                <td>{{ model.type?.name ?? '—' }}</td>
                 <td>
                   <i
                     class="fa"
@@ -227,12 +218,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalSuccess, swalError, swalConfirmation } from '../../../utils/alerts';
 
 const models = ref([]);
-const modelTypes = ref([]);
 const pagination = ref({
   current_page: 1,
   per_page: 15,
@@ -245,13 +235,11 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 const deletingId = ref(null);
 const editingId = ref(null);
-const loadingTypes = ref(false);
 
 const initialState = () => ({
   name: '',
   value: null,
   deadline: null,
-  type_model_id: '',
   requests: {
     link: false,
     comment: false,
@@ -260,28 +248,6 @@ const initialState = () => ({
 });
 
 const form = reactive(initialState());
-
-const syncFormNameWithModelType = (typeId) => {
-  if (!typeId) {
-    form.name = '';
-    return;
-  }
-
-  const selectedType = modelTypes.value.find(
-    (type) => String(type.id) === String(typeId ?? '')
-  );
-
-  if (selectedType) {
-    form.name = selectedType.name ?? '';
-  }
-};
-
-watch(
-  () => form.type_model_id,
-  (newValue) => {
-    syncFormNameWithModelType(newValue);
-  }
-);
 
 const totalModels = computed(() => pagination.value.total ?? models.value.length);
 const hasModels = computed(() => models.value.length > 0);
@@ -308,19 +274,9 @@ const normalizeModel = (model = {}) => {
 
   return {
     id: model.id,
-    name: model.name ?? model.type?.name ?? '',
+    name: model.name ?? '',
     value: Number(model.value ?? 0),
     deadline: Number(model.deadline ?? 0),
-    type_model_id: (() => {
-      const typeId =
-        model.type_model_id ??
-        model.typeModelId ??
-        model.type_model ??
-        model.type?.id ??
-        null;
-
-      return typeId !== null && typeId !== undefined ? String(typeId) : '';
-    })(),
     requests: {
       link: Boolean(model?.requests?.link),
       comment: Boolean(model?.requests?.comment),
@@ -329,7 +285,6 @@ const normalizeModel = (model = {}) => {
     link: model.link ?? '',
     comment: model.comment ?? '',
     files: normalizedFiles,
-    type: model.type ?? null,
   };
 };
 
@@ -389,27 +344,6 @@ const fetchModels = async (page = 1) => {
   }
 };
 
-const fetchModelTypes = async () => {
-  loadingTypes.value = true;
-
-  try {
-    const { data } = await axios.get('v1/model-types');
-    const payload = data?.data ?? data ?? [];
-
-    modelTypes.value = Array.isArray(payload)
-      ? payload.map((item) => ({
-          id: item.id,
-          name: item.name,
-        }))
-      : [];
-  } catch (error) {
-    swalError('Não foi possível carregar os tipos de modelo.');
-    modelTypes.value = [];
-  } finally {
-    loadingTypes.value = false;
-  }
-};
-
 const startCreating = () => {
   resetForm();
   isEditing.value = false;
@@ -427,7 +361,6 @@ const buildFormData = () => {
   formData.append('name', form.name ?? '');
   formData.append('value', form.value ?? '');
   formData.append('deadline', form.deadline ?? '');
-  formData.append('type_model_id', form.type_model_id ?? '');
   formData.append('requests[link]', form.requests.link ? 1 : 0);
   formData.append('requests[comment]', form.requests.comment ? 1 : 0);
   formData.append('requests[file]', form.requests.file ? 1 : 0);
@@ -501,12 +434,9 @@ const editModel = (model) => {
   form.name = model.name;
   form.value = model.value;
   form.deadline = model.deadline;
-  form.type_model_id = model.type_model_id ?? '';
   form.requests.link = model.requests.link;
   form.requests.comment = model.requests.comment;
   form.requests.file = model.requests.file;
-
-  syncFormNameWithModelType(form.type_model_id);
 };
 
 const resetForm = () => {
@@ -590,7 +520,6 @@ const destroyModel = async (model) => {
 };
 
 onMounted(() => {
-  fetchModelTypes();
   fetchModels();
 });
 </script>
