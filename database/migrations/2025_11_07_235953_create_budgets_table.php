@@ -30,7 +30,7 @@ return new class extends Migration
             $table->unsignedInteger('selected_carrier_delivery_time')->nullable();
             $table->json('carriers_snapshot')->nullable();
             $table->unsignedBigInteger('primary_budget_room_id')->nullable();
-            $table->enum('status', ['aprovado', 'pendente', 'cancelado', ''])->default('')->nullable();
+            $table->string('status', 50)->nullable();
             $table->string('comment_referring_model', 500)->nullable();
             $table->string('link_referring_model', 150)->nullable();
             $table->json('files_referring_model')->nullable();

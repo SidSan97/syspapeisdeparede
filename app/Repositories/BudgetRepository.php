@@ -140,7 +140,7 @@ class BudgetRepository {
         $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
 
         $updatePayload = [
-            'status' => 'pendente',
+            'status' => 'Pendente de Revisão',
         ];
 
         if (array_key_exists('comment_referring_model', $data)) {
