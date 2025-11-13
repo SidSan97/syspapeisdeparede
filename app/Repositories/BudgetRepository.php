@@ -16,6 +16,13 @@ class BudgetRepository {
         return Budget::with('rooms.walls.collectionModel')->get();
     }
 
+    public function getPendingReview()
+    {
+        return Budget::with('rooms.walls.collectionModel')
+            ->where('status', 'Pendente de Revisão')
+            ->get();
+    }
+
     public function create(array $data)
     {
         $rooms = $data['rooms'];

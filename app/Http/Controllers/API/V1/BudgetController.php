@@ -43,6 +43,25 @@ class BudgetController extends Controller
         }
     }
 
+    public function pendingReview(): JsonResponse
+    {
+        try {
+            $budgets = $this->repository->getPendingReview();
+            $data = $this->transformBudgetCollection($budgets);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lista de pedidos pendentes de revisão',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar pedidos pendentes',
+            ], 500);
+        }
+    }
+
     public function store(StoreBudgetRequest $request): JsonResponse
     {
         $data = $request->validated();

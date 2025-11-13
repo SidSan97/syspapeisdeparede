@@ -62,4 +62,9 @@ class Budget extends Model
     {
         return $this->belongsTo(BudgetRoom::class, 'primary_budget_room_id');
     }
+
+    public function orderBudgets(): HasMany
+    {
+        return $this->hasMany(OrderBudget::class);
+    }
 }

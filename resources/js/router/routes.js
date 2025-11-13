@@ -42,6 +42,11 @@ const routes = [
                 component: () => import('../views/colecao-arts/CollectionCatalog.vue'),
             },
             {
+                path: '/pedidos',
+                name: 'Pedidos',
+                component: () => import('../views/pedidos/Pedidos.vue'),
+            },
+            {
                 path: '/modelos',
                 name: 'Models',
                 component: () => import('../views/models/Models.vue'),
