@@ -44,7 +44,7 @@ const routes = [
             {
                 path: '/pedidos',
                 name: 'Pedidos',
-                component: () => import('../views/pedidos/Pedidos.vue'),
+                component: () => import('../views/orders/Orders.vue'),
             },
             {
                 path: '/modelos',

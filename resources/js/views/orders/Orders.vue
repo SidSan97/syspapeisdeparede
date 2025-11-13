@@ -80,7 +80,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import Page from '../../components/page/Page.vue';
 import EmptyState from '../../components/empty-state/EmptyState.vue';
-import PedidoDetailsModal from './components/PedidoDetailsModal.vue';
+import PedidoDetailsModal from './components/OrdersDetailsModal.vue';
 
 const pedidos = ref([]);
 const loading = ref(false);
