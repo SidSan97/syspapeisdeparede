@@ -12,12 +12,13 @@ class CollectionImage extends Model
 
     protected $fillable = [
         'collection_arts_id',
+        'name',
         'path_name',
     ];
 
-    public function collectionArt(): BelongsTo
+    public function subcategory(): BelongsTo
     {
-        return $this->belongsTo(CollectionArt::class, 'collection_arts_id');
+        return $this->belongsTo(CollectionArtSubcategory::class, 'collection_arts_id');
     }
 }
 

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\CollectionImage;
+use App\Models\CollectionArtSubcategory;
 
 class CollectionArt extends Model
 {
@@ -17,9 +17,9 @@ class CollectionArt extends Model
         'name',
     ];
 
-    public function images(): HasMany
+    public function subcategories(): HasMany
     {
-        return $this->hasMany(CollectionImage::class, 'collection_arts_id');
+        return $this->hasMany(CollectionArtSubcategory::class, 'collection_art_id');
     }
 }
 
