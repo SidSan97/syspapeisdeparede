@@ -45,15 +45,6 @@
         </RouterLink>
 
         <RouterLink
-          to="/colecao-arts/catalogo"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/colecao-arts/catalogo') }"
-        >
-          <i class="fa fa-photo-film"></i>
-          <span class="bd-sidebar-text">Catálogo</span>
-        </RouterLink>
-
-        <RouterLink
           to="/pedidos"
           class="bd-sidebar-item"
           :class="{ 'active': isActiveRoute('/pedidos') }"

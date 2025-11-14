@@ -58,6 +58,12 @@ const availableItems = [
     to: '/settings/colecoes',
     icon: 'layer-group',
   },
+  {
+    label: 'Catálogo',
+    description: 'Visualize e gerencie o catálogo de artes disponíveis.',
+    to: '/colecao-arts/catalogo',
+    icon: 'photo-film',
+  },
 ];
 
 const menuItems = computed(() =>
