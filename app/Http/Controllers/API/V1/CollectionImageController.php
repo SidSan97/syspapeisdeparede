@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Requests\CollectionImages\StoreCollectionImageRequest;
 use App\Http\Resources\CollectionImageResource;
 use App\Models\CollectionArt;
+use App\Models\CollectionArtSubcategory;
 use App\Models\CollectionImage;
 use App\Repositories\CollectionImageRepository;
 use Illuminate\Http\JsonResponse;
@@ -29,11 +30,17 @@ class CollectionImageController extends BaseController
         try {
             $collection = $this->repository
                 ->listGroupedByCollection()
-                ->map(fn (CollectionArt $art) => [
-                    'id' => $art->id,
-                    'name' => $art->name,
-                    'images' => CollectionImageResource::collection($art->images),
-                ]);
+                ->map(function (CollectionArt $art) {
+                    $allImages = collect();
+                    foreach ($art->subcategories as $subcategory) {
+                        $allImages = $allImages->merge($subcategory->images);
+                    }
+                    return [
+                        'id' => $art->id,
+                        'name' => $art->name,
+                        'images' => CollectionImageResource::collection($allImages),
+                    ];
+                });
 
             Log::info('[CollectionImage] List request succeeded', [
                 'user_id' => optional(Auth::user())->id,
@@ -65,23 +72,29 @@ class CollectionImageController extends BaseController
         ]);
 
         try {
-            $collectionArt = CollectionArt::findOrFail($request->input('collection_arts_id'));
+            $subcategory = CollectionArtSubcategory::findOrFail($request->input('collection_arts_id'));
 
-            $this->repository->storeMany($collectionArt, $request->file('images', []));
-            $collectionArt->load('images');
+            $files = $request->file('images', []);
+            $names = $request->input('names', []);
+
+            $this->repository->storeMany($subcategory, $files, $names);
+            $subcategory->load(['images', 'collectionArt']);
+
+            $allImages = $subcategory->images;
 
             Log::info('[CollectionImage] Store request succeeded', [
                 'user_id' => optional(Auth::user())->id,
-                'collection_id' => $collectionArt->id,
-                'total_images' => $collectionArt->images->count(),
+                'subcategory_id' => $subcategory->id,
+                'collection_id' => $subcategory->collection_art_id,
+                'total_images' => $allImages->count(),
             ]);
 
             return $this->sendResponse(
                 [
                     [
-                        'id' => $collectionArt->id,
-                        'name' => $collectionArt->name,
-                        'images' => CollectionImageResource::collection($collectionArt->images),
+                        'id' => $subcategory->collection_art_id,
+                        'name' => $subcategory->collectionArt->name,
+                        'images' => CollectionImageResource::collection($allImages),
                     ],
                 ],
                 'Imagens adicionadas com sucesso'

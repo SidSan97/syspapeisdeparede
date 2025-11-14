@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\CollectionArt;
+use App\Models\CollectionArtSubcategory;
 use App\Models\CollectionImage;
 use Illuminate\Support\Collection;
 use Illuminate\Http\UploadedFile;
@@ -13,21 +14,22 @@ class CollectionImageRepository
     public function listGroupedByCollection(): Collection
     {
         return CollectionArt::query()
-            ->with('images')
+            ->with(['subcategories.images'])
             ->orderBy('name')
             ->get();
     }
 
     /**
-     * @param CollectionArt $collectionArt
+     * @param CollectionArtSubcategory $subcategory
      * @param array<int, UploadedFile> $files
+     * @param array<int, string> $names
      * @return Collection<int, CollectionImage>
      */
-    public function storeMany(CollectionArt $collectionArt, array $files): Collection
+    public function storeMany(CollectionArtSubcategory $subcategory, array $files, array $names = []): Collection
     {
         $stored = collect();
 
-        foreach ($files as $file) {
+        foreach ($files as $index => $file) {
             if (!$file instanceof UploadedFile) {
                 continue;
             }
@@ -38,8 +40,14 @@ class CollectionImageRepository
                 continue;
             }
 
+            // Usar o nome fornecido ou extrair do nome do arquivo
+            $name = isset($names[$index]) && !empty(trim($names[$index]))
+                ? trim($names[$index])
+                : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
             $stored->push(
-                $collectionArt->images()->create([
+                $subcategory->images()->create([
+                    'name' => $name,
                     'path_name' => $path,
                 ])
             );

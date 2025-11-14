@@ -42,6 +42,11 @@ const routes = [
                 component: () => import('../views/colecao-arts/CollectionCatalog.vue'),
             },
             {
+                path: '/colecao-arts/subcategoria/:id',
+                name: 'SubcategoryImages',
+                component: () => import('../views/colecao-arts/SubcategoryImages.vue'),
+            },
+            {
                 path: '/pedidos',
                 name: 'Pedidos',
                 component: () => import('../views/orders/Orders.vue'),

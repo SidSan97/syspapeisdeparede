@@ -20,33 +20,69 @@
             Nenhuma coleção cadastrada. Cadastre uma coleção antes de enviar imagens.
           </div>
           <div v-else class="collection-list">
-            <button
+            <div
               v-for="collection in collections"
               :key="collection.id"
-              type="button"
-              class="btn collection-button"
-              :class="{
-                'btn-primary': selectedCollectionId === collection.id,
-                'btn-outline-primary': selectedCollectionId !== collection.id
-              }"
-              :disabled="isUploading || currentLoading"
-              @click="handleSelectCollection(collection)"
+              class="collection-group"
             >
-              <div class="collection-button__title">{{ collection.name }}</div>
-              <small class="collection-button__meta">
-                {{ formatCount(collectionCounts[collection.id]) }}
-              </small>
-            </button>
+              <div class="collection-group__header">
+                <strong
+                  class="collection-name-clickable"
+                  @click="toggleCollection(collection.id)"
+                  :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
+                >
+                  {{ collection.name }}
+                </strong>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0"
+                  @click="toggleCollection(collection.id)"
+                  :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
+                >
+                  <i :class="['fa', expandedCollections.has(collection.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                </button>
+              </div>
+              <div v-if="expandedCollections.has(collection.id)" class="collection-group__subcategories">
+                <div v-if="loadingSubcategories[collection.id]" class="text-center text-muted py-2">
+                  Carregando subcategorias...
+                </div>
+                <div v-else-if="!collectionSubcategories[collection.id]?.length" class="text-center text-muted py-2">
+                  Nenhuma subcategoria cadastrada.
+                </div>
+                <div v-else class="subcategories-list">
+                  <button
+                    v-for="subcategory in collectionSubcategories[collection.id]"
+                    :key="subcategory.id"
+                    type="button"
+                    class="btn collection-button"
+                    :class="{
+                      'btn-primary': selectedSubcategoryId === subcategory.id,
+                      'btn-outline-primary': selectedSubcategoryId !== subcategory.id
+                    }"
+                    :disabled="isUploading || currentLoading"
+                    @click="handleSelectSubcategory(subcategory)"
+                  >
+                    <div class="collection-button__title">{{ subcategory.name }}</div>
+                    <small class="collection-button__meta">
+                      {{ formatCount(subcategory.images_count) }}
+                    </small>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <section v-if="selectedCollectionId" class="card shadow-sm">
+      <section v-if="selectedSubcategoryId" class="card shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div>
-              <h5 class="mb-1">Coleção selecionada</h5>
-              <p class="mb-0 text-muted">{{ selectedCollection?.name ?? '—' }}</p>
+              <h5 class="mb-1">Subcategoria selecionada</h5>
+              <p class="mb-0 text-muted">{{ selectedSubcategory?.name ?? '—' }}</p>
+              <small class="text-muted" v-if="selectedSubcategory?.collection_art">
+                Coleção: {{ selectedSubcategory.collection_art.name }}
+              </small>
             </div>
             <button
               type="button"
@@ -75,11 +111,31 @@
                 <small class="text-muted">
                   Selecione uma ou mais imagens (formatos JPG, PNG, WEBP, máximo 5 MB cada).
                 </small>
-                <ul v-if="selectedFiles.length" class="small mt-2 mb-0">
-                  <li v-for="file in selectedFiles" :key="file.name">
-                    {{ file.name }}
-                  </li>
-                </ul>
+              </div>
+
+              <div v-if="selectedFiles.length" class="col-12">
+                <hr class="my-3">
+                <h6 class="mb-3">Nome das imagens</h6>
+                <div class="row g-3">
+                  <div
+                    v-for="fileItem in selectedFiles"
+                    :key="fileItem.id"
+                    class="col-12 col-md-6"
+                  >
+                    <label :for="`imageName_${fileItem.id}`" class="form-label">
+                      Nome para: <small class="text-muted">{{ fileItem.file.name }}</small>
+                    </label>
+                    <input
+                      :id="`imageName_${fileItem.id}`"
+                      v-model.trim="fileItem.name"
+                      type="text"
+                      class="form-control"
+                      placeholder="Digite o nome da imagem"
+                      maxlength="100"
+                      :disabled="isUploading || currentLoading"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -144,41 +200,66 @@ import axios from 'axios';
 import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
 
 const collections = ref([]);
-const collectionCounts = reactive({});
+const collectionSubcategories = reactive({});
+const expandedCollections = ref(new Set());
+const loadingSubcategories = reactive({});
 const collectionImages = reactive({});
 const isLoadingImages = reactive({});
-const selectedCollectionId = ref(null);
+const selectedSubcategoryId = ref(null);
 const isUploading = ref(false);
 const loadingCollections = ref(false);
 const deletingId = ref(null);
 const fileInput = ref(null);
 
 const selectedFiles = ref([]);
+let fileIdCounter = 0;
 
-const selectedCollection = computed(() =>
-  collections.value.find((collection) => collection.id === selectedCollectionId.value) ?? null
-);
+const selectedSubcategory = computed(() => {
+  if (!selectedSubcategoryId.value) {
+    return null;
+  }
+
+  for (const collection of collections.value) {
+    const subcategories = collectionSubcategories[collection.id] || [];
+    const found = subcategories.find((s) => s.id === selectedSubcategoryId.value);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+});
 
 const currentImages = computed(() => {
-  if (!selectedCollectionId.value) {
+  if (!selectedSubcategoryId.value) {
     return [];
   }
 
-  return collectionImages[selectedCollectionId.value] ?? [];
+  return collectionImages[selectedSubcategoryId.value] ?? [];
 });
 
 const currentLoading = computed(() => {
-  if (!selectedCollectionId.value) {
+  if (!selectedSubcategoryId.value) {
     return false;
   }
 
-  return Boolean(isLoadingImages[selectedCollectionId.value]);
+  return Boolean(isLoadingImages[selectedSubcategoryId.value]);
 });
 
 const normalizeCollectionOption = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
-  images_count: Number(item.images_count ?? item.imagesCount ?? 0),
+  subcategories: item.subcategories ?? [],
+});
+
+const normalizeSubcategory = (item = {}) => ({
+  id: Number(item.id ?? 0),
+  name: (item.name ?? '').toString(),
+  collection_art_id: Number(item.collection_art_id ?? 0),
+  images_count: Number(item.images_count ?? 0),
+  collection_art: item.collection_art ? {
+    id: Number(item.collection_art.id ?? 0),
+    name: (item.collection_art.name ?? '').toString(),
+  } : null,
 });
 
 const buildStorageUrl = (path) => {
@@ -217,14 +298,19 @@ const fetchCollections = async () => {
     const items = payload.items ?? payload ?? [];
     collections.value = Array.isArray(items) ? items.map(normalizeCollectionOption) : [];
 
-    Object.keys(collectionCounts).forEach((key) => delete collectionCounts[key]);
+    // Inicializar subcategorias
     collections.value.forEach((collection) => {
-      collectionCounts[collection.id] = collection.images_count ?? 0;
+      if (collection.subcategories && Array.isArray(collection.subcategories)) {
+        collectionSubcategories[collection.id] = collection.subcategories.map(normalizeSubcategory);
+      }
     });
 
     if (
-      selectedCollectionId.value &&
-      !collections.value.some((collection) => collection.id === selectedCollectionId.value)
+      selectedSubcategoryId.value &&
+      !collections.value.some((collection) => {
+        const subcategories = collectionSubcategories[collection.id] || [];
+        return subcategories.some((s) => s.id === selectedSubcategoryId.value);
+      })
     ) {
       clearSelection();
     }
@@ -236,59 +322,99 @@ const fetchCollections = async () => {
   }
 };
 
-const fetchCollectionImages = async (collectionId) => {
-  if (!collectionId || isLoadingImages[collectionId]) {
+const fetchSubcategoryImages = async (subcategoryId) => {
+  if (!subcategoryId || isLoadingImages[subcategoryId]) {
     return;
   }
 
-  isLoadingImages[collectionId] = true;
+  isLoadingImages[subcategoryId] = true;
   try {
-    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
+    const { data } = await axios.get(`v1/collection-art-subcategories/${subcategoryId}`);
     const payload = data?.data ?? data ?? {};
     const images = Array.isArray(payload.images) ? payload.images : [];
-    collectionImages[collectionId] = images.map((image) => ({
+    collectionImages[subcategoryId] = images.map((image) => ({
       id: Number(image.id ?? 0),
+      name: image.name ?? '',
       path_name: image.path_name ?? image.pathName ?? '',
       url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
     }));
-    collectionCounts[collectionId] = collectionImages[collectionId].length;
   } catch (error) {
-    collectionImages[collectionId] = [];
-    swalError('Não foi possível carregar as imagens desta coleção.');
+    collectionImages[subcategoryId] = [];
+    swalError('Não foi possível carregar as imagens desta subcategoria.');
   } finally {
-    isLoadingImages[collectionId] = false;
+    isLoadingImages[subcategoryId] = false;
+  }
+};
+
+const toggleCollection = async (collectionId) => {
+  if (expandedCollections.value.has(collectionId)) {
+    expandedCollections.value.delete(collectionId);
+  } else {
+    expandedCollections.value.add(collectionId);
+    if (!collectionSubcategories[collectionId]) {
+      await fetchSubcategories(collectionId);
+    }
+  }
+};
+
+const fetchSubcategories = async (collectionId) => {
+  if (loadingSubcategories[collectionId]) {
+    return;
+  }
+
+  loadingSubcategories[collectionId] = true;
+  try {
+    const { data } = await axios.get('v1/collection-art-subcategories', {
+      params: { collection_art_id: collectionId },
+    });
+
+    const payload = data?.data ?? data ?? {};
+    const items = Array.isArray(payload) ? payload : [];
+
+    collectionSubcategories[collectionId] = items.map(normalizeSubcategory);
+  } catch (error) {
+    swalError('Não foi possível carregar as subcategorias.');
+    collectionSubcategories[collectionId] = [];
+  } finally {
+    loadingSubcategories[collectionId] = false;
   }
 };
 
 const handleFileChange = (event) => {
   const files = event?.target?.files ? Array.from(event.target.files) : [];
-  selectedFiles.value = files;
+  selectedFiles.value = files.map((file) => {
+    // Extrair o nome do arquivo sem a extensão
+    const fileName = file.name;
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExtension = lastDotIndex > 0
+      ? fileName.substring(0, lastDotIndex)
+      : fileName;
+
+    return {
+      id: ++fileIdCounter,
+      file: file,
+      name: nameWithoutExtension || '',
+    };
+  });
 };
 
 const resetForm = () => {
   selectedFiles.value = [];
+  fileIdCounter = 0;
 
   if (fileInput.value) {
     fileInput.value.value = '';
   }
 };
 
-const clearSelection = () => {
-  selectedCollectionId.value = null;
-  selectedFiles.value = [];
-
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
-};
 
 const handleUpload = async () => {
   if (isUploading.value || currentLoading.value) {
     return;
   }
 
-  if (!selectedCollectionId.value) {
-    swalError('Selecione uma coleção.');
+  if (!selectedSubcategoryId.value) {
+    swalError('Selecione uma subcategoria.');
     return;
   }
 
@@ -297,13 +423,22 @@ const handleUpload = async () => {
     return;
   }
 
+  // Validar se todos os nomes foram preenchidos
+  const filesWithoutName = selectedFiles.value.filter((item) => !item.name?.trim());
+  if (filesWithoutName.length > 0) {
+    swalError('Por favor, preencha o nome para todas as imagens.');
+    return;
+  }
+
   isUploading.value = true;
 
   try {
     const formData = new FormData();
-    formData.append('collection_arts_id', selectedCollectionId.value);
-    selectedFiles.value.forEach((file) => {
-      formData.append('images[]', file);
+    formData.append('collection_arts_id', selectedSubcategoryId.value);
+
+    selectedFiles.value.forEach((fileItem, index) => {
+      formData.append('images[]', fileItem.file);
+      formData.append(`names[${index}]`, fileItem.name.trim());
     });
 
     const response = await axios.post('v1/collection-images', formData, {
@@ -315,16 +450,22 @@ const handleUpload = async () => {
     if (
       Array.isArray(savedCollections) &&
       savedCollections.length &&
-      savedCollections[0]?.id === selectedCollectionId.value
+      savedCollections[0]?.images
     ) {
-      collectionImages[selectedCollectionId.value] = (savedCollections[0].images ?? []).map((image) => ({
+      collectionImages[selectedSubcategoryId.value] = savedCollections[0].images.map((image) => ({
         id: Number(image.id ?? 0),
+        name: image.name ?? '',
         path_name: image.path_name ?? image.pathName ?? '',
         url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
       }));
-      collectionCounts[selectedCollectionId.value] = collectionImages[selectedCollectionId.value].length;
-    } else if (selectedCollectionId.value) {
-      await fetchCollectionImages(selectedCollectionId.value);
+
+      // Atualizar contagem na subcategoria
+      const subcategory = selectedSubcategory.value;
+      if (subcategory) {
+        subcategory.images_count = collectionImages[selectedSubcategoryId.value].length;
+      }
+    } else if (selectedSubcategoryId.value) {
+      await fetchSubcategoryImages(selectedSubcategoryId.value);
     }
 
     swalSuccess('Imagens adicionadas com sucesso.');
@@ -368,11 +509,16 @@ const destroyImage = async (image) => {
   try {
     await axios.delete(`v1/collection-images/${image.id}`);
 
-    if (selectedCollectionId.value) {
-      collectionImages[selectedCollectionId.value] = (collectionImages[selectedCollectionId.value] ?? []).filter(
+    if (selectedSubcategoryId.value) {
+      collectionImages[selectedSubcategoryId.value] = (collectionImages[selectedSubcategoryId.value] ?? []).filter(
         (item) => item.id !== image.id
       );
-      collectionCounts[selectedCollectionId.value] = collectionImages[selectedCollectionId.value].length;
+
+      // Atualizar contagem na subcategoria
+      const subcategory = selectedSubcategory.value;
+      if (subcategory) {
+        subcategory.images_count = collectionImages[selectedSubcategoryId.value].length;
+      }
     }
 
     swalSuccess('Imagem removida com sucesso.');
@@ -386,19 +532,29 @@ const destroyImage = async (image) => {
   }
 };
 
-const handleSelectCollection = async (collection) => {
-  if (!collection?.id) {
+const handleSelectSubcategory = async (subcategory) => {
+  if (!subcategory?.id) {
     return;
   }
 
-  selectedCollectionId.value = collection.id;
+  selectedSubcategoryId.value = subcategory.id;
   selectedFiles.value = [];
 
   if (fileInput.value) {
     fileInput.value.value = '';
   }
 
-  await fetchCollectionImages(collection.id);
+  await fetchSubcategoryImages(subcategory.id);
+};
+
+const clearSelection = () => {
+  selectedSubcategoryId.value = null;
+  selectedFiles.value = [];
+  fileIdCounter = 0;
+
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
 };
 
 const formatCount = (value) => {
@@ -416,9 +572,33 @@ onMounted(() => {
 
 <style scoped>
 .collection-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.collection-group {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--bs-body-bg);
+}
+
+.collection-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.collection-group__subcategories {
+  margin-top: 0.75rem;
+}
+
+.subcategories-list {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 .collection-button {
@@ -487,6 +667,17 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.collection-name-clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+  font-weight: 500;
+}
+
+.collection-name-clickable:hover {
+  color: var(--bs-primary);
 }
 </style>
 
