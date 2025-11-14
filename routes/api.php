@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\V1\{
     BudgetController,
     CollectionArtController,
+    CollectionArtSubcategoryController,
     CollectionImageController,
     CollectionModelController,
     ProfileController,
@@ -83,6 +84,7 @@ Route::prefix('v1')->group(function () {
         'users' => UserController::class,
         'collection-models' => CollectionModelController::class,
         'collection-arts' => CollectionArtController::class,
+        'collection-art-subcategories' => CollectionArtSubcategoryController::class,
         'collection-images' => CollectionImageController::class,
     ]);
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
