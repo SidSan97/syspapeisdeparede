@@ -9,18 +9,17 @@
 
           <EmptyState
             v-else-if="pedidos.length === 0"
-            heading="Nenhum pedido pendente de revisão"
+            heading="Nenhum pedido encontrado"
             icon="box"
             class="p-5"
           >
-            Não há pedidos aguardando revisão no momento.
+            Não há pedidos pendentes de revisão ou aprovados no momento.
           </EmptyState>
 
           <div v-else class="table-responsive">
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th>ID</th>
                   <th>Nome</th>
                   <th class="text-end">Valor Total</th>
                   <th>Prazo de Entrega</th>
@@ -30,9 +29,6 @@
               </thead>
               <tbody>
                 <tr v-for="pedido in pedidos" :key="pedido.id">
-                  <td>
-                    <span class="badge bg-secondary">#{{ pedido.id }}</span>
-                  </td>
                   <td>
                     <button
                       class="btn btn-link text-start p-0 text-decoration-none fw-semibold"
@@ -46,7 +42,15 @@
                   </td>
                   <td>{{ formatDeliveryTime(pedido.delivery_time) }}</td>
                   <td>
-                    <span class="badge bg-warning text-dark">{{ pedido.status }}</span>
+                    <span
+                      class="badge"
+                      :class="{
+                        'bg-warning text-dark': pedido.status === 'Pendente de Revisão',
+                        'bg-success': pedido.status === 'Aprovado',
+                      }"
+                    >
+                      {{ pedido.status }}
+                    </span>
                   </td>
                   <td class="text-center">
                     <button
@@ -70,7 +74,6 @@
       :pedido="selectedPedido"
       @close="closeDetailsModal"
       @approve="handleApprove"
-      @reject="handleReject"
     />
   </section>
 </template>
@@ -127,7 +130,7 @@ async function fetchPedidos() {
   try {
     loading.value = true;
 
-    const { data } = await axios.get('v1/budgets/pending-review');
+    const { data } = await axios.get('v1/budgets/orders');
 
     const payload = Array.isArray(data?.data)
       ? data.data.map(normalizePedido)
@@ -155,20 +158,8 @@ function closeDetailsModal() {
 }
 
 function handleApprove(pedido) {
-  // TODO: Implementar backend para aprovação
-  console.log('Aprovar pedido:', pedido);
-  // Por enquanto, apenas fecha o modal
   closeDetailsModal();
-  // Recarrega a lista
-  fetchPedidos();
-}
-
-function handleReject(pedido) {
-  // TODO: Implementar backend para rejeição
-  console.log('Rejeitar pedido:', pedido);
-  // Por enquanto, apenas fecha o modal
-  closeDetailsModal();
-  // Recarrega a lista
+  // Recarrega a lista para atualizar os status
   fetchPedidos();
 }
 

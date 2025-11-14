@@ -26,7 +26,15 @@
                     <div class="col-md-6">
                       <div class="text-muted small">Status</div>
                       <div>
-                        <span class="badge bg-warning text-dark fs-6">{{ details.status }}</span>
+                        <span
+                          class="badge fs-6"
+                          :class="{
+                            'bg-warning text-dark': details.status === 'Pendente de Revisão',
+                            'bg-success': details.status === 'Aprovado',
+                          }"
+                        >
+                          {{ details.status }}
+                        </span>
                       </div>
                     </div>
                     <div class="col-12">
@@ -49,10 +57,10 @@
                 </div>
 
                 <!-- Informações de Pagamento -->
-                <div v-if="details.paymentMethod" class="border rounded p-3 mb-4">
+                <div v-if="details.paymentMethod || paymentUrl" class="border rounded p-3 mb-4">
                   <h6 class="fw-semibold mb-3">Informações de Pagamento</h6>
                   <div class="row g-3">
-                    <div class="col-md-6">
+                    <div v-if="details.paymentMethod" class="col-md-6">
                       <div class="text-muted small">Método de Pagamento</div>
                       <div class="fw-semibold">{{ formatPaymentMethod(details.paymentMethod) }}</div>
                     </div>
@@ -63,6 +71,28 @@
                         <span v-if="details.installmentLimit">
                           de {{ details.installmentLimit }}
                         </span>
+                      </div>
+                    </div>
+                    <div v-if="paymentUrl" class="col-12">
+                      <div class="text-muted small mb-2">Link de Pagamento</div>
+                      <div>
+                        <a
+                          :href="paymentUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="btn btn-primary btn-sm"
+                        >
+                          <i class="fa fa-external-link me-2"></i>
+                          Acessar Link de Pagamento
+                        </a>
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm ms-2"
+                          @click="copyPaymentUrl"
+                          title="Copiar link"
+                        >
+                          <i class="fa fa-copy"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -219,21 +249,7 @@
                 Fechar
               </button>
               <button
-                type="button"
-                class="btn btn-danger"
-                @click="handleReject"
-                :disabled="processing"
-              >
-                <span
-                  v-if="processing && actionType === 'reject'"
-                  class="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                <i v-else class="fa fa-times me-2"></i>
-                Rejeitar
-              </button>
-              <button
+                v-if="details && details.status !== 'Aprovado'"
                 type="button"
                 class="btn btn-success"
                 @click="handleApprove"
@@ -259,6 +275,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const props = defineProps({
@@ -272,10 +289,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['close', 'approve', 'reject']);
+const emit = defineEmits(['close', 'approve']);
 
 const processing = ref(false);
 const actionType = ref(null);
+const paymentUrl = ref(null);
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -286,6 +304,7 @@ function handleClose() {
   if (processing.value) {
     return;
   }
+  paymentUrl.value = null;
   emit('close');
 }
 
@@ -388,21 +407,36 @@ async function handleApprove() {
   actionType.value = 'approve';
 
   try {
-    // TODO: Implementar chamada ao backend quando estiver pronto
-    // await axios.post(`v1/budgets/${props.pedido.id}/approve`);
+    // Aprovar o orçamento
+    const approveResponse = await axios.post('v1/budgets/approve', {
+      id: props.pedido.id,
+    });
+
+    if (!approveResponse.data?.success) {
+      throw new Error(approveResponse.data?.message || 'Erro ao aprovar orçamento');
+    }
+
+    // Buscar link de pagamento
+    const paymentResponse = await axios.get('v1/get-link-payment');
+
+    if (paymentResponse.data?.url) {
+      paymentUrl.value = paymentResponse.data.url;
+    }
 
     emit('approve', props.pedido);
 
     await Swal.fire({
       title: 'Pedido aprovado',
-      text: 'O pedido foi aprovado com sucesso.',
+      text: 'O pedido foi aprovado com sucesso. O link de pagamento está disponível abaixo.',
       icon: 'success',
       confirmButtonText: 'OK',
     });
   } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível aprovar o pedido. Tente novamente.';
+
     await Swal.fire({
       title: 'Erro',
-      text: 'Não foi possível aprovar o pedido. Tente novamente.',
+      text: errorMessage,
       icon: 'error',
       confirmButtonText: 'OK',
     });
@@ -412,51 +446,28 @@ async function handleApprove() {
   }
 }
 
-async function handleReject() {
-  if (!props.pedido) {
+function copyPaymentUrl() {
+  if (!paymentUrl.value) {
     return;
   }
 
-  const result = await Swal.fire({
-    title: 'Rejeitar pedido?',
-    text: `Tem certeza que deseja rejeitar o pedido "${props.pedido.name}"?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sim, rejeitar',
-    cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#dc3545',
-  });
-
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  processing.value = true;
-  actionType.value = 'reject';
-
-  try {
-    // TODO: Implementar chamada ao backend quando estiver pronto
-    // await axios.post(`v1/budgets/${props.pedido.id}/reject`);
-
-    emit('reject', props.pedido);
-
-    await Swal.fire({
-      title: 'Pedido rejeitado',
-      text: 'O pedido foi rejeitado com sucesso.',
+  navigator.clipboard.writeText(paymentUrl.value).then(() => {
+    Swal.fire({
+      title: 'Link copiado!',
+      text: 'O link de pagamento foi copiado para a área de transferência.',
       icon: 'success',
-      confirmButtonText: 'OK',
+      timer: 2000,
+      showConfirmButton: false,
     });
-  } catch (error) {
-    await Swal.fire({
+  }).catch(() => {
+    Swal.fire({
       title: 'Erro',
-      text: 'Não foi possível rejeitar o pedido. Tente novamente.',
+      text: 'Não foi possível copiar o link.',
       icon: 'error',
-      confirmButtonText: 'OK',
+      timer: 2000,
+      showConfirmButton: false,
     });
-  } finally {
-    processing.value = false;
-    actionType.value = null;
-  }
+  });
 }
 
 const details = computed(() => {

@@ -11,6 +11,7 @@ use App\Http\Controllers\API\V1\{
 };
 use App\Http\Controllers\API\V1\RoleController;
 use App\Http\Controllers\AppVersionController;
+use App\Http\Controllers\GeneratePaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -90,7 +91,13 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
     Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
+    Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');
+    Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
+
+    //Pagamentos
+    Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');
+    Route::get('get-link-payment', [GeneratePaymentController::class, 'getLinkPayment'])->middleware('auth:api');
 });

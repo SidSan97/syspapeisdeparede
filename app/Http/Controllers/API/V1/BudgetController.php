@@ -62,6 +62,25 @@ class BudgetController extends Controller
         }
     }
 
+    public function orders(): JsonResponse
+    {
+        try {
+            $budgets = $this->repository->getPendingReviewAndApproved();
+            $data = $this->transformBudgetCollection($budgets);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lista de pedidos',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar pedidos',
+            ], 500);
+        }
+    }
+
     public function store(StoreBudgetRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -126,6 +145,40 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao registrar pedido',
+            ], 500);
+        }
+    }
+
+    public function approve(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'exists:budgets,id'],
+        ]);
+
+        try {
+            $budget = Budget::findOrFail($validated['id']);
+
+            // Atualizar status do orçamento para 'Aprovado'
+            $budget->update(['status' => 'Aprovado']);
+
+            // Criar registro em order_budgets
+            $orderBudget = \App\Models\OrderBudget::create([
+                'budget_id' => $budget->id,
+                'status' => 'Liberado para produção',
+            ]);
+
+            $transformed = $this->transformBudget($budget->refresh());
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'order_budget' => $orderBudget,
+                'message' => 'Orçamento aprovado com sucesso',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
             ], 500);
         }
     }
