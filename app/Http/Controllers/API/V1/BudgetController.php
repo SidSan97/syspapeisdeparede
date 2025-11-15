@@ -9,6 +9,7 @@ use App\Models\Budget;
 use App\Repositories\BudgetRepository;
 use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
+use App\Services\LayoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -19,15 +20,18 @@ class BudgetController extends Controller
     protected $repository;
     protected $generatePdfService;
     protected $generatePaymentService;
+    protected $layoutService;
 
     public function __construct(
         BudgetRepository $repository,
         GeneratePdfService $generatePdfService,
-        GeneratePaymentService $generatePaymentService
+        GeneratePaymentService $generatePaymentService,
+        LayoutService $layoutService
     ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
         $this->generatePaymentService = $generatePaymentService;
+        $this->layoutService = $layoutService;
     }
 
     public function index(): JsonResponse
@@ -213,9 +217,51 @@ class BudgetController extends Controller
         }
     }
 
+    public function layouts(): JsonResponse
+    {
+        try {
+            $orderBudgets = $this->repository->getLayoutsForProduction();
+            $data = $this->layoutService->transformLayouts($orderBudgets);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lista de layouts',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar layouts: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     protected function formatMoney(float $value): string
     {
         return 'R$ ' . number_format($value, 2, ',', '.');
+    }
+
+    protected function makePublicUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        $rawUrl = \Illuminate\Support\Facades\Storage::url($path);
+
+        $appUrl = config('app.url') ?: url('/');
+        $appUrl = rtrim($appUrl, '/');
+
+        $parsedPath = parse_url($rawUrl, PHP_URL_PATH) ?: $rawUrl;
+        $parsedQuery = parse_url($rawUrl, PHP_URL_QUERY);
+
+        $finalUrl = $appUrl . $parsedPath;
+
+        if ($parsedQuery) {
+            $finalUrl .= '?' . $parsedQuery;
+        }
+
+        return $finalUrl;
     }
 
     /**
@@ -230,7 +276,7 @@ class BudgetController extends Controller
 
     protected function transformBudget(Budget $budget): array
     {
-        $budget->loadMissing(['rooms.walls.collectionModel']);
+        $budget->loadMissing(['rooms.walls.collectionModel.files']);
 
         $data = $budget->toArray();
 
@@ -239,6 +285,19 @@ class BudgetController extends Controller
                 if (!empty($room['walls']) && is_array($room['walls'])) {
                     foreach ($room['walls'] as &$wall) {
                         $wall['collection_model_name'] = $wall['collection_model']['name'] ?? null;
+
+                        // Transformar arquivos do modelo de coleção
+                        if (!empty($wall['collection_model']['files']) && is_array($wall['collection_model']['files'])) {
+                            $wall['collection_model']['files'] = array_map(function ($file) {
+                                return [
+                                    'id' => $file['id'] ?? null,
+                                    'name' => $file['file_name'] ?? null,
+                                    'file_name' => $file['file_name'] ?? null,
+                                    'file_path' => $file['file_path'] ?? null,
+                                    'url' => $this->makePublicUrl($file['file_path'] ?? null),
+                                ];
+                            }, $wall['collection_model']['files']);
+                        }
                     }
                     unset($wall);
                 }

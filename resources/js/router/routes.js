@@ -56,6 +56,11 @@ const routes = [
                 name: 'Models',
                 component: () => import('../views/models/Models.vue'),
             },
+            {
+                path: '/layouts',
+                name: 'Layouts',
+                component: () => import('../views/layouts/Layouts.vue'),
+            },
             ...settings,
         ]
     },

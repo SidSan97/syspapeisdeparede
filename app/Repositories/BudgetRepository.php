@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Models\OrderBudget;
 
 class BudgetRepository {
 
@@ -181,6 +182,20 @@ class BudgetRepository {
         $budget->update($updatePayload);
 
         return $budget->fresh(['rooms.walls.collectionModel']);
+    }
+
+    public function getLayoutsForProduction()
+    {
+        return OrderBudget::where('status', 'Liberado para produção')
+            ->with([
+                'budget' => function ($query) {
+                    $query->with([
+                        'rooms.walls.collectionModel.files',
+                        'user'
+                    ]);
+                }
+            ])
+            ->get();
     }
 
     protected function formatCollectionReferringModel($value): ?string

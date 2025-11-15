@@ -96,6 +96,7 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
+    Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');
