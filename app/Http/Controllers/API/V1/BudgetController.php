@@ -171,10 +171,21 @@ class BudgetController extends Controller
             // Atualizar status do orçamento para 'Aprovado'
             $budget->update(['status' => 'Aprovado']);
 
+            // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
+            $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+
+            if (!$firstColumn) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.',
+                ], 400);
+            }
+
             // Criar registro em order_budgets
             $orderBudget = \App\Models\OrderBudget::create([
                 'budget_id' => $budget->id,
                 'status' => 'Liberado para produção',
+                'layout_column_names_id' => $firstColumn->id,
             ]);
 
             // Gerar link de pagamento
@@ -232,6 +243,32 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar layouts: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateLayoutColumn(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'order_budget_id' => ['required', 'integer', 'exists:order_budgets,id'],
+                'layout_column_names_id' => ['required', 'integer', 'exists:layout_column_names,id'],
+            ]);
+
+            $orderBudget = \App\Models\OrderBudget::findOrFail($validated['order_budget_id']);
+            $orderBudget->update([
+                'layout_column_names_id' => $validated['layout_column_names_id'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orderBudget->fresh(),
+                'message' => 'Coluna do layout atualizada com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar coluna do layout: ' . $e->getMessage(),
             ], 500);
         }
     }

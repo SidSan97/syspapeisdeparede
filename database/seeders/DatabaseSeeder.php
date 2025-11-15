@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             TypeUserSeeder::class,
             DefaultUserSeeder::class,
             CollectionArtSeeder::class,
+            LayoutColumnNameSeeder::class,
         ]);
     }
 }

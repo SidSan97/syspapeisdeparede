@@ -25,22 +25,23 @@ class LayoutService
             $firstImage = $this->getFirstImage($budget);
             $deliveryDates = $this->calculateDeliveryDates($budget);
 
-            return [
-                'id' => $orderBudget->id,
-                'budget_id' => $budget->id,
-                'name' => $budget->name,
-                'total_amount' => (float) $budget->total_amount,
-                'delivery_time' => $budget->delivery_time ?? 0,
-                'delivery_date_start' => $deliveryDates['start'],
-                'delivery_date_end' => $deliveryDates['end'],
-                'delivery_date_start_full' => $deliveryDates['start_full'],
-                'delivery_date_end_full' => $deliveryDates['end_full'],
-                'status' => $orderBudget->status,
-                'image' => $firstImage,
-                'budget' => $this->transformBudget($budget),
-                'created_at' => $orderBudget->created_at,
-                'updated_at' => $orderBudget->updated_at,
-            ];
+                return [
+                    'id' => $orderBudget->id,
+                    'budget_id' => $budget->id,
+                    'name' => $budget->name,
+                    'total_amount' => (float) $budget->total_amount,
+                    'delivery_time' => $budget->delivery_time ?? 0,
+                    'delivery_date_start' => $deliveryDates['start'],
+                    'delivery_date_end' => $deliveryDates['end'],
+                    'delivery_date_start_full' => $deliveryDates['start_full'],
+                    'delivery_date_end_full' => $deliveryDates['end_full'],
+                    'status' => $orderBudget->status,
+                    'layout_column_names_id' => $orderBudget->layout_column_names_id,
+                    'image' => $firstImage,
+                    'budget' => $this->transformBudget($budget),
+                    'created_at' => $orderBudget->created_at,
+                    'updated_at' => $orderBudget->updated_at,
+                ];
         })->filter()->values()->all();
     }
 

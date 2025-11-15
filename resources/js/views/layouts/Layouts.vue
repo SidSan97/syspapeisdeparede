@@ -10,8 +10,50 @@
             :data-column-id="column.id"
           >
             <div class="trello-column-header">
-              <h3 class="trello-column-title">{{ column.title }}</h3>
-              <span class="trello-column-count">{{ getCardsByColumn(column.id).length }}</span>
+              <div class="trello-column-header-left">
+                <h3 v-if="!editingColumns[column.id]" class="trello-column-title">
+                  {{ column.name }}
+                </h3>
+                <div v-else class="trello-column-edit">
+                  <input
+                    v-model="editingNames[column.id]"
+                    @keyup.enter="saveColumnName(column.id)"
+                    @keyup.esc="cancelEdit(column.id)"
+                    class="trello-column-input"
+                    :ref="el => editInputRefs[column.id] = el"
+                  />
+                  <button
+                    @click="saveColumnName(column.id)"
+                    class="trello-column-save-btn"
+                    :disabled="savingColumn === column.id"
+                  >
+                    <i class="fa fa-check"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="trello-column-header-right">
+                <span class="trello-column-count">{{ getCardsByColumn(column.id).length }}</span>
+                <div class="trello-column-menu">
+                  <button
+                    class="trello-column-menu-btn"
+                    @click.stop="toggleColumnMenu(column.id)"
+                  >
+                    <i class="fa fa-ellipsis-v"></i>
+                  </button>
+                  <div
+                    v-if="openMenuColumn === column.id"
+                    class="trello-column-menu-dropdown"
+                    @click.stop
+                  >
+                    <button @click="startEditColumn(column.id)" class="trello-column-menu-item">
+                      <i class="fa fa-edit"></i> Editar
+                    </button>
+                    <button @click="confirmDeleteColumn(column.id)" class="trello-column-menu-item danger">
+                      <i class="fa fa-trash"></i> Excluir
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div
               class="trello-column-content"
@@ -45,176 +87,46 @@
     </Page>
 
     <!-- Modal de Detalhes do Card -->
-    <Teleport v-if="selectedCard" to="body">
-      <div class="trello-modal-overlay" @click="closeCardModal">
-        <div class="trello-modal" @click.stop>
-          <div class="trello-modal-header">
-            <h2 class="trello-modal-title">{{ selectedCard.name }}</h2>
-            <button class="trello-modal-close" @click="closeCardModal">
-              <i class="fa fa-times"></i>
-            </button>
-          </div>
-          <div class="trello-modal-body">
-            <div v-if="selectedCard.image" class="trello-modal-image">
-              <img :src="selectedCard.image" :alt="selectedCard.name" />
-            </div>
-
-            <div class="trello-modal-section">
-              <h3 class="trello-modal-section-title">
-                <i class="fa fa-calendar"></i> Prazo
-              </h3>
-              <div class="trello-modal-info">
-                <span>{{ selectedCard.delivery_date_start }} - {{ selectedCard.delivery_date_end }}</span>
-                <span class="trello-modal-info-label">{{ selectedCard.delivery_time }} dias</span>
-              </div>
-            </div>
-
-            <div class="trello-modal-section">
-              <h3 class="trello-modal-section-title">
-                <i class="fa fa-money"></i> Valor do Orçamento
-              </h3>
-              <div class="trello-modal-info">
-                <span class="trello-modal-amount">{{ formatCurrency(selectedCard.total_amount) }}</span>
-              </div>
-            </div>
-
-            <div v-if="selectedCard.budget" class="trello-modal-section">
-              <h3 class="trello-modal-section-title">
-                <i class="fa fa-cube"></i> Detalhes do Modelo
-              </h3>
-              <div v-if="getCollectionModels(selectedCard.budget).length > 0" class="trello-modal-models">
-                <div
-                  v-for="(model, index) in getCollectionModels(selectedCard.budget)"
-                  :key="index"
-                  class="trello-modal-model"
-                >
-                  <div class="trello-modal-model-name">{{ model.name }}</div>
-                  <div v-if="model.files && model.files.length > 0" class="trello-modal-model-images">
-                    <div
-                      v-for="(file, fileIndex) in model.files"
-                      :key="fileIndex"
-                      class="trello-modal-model-image"
-                    >
-                      <img :src="getImageUrl(file)" :alt="file.name || 'Imagem'" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="trello-modal-info text-muted">
-                Nenhum modelo selecionado
-              </div>
-            </div>
-
-            <div v-if="selectedCard.budget" class="trello-modal-section">
-              <h3 class="trello-modal-section-title">
-                <i class="fa fa-link"></i> Links
-              </h3>
-              <div v-if="selectedCard.budget.link_referring_model" class="trello-modal-info">
-                <a
-                  :href="selectedCard.budget.link_referring_model"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="trello-modal-link"
-                >
-                  <i class="fa fa-external-link"></i>
-                  {{ selectedCard.budget.link_referring_model }}
-                </a>
-              </div>
-              <div v-else class="trello-modal-info text-muted">
-                Nenhum link disponível
-              </div>
-            </div>
-
-            <div v-if="selectedCard.budget" class="trello-modal-section">
-              <h3 class="trello-modal-section-title">
-                <i class="fa fa-comment"></i> Comentários
-              </h3>
-              <div v-if="selectedCard.budget.comment_referring_model" class="trello-modal-comment">
-                {{ selectedCard.budget.comment_referring_model }}
-              </div>
-              <div v-else class="trello-modal-info text-muted">
-                Nenhum comentário disponível
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <LayoutCardModal :card="selectedCard" @close="closeCardModal" />
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
 import Page from '../../components/page/Page.vue';
+import LayoutCardModal from './components/LayoutCardModal.vue';
 
 const cards = ref([]);
+const columns = ref([]);
 const loading = ref(false);
 const selectedCard = ref(null);
 const draggedCard = ref(null);
 const boardRef = ref(null);
-
-const columns = [
-  { id: 'desenhista', title: 'Desenhista' },
-  { id: 'versao01', title: 'Versão 01' },
-  { id: 'revisao01', title: 'Revisão 01' },
-  { id: 'revisao02', title: 'Revisão 02' },
-  { id: 'final', title: 'Final' },
-];
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatCurrency(value) {
-  if (value === null || value === undefined) {
-    return currencyFormatter.format(0);
-  }
-  const numericValue = Number(value);
-  return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
-}
+const openMenuColumn = ref(null);
+const editingColumns = ref({});
+const editingNames = ref({});
+const savingColumn = ref(null);
+const editInputRefs = ref({});
 
 function getCardsByColumn(columnId) {
   return cards.value.filter(card => card.column === columnId);
 }
 
-function getCollectionModels(budget) {
-  if (!budget || !budget.rooms) {
-    return [];
-  }
+async function fetchColumns() {
+  try {
+    const { data } = await axios.get('v1/layout-column-names');
+    const payload = Array.isArray(data?.data) ? data.data : [];
 
-  const models = [];
-  budget.rooms.forEach(room => {
-    if (room.walls) {
-      room.walls.forEach(wall => {
-        // Pode vir como collection_model ou collectionModel
-        const model = wall.collection_model || wall.collectionModel;
-        if (model) {
-          models.push(model);
-        }
-      });
-    }
-  });
-
-  return models;
-}
-
-function getImageUrl(file) {
-  if (file.url) {
-    return file.url;
+    // Mapear para o formato esperado, usando o ID como identificador único
+    columns.value = payload.map(col => ({
+      id: col.id,
+      name: col.name,
+    }));
+  } catch (error) {
+    console.error('Erro ao carregar colunas:', error);
+    columns.value = [];
   }
-  if (file.fileUrl) {
-    return file.fileUrl;
-  }
-  if (file.file_path) {
-    // Se for um caminho relativo, construir a URL completa
-    if (file.file_path.startsWith('http')) {
-      return file.file_path;
-    }
-    return `/storage/${file.file_path}`;
-  }
-  return '';
 }
 
 async function fetchLayouts() {
@@ -224,16 +136,116 @@ async function fetchLayouts() {
 
     const payload = Array.isArray(data?.data) ? data.data : [];
 
-    // Inicializar todos os cards na coluna "Desenhista"
+    // Usar o layout_column_names_id do banco de dados, ou a primeira coluna se não houver
+    const firstColumnId = columns.value.length > 0 ? columns.value[0].id : null;
     cards.value = payload.map(card => ({
       ...card,
-      column: 'desenhista', // Todos começam na coluna Desenhista
+      column: card.layout_column_names_id || firstColumnId,
     }));
   } catch (error) {
     console.error('Erro ao carregar layouts:', error);
     cards.value = [];
   } finally {
     loading.value = false;
+  }
+}
+
+function toggleColumnMenu(columnId) {
+  openMenuColumn.value = openMenuColumn.value === columnId ? null : columnId;
+}
+
+async function startEditColumn(columnId) {
+  const column = columns.value.find(c => c.id === columnId);
+  if (column) {
+    editingColumns.value[columnId] = true;
+    editingNames.value[columnId] = column.name;
+    openMenuColumn.value = null;
+
+    // Focar no input após renderização
+    await nextTick();
+    if (editInputRefs.value[columnId]) {
+      editInputRefs.value[columnId].focus();
+      editInputRefs.value[columnId].select();
+    }
+  }
+}
+
+function cancelEdit(columnId) {
+  editingColumns.value[columnId] = false;
+  delete editingNames.value[columnId];
+}
+
+async function saveColumnName(columnId) {
+  const newName = editingNames.value[columnId]?.trim();
+  if (!newName) {
+    return;
+  }
+
+  try {
+    savingColumn.value = columnId;
+    const { data } = await axios.put(`v1/layout-column-names/${columnId}`, {
+      name: newName,
+    });
+
+    if (data.success) {
+      const columnIndex = columns.value.findIndex(c => c.id === columnId);
+      if (columnIndex !== -1) {
+        columns.value[columnIndex].name = newName;
+      }
+      editingColumns.value[columnId] = false;
+      delete editingNames.value[columnId];
+    }
+  } catch (error) {
+    console.error('Erro ao salvar coluna:', error);
+    alert('Erro ao salvar o nome da coluna. Tente novamente.');
+  } finally {
+    savingColumn.value = null;
+  }
+}
+
+function confirmDeleteColumn(columnId) {
+  if (confirm('Tem certeza que deseja excluir esta coluna?')) {
+    deleteColumn(columnId);
+  }
+  openMenuColumn.value = null;
+}
+
+async function deleteColumn(columnId) {
+  try {
+    const { data } = await axios.delete(`v1/layout-column-names/${columnId}`);
+
+    if (data.success) {
+      // Remover a coluna da lista
+      columns.value = columns.value.filter(c => c.id !== columnId);
+
+      // Mover cards dessa coluna para a primeira coluna disponível e salvar no banco
+      const firstColumnId = columns.value.length > 0 ? columns.value[0].id : null;
+      if (firstColumnId) {
+        const cardsToMove = cards.value.filter(card => card.column === columnId);
+
+        // Atualizar no frontend
+        cards.value.forEach(card => {
+          if (card.column === columnId) {
+            card.column = firstColumnId;
+          }
+        });
+
+        // Salvar no banco de dados
+        for (const card of cardsToMove) {
+          try {
+            await axios.post('v1/budgets/layouts/update-column', {
+              order_budget_id: card.id,
+              layout_column_names_id: firstColumnId,
+            });
+          } catch (error) {
+            console.error(`Erro ao mover card ${card.id}:`, error);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao excluir coluna:', error);
+    alert('Erro ao excluir a coluna. Tente novamente.');
   }
 }
 
@@ -251,21 +263,44 @@ function handleDragStart(event, card) {
   event.dataTransfer.setData('text/html', event.target.outerHTML);
 }
 
-function handleDrop(event, columnId) {
+async function handleDrop(event, columnId) {
   event.preventDefault();
   if (draggedCard.value) {
     const cardIndex = cards.value.findIndex(c => c.id === draggedCard.value.id);
     if (cardIndex !== -1) {
+      const oldColumnId = cards.value[cardIndex].column;
       cards.value[cardIndex].column = columnId;
-      // Aqui você pode adicionar uma chamada à API para salvar a mudança de coluna
+
+      // Salvar a mudança no banco de dados
+      try {
+        await axios.post('v1/budgets/layouts/update-column', {
+          order_budget_id: draggedCard.value.id,
+          layout_column_names_id: columnId,
+        });
+      } catch (error) {
+        console.error('Erro ao atualizar coluna do card:', error);
+        // Reverter a mudança em caso de erro
+        cards.value[cardIndex].column = oldColumnId;
+        alert('Erro ao mover o card. Tente novamente.');
+      }
     }
     draggedCard.value = null;
   }
 }
 
-onMounted(() => {
-  fetchLayouts();
+function handleClickOutside() {
+  openMenuColumn.value = null;
+}
+
+onMounted(async () => {
+  await fetchColumns();
+  await fetchLayouts();
   document.title = 'Layouts';
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
@@ -321,6 +356,18 @@ onMounted(() => {
   justify-content: space-between;
   padding: 8px 12px;
   margin-bottom: 8px;
+  position: relative;
+}
+
+.trello-column-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.trello-column-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .trello-column-title {
@@ -425,79 +472,19 @@ onMounted(() => {
   }
 }
 
-// Modal Styles
-.trello-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-  padding: 20px;
-  animation: fadeIn 0.2s ease;
+.trello-column-menu {
+  position: relative;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.trello-modal {
-  background-color: #ffffff;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 768px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 16px rgba(9, 30, 66, 0.25);
-  animation: slideUp 0.3s ease;
-  overflow: hidden;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.trello-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid #dfe1e6;
-}
-
-.trello-modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #172b4d;
-  margin: 0;
-}
-
-.trello-modal-close {
+.trello-column-menu-btn {
   background: none;
   border: none;
-  font-size: 20px;
   color: #5e6c84;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+  font-size: 14px;
 
   &:hover {
     background-color: #dfe1e6;
@@ -505,133 +492,91 @@ onMounted(() => {
   }
 }
 
-.trello-modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.trello-modal-image {
-  width: 100%;
-  max-height: 300px;
-  margin-bottom: 24px;
+.trello-column-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background-color: #ffffff;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(9, 30, 66, 0.15);
+  min-width: 150px;
+  z-index: 1000;
   overflow: hidden;
-  background-color: #f4f5f7;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
 }
 
-.trello-modal-section {
-  margin-bottom: 24px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.trello-modal-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #172b4d;
-  margin-bottom: 12px;
+.trello-column-menu-item {
   display: flex;
   align-items: center;
   gap: 8px;
-
-  i {
-    color: #5e6c84;
-  }
-}
-
-.trello-modal-info {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
   color: #172b4d;
   font-size: 14px;
-  line-height: 1.5;
-}
-
-.trello-modal-info-label {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background-color: #dfe1e6;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #5e6c84;
-}
-
-.trello-modal-amount {
-  font-size: 18px;
-  font-weight: 600;
-  color: #0079bf;
-}
-
-.trello-modal-models {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.trello-modal-model {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-}
-
-.trello-modal-model-name {
-  font-weight: 600;
-  color: #172b4d;
-  margin-bottom: 8px;
-}
-
-.trello-modal-model-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.trello-modal-model-image {
-  width: 120px;
-  height: 120px;
-  border-radius: 4px;
-  overflow: hidden;
-  background-color: #ffffff;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.trello-modal-link {
-  color: #0079bf;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  word-break: break-all;
+  transition: background-color 0.2s ease;
 
   &:hover {
-    text-decoration: underline;
+    background-color: #f4f5f7;
+  }
+
+  &.danger {
+    color: #d32f2f;
+
+    &:hover {
+      background-color: #ffebee;
+    }
   }
 
   i {
-    font-size: 12px;
+    width: 16px;
+    text-align: center;
   }
 }
 
-.trello-modal-comment {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-  color: #172b4d;
-  line-height: 1.5;
-  white-space: pre-wrap;
+.trello-column-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
+
+.trello-column-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 2px solid #0079bf;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #172b4d;
+  outline: none;
+
+  &:focus {
+    border-color: #0052cc;
+  }
+}
+
+.trello-column-save-btn {
+  background-color: #0079bf;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #0052cc;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 </style>
 

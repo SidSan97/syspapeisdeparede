@@ -193,7 +193,8 @@ class BudgetRepository {
                         'rooms.walls.collectionModel.files',
                         'user'
                     ]);
-                }
+                },
+                'layoutColumnName'
             ])
             ->get();
     }

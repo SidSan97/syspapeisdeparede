@@ -13,14 +13,21 @@ class OrderBudget extends Model
     protected $fillable = [
         'budget_id',
         'status',
+        'layout_column_names_id',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'layout_column_names_id' => 'integer',
     ];
 
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function layoutColumnName(): BelongsTo
+    {
+        return $this->belongsTo(LayoutColumnName::class, 'layout_column_names_id');
     }
 }
