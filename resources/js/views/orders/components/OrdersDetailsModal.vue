@@ -60,17 +60,20 @@
                 <div v-if="details.paymentMethod || paymentUrl" class="border rounded p-3 mb-4">
                   <h6 class="fw-semibold mb-3">Informações de Pagamento</h6>
                   <div class="row g-3">
-                    <div v-if="details.paymentMethod" class="col-md-6">
+                    <div v-if="details.paymentMethod" class="col-md-4">
                       <div class="text-muted small">Método de Pagamento</div>
                       <div class="fw-semibold">{{ formatPaymentMethod(details.paymentMethod) }}</div>
                     </div>
-                    <div v-if="details.installments" class="col-md-6">
+                    <div v-if="details.installments" class="col-md-4">
                       <div class="text-muted small">Parcelas</div>
                       <div class="fw-semibold">
-                        {{ details.installments }}
-                        <span v-if="details.installmentLimit">
-                          de {{ details.installmentLimit }}
-                        </span>
+                        {{ details.installments }} X
+                      </div>
+                    </div>
+                    <div v-if="details.installmentLimit" class="col-md-4">
+                      <div class="text-muted small">Valor das parcelas</div>
+                      <div class="fw-semibold">
+                        {{ formatInstallmentValue(details) }}
                       </div>
                     </div>
                     <div v-if="paymentUrl" class="col-12">
@@ -222,7 +225,7 @@
 
                 <!-- Datas -->
                 <div class="border rounded p-3 mb-4">
-                  <h6 class="fw-semibold mb-3">Informações</h6>
+                  <h6 class="fw-semibold mb-3">Informações adicionais</h6>
                   <div class="row g-3">
                     <div class="col-md-6" v-if="details.createdAt">
                       <div class="text-muted small">Criado em</div>
@@ -345,6 +348,15 @@ function formatPaymentMethod(method) {
   return methods[method] || method;
 }
 
+function formatInstallmentValue(details) {
+  if (!details.total || !details.installments) {
+    return '';
+  }
+
+  const value = details.total / details.installments;
+  return formatCurrency(value);
+}
+
 function normalizeDate(value) {
   if (!value) {
     return null;
@@ -416,11 +428,9 @@ async function handleApprove() {
       throw new Error(approveResponse.data?.message || 'Erro ao aprovar orçamento');
     }
 
-    // Buscar link de pagamento
-    const paymentResponse = await axios.get('v1/get-link-payment');
-
-    if (paymentResponse.data?.url) {
-      paymentUrl.value = paymentResponse.data.url;
+    // Obter link de pagamento da resposta
+    if (approveResponse.data?.payment_link?.url) {
+      paymentUrl.value = approveResponse.data.payment_link.url;
     }
 
     emit('approve', props.pedido);

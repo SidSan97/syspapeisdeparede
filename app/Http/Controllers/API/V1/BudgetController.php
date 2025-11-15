@@ -8,6 +8,7 @@ use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Models\Budget;
 use App\Repositories\BudgetRepository;
 use App\Services\GeneratePdfService;
+use App\Services\GeneratePaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,11 +18,16 @@ class BudgetController extends Controller
 {
     protected $repository;
     protected $generatePdfService;
+    protected $generatePaymentService;
 
-    public function __construct(BudgetRepository $repository, GeneratePdfService $generatePdfService)
-    {
+    public function __construct(
+        BudgetRepository $repository,
+        GeneratePdfService $generatePdfService,
+        GeneratePaymentService $generatePaymentService
+    ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
+        $this->generatePaymentService = $generatePaymentService;
     }
 
     public function index(): JsonResponse
@@ -167,12 +173,17 @@ class BudgetController extends Controller
                 'status' => 'Liberado para produção',
             ]);
 
+            // Gerar link de pagamento
+            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment();
+            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
+
             $transformed = $this->transformBudget($budget->refresh());
 
             return response()->json([
                 'success' => true,
                 'data' => $transformed,
                 'order_budget' => $orderBudget,
+                'payment_link' => $paymentLinkData,
                 'message' => 'Orçamento aprovado com sucesso',
             ]);
         } catch (\Exception $e) {
