@@ -12,6 +12,7 @@ class OrderBudget extends Model
 
     protected $fillable = [
         'budget_id',
+        'budget_wall_id',
         'status',
         'layout_column_names_id',
     ];
@@ -19,11 +20,17 @@ class OrderBudget extends Model
     protected $casts = [
         'status' => 'string',
         'layout_column_names_id' => 'integer',
+        'budget_wall_id' => 'integer',
     ];
 
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function wall(): BelongsTo
+    {
+        return $this->belongsTo(BudgetWall::class, 'budget_wall_id');
     }
 
     public function layoutColumnName(): BelongsTo

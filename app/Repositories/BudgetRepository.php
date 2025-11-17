@@ -187,11 +187,18 @@ class BudgetRepository {
     public function getLayoutsForProduction()
     {
         return OrderBudget::where('status', 'Liberado para produção')
+            ->whereNotNull('budget_wall_id')
             ->with([
                 'budget' => function ($query) {
                     $query->with([
                         'rooms.walls.collectionModel.files',
                         'user'
+                    ]);
+                },
+                'wall' => function ($query) {
+                    $query->with([
+                        'collectionModel.files',
+                        'room'
                     ]);
                 },
                 'layoutColumnName'

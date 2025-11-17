@@ -166,7 +166,7 @@ class BudgetController extends Controller
         ]);
 
         try {
-            $budget = Budget::findOrFail($validated['id']);
+            $budget = Budget::with(['rooms.walls'])->findOrFail($validated['id']);
 
             // Atualizar status do orçamento para 'Aprovado'
             $budget->update(['status' => 'Aprovado']);
@@ -181,12 +181,18 @@ class BudgetController extends Controller
                 ], 400);
             }
 
-            // Criar registro em order_budgets
-            $orderBudget = \App\Models\OrderBudget::create([
-                'budget_id' => $budget->id,
-                'status' => 'Liberado para produção',
-                'layout_column_names_id' => $firstColumn->id,
-            ]);
+            // Criar um OrderBudget para cada parede do orçamento
+            $orderBudgets = [];
+            foreach ($budget->rooms as $room) {
+                foreach ($room->walls as $wall) {
+                    $orderBudgets[] = \App\Models\OrderBudget::create([
+                        'budget_id' => $budget->id,
+                        'budget_wall_id' => $wall->id,
+                        'status' => 'Liberado para produção',
+                        'layout_column_names_id' => $firstColumn->id,
+                    ]);
+                }
+            }
 
             // Gerar link de pagamento
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment();
@@ -197,7 +203,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $transformed,
-                'order_budget' => $orderBudget,
+                'order_budgets' => $orderBudgets,
                 'payment_link' => $paymentLinkData,
                 'message' => 'Orçamento aprovado com sucesso',
             ]);

@@ -32,9 +32,95 @@
             </div>
           </div>
 
+          <!-- Detalhes da Parede -->
+          <div v-if="card.wall" class="trello-modal-section">
+            <h3 class="trello-modal-section-title">
+              <i class="fa fa-ruler"></i> Detalhes da Parede
+            </h3>
+            <div class="trello-modal-wall-details">
+              <div class="trello-modal-wall-info-grid">
+                <div class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Nome da Parede</div>
+                  <div class="trello-modal-wall-info-value">{{ card.wall.name || 'Não informado' }}</div>
+                </div>
+                <div class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Largura</div>
+                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.width) }} m</div>
+                </div>
+                <div class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Altura</div>
+                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
+                </div>
+                <div class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Área Total</div>
+                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
+                </div>
+                <div v-if="card.wall.strip_height" class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Altura da Faixa</div>
+                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
+                </div>
+                <div v-if="card.wall.strip_count" class="trello-modal-wall-info-item">
+                  <div class="trello-modal-wall-info-label">Quantidade de Faixas</div>
+                  <div class="trello-modal-wall-info-value">{{ card.wall.strip_count }}</div>
+                </div>
+              </div>
+
+              <!-- Continuações -->
+              <div v-if="card.wall.continue_same_art && card.wall.continuations && card.wall.continuations.length > 0" class="trello-modal-continuations">
+                <h4 class="trello-modal-continuations-title">
+                  <i class="fa fa-arrows-h"></i> Continuações
+                </h4>
+                <div class="trello-modal-continuations-list">
+                  <div
+                    v-for="(continuation, index) in card.wall.continuations"
+                    :key="index"
+                    class="trello-modal-continuation-item"
+                  >
+                    <div class="trello-modal-continuation-header">
+                      <span class="trello-modal-continuation-number">Continuação {{ index + 1 }}</span>
+                    </div>
+                    <div class="trello-modal-continuation-details">
+                      <div class="trello-modal-continuation-detail">
+                        <span class="trello-modal-continuation-label">Largura:</span>
+                        <span class="trello-modal-continuation-value">{{ formatNumber(continuation.width) }} m</span>
+                      </div>
+                      <div class="trello-modal-continuation-detail">
+                        <span class="trello-modal-continuation-label">Altura:</span>
+                        <span class="trello-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
+                      </div>
+                      <div class="trello-modal-continuation-detail">
+                        <span class="trello-modal-continuation-label">Área:</span>
+                        <span class="trello-modal-continuation-value">
+                          {{ formatNumber((Number(continuation.width) || 0) * (Number(continuation.height) || 0)) }} m²
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Imagens de Upload -->
+          <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
+            <h3 class="trello-modal-section-title">
+              <i class="fa fa-upload"></i> Imagens Enviadas
+            </h3>
+            <div class="trello-modal-model-images">
+              <div
+                v-for="(file, fileIndex) in card.uploaded_files"
+                :key="fileIndex"
+                class="trello-modal-model-image"
+              >
+                <img :src="getImageUrl(file)" :alt="file.name || 'Imagem enviada'" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Imagens de Coleção -->
           <div v-if="card.budget" class="trello-modal-section">
             <h3 class="trello-modal-section-title">
-              <i class="fa fa-cube"></i> Detalhes do Modelo
+              <i class="fa fa-cube"></i> Imagens da Coleção
             </h3>
             <div v-if="getCollectionModels(card.budget).length > 0" class="trello-modal-models">
               <div
@@ -56,6 +142,25 @@
             </div>
             <div v-else class="trello-modal-info text-muted">
               Nenhum modelo selecionado
+            </div>
+          </div>
+
+          <!-- Imagens da Parede Específica -->
+          <div v-if="card.wall && card.wall.collection_model" class="trello-modal-section">
+            <h3 class="trello-modal-section-title">
+              <i class="fa fa-image"></i> Imagens da Parede
+            </h3>
+            <div v-if="card.wall.collection_model.files && card.wall.collection_model.files.length > 0" class="trello-modal-model-images">
+              <div
+                v-for="(file, fileIndex) in card.wall.collection_model.files"
+                :key="fileIndex"
+                class="trello-modal-model-image"
+              >
+                <img :src="getImageUrl(file)" :alt="file.name || 'Imagem da parede'" />
+              </div>
+            </div>
+            <div v-else class="trello-modal-info text-muted">
+              Nenhuma imagem disponível para esta parede
             </div>
           </div>
 
@@ -117,6 +222,14 @@ function formatCurrency(value) {
   }
   const numericValue = Number(value);
   return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
 }
 
 function getCollectionModels(budget) {
@@ -370,6 +483,102 @@ function handleClose() {
   color: #172b4d;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.trello-modal-wall-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trello-modal-wall-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.trello-modal-wall-info-item {
+  padding: 12px;
+  background-color: #f4f5f7;
+  border-radius: 6px;
+}
+
+.trello-modal-wall-info-label {
+  font-size: 12px;
+  color: #5e6c84;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.trello-modal-wall-info-value {
+  font-size: 14px;
+  color: #172b4d;
+  font-weight: 600;
+}
+
+.trello-modal-continuations {
+  margin-top: 8px;
+}
+
+.trello-modal-continuations-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #172b4d;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    color: #5e6c84;
+    font-size: 12px;
+  }
+}
+
+.trello-modal-continuations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trello-modal-continuation-item {
+  padding: 12px;
+  background-color: #f4f5f7;
+  border-radius: 6px;
+  border-left: 3px solid #0079bf;
+}
+
+.trello-modal-continuation-header {
+  margin-bottom: 8px;
+}
+
+.trello-modal-continuation-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: #172b4d;
+}
+
+.trello-modal-continuation-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.trello-modal-continuation-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trello-modal-continuation-label {
+  font-size: 12px;
+  color: #5e6c84;
+}
+
+.trello-modal-continuation-value {
+  font-size: 13px;
+  color: #172b4d;
+  font-weight: 600;
 }
 </style>
 

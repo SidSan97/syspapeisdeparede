@@ -16,8 +16,15 @@ return new class extends Migration
             $table->foreignId('budget_id')
                 ->constrained('budgets')
                 ->cascadeOnDelete();
+            $table->unsignedBigInteger('budget_wall_id')->nullable();
             $table->string('status', 50);
             $table->timestamps();
+
+            $table->foreign('budget_wall_id', 'order_budgets_budget_wall_id_fk')
+                ->references('id')
+                ->on('budget_walls')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

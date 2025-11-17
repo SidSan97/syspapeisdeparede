@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Budget;
+use App\Models\BudgetWall;
 use App\Models\OrderBudget;
 use Illuminate\Support\Collection;
 
@@ -18,55 +19,56 @@ class LayoutService
     {
         return $orderBudgets->map(function (OrderBudget $orderBudget) {
             $budget = $orderBudget->budget;
-            if (!$budget) {
+            $wall = $orderBudget->wall;
+
+            if (!$budget || !$wall) {
                 return null;
             }
 
-            $firstImage = $this->getFirstImage($budget);
+            // Obter imagem da parede específica
+            $wallImage = $this->getWallImage($wall);
             $deliveryDates = $this->calculateDeliveryDates($budget);
 
-                return [
-                    'id' => $orderBudget->id,
-                    'budget_id' => $budget->id,
-                    'name' => $budget->name,
-                    'total_amount' => (float) $budget->total_amount,
-                    'delivery_time' => $budget->delivery_time ?? 0,
-                    'delivery_date_start' => $deliveryDates['start'],
-                    'delivery_date_end' => $deliveryDates['end'],
-                    'delivery_date_start_full' => $deliveryDates['start_full'],
-                    'delivery_date_end_full' => $deliveryDates['end_full'],
-                    'status' => $orderBudget->status,
-                    'layout_column_names_id' => $orderBudget->layout_column_names_id,
-                    'image' => $firstImage,
-                    'budget' => $this->transformBudget($budget),
-                    'created_at' => $orderBudget->created_at,
-                    'updated_at' => $orderBudget->updated_at,
-                ];
+            // Criar nome do card baseado na parede
+            $roomName = $wall->room->name ?? 'Ambiente';
+            $wallName = $wall->name ?? 'Parede';
+            $cardName = $budget->name . ' - ' . $roomName . ' - ' . $wallName;
+
+            return [
+                'id' => $orderBudget->id,
+                'budget_id' => $budget->id,
+                'budget_wall_id' => $wall->id,
+                'name' => $cardName,
+                'total_amount' => (float) $budget->total_amount,
+                'delivery_time' => $budget->delivery_time ?? 0,
+                'delivery_date_start' => $deliveryDates['start'],
+                'delivery_date_end' => $deliveryDates['end'],
+                'delivery_date_start_full' => $deliveryDates['start_full'],
+                'delivery_date_end_full' => $deliveryDates['end_full'],
+                'status' => $orderBudget->status,
+                'layout_column_names_id' => $orderBudget->layout_column_names_id,
+                'image' => $wallImage,
+                'budget' => $this->transformBudget($budget),
+                'wall' => $this->transformWall($wall),
+                'uploaded_files' => $this->transformUploadedFiles($budget->files_referring_model ?? []),
+                'created_at' => $orderBudget->created_at,
+                'updated_at' => $orderBudget->updated_at,
+            ];
         })->filter()->values()->all();
     }
 
     /**
-     * Busca a primeira imagem do primeiro modelo de coleção encontrado
+     * Busca a primeira imagem do modelo de coleção da parede
      *
-     * @param Budget $budget
+     * @param BudgetWall $wall
      * @return string|null
      */
-    protected function getFirstImage(Budget $budget): ?string
+    protected function getWallImage(BudgetWall $wall): ?string
     {
-        if (!$budget->rooms) {
-            return null;
-        }
-
-        foreach ($budget->rooms as $room) {
-            if ($room->walls) {
-                foreach ($room->walls as $wall) {
-                    if ($wall->collectionModel && $wall->collectionModel->files) {
-                        $firstFile = $wall->collectionModel->files->first();
-                        if ($firstFile) {
-                            return $this->makePublicUrl($firstFile->file_path);
-                        }
-                    }
-                }
+        if ($wall->collectionModel && $wall->collectionModel->files) {
+            $firstFile = $wall->collectionModel->files->first();
+            if ($firstFile) {
+                return $this->makePublicUrl($firstFile->file_path);
             }
         }
 
@@ -135,6 +137,62 @@ class LayoutService
         }
 
         return $data;
+    }
+
+    /**
+     * Transforma uma parede em array com dados formatados
+     *
+     * @param BudgetWall $wall
+     * @return array
+     */
+    protected function transformWall(BudgetWall $wall): array
+    {
+        $wall->loadMissing(['collectionModel.files', 'room']);
+
+        $data = $wall->toArray();
+
+        if (!empty($data['collection_model']) && is_array($data['collection_model'])) {
+            $data['collection_model']['name'] = $data['collection_model']['name'] ?? null;
+
+            // Transformar arquivos do modelo de coleção
+            if (!empty($data['collection_model']['files']) && is_array($data['collection_model']['files'])) {
+                $data['collection_model']['files'] = array_map(function ($file) {
+                    return [
+                        'id' => $file['id'] ?? null,
+                        'name' => $file['file_name'] ?? null,
+                        'file_name' => $file['file_name'] ?? null,
+                        'file_path' => $file['file_path'] ?? null,
+                        'url' => $this->makePublicUrl($file['file_path'] ?? null),
+                    ];
+                }, $data['collection_model']['files']);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Transforma arquivos de upload em array com URLs formatadas
+     *
+     * @param array|null $files
+     * @return array
+     */
+    protected function transformUploadedFiles(?array $files): array
+    {
+        if (!is_array($files) || empty($files)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(function ($filePath) {
+            if (is_string($filePath) && !empty($filePath)) {
+                return [
+                    'file_path' => $filePath,
+                    'url' => $this->makePublicUrl($filePath),
+                    'name' => basename($filePath),
+                ];
+            }
+            return null;
+        }, $files)));
     }
 
     /**
