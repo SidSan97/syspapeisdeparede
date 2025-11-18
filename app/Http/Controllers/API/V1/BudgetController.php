@@ -7,6 +7,7 @@ use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Models\Budget;
 use App\Repositories\BudgetRepository;
+use App\Repositories\OrderBudgetRepository;
 use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
@@ -21,17 +22,20 @@ class BudgetController extends Controller
     protected $generatePdfService;
     protected $generatePaymentService;
     protected $layoutService;
+    protected $orderBudgetRepository;
 
     public function __construct(
         BudgetRepository $repository,
         GeneratePdfService $generatePdfService,
         GeneratePaymentService $generatePaymentService,
-        LayoutService $layoutService
+        LayoutService $layoutService,
+        OrderBudgetRepository $orderBudgetRepository
     ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
         $this->generatePaymentService = $generatePaymentService;
         $this->layoutService = $layoutService;
+        $this->orderBudgetRepository = $orderBudgetRepository;
     }
 
     public function index(): JsonResponse
@@ -261,20 +265,39 @@ class BudgetController extends Controller
                 'layout_column_names_id' => ['required', 'integer', 'exists:layout_column_names,id'],
             ]);
 
-            $orderBudget = \App\Models\OrderBudget::findOrFail($validated['order_budget_id']);
-            $orderBudget->update([
-                'layout_column_names_id' => $validated['layout_column_names_id'],
-            ]);
+            $orderBudget = $this->orderBudgetRepository->editLayoutColumn($validated['order_budget_id'], $validated['layout_column_names_id']);
 
             return response()->json([
                 'success' => true,
-                'data' => $orderBudget->fresh(),
+                'data' => $orderBudget,
                 'message' => 'Coluna do layout atualizada com sucesso',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar coluna do layout: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateOrderBudgetDescription(Request $request, int $orderBudgetId): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'description' => ['nullable', 'string', 'max:500'],
+            ]);
+
+            $orderBudget = $this->orderBudgetRepository->updateOrderBudgetDescription($orderBudgetId, $validated['description']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orderBudget,
+                'message' => 'Descrição atualizada com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar descrição: ' . $e->getMessage(),
             ], 500);
         }
     }

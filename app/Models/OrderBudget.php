@@ -13,11 +13,13 @@ class OrderBudget extends Model
     protected $fillable = [
         'budget_id',
         'budget_wall_id',
+        'description',
         'status',
         'layout_column_names_id',
     ];
 
     protected $casts = [
+        'description' => 'string',
         'status' => 'string',
         'layout_column_names_id' => 'integer',
         'budget_wall_id' => 'integer',

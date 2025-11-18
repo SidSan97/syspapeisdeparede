@@ -47,6 +47,7 @@ class LayoutService
                 'delivery_date_end_full' => $deliveryDates['end_full'],
                 'status' => $orderBudget->status,
                 'layout_column_names_id' => $orderBudget->layout_column_names_id,
+                'description' => $orderBudget->description,
                 'image' => $wallImage,
                 'budget' => $this->transformBudget($budget),
                 'wall' => $this->transformWall($wall),

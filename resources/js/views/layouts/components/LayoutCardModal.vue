@@ -1,584 +1,1101 @@
 <template>
-  <Teleport v-if="card" to="body">
-    <div class="trello-modal-overlay" @click="handleClose">
-      <div class="trello-modal" @click.stop>
-        <div class="trello-modal-header">
-          <h2 class="trello-modal-title">{{ card.name }}</h2>
-          <button class="trello-modal-close" @click="handleClose">
-            <i class="fa fa-times"></i>
-          </button>
-        </div>
-        <div class="trello-modal-body">
-          <div v-if="card.image" class="trello-modal-image">
-            <img :src="card.image" :alt="card.name" />
+    <Teleport v-if="card" to="body">
+      <div class="trello-modal-overlay" @click="handleClose">
+        <div class="trello-modal" @click.stop>
+          <div class="trello-modal-header">
+            <h2 class="trello-modal-title">{{ card.name }}</h2>
+            <button class="trello-modal-close" @click="handleClose">
+              <i class="fa fa-times"></i>
+            </button>
           </div>
-
-          <div class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-calendar"></i> Prazo
-            </h3>
-            <div class="trello-modal-info">
-              <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
-              <span class="trello-modal-info-label">{{ card.delivery_time }} dias</span>
+          <div class="trello-modal-body">
+            <div v-if="coverImage" class="trello-modal-cover">
+              <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
             </div>
-          </div>
 
-          <div class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-money"></i> Valor do Orçamento
-            </h3>
-            <div class="trello-modal-info">
-              <span class="trello-modal-amount">{{ formatCurrency(card.total_amount) }}</span>
-            </div>
-          </div>
+            <div class="trello-modal-content-layout">
+              <div class="trello-modal-main">
+                <div class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-calendar"></i> Prazo
+                  </h3>
+                  <div class="trello-modal-info">
+                    <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
+                    <span class="trello-modal-info-label">{{ card.delivery_time }} dias</span>
+                  </div>
+                </div>
 
-          <!-- Detalhes da Parede -->
-          <div v-if="card.wall" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-ruler"></i> Detalhes da Parede
-            </h3>
-            <div class="trello-modal-wall-details">
-              <div class="trello-modal-wall-info-grid">
-                <div class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Nome da Parede</div>
-                  <div class="trello-modal-wall-info-value">{{ card.wall.name || 'Não informado' }}</div>
-                </div>
-                <div class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Largura</div>
-                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.width) }} m</div>
-                </div>
-                <div class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Altura</div>
-                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
-                </div>
-                <div class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Área Total</div>
-                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
-                </div>
-                <div v-if="card.wall.strip_height" class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Altura da Faixa</div>
-                  <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
-                </div>
-                <div v-if="card.wall.strip_count" class="trello-modal-wall-info-item">
-                  <div class="trello-modal-wall-info-label">Quantidade de Faixas</div>
-                  <div class="trello-modal-wall-info-value">{{ card.wall.strip_count }}</div>
-                </div>
-              </div>
-
-              <!-- Continuações -->
-              <div v-if="card.wall.continue_same_art && card.wall.continuations && card.wall.continuations.length > 0" class="trello-modal-continuations">
-                <h4 class="trello-modal-continuations-title">
-                  <i class="fa fa-arrows-h"></i> Continuações
-                </h4>
-                <div class="trello-modal-continuations-list">
-                  <div
-                    v-for="(continuation, index) in card.wall.continuations"
-                    :key="index"
-                    class="trello-modal-continuation-item"
-                  >
-                    <div class="trello-modal-continuation-header">
-                      <span class="trello-modal-continuation-number">Continuação {{ index + 1 }}</span>
-                    </div>
-                    <div class="trello-modal-continuation-details">
-                      <div class="trello-modal-continuation-detail">
-                        <span class="trello-modal-continuation-label">Largura:</span>
-                        <span class="trello-modal-continuation-value">{{ formatNumber(continuation.width) }} m</span>
-                      </div>
-                      <div class="trello-modal-continuation-detail">
-                        <span class="trello-modal-continuation-label">Altura:</span>
-                        <span class="trello-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
-                      </div>
-                      <div class="trello-modal-continuation-detail">
-                        <span class="trello-modal-continuation-label">Área:</span>
-                        <span class="trello-modal-continuation-value">
-                          {{ formatNumber((Number(continuation.width) || 0) * (Number(continuation.height) || 0)) }} m²
-                        </span>
+                <div class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-align-left"></i> Descrição
+                  </h3>
+                  <div v-if="!isEditingDescription" class="trello-modal-description" :class="{ 'is-empty': !card.description }" @click="startEditingDescription">
+                    {{ card.description || 'Adicione uma descrição mais detalhada...' }}
+                  </div>
+                  <div v-else class="trello-modal-description-edit">
+                    <textarea
+                      v-model="descriptionText"
+                      class="trello-modal-description-textarea"
+                      maxlength="500"
+                      rows="4"
+                      placeholder="Adicione uma descrição mais detalhada..."
+                    ></textarea>
+                    <div class="trello-modal-description-footer">
+                      <span class="trello-modal-description-counter">{{ descriptionText.length }}/500</span>
+                      <div class="trello-modal-description-actions">
+                        <button class="trello-modal-description-cancel" @click="cancelEditingDescription">
+                          Cancelar
+                        </button>
+                        <button class="trello-modal-description-save" @click="saveDescription" :disabled="isSavingDescription">
+                          {{ isSavingDescription ? 'Salvando...' : 'Salvar' }}
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Imagens de Upload -->
-          <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-upload"></i> Imagens Enviadas
-            </h3>
-            <div class="trello-modal-model-images">
-              <div
-                v-for="(file, fileIndex) in card.uploaded_files"
-                :key="fileIndex"
-                class="trello-modal-model-image"
-              >
-                <img :src="getImageUrl(file)" :alt="file.name || 'Imagem enviada'" />
-              </div>
-            </div>
-          </div>
+                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-paperclip"></i> Anexos
+                  </h3>
+                  <div class="trello-modal-attachments">
+                    <div
+                      v-for="(file, fileIndex) in card.uploaded_files"
+                      :key="fileIndex"
+                      class="trello-modal-attachment"
+                    >
+                      <div class="trello-modal-attachment-preview">
+                        <img v-if="isImageFile(file)" :src="getImageUrl(file)" :alt="getAttachmentName(file, fileIndex)" />
+                        <i v-else class="fa fa-file"></i>
+                      </div>
+                      <div class="trello-modal-attachment-body">
+                        <div class="trello-modal-attachment-name">{{ getAttachmentName(file, fileIndex) }}</div>
+                        <div class="trello-modal-attachment-meta">
+                          {{ formatDate(file.created_at) }}
+                        </div>
+                        <a
+                          class="trello-modal-attachment-button"
+                          :href="getImageUrl(file)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Abrir
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-          <!-- Imagens de Coleção -->
-          <div v-if="card.budget" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-cube"></i> Imagens da Coleção
-            </h3>
-            <div v-if="getCollectionModels(card.budget).length > 0" class="trello-modal-models">
-              <div
-                v-for="(model, index) in getCollectionModels(card.budget)"
-                :key="index"
-                class="trello-modal-model"
-              >
-                <div class="trello-modal-model-name">{{ model.name }}</div>
-                <div v-if="model.files && model.files.length > 0" class="trello-modal-model-images">
-                  <div
-                    v-for="(file, fileIndex) in model.files"
-                    :key="fileIndex"
-                    class="trello-modal-model-image"
-                  >
-                    <img :src="getImageUrl(file)" :alt="file.name || 'Imagem'" />
+                <div class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-money"></i> Valor do Orçamento
+                  </h3>
+                  <div class="trello-modal-info">
+                    <span class="trello-modal-amount">{{ formatCurrency(card.total_amount) }}</span>
+                  </div>
+                </div>
+
+                <!-- Detalhes da Parede -->
+                <div v-if="card.wall" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-ruler"></i> Detalhes da Parede
+                  </h3>
+                  <div class="trello-modal-wall-details">
+                    <div class="trello-modal-wall-info-grid">
+                      <div class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Nome da Parede</div>
+                        <div class="trello-modal-wall-info-value">{{ card.wall.name || 'Não informado' }}</div>
+                      </div>
+                      <div class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Largura</div>
+                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.width) }} m</div>
+                      </div>
+                      <div class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Altura</div>
+                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
+                      </div>
+                      <div class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Área Total</div>
+                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
+                      </div>
+                      <div v-if="card.wall.strip_height" class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Altura da Faixa</div>
+                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
+                      </div>
+                      <div v-if="card.wall.strip_count" class="trello-modal-wall-info-item">
+                        <div class="trello-modal-wall-info-label">Quantidade de Faixas</div>
+                        <div class="trello-modal-wall-info-value">{{ card.wall.strip_count }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Continuações -->
+                    <div v-if="card.wall.continue_same_art && card.wall.continuations && card.wall.continuations.length > 0" class="trello-modal-continuations">
+                      <h4 class="trello-modal-continuations-title">
+                        <i class="fa fa-arrows-h"></i> Continuações
+                      </h4>
+                      <div class="trello-modal-continuations-list">
+                        <div
+                          v-for="(continuation, index) in card.wall.continuations"
+                          :key="index"
+                          class="trello-modal-continuation-item"
+                        >
+                          <div class="trello-modal-continuation-header">
+                            <span class="trello-modal-continuation-number">Continuação {{ index + 1 }}</span>
+                          </div>
+                          <div class="trello-modal-continuation-details">
+                            <div class="trello-modal-continuation-detail">
+                              <span class="trello-modal-continuation-label">Largura:</span>
+                              <span class="trello-modal-continuation-value">{{ formatNumber(continuation.width) }} m</span>
+                            </div>
+                            <div class="trello-modal-continuation-detail">
+                              <span class="trello-modal-continuation-label">Altura:</span>
+                              <span class="trello-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
+                            </div>
+                            <div class="trello-modal-continuation-detail">
+                              <span class="trello-modal-continuation-label">Área:</span>
+                              <span class="trello-modal-continuation-value">
+                                {{ formatNumber((Number(continuation.width) || 0) * (Number(continuation.height) || 0)) }} m²
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Imagens de Upload -->
+                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-upload"></i> Imagens Enviadas
+                  </h3>
+                  <div class="trello-modal-model-images">
+                    <div
+                      v-for="(file, fileIndex) in card.uploaded_files"
+                      :key="fileIndex"
+                      class="trello-modal-model-image"
+                    >
+                      <img :src="getImageUrl(file)" :alt="file.name || 'Imagem enviada'" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Imagens de Coleção -->
+                <div v-if="card.budget" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-cube"></i> Modelos selecionados
+                  </h3>
+                  <div v-if="getCollectionModels(card.budget).length > 0">
+                    {{ getCollectionModels(card.budget).map(model => model.name).join(', ') }}
+                  </div>
+                  <div v-else class="trello-modal-info text-muted">
+                    Nenhum modelo selecionado
+                  </div>
+                </div>
+
+                <!-- Imagens da Parede Específica -->
+                <div v-if="card.wall && card.wall.collection_model" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-image"></i> Imagens da Parede
+                  </h3>
+                  <div v-if="card.wall.collection_model.files && card.wall.collection_model.files.length > 0" class="trello-modal-model-images">
+                    <div
+                      v-for="(file, fileIndex) in card.wall.collection_model.files"
+                      :key="fileIndex"
+                      class="trello-modal-model-image"
+                    >
+                      <img :src="getImageUrl(file)" :alt="file.name || 'Imagem da parede'" />
+                    </div>
+                  </div>
+                  <div v-else class="trello-modal-info text-muted">
+                    Nenhuma imagem disponível para esta parede
+                  </div>
+                </div>
+
+                <div v-if="card.budget" class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-link"></i> Links
+                  </h3>
+                  <div v-if="card.budget.link_referring_model" class="trello-modal-info">
+                    <a
+                      :href="card.budget.link_referring_model"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="trello-modal-link"
+                    >
+                      <i class="fa fa-external-link"></i>
+                      {{ card.budget.link_referring_model }}
+                    </a>
+                  </div>
+                  <div v-else class="trello-modal-info text-muted">
+                    Nenhum link disponível
                   </div>
                 </div>
               </div>
-            </div>
-            <div v-else class="trello-modal-info text-muted">
-              Nenhum modelo selecionado
-            </div>
-          </div>
 
-          <!-- Imagens da Parede Específica -->
-          <div v-if="card.wall && card.wall.collection_model" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-image"></i> Imagens da Parede
-            </h3>
-            <div v-if="card.wall.collection_model.files && card.wall.collection_model.files.length > 0" class="trello-modal-model-images">
-              <div
-                v-for="(file, fileIndex) in card.wall.collection_model.files"
-                :key="fileIndex"
-                class="trello-modal-model-image"
-              >
-                <img :src="getImageUrl(file)" :alt="file.name || 'Imagem da parede'" />
-              </div>
-            </div>
-            <div v-else class="trello-modal-info text-muted">
-              Nenhuma imagem disponível para esta parede
-            </div>
-          </div>
-
-          <div v-if="card.budget" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-link"></i> Links
-            </h3>
-            <div v-if="card.budget.link_referring_model" class="trello-modal-info">
-              <a
-                :href="card.budget.link_referring_model"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="trello-modal-link"
-              >
-                <i class="fa fa-external-link"></i>
-                {{ card.budget.link_referring_model }}
-              </a>
-            </div>
-            <div v-else class="trello-modal-info text-muted">
-              Nenhum link disponível
-            </div>
-          </div>
-
-          <div v-if="card.budget" class="trello-modal-section">
-            <h3 class="trello-modal-section-title">
-              <i class="fa fa-comment"></i> Comentários
-            </h3>
-            <div v-if="card.budget.comment_referring_model" class="trello-modal-comment">
-              {{ card.budget.comment_referring_model }}
-            </div>
-            <div v-else class="trello-modal-info text-muted">
-              Nenhum comentário disponível
+              <aside class="trello-modal-sidebar">
+                <div class="trello-modal-sidebar-header">
+                  <h3>Comentários e atividade</h3>
+                  <button class="trello-modal-details-button" type="button" @click="toggleDetails">
+                    {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
+                  </button>
+                </div>
+                <div v-if="showDetails" class="trello-modal-activity">
+                  <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
+                    <div
+                      v-for="(activity, activityIndex) in activityItems"
+                      :key="activity.id || activityIndex"
+                      class="trello-modal-activity-item"
+                    >
+                      <div class="trello-modal-activity-header">
+                        <span class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
+                        <span class="trello-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
+                      </div>
+                      <div class="trello-modal-activity-content">
+                        {{ getActivityText(activity) }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="trello-modal-info text-muted">
+                    Nenhum comentário ou atividade registrada.
+                  </div>
+                </div>
+              </aside>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </Teleport>
-</template>
+    </Teleport>
+  </template>
 
-<script setup>
-const props = defineProps({
-  card: {
-    type: Object,
-    default: null,
-  },
-});
+  <script setup>
+  import { computed, ref, watch } from 'vue';
 
-const emit = defineEmits(['close']);
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatCurrency(value) {
-  if (value === null || value === undefined) {
-    return currencyFormatter.format(0);
-  }
-  const numericValue = Number(value);
-  return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
-}
-
-function formatNumber(value) {
-  if (value === null || value === undefined) {
-    return '-';
-  }
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
-}
-
-function getCollectionModels(budget) {
-  if (!budget || !budget.rooms) {
-    return [];
-  }
-
-  const models = [];
-  budget.rooms.forEach(room => {
-    if (room.walls) {
-      room.walls.forEach(wall => {
-        // Pode vir como collection_model ou collectionModel
-        const model = wall.collection_model || wall.collectionModel;
-        if (model) {
-          models.push(model);
-        }
-      });
-    }
+  const props = defineProps({
+    card: {
+      type: Object,
+      default: null,
+    },
   });
 
-  return models;
-}
+  const emit = defineEmits(['close']);
 
-function getImageUrl(file) {
-  if (file.url) {
-    return file.url;
-  }
-  if (file.fileUrl) {
-    return file.fileUrl;
-  }
-  if (file.file_path) {
-    // Se for um caminho relativo, construir a URL completa
-    if (file.file_path.startsWith('http')) {
-      return file.file_path;
+  const showDetails = ref(false);
+  const isEditingDescription = ref(false);
+  const descriptionText = ref('');
+  const originalDescription = ref('');
+  const isSavingDescription = ref(false);
+
+  const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
+  const activityDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+  const coverImage = computed(() => {
+    if (!props.card) {
+      return '';
     }
-    return `/storage/${file.file_path}`;
-  }
-  return '';
-}
+    if (props.card.image) {
+      return props.card.image;
+    }
+    const imageAttachment = props.card.uploaded_files?.find(file => isImageFile(file));
+    return imageAttachment ? getImageUrl(imageAttachment) : '';
+  });
 
-function handleClose() {
-  emit('close');
-}
-</script>
+  const activityItems = computed(() => {
+    if (!props.card) {
+      return [];
+    }
+
+    if (Array.isArray(props.card.activities) && props.card.activities.length > 0) {
+      return props.card.activities;
+    }
+
+    if (Array.isArray(props.card.comments) && props.card.comments.length > 0) {
+      return props.card.comments;
+    }
+
+    if (props.card.budget?.comment_referring_model) {
+      return [
+        {
+          id: 'budget-comment',
+          user_name: props.card.responsible_name || 'Comentário',
+          created_at: props.card.updated_at,
+          comment: props.card.budget.comment_referring_model,
+        },
+      ];
+    }
+
+    return [];
+  });
+
+  function formatCurrency(value) {
+    if (value === null || value === undefined) {
+      return currencyFormatter.format(0);
+    }
+    const numericValue = Number(value);
+    return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
+  }
+
+  function getCollectionModels(budget) {
+    if (!budget || !budget.rooms) {
+      return [];
+    }
+
+    const models = [];
+    budget.rooms.forEach(room => {
+      if (room.walls) {
+        room.walls.forEach(wall => {
+          // Pode vir como collection_model ou collectionModel
+          const model = wall.collection_model || wall.collectionModel;
+          if (model) {
+            models.push(model);
+          }
+        });
+      }
+    });
+
+    return models;
+  }
+
+  function getImageUrl(file) {
+    if (file.url) {
+      return file.url;
+    }
+    if (file.fileUrl) {
+      return file.fileUrl;
+    }
+    if (file.file_path) {
+      // Se for um caminho relativo, construir a URL completa
+      if (file.file_path.startsWith('http')) {
+        return file.file_path;
+      }
+      return `/storage/${file.file_path}`;
+    }
+    return '';
+  }
+
+  function getAttachmentName(file, index = 0) {
+    return file?.name || file?.original_name || file?.file_name || `Arquivo ${index + 1}`;
+  }
+
+  function isImageFile(file) {
+    if (!file) {
+      return false;
+    }
+    const mime = (file.mime || file.mimetype || '').toLowerCase();
+    if (mime.startsWith('image/')) {
+      return true;
+    }
+    const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
+    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
+  }
+
+  function formatDate(date) {
+    if (!date) {
+      return '';
+    }
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return date;
+    }
+    return activityDateFormatter.format(parsedDate);
+  }
+
+  function getActivityUser(activity) {
+    if (!activity) {
+      return 'Anônimo';
+    }
+    return (
+      activity.user_name ||
+      activity.author?.name ||
+      activity.user?.name ||
+      activity.user ||
+      activity.created_by ||
+      'Anônimo'
+    );
+  }
+
+  function getActivityText(activity) {
+    if (!activity) {
+      return '';
+    }
+    if (typeof activity === 'string') {
+      return activity;
+    }
+    return activity.text || activity.comment || activity.description || activity.message || '';
+  }
+
+  function toggleDetails() {
+    showDetails.value = !showDetails.value;
+  }
+
+  function startEditingDescription() {
+    originalDescription.value = props.card?.description || '';
+    descriptionText.value = originalDescription.value;
+    isEditingDescription.value = true;
+  }
+
+  function cancelEditingDescription() {
+    descriptionText.value = originalDescription.value;
+    isEditingDescription.value = false;
+  }
+
+  async function saveDescription() {
+    if (!props.card?.id) {
+      return;
+    }
+
+    isSavingDescription.value = true;
+
+    try {
+      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/description`, {
+        description: descriptionText.value,
+      });
+
+      // Atualizar o card localmente
+      if (props.card) {
+        props.card.description = descriptionText.value;
+      }
+
+      originalDescription.value = descriptionText.value;
+      isEditingDescription.value = false;
+
+      // Mostrar mensagem de sucesso
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Descrição salva com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao salvar descrição. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      isSavingDescription.value = false;
+    }
+  }
+
+  function handleClose() {
+    emit('close');
+  }
+
+  // Inicializar descrição quando o card mudar
+  watch(() => props.card, (newCard) => {
+    if (newCard) {
+      descriptionText.value = newCard.description || '';
+      originalDescription.value = newCard.description || '';
+    }
+  }, { immediate: true });
+  </script>
 
 <style lang="scss" scoped>
-// Modal Styles
-.trello-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-  padding: 20px;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+  // Modal Styles
+  .trello-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
   }
-  to {
-    opacity: 1;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
-}
 
-.trello-modal {
-  background-color: #ffffff;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 768px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 16px rgba(9, 30, 66, 0.25);
-  animation: slideUp 0.3s ease;
-  overflow: hidden;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
+  .trello-modal {
+    background-color: #ffffff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 16px rgba(9, 30, 66, 0.25);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
-}
 
-.trello-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid #dfe1e6;
-}
+  .trello-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #dfe1e6;
+  }
 
-.trello-modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #172b4d;
-  margin: 0;
-}
+  .trello-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #172b4d;
+    margin: 0;
+  }
 
-.trello-modal-close {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: #5e6c84;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
+  .trello-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #5e6c84;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
 
-  &:hover {
+    &:hover {
+      background-color: #dfe1e6;
+      color: #172b4d;
+    }
+  }
+
+  .trello-modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .trello-modal-cover {
+    width: 100%;
+    height: 200px;
+    border-radius: 0;
+    overflow: hidden;
+    margin-bottom: 0;
+    background-color: #f0ece8;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .trello-modal-content-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 24px;
+  }
+
+  .trello-modal-main {
+    min-width: 0;
+    border-right: 1px solid silver;
+  }
+
+  .trello-modal-sidebar {
+    background-color: #f9fafc;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    padding: 16px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(90vh - 200px);
+    overflow-y: auto;
+  }
+
+  .trello-modal-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #172b4d;
+      margin: 0;
+    }
+  }
+
+  .trello-modal-details-button {
+    border: none;
+    background-color: #091e42;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  .trello-modal-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .trello-modal-activity-item {
+    padding: 12px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #dfe1e6;
+  }
+
+  .trello-modal-activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .trello-modal-activity-author {
+    font-weight: 600;
+    color: #172b4d;
+    font-size: 13px;
+  }
+
+  .trello-modal-activity-date {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+
+  .trello-modal-activity-content {
+    font-size: 13px;
+    color: #172b4d;
+    line-height: 1.4;
+  }
+
+  .trello-modal-description {
+    padding: 16px;
+    background-color: #f4f5f7;
+    border-radius: 8px;
+    min-height: 80px;
+    color: #172b4d;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #ebecf0;
+    }
+
+    &.is-empty {
+      color: #5e6c84;
+    }
+  }
+
+  .trello-modal-description-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .trello-modal-description-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #dfe1e6;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #172b4d;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #0079bf;
+    }
+
+    &::placeholder {
+      color: #5e6c84;
+    }
+  }
+
+  .trello-modal-description-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .trello-modal-description-counter {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+
+  .trello-modal-description-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .trello-modal-description-cancel,
+  .trello-modal-description-save {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .trello-modal-description-cancel {
     background-color: #dfe1e6;
     color: #172b4d;
+
+    &:hover {
+      background-color: #c1c7d0;
+    }
   }
-}
 
-.trello-modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
+  .trello-modal-description-save {
+    background-color: #0079bf;
+    color: #ffffff;
 
-.trello-modal-image {
-  width: 100%;
-  max-height: 300px;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #f4f5f7;
+    &:hover:not(:disabled) {
+      background-color: #005a8b;
+    }
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   }
-}
 
-.trello-modal-section {
-  margin-bottom: 24px;
-
-  &:last-child {
-    margin-bottom: 0;
+  .trello-modal-attachments {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
-}
 
-.trello-modal-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #172b4d;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  .trello-modal-attachment {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 8px;
+    align-items: center;
+  }
 
-  i {
+  .trello-modal-attachment-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    i {
+      font-size: 24px;
+      color: #5e6c84;
+    }
+  }
+
+  .trello-modal-attachment-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .trello-modal-attachment-name {
+    font-weight: 600;
+    color: #172b4d;
+    font-size: 14px;
+  }
+
+  .trello-modal-attachment-meta {
+    font-size: 12px;
     color: #5e6c84;
   }
-}
 
-.trello-modal-info {
-  color: #172b4d;
-  font-size: 14px;
-  line-height: 1.5;
-}
+  .trello-modal-attachment-button {
+    align-self: flex-start;
+    padding: 6px 12px;
+    background-color: #091e42;
+    color: #ffffff;
+    border-radius: 4px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
 
-.trello-modal-info-label {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background-color: #dfe1e6;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #5e6c84;
-}
+    &:hover {
+      background-color: #03264c;
+    }
+  }
 
-.trello-modal-amount {
-  font-size: 18px;
-  font-weight: 600;
-  color: #0079bf;
-}
-
-.trello-modal-models {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.trello-modal-model {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-}
-
-.trello-modal-model-name {
-  font-weight: 600;
-  color: #172b4d;
-  margin-bottom: 8px;
-}
-
-.trello-modal-model-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.trello-modal-model-image {
-  width: 120px;
-  height: 120px;
-  border-radius: 4px;
-  overflow: hidden;
-  background-color: #ffffff;
-
-  img {
+  .trello-modal-image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
+    max-height: 300px;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f4f5f7;
 
-.trello-modal-link {
-  color: #0079bf;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  word-break: break-all;
-
-  &:hover {
-    text-decoration: underline;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
   }
 
-  i {
+  .trello-modal-section {
+    margin-bottom: 24px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .trello-modal-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #172b4d;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i {
+      color: #5e6c84;
+    }
+  }
+
+  .trello-modal-info {
+    color: #172b4d;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .trello-modal-info-label {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background-color: #dfe1e6;
+    border-radius: 4px;
     font-size: 12px;
-  }
-}
-
-.trello-modal-comment {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-  color: #172b4d;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.trello-modal-wall-details {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.trello-modal-wall-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-
-.trello-modal-wall-info-item {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-}
-
-.trello-modal-wall-info-label {
-  font-size: 12px;
-  color: #5e6c84;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.trello-modal-wall-info-value {
-  font-size: 14px;
-  color: #172b4d;
-  font-weight: 600;
-}
-
-.trello-modal-continuations {
-  margin-top: 8px;
-}
-
-.trello-modal-continuations-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #172b4d;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  i {
     color: #5e6c84;
-    font-size: 12px;
   }
-}
 
-.trello-modal-continuations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+  .trello-modal-amount {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0079bf;
+  }
 
-.trello-modal-continuation-item {
-  padding: 12px;
-  background-color: #f4f5f7;
-  border-radius: 6px;
-  border-left: 3px solid #0079bf;
-}
+  .trello-modal-models {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-.trello-modal-continuation-header {
-  margin-bottom: 8px;
-}
+  .trello-modal-model {
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 6px;
+  }
 
-.trello-modal-continuation-number {
-  font-size: 13px;
-  font-weight: 600;
-  color: #172b4d;
-}
+  .trello-modal-model-name {
+    font-weight: 600;
+    color: #172b4d;
+    margin-bottom: 8px;
+  }
 
-.trello-modal-continuation-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+  .trello-modal-model-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 
-.trello-modal-continuation-detail {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+  .trello-modal-model-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #ffffff;
 
-.trello-modal-continuation-label {
-  font-size: 12px;
-  color: #5e6c84;
-}
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
 
-.trello-modal-continuation-value {
-  font-size: 13px;
-  color: #172b4d;
-  font-weight: 600;
-}
-</style>
+  .trello-modal-link {
+    color: #0079bf;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    word-break: break-all;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    i {
+      font-size: 12px;
+    }
+  }
+
+  .trello-modal-comment {
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 6px;
+    color: #172b4d;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .trello-modal-wall-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .trello-modal-wall-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .trello-modal-wall-info-item {
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 6px;
+  }
+
+  .trello-modal-wall-info-label {
+    font-size: 12px;
+    color: #5e6c84;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .trello-modal-wall-info-value {
+    font-size: 14px;
+    color: #172b4d;
+    font-weight: 600;
+  }
+
+  .trello-modal-continuations {
+    margin-top: 8px;
+  }
+
+  .trello-modal-continuations-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #172b4d;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i {
+      color: #5e6c84;
+      font-size: 12px;
+    }
+  }
+
+  .trello-modal-continuations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .trello-modal-continuation-item {
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 6px;
+    border-left: 3px solid #0079bf;
+  }
+
+  .trello-modal-continuation-header {
+    margin-bottom: 8px;
+  }
+
+  .trello-modal-continuation-number {
+    font-size: 13px;
+    font-weight: 600;
+    color: #172b4d;
+  }
+
+  .trello-modal-continuation-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .trello-modal-continuation-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .trello-modal-continuation-label {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+
+  .trello-modal-continuation-value {
+    font-size: 13px;
+    color: #172b4d;
+    font-weight: 600;
+  }
+
+  @media (max-width: 968px) {
+    .trello-modal-content-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .trello-modal-sidebar {
+      position: static;
+      max-height: none;
+    }
+  }
+  </style>
 

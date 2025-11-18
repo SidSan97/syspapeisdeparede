@@ -18,6 +18,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->unsignedBigInteger('budget_wall_id')->nullable();
             $table->unsignedBigInteger('layout_column_names_id')->nullable();
+            $table->string('description', 500)->nullable();
             $table->string('status', 50);
             $table->timestamps();
 
