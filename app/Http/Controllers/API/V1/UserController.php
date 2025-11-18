@@ -52,6 +52,10 @@ class UserController extends BaseController
             $users = $users->role($request->type);
         }
 
+        if ($request->filled('user_type_id')) {
+            $users = $users->where('user_type_id', $request->user_type_id);
+        }
+
         $users = $users->paginate(100);
 
         return $this->sendResponse($users, 'Lista de usuários');

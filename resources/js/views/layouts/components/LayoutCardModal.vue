@@ -13,7 +13,60 @@
               <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
             </div>
 
-            <div class="trello-modal-content-layout">
+            <div class="container-fluid pt-3">
+                <div class="modal-buttons-options position-relative">
+                    <button class="btn btn-primary" @click="toggleMembersMenu">
+                        <i class="fa-solid fa-plus"></i>
+                        Adicionar membro
+                    </button>
+
+                    <div v-if="showMembersMenu" class="members-menu">
+                        <div class="members-menu-header">
+                            <button class="members-menu-back" @click="closeMembersMenu">
+                                <i class="fa fa-chevron-left"></i>
+                            </button>
+                            <h3 class="members-menu-title">Membros</h3>
+                            <button class="members-menu-close" @click="closeMembersMenu">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="members-menu-search">
+                            <input
+                                v-model="memberSearchQuery"
+                                type="text"
+                                class="members-menu-search-input"
+                                placeholder="Pesquisar membros"
+                                @input="searchMembers"
+                            />
+                        </div>
+
+                        <div class="members-menu-content">
+                            <h4 class="members-menu-section-title">Adicionar membros</h4>
+                            <div v-if="loadingMembers" class="members-menu-loading">
+                                <span>Carregando...</span>
+                            </div>
+                            <div v-else-if="availableMembers.length === 0" class="members-menu-empty">
+                                <span>Nenhum membro encontrado</span>
+                            </div>
+                            <div v-else class="members-menu-list">
+                                <div
+                                    v-for="member in filteredMembers"
+                                    :key="member.id"
+                                    class="members-menu-item"
+                                >
+                                    <div class="members-menu-avatar" :style="{ backgroundColor: getAvatarColor(member.name) }">
+                                        {{ getInitials(member.name) }}
+                                    </div>
+                                    <span class="members-menu-name">{{ member.name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-content-layout">
               <div class="trello-modal-main">
                 <div class="trello-modal-section">
                   <h3 class="trello-modal-section-title">
@@ -266,67 +319,81 @@
                   </div>
                 </div>
 
-                <!-- Lista de comentários -->
-                <div class="trello-modal-comments-list">
-                  <div
-                    v-for="comment in cardComments"
-                    :key="comment.id"
-                    class="trello-modal-comment-item"
-                  >
-                    <div v-if="editingCommentId !== comment.id" class="trello-modal-comment-content">
-                      <div class="trello-modal-comment-header">
-                        <span class="trello-modal-comment-author">{{ comment.user_name }}</span>
-                        <span class="trello-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
-                      </div>
-                      <div class="trello-modal-comment-text">{{ comment.comment }}</div>
-                      <div v-if="canEditComment(comment)" class="trello-modal-comment-actions">
-                        <button class="trello-modal-comment-action-btn" @click="startEditComment(comment)">
-                          Editar
-                        </button>
-                        <button class="trello-modal-comment-action-btn trello-modal-comment-delete" @click="deleteComment(comment.id)">
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                    <div v-else class="trello-modal-comment-edit">
-                      <textarea
-                        v-model="editingCommentText"
-                        class="trello-modal-comment-textarea"
-                        maxlength="500"
-                        rows="3"
-                      ></textarea>
-                      <div class="trello-modal-comment-input-footer">
-                        <span class="trello-modal-comment-counter">{{ editingCommentText.length }}/500</span>
-                        <div class="trello-modal-comment-input-actions">
-                          <button class="trello-modal-comment-cancel" @click="cancelEditComment">
-                            Cancelar
+                <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
+                <div v-if="showDetails">
+                  <!-- Lista de comentários -->
+                  <div class="trello-modal-comments-list">
+                    <div
+                      v-for="comment in cardComments"
+                      :key="comment.id"
+                      class="trello-modal-comment-item"
+                    >
+                      <div v-if="editingCommentId !== comment.id" class="trello-modal-comment-content">
+                        <div class="trello-modal-comment-header">
+                          <div class="trello-modal-comment-author-wrapper">
+                            <div class="trello-modal-comment-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
+                              {{ getInitials(comment.user_name) }}
+                            </div>
+                            <span class="trello-modal-comment-author">{{ comment.user_name }}</span>
+                          </div>
+                          <span class="trello-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
+                        </div>
+                        <div class="trello-modal-comment-text">{{ comment.comment }}</div>
+                        <div class="trello-modal-comment-actions">
+                          <button class="trello-modal-comment-action-btn" @click="startEditComment(comment)">
+                            Editar
                           </button>
-                          <button class="trello-modal-comment-save" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
-                            {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+                          <span class="trello-modal-comment-action-separator">/</span>
+                          <button class="trello-modal-comment-action-btn trello-modal-comment-delete" @click="deleteComment(comment.id)">
+                            Excluir
                           </button>
                         </div>
                       </div>
+                      <div v-else class="trello-modal-comment-edit">
+                        <textarea
+                          v-model="editingCommentText"
+                          class="trello-modal-comment-textarea"
+                          maxlength="500"
+                          rows="3"
+                        ></textarea>
+                        <div class="trello-modal-comment-input-footer">
+                          <span class="trello-modal-comment-counter">{{ editingCommentText.length }}/500</span>
+                          <div class="trello-modal-comment-input-actions">
+                            <button class="trello-modal-comment-cancel" @click="cancelEditComment">
+                              Cancelar
+                            </button>
+                            <button class="trello-modal-comment-save" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
+                              {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="cardComments.length === 0" class="trello-modal-info text-muted">
+                      Nenhum comentário ainda.
                     </div>
                   </div>
-                  <div v-if="cardComments.length === 0" class="trello-modal-info text-muted">
-                    Nenhum comentário ainda.
-                  </div>
-                </div>
 
-                <!-- Atividades (mantido para compatibilidade) -->
-                <div v-if="showDetails" class="trello-modal-activity">
-                  <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
-                    <div
-                      v-for="(activity, activityIndex) in activityItems"
-                      :key="activity.id || activityIndex"
-                      class="trello-modal-activity-item"
-                    >
-                      <div class="trello-modal-activity-header">
-                        <span class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
-                        <span class="trello-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
-                      </div>
-                      <div class="trello-modal-activity-content">
-                        {{ getActivityText(activity) }}
+                  <!-- Atividades -->
+                  <div class="trello-modal-activity">
+                    <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
+                      <div
+                        v-for="(activity, activityIndex) in activityItems"
+                        :key="activity.id || activityIndex"
+                        class="trello-modal-activity-item"
+                      >
+                        <div class="trello-modal-activity-header">
+                          <div class="trello-modal-activity-author-wrapper">
+                            <div class="trello-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                              {{ getInitials(getActivityUser(activity)) }}
+                            </div>
+                            <span class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
+                          </div>
+                          <span class="trello-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
+                        </div>
+                        <div class="trello-modal-activity-content">
+                          {{ getActivityText(activity) }}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -337,7 +404,7 @@
         </div>
       </div>
     </Teleport>
-  </template>
+</template>
 
   <script setup>
   import { computed, ref, watch } from 'vue';
@@ -363,6 +430,12 @@
   const isSavingComment = ref(false);
   const editingCommentId = ref(null);
   const editingCommentText = ref('');
+
+  // Membros
+  const showMembersMenu = ref(false);
+  const availableMembers = ref([]);
+  const memberSearchQuery = ref('');
+  const loadingMembers = ref(false);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -628,11 +701,95 @@
     }
   }
 
-  function canEditComment(comment) {
-    if (!comment.user_id || !window.user) {
-      return false;
+
+  const filteredMembers = computed(() => {
+    if (!memberSearchQuery.value.trim()) {
+      return availableMembers.value;
     }
-    return comment.user_id === window.user.id;
+    const query = memberSearchQuery.value.toLowerCase().trim();
+    return availableMembers.value.filter(member =>
+      member.name.toLowerCase().includes(query)
+    );
+  });
+
+  function toggleMembersMenu() {
+    showMembersMenu.value = !showMembersMenu.value;
+    if (showMembersMenu.value && availableMembers.value.length === 0) {
+      fetchMembers();
+    }
+  }
+
+  function closeMembersMenu() {
+    showMembersMenu.value = false;
+    memberSearchQuery.value = '';
+  }
+
+  async function fetchMembers() {
+    try {
+      loadingMembers.value = true;
+      const response = await window.axios.get('v1/users/search', {
+        params: {
+          user_type_id: 4
+        }
+      });
+
+      if (response.data.success && response.data.data) {
+        // Se a resposta estiver paginada, pegar o array de dados
+        if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          availableMembers.value = response.data.data.data;
+        } else if (Array.isArray(response.data.data)) {
+          availableMembers.value = response.data.data;
+        } else {
+          availableMembers.value = [];
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar membros:', error);
+      availableMembers.value = [];
+    } finally {
+      loadingMembers.value = false;
+    }
+  }
+
+  function searchMembers() {
+    // A busca é feita via computed filteredMembers
+    // Mas podemos adicionar debounce aqui se necessário
+  }
+
+  function getInitials(name) {
+    if (!name) {
+      return '??';
+    }
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  function getAvatarColor(name) {
+    if (!name) {
+      return '#5e6c84';
+    }
+    // Cores vibrantes para avatares
+    const colors = [
+      '#00b8d9', // Cyan
+      '#00a86b', // Teal
+      '#0065ff', // Blue
+      '#5243aa', // Purple
+      '#ff5630', // Red
+      '#ff8b00', // Orange
+      '#36b37e', // Green
+      '#ffab00', // Yellow
+      '#6554c0', // Violet
+      '#00c7e6', // Light Cyan
+    ];
+    // Gerar um índice baseado no nome para consistência
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
   }
 
   function startEditComment(comment) {
@@ -847,7 +1004,7 @@
     }
   }
 
-  .trello-modal-content-layout {
+  .modal-content-layout {
     display: grid;
     grid-template-columns: 1fr 400px;
     gap: 24px;
@@ -919,6 +1076,25 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 6px;
+  }
+
+  .trello-modal-activity-author-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .trello-modal-activity-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
   }
 
   .trello-modal-activity-author {
@@ -1144,6 +1320,25 @@
     align-items: center;
   }
 
+  .trello-modal-comment-author-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .trello-modal-comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
   .trello-modal-comment-author {
     font-weight: 600;
     color: #172b4d;
@@ -1164,23 +1359,43 @@
 
   .trello-modal-comment-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 4px;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f4f5f7;
+    min-height: 24px;
+  }
+
+  .trello-modal-comment-action-separator {
+    color: #dfe1e6;
+    font-size: 11px;
+    padding: 0 2px;
+    user-select: none;
   }
 
   .trello-modal-comment-action-btn {
     background: none;
     border: none;
     color: #5e6c84;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 500;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 2px 4px;
+    border-radius: 3px;
     transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 1.4;
+    display: inline-block;
 
     &:hover {
       background-color: #f4f5f7;
       color: #172b4d;
+      text-decoration: underline;
+    }
+
+    &:active {
+      opacity: 0.7;
     }
 
     &.trello-modal-comment-delete {
@@ -1487,7 +1702,7 @@
   }
 
   @media (max-width: 968px) {
-    .trello-modal-content-layout {
+    .modal-content-layout {
       grid-template-columns: 1fr;
     }
 
@@ -1495,6 +1710,143 @@
       position: static;
       max-height: none;
     }
+  }
+
+  // Menu de Membros
+  .members-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    width: 340px;
+    background-color: #1d2125;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 600px;
+  }
+
+  .members-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .members-menu-back,
+  .members-menu-close {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .members-menu-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+  }
+
+  .members-menu-search {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .members-menu-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #22272b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 14px;
+
+    &::placeholder {
+      color: #8c9cb8;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #0c66e4;
+      background-color: #1d2125;
+    }
+  }
+
+  .members-menu-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+  }
+
+  .members-menu-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9fadbc;
+    text-transform: uppercase;
+    margin: 0 0 12px 0;
+    letter-spacing: 0.5px;
+  }
+
+  .members-menu-loading,
+  .members-menu-empty {
+    padding: 16px;
+    text-align: center;
+    color: #8c9cb8;
+    font-size: 14px;
+  }
+
+  .members-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .members-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: default;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .members-menu-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .members-menu-name {
+    font-size: 14px;
+    color: #ffffff;
+    font-weight: 400;
   }
   </style>
 

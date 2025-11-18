@@ -352,15 +352,7 @@ class BudgetController extends Controller
                 ], 404);
             }
 
-            // Verificar se o usuário é o autor do comentário
             $user = $request->user();
-            if ($comment->commentator_id !== $user->id || $comment->commentator_type !== \App\Models\User::class) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Você não tem permissão para editar este comentário',
-                ], 403);
-            }
-
             $comment->update([
                 'comment' => $validated['comment'],
             ]);
@@ -397,15 +389,6 @@ class BudgetController extends Controller
                     'success' => false,
                     'message' => 'Comentário não encontrado',
                 ], 404);
-            }
-
-            // Verificar se o usuário é o autor do comentário
-            $user = $request->user();
-            if ($comment->commentator_id !== $user->id || $comment->commentator_type !== \App\Models\User::class) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Você não tem permissão para excluir este comentário',
-                ], 403);
             }
 
             $comment->delete();

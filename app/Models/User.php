@@ -27,6 +27,7 @@ class User extends Authenticatable implements Commentator //implements MustVerif
         'email',
         'password',
         'avatar',
+        'user_type_id',
     ];
 
     protected $hidden = [
@@ -50,6 +51,14 @@ class User extends Authenticatable implements Commentator //implements MustVerif
     public function needsCommentApproval($model): bool
     {
         return false; // Auto-approve comments
+    }
+
+    /**
+     * Get the type user that owns the user.
+     */
+    public function userType()
+    {
+        return $this->belongsTo(TypeUser::class, 'user_type_id');
     }
 
 }

@@ -24,4 +24,12 @@ class TypeUser extends Model
      * @var string
      */
     protected $table = 'type_users';
+
+    /**
+     * Get the users for the type user.
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class, 'user_type_id');
+    }
 }
