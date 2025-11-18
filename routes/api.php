@@ -100,6 +100,9 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
+    Route::post('budgets/order-budgets/{orderBudget}/comments', [BudgetController::class, 'addComment'])->middleware('auth:api');
+    Route::put('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'updateComment'])->middleware('auth:api');
+    Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'deleteComment'])->middleware('auth:api');
 
     // Layout Column Names
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

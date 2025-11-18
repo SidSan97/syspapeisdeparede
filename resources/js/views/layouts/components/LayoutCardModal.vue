@@ -240,6 +240,80 @@
                     {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
                   </button>
                 </div>
+
+                <!-- Caixa de texto para escrever comentários -->
+                <div class="trello-modal-comment-input-section">
+                  <div class="trello-modal-comment-input-wrapper">
+                    <textarea
+                      v-model="newCommentText"
+                      class="trello-modal-comment-textarea"
+                      maxlength="500"
+                      rows="3"
+                      placeholder="Escrever um comentário..."
+                      @focus="isEditingComment = true"
+                    ></textarea>
+                    <div v-if="isEditingComment" class="trello-modal-comment-input-footer">
+                      <span class="trello-modal-comment-counter">{{ newCommentText.length }}/500</span>
+                      <div class="trello-modal-comment-input-actions">
+                        <button class="trello-modal-comment-cancel" @click="cancelNewComment">
+                          Cancelar
+                        </button>
+                        <button class="trello-modal-comment-save" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
+                          {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista de comentários -->
+                <div class="trello-modal-comments-list">
+                  <div
+                    v-for="comment in cardComments"
+                    :key="comment.id"
+                    class="trello-modal-comment-item"
+                  >
+                    <div v-if="editingCommentId !== comment.id" class="trello-modal-comment-content">
+                      <div class="trello-modal-comment-header">
+                        <span class="trello-modal-comment-author">{{ comment.user_name }}</span>
+                        <span class="trello-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
+                      </div>
+                      <div class="trello-modal-comment-text">{{ comment.comment }}</div>
+                      <div v-if="canEditComment(comment)" class="trello-modal-comment-actions">
+                        <button class="trello-modal-comment-action-btn" @click="startEditComment(comment)">
+                          Editar
+                        </button>
+                        <button class="trello-modal-comment-action-btn trello-modal-comment-delete" @click="deleteComment(comment.id)">
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                    <div v-else class="trello-modal-comment-edit">
+                      <textarea
+                        v-model="editingCommentText"
+                        class="trello-modal-comment-textarea"
+                        maxlength="500"
+                        rows="3"
+                      ></textarea>
+                      <div class="trello-modal-comment-input-footer">
+                        <span class="trello-modal-comment-counter">{{ editingCommentText.length }}/500</span>
+                        <div class="trello-modal-comment-input-actions">
+                          <button class="trello-modal-comment-cancel" @click="cancelEditComment">
+                            Cancelar
+                          </button>
+                          <button class="trello-modal-comment-save" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
+                            {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="cardComments.length === 0" class="trello-modal-info text-muted">
+                    Nenhum comentário ainda.
+                  </div>
+                </div>
+
+                <!-- Atividades (mantido para compatibilidade) -->
                 <div v-if="showDetails" class="trello-modal-activity">
                   <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
                     <div
@@ -255,9 +329,6 @@
                         {{ getActivityText(activity) }}
                       </div>
                     </div>
-                  </div>
-                  <div v-else class="trello-modal-info text-muted">
-                    Nenhum comentário ou atividade registrada.
                   </div>
                 </div>
               </aside>
@@ -286,6 +357,13 @@
   const originalDescription = ref('');
   const isSavingDescription = ref(false);
 
+  // Comentários
+  const isEditingComment = ref(false);
+  const newCommentText = ref('');
+  const isSavingComment = ref(false);
+  const editingCommentId = ref(null);
+  const editingCommentText = ref('');
+
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -307,6 +385,13 @@
     return imageAttachment ? getImageUrl(imageAttachment) : '';
   });
 
+  const cardComments = computed(() => {
+    if (!props.card || !Array.isArray(props.card.comments)) {
+      return [];
+    }
+    return props.card.comments;
+  });
+
   const activityItems = computed(() => {
     if (!props.card) {
       return [];
@@ -314,10 +399,6 @@
 
     if (Array.isArray(props.card.activities) && props.card.activities.length > 0) {
       return props.card.activities;
-    }
-
-    if (Array.isArray(props.card.comments) && props.card.comments.length > 0) {
-      return props.card.comments;
     }
 
     if (props.card.budget?.comment_referring_model) {
@@ -497,6 +578,162 @@
 
   function handleClose() {
     emit('close');
+  }
+
+  // Funções de comentários
+  function cancelNewComment() {
+    newCommentText.value = '';
+    isEditingComment.value = false;
+  }
+
+  async function saveNewComment() {
+    if (!props.card?.id || !newCommentText.value.trim()) {
+      return;
+    }
+
+    isSavingComment.value = true;
+
+    try {
+      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/comments`, {
+        comment: newCommentText.value.trim(),
+      });
+
+      // Adicionar o novo comentário à lista
+      if (props.card && Array.isArray(props.card.comments)) {
+        props.card.comments.unshift(response.data.data);
+      } else if (props.card) {
+        props.card.comments = [response.data.data];
+      }
+
+      newCommentText.value = '';
+      isEditingComment.value = false;
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Comentário adicionado com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      isSavingComment.value = false;
+    }
+  }
+
+  function canEditComment(comment) {
+    if (!comment.user_id || !window.user) {
+      return false;
+    }
+    return comment.user_id === window.user.id;
+  }
+
+  function startEditComment(comment) {
+    editingCommentId.value = comment.id;
+    editingCommentText.value = comment.comment;
+  }
+
+  function cancelEditComment() {
+    editingCommentId.value = null;
+    editingCommentText.value = '';
+  }
+
+  async function saveEditComment(commentId) {
+    if (!props.card?.id || !editingCommentText.value.trim()) {
+      return;
+    }
+
+    isSavingComment.value = true;
+
+    try {
+      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/comments/${commentId}`, {
+        comment: editingCommentText.value.trim(),
+      });
+
+      // Atualizar o comentário na lista
+      if (props.card && Array.isArray(props.card.comments)) {
+        const index = props.card.comments.findIndex(c => c.id === commentId);
+        if (index !== -1) {
+          props.card.comments[index] = response.data.data;
+        }
+      }
+
+      editingCommentId.value = null;
+      editingCommentText.value = '';
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Comentário atualizado com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar comentário:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao atualizar comentário. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      isSavingComment.value = false;
+    }
+  }
+
+  async function deleteComment(commentId) {
+    if (!props.card?.id) {
+      return;
+    }
+
+    if (window.Swal) {
+      const result = await window.Swal.fire({
+        title: 'Excluir comentário?',
+        text: 'Esta ação não pode ser desfeita.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar',
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+    }
+
+    try {
+      await axios.delete(`v1/budgets/order-budgets/${props.card.id}/comments/${commentId}`);
+
+      // Remover o comentário da lista
+      if (props.card && Array.isArray(props.card.comments)) {
+        props.card.comments = props.card.comments.filter(c => c.id !== commentId);
+      }
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: 'Comentário excluído com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao excluir comentário:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao excluir comentário. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    }
   }
 
   // Inicializar descrição quando o card mudar
@@ -796,6 +1033,168 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+  }
+
+  // Estilos de comentários
+  .trello-modal-comment-input-section {
+    margin-bottom: 16px;
+  }
+
+  .trello-modal-comment-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .trello-modal-comment-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #dfe1e6;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #172b4d;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #0079bf;
+    }
+
+    &::placeholder {
+      color: #5e6c84;
+    }
+  }
+
+  .trello-modal-comment-input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .trello-modal-comment-counter {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+
+  .trello-modal-comment-input-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .trello-modal-comment-cancel,
+  .trello-modal-comment-save {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .trello-modal-comment-cancel {
+    background-color: #dfe1e6;
+    color: #172b4d;
+
+    &:hover {
+      background-color: #c1c7d0;
+    }
+  }
+
+  .trello-modal-comment-save {
+    background-color: #0079bf;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background-color: #005a8b;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .trello-modal-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .trello-modal-comment-item {
+    padding: 12px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #dfe1e6;
+  }
+
+  .trello-modal-comment-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .trello-modal-comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .trello-modal-comment-author {
+    font-weight: 600;
+    color: #172b4d;
+    font-size: 13px;
+  }
+
+  .trello-modal-comment-date {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+
+  .trello-modal-comment-text {
+    font-size: 13px;
+    color: #172b4d;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  .trello-modal-comment-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .trello-modal-comment-action-btn {
+    background: none;
+    border: none;
+    color: #5e6c84;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f4f5f7;
+      color: #172b4d;
+    }
+
+    &.trello-modal-comment-delete {
+      &:hover {
+        background-color: #fee;
+        color: #d32f2f;
+      }
+    }
+  }
+
+  .trello-modal-comment-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .trello-modal-attachments {

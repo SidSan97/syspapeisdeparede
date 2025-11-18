@@ -34,6 +34,22 @@ class LayoutService
             $wallName = $wall->name ?? 'Parede';
             $cardName = $budget->name . ' - ' . $roomName . ' - ' . $wallName;
 
+            // Carregar comentários aprovados
+            $orderBudget->load(['comments' => function ($query) {
+                $query->approved()->with('commentator')->orderBy('created_at', 'desc');
+            }]);
+
+            $comments = $orderBudget->comments->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'user_name' => $comment->commentator->name ?? 'Anônimo',
+                    'user_id' => $comment->commentator_id ?? null,
+                    'created_at' => $comment->created_at,
+                    'updated_at' => $comment->updated_at,
+                ];
+            })->toArray();
+
             return [
                 'id' => $orderBudget->id,
                 'budget_id' => $budget->id,
@@ -48,6 +64,7 @@ class LayoutService
                 'status' => $orderBudget->status,
                 'layout_column_names_id' => $orderBudget->layout_column_names_id,
                 'description' => $orderBudget->description,
+                'comments' => $comments,
                 'image' => $wallImage,
                 'budget' => $this->transformBudget($budget),
                 'wall' => $this->transformWall($wall),

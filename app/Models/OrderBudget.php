@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use BeyondCode\Comments\Traits\HasComments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderBudget extends Model
 {
-    use HasFactory;
+    use HasFactory, HasComments;
 
     protected $fillable = [
         'budget_id',

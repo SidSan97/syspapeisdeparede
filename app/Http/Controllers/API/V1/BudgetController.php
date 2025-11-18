@@ -302,6 +302,126 @@ class BudgetController extends Controller
         }
     }
 
+    public function addComment(Request $request, int $orderBudgetId): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'comment' => ['required', 'string', 'max:500'],
+            ]);
+
+            $orderBudget = \App\Models\OrderBudget::findOrFail($orderBudgetId);
+            $user = $request->user();
+
+            $comment = $orderBudget->commentAsUser($user, $validated['comment']);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'user_name' => $user->name,
+                    'user_id' => $user->id,
+                    'created_at' => $comment->created_at,
+                    'updated_at' => $comment->updated_at,
+                ],
+                'message' => 'Comentário adicionado com sucesso',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao adicionar comentário: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateComment(Request $request, int $orderBudgetId, int $commentId): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'comment' => ['required', 'string', 'max:500'],
+            ]);
+
+            $orderBudget = \App\Models\OrderBudget::findOrFail($orderBudgetId);
+            $comment = \BeyondCode\Comments\Comment::findOrFail($commentId);
+
+            // Verificar se o comentário pertence ao order_budget
+            if ($comment->commentable_id !== $orderBudget->id || $comment->commentable_type !== \App\Models\OrderBudget::class) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Comentário não encontrado',
+                ], 404);
+            }
+
+            // Verificar se o usuário é o autor do comentário
+            $user = $request->user();
+            if ($comment->commentator_id !== $user->id || $comment->commentator_type !== \App\Models\User::class) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para editar este comentário',
+                ], 403);
+            }
+
+            $comment->update([
+                'comment' => $validated['comment'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'user_name' => $user->name,
+                    'user_id' => $user->id,
+                    'created_at' => $comment->created_at,
+                    'updated_at' => $comment->updated_at,
+                ],
+                'message' => 'Comentário atualizado com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar comentário: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function deleteComment(Request $request, int $orderBudgetId, int $commentId): JsonResponse
+    {
+        try {
+            $orderBudget = \App\Models\OrderBudget::findOrFail($orderBudgetId);
+            $comment = \BeyondCode\Comments\Comment::findOrFail($commentId);
+
+            // Verificar se o comentário pertence ao order_budget
+            if ($comment->commentable_id !== $orderBudget->id || $comment->commentable_type !== \App\Models\OrderBudget::class) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Comentário não encontrado',
+                ], 404);
+            }
+
+            // Verificar se o usuário é o autor do comentário
+            $user = $request->user();
+            if ($comment->commentator_id !== $user->id || $comment->commentator_type !== \App\Models\User::class) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para excluir este comentário',
+                ], 403);
+            }
+
+            $comment->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comentário excluído com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao excluir comentário: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     protected function formatMoney(float $value): string
     {
         return 'R$ ' . number_format($value, 2, ',', '.');
