@@ -17,6 +17,7 @@ return new class extends Migration
                 ->constrained('budgets')
                 ->cascadeOnDelete();
             $table->unsignedBigInteger('budget_wall_id')->nullable();
+            $table->unsignedBigInteger('layout_column_names_id')->nullable();
             $table->string('status', 50);
             $table->timestamps();
 
@@ -25,6 +26,11 @@ return new class extends Migration
                 ->on('budget_walls')
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
+            $table->foreign('layout_column_names_id', 'order_budgets_layout_column_names_id_fk')
+                ->references('id')
+                ->on('layout_column_names')
+                ->onDelete('restrict')
+                ->onUpdate('restrict');
         });
     }
 
