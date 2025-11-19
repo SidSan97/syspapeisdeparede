@@ -118,6 +118,34 @@ class BudgetController extends Controller
         }
     }
 
+    public function update(StoreBudgetRequest $request, int $id): JsonResponse
+    {
+        $data = $request->validated();
+
+        try {
+            $budget = \App\Models\Budget::findOrFail($id);
+            $budget = $this->repository->update($budget, $data);
+            $transformed = $this->transformBudget($budget);
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'message' => 'Orçamento atualizado com sucesso',
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orçamento não encontrado',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar orçamento: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function cancel(Request $request): JsonResponse
     {
         $validated = $request->validate([

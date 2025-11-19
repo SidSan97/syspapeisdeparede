@@ -27,6 +27,11 @@ const routes = [
                 component: () => import('../views/budget/new-budget.vue')
             },
             {
+                path: '/budget/edit/:id',
+                name: 'EditBudget',
+                component: () => import('../views/budget/edit-budget.vue')
+            },
+            {
                 path: '/budget',
                 name: 'Budget',
                 component: Budget

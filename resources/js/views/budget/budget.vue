@@ -95,7 +95,7 @@
                   <td>
                     <button
                       class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
-                      @click="openDetailsModal(budget)"
+                      @click="editBudget(budget)"
                     >
                       {{ budget.name }}
                     </button>
@@ -517,6 +517,10 @@ function openCancelModal(budget) {
   budgetToCancel.value = budget;
   cancelError.value = '';
   showCancelModal.value = true;
+}
+
+function editBudget(budget) {
+  router.push(`/budget/edit/${budget.id}`);
 }
 
 function openDetailsModal(budget) {

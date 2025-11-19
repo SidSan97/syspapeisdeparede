@@ -10,7 +10,7 @@
                 >
                     <i class="fa fa-arrow-left"></i>
                 </button>
-                <h1 class="h3 mb-0 fw-semibold">Criar pedido</h1>
+                <h1 class="h3 mb-0 fw-semibold">Editar pedido</h1>
             </div>
 
             <div class="row">
@@ -28,6 +28,18 @@
                                     placeholder="Ex: Orçamento Casa - Sala"
                                 />
                             </div>
+                            <div class="mb-3">
+                                <label for="budgetStatus" class="form-label">Status</label>
+                                <select
+                                    v-model="budget.status"
+                                    id="budgetStatus"
+                                    class="form-control"
+                                >
+                                    <option :value="null">Sem status</option>
+                                    <option value="Pendente de Revisão">Pendente de Revisão</option>
+                                    <option value="Aprovado">Aprovado</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -37,6 +49,12 @@
                             <h5 class="mb-0 fw-semibold">Cômodos</h5>
                         </div>
                         <div class="card-body">
+                                <div v-if="loadingBudget" class="text-center text-muted py-4">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                </div>
+                                <template v-else>
                                 <div v-for="(room, roomIndex) in budget.rooms" :key="roomIndex" class="card mb-3">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <strong>{{ room.name || `Ambiente ${roomIndex + 1}` }}</strong>
@@ -253,6 +271,7 @@
                             >
                                 <i class="fa fa-plus"></i> Adicionar Ambiente
                             </button>
+                                </template>
                         </div>
                     </div>
 
@@ -311,16 +330,19 @@
 
                 <!-- Sidebar: Frete e Pagamento -->
                 <div class="col-12 col-lg-4">
-                    <!-- Botão Salvar -->
-                    <div class="d-grid">
+                     <!-- Botão Salvar -->
+                     <div class="d-grid" v-if="hasChanges">
                         <button
                             type="button"
                             class="btn btn-success btn-lg"
-                            @click="saveBudget"
+                            @click="updateBudget"
                             :disabled="saving"
                         >
-                            <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
+                            <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Alterações' }}
                         </button>
+                    </div>
+                    <div v-else class="alert alert-info mb-0">
+                        <small>Nenhuma alteração detectada</small>
                     </div>
 
                     <!-- Seção: Frete -->
@@ -479,15 +501,19 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { swalSuccess, swalError } from '../../../utils/alerts';
 
 const router = useRouter();
+const route = useRoute();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
+const budgetId = ref(null);
+const loadingBudget = ref(false);
+const originalBudget = ref(null);
 
 // Modelos de produto disponíveis
 const productModels = ref([]);
@@ -591,7 +617,9 @@ const normalizeCollectionModel = (model = {}) => {
 };
 
 const budget = reactive({
+    id: null,
     name: '',
+    status: '',
     rooms: [
         {
             name: '',
@@ -695,8 +723,132 @@ const showNextImage = (modelId) => {
     modelSlides[modelId] = (modelSlides[modelId] + 1) % model.files.length;
 };
 
+// Detectar mudanças
+const hasChanges = computed(() => {
+    if (!originalBudget.value) return false;
+
+    const original = JSON.stringify(originalBudget.value);
+    const current = JSON.stringify({
+        name: budget.name,
+        status: budget.status,
+        rooms: budget.rooms,
+        cep: budget.cep,
+        selectedCarrier: budget.selectedCarrier,
+        paymentMethod: budget.paymentMethod,
+        installments: budget.installments
+    });
+
+    return original !== current;
+});
+
+// Normalizar dados do orçamento da API
+function normalizeBudgetFromAPI(budgetData) {
+    const rooms = [];
+
+    if (budgetData.rooms && Array.isArray(budgetData.rooms)) {
+        budgetData.rooms.forEach((room) => {
+            const walls = [];
+
+            if (room.walls && Array.isArray(room.walls)) {
+                room.walls.forEach((wall) => {
+                    const wallData = {
+                        name: wall.name || '',
+                        width: wall.width ? Number(wall.width) : null,
+                        height: wall.height ? Number(wall.height) : null,
+                        model: (wall.collection_model_id || wall.collection_model?.id) ? Number(wall.collection_model_id || wall.collection_model?.id) : null,
+                        continueSameArt: false,
+                        continuations: []
+                    };
+
+                    // Processar continuações se existirem
+                    if (wall.continue_same_art || (wall.continuations && Array.isArray(wall.continuations) && wall.continuations.length > 0)) {
+                        wallData.continueSameArt = Boolean(wall.continue_same_art);
+                        if (wall.continuations && Array.isArray(wall.continuations)) {
+                            wallData.continuations = wall.continuations.map(cont => ({
+                                direction: cont.direction || '',
+                                width: cont.width ? Number(cont.width) : null,
+                                height: cont.height ? Number(cont.height) : null,
+                                sameArt: false
+                            }));
+                        }
+                    }
+
+                    walls.push(wallData);
+                });
+            }
+
+            rooms.push({
+                name: room.name || '',
+                walls: walls.length > 0 ? walls : [createDefaultWall()]
+            });
+        });
+    }
+
+    // Encontrar transportadora selecionada
+    let selectedCarrierIndex = null;
+    if (budgetData.selected_carrier_name && budgetData.carriers_snapshot) {
+        const carriers = Array.isArray(budgetData.carriers_snapshot)
+            ? budgetData.carriers_snapshot
+            : [];
+        selectedCarrierIndex = carriers.findIndex(c => c.name === budgetData.selected_carrier_name);
+        if (selectedCarrierIndex < 0) selectedCarrierIndex = null;
+    }
+
+    return {
+        id: budgetData.id,
+        name: budgetData.name || '',
+        status: budgetData.status || '',
+        rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
+        cep: budgetData.cep || '',
+        carriers: budgetData.carriers_snapshot || [],
+        selectedCarrier: selectedCarrierIndex,
+        paymentMethod: budgetData.payment_method || '',
+        installmentLimit: budgetData.installment_limit || 12,
+        installments: budgetData.installments || 1
+    };
+}
+
+// Carregar orçamento
+async function loadBudget() {
+    const id = route.params.id;
+    if (!id) {
+        swalError('ID do orçamento não encontrado');
+        router.push('/budget');
+        return;
+    }
+
+    budgetId.value = Number(id);
+    loadingBudget.value = true;
+
+    try {
+        // Buscar da lista de orçamentos
+        const { data } = await axios.get('v1/budgets');
+        const budgets = data?.data?.data ?? data?.data ?? [];
+        const budgetData = budgets.find(b => b.id === budgetId.value);
+
+        if (!budgetData) {
+            swalError('Orçamento não encontrado');
+            router.push('/budget');
+            return;
+        }
+
+        // Normalizar e carregar dados
+        const normalized = normalizeBudgetFromAPI(budgetData);
+        Object.assign(budget, normalized);
+        originalBudget.value = JSON.parse(JSON.stringify(normalized));
+
+    } catch (error) {
+        console.error('Erro ao carregar orçamento:', error);
+        swalError('Não foi possível carregar o orçamento');
+        router.push('/budget');
+    } finally {
+        loadingBudget.value = false;
+    }
+}
+
 onMounted(() => {
     fetchCollectionModels();
+    loadBudget();
 });
 
 watch(
@@ -1070,7 +1222,7 @@ function calculateDeliveryTime(budget) {
     return budget.deliveryTime;
 }
 
-function saveBudget() {
+function updateBudget() {
     if (!validateBudget()) {
         return;
     }
@@ -1089,25 +1241,29 @@ function saveBudget() {
     }
 
     delete payload.carriers;
+    delete payload.id;
 
     if (payload.paymentMethod === 'pix') {
         payload.installmentLimit = null;
         payload.installments = null;
     }
 
-    axios.post('v1/budgets', payload)
+    axios.put(`v1/budgets/${budgetId.value}`, payload)
         .then(response => {
-            console.log('Orçamento salvo:', response.data);
-            swalSuccess('Orçamento salvo com sucesso!');
+            console.log('Orçamento atualizado:', response.data);
+            swalSuccess('Orçamento atualizado com sucesso!');
+            // Atualizar originalBudget para refletir as mudanças salvas
+            const updatedData = response.data?.data || budget;
+            originalBudget.value = JSON.parse(JSON.stringify(normalizeBudgetFromAPI(updatedData)));
             // Redirecionar para a lista de orçamentos
             setTimeout(() => {
-                window.location.href = '/budget';
+                router.push('/budget');
             }, 1500);
         })
         .catch(error => {
-            console.error('Erro ao salvar orçamento:', error);
+            console.error('Erro ao atualizar orçamento:', error);
             const message = error.response?.data?.message || 'Tente novamente mais tarde.';
-            swalError('Erro ao salvar orçamento: ' + message);
+            swalError('Erro ao atualizar orçamento: ' + message);
         })
         .finally(() => {
             saving.value = false;
