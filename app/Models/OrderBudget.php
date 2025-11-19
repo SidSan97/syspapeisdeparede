@@ -6,6 +6,7 @@ use BeyondCode\Comments\Traits\HasComments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class OrderBudget extends Model
 {
@@ -39,5 +40,14 @@ class OrderBudget extends Model
     public function layoutColumnName(): BelongsTo
     {
         return $this->belongsTo(LayoutColumnName::class, 'layout_column_names_id');
+    }
+
+    /**
+     * Get the users that belong to this order budget card.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'layout_card_user', 'card_id', 'user_id')
+            ->withTimestamps();
     }
 }

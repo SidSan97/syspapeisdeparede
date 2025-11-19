@@ -405,6 +405,30 @@ class BudgetController extends Controller
         }
     }
 
+    public function addMember(Request $request, int $orderBudgetId): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'user_id' => ['required', 'integer', 'exists:users,id'],
+            ]);
+
+            $data = $this->orderBudgetRepository->addMember($orderBudgetId, $validated['user_id']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Membro adicionado com sucesso',
+            ], 201);
+        } catch (\Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'já está adicionado') ? 400 : 500;
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao adicionar membro: ' . $e->getMessage(),
+            ], $statusCode);
+        }
+    }
+
     protected function formatMoney(float $value): string
     {
         return 'R$ ' . number_format($value, 2, ',', '.');

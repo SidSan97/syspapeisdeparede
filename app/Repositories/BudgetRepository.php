@@ -201,7 +201,8 @@ class BudgetRepository {
                         'room'
                     ]);
                 },
-                'layoutColumnName'
+                'layoutColumnName',
+                'users' // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
             ])
             ->get();
     }

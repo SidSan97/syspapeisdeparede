@@ -15,9 +15,18 @@
 
             <div class="container-fluid pt-3">
                 <div class="modal-buttons-options position-relative">
-                    <button class="btn btn-primary" @click="toggleMembersMenu">
+                    <button class="btn btn-primary me-2" @click="toggleMembersMenu">
                         <i class="fa-solid fa-plus"></i>
                         Adicionar membro
+                    </button>
+
+                    <button 
+                      class="btn btn-secondary" 
+                      @click="joinAsMember"
+                      :disabled="joiningAsMember"
+                    >
+                      <i class="bi bi-plus-circle"></i>
+                      {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
                     </button>
 
                     <div v-if="showMembersMenu" class="members-menu">
@@ -47,18 +56,23 @@
                                 <span>Carregando...</span>
                             </div>
                             <div v-else-if="availableMembers.length === 0" class="members-menu-empty">
-                                <span>Nenhum membro encontrado</span>
+                                <span>Nenhum designer encontrado</span>
                             </div>
                             <div v-else class="members-menu-list">
                                 <div
                                     v-for="member in filteredMembers"
                                     :key="member.id"
                                     class="members-menu-item"
+                                    :class="{ 'is-adding': addingMember && currentAddingMemberId === member.id }"
+                                    @click="addMember(member)"
                                 >
                                     <div class="members-menu-avatar" :style="{ backgroundColor: getAvatarColor(member.name) }">
                                         {{ getInitials(member.name) }}
                                     </div>
                                     <span class="members-menu-name">{{ member.name }}</span>
+                                    <span v-if="addingMember && currentAddingMemberId === member.id" class="members-menu-loading-indicator">
+                                        <i class="fa fa-spinner fa-spin"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -68,6 +82,26 @@
 
             <div class="modal-content-layout">
               <div class="trello-modal-main">
+                <div class="trello-modal-section">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-user"></i> Membros
+                  </h3>
+                  <div v-if="card.members && card.members.length > 0" class="trello-modal-members-list">
+                    <div
+                      v-for="member in card.members"
+                      :key="member.id"
+                      class="trello-modal-member-avatar"
+                      :style="{ backgroundColor: getAvatarColor(member.name) }"
+                      :title="member.name"
+                    >
+                      {{ getInitials(member.name) }}
+                    </div>
+                  </div>
+                  <div v-else class="trello-modal-info text-muted">
+                    Nenhum membro adicionado
+                  </div>
+                </div>
+                
                 <div class="trello-modal-section">
                   <h3 class="trello-modal-section-title">
                     <i class="fa fa-calendar"></i> Prazo
@@ -408,6 +442,7 @@
 
   <script setup>
   import { computed, ref, watch } from 'vue';
+  import { useAuthStore } from '@/stores/auth';
 
   const props = defineProps({
     card: {
@@ -417,6 +452,8 @@
   });
 
   const emit = defineEmits(['close']);
+
+  const auth = useAuthStore();
 
   const showDetails = ref(false);
   const isEditingDescription = ref(false);
@@ -436,6 +473,9 @@
   const availableMembers = ref([]);
   const memberSearchQuery = ref('');
   const loadingMembers = ref(false);
+  const addingMember = ref(false);
+  const currentAddingMemberId = ref(null);
+  const joiningAsMember = ref(false);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -754,6 +794,100 @@
   function searchMembers() {
     // A busca é feita via computed filteredMembers
     // Mas podemos adicionar debounce aqui se necessário
+  }
+
+  async function addMember(member) {
+    if (!props.card?.id || addingMember.value) {
+      return;
+    }
+
+    addingMember.value = true;
+    currentAddingMemberId.value = member.id;
+
+    try {
+      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/members`, {
+        user_id: member.id,
+      });
+
+      // Fechar o menu de membros após adicionar
+      closeMembersMenu();
+
+      // Remover o membro da lista de disponíveis (opcional)
+      availableMembers.value = availableMembers.value.filter(m => m.id !== member.id);
+
+      // Adicionar o membro à lista do card
+      if (props.card && !props.card.members) {
+        props.card.members = [];
+      }
+      if (props.card && !props.card.members.find(m => m.id === member.id)) {
+        props.card.members.push({
+          id: member.id,
+          name: member.name,
+        });
+      }
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Membro adicionado com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar membro:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao adicionar membro. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      addingMember.value = false;
+      currentAddingMemberId.value = null;
+    }
+  }
+
+  async function joinAsMember() {
+    if (!props.card?.id || joiningAsMember.value || !auth.user?.id) {
+      return;
+    }
+
+    joiningAsMember.value = true;
+
+    try {
+      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/members`, {
+        user_id: auth.user.id,
+      });
+
+      // Adicionar o usuário logado à lista de membros do card
+      if (props.card && !props.card.members) {
+        props.card.members = [];
+      }
+      if (props.card && auth.user && !props.card.members.find(m => m.id === auth.user.id)) {
+        props.card.members.push({
+          id: auth.user.id,
+          name: auth.user.name,
+        });
+      }
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Você ingressou no card com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao ingressar no card:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao ingressar no card. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      joiningAsMember.value = false;
+    }
   }
 
   function getInitials(name) {
@@ -1822,12 +1956,28 @@
     gap: 12px;
     padding: 8px;
     border-radius: 4px;
-    cursor: default;
+    cursor: pointer;
     transition: background-color 0.2s ease;
+    position: relative;
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.08);
+    &:hover:not(.is-adding) {
+      background-color: rgba(255, 255, 255, 0.12);
     }
+
+    &:active:not(.is-adding) {
+      background-color: rgba(255, 255, 255, 0.16);
+    }
+
+    &.is-adding {
+      opacity: 0.7;
+      cursor: wait;
+    }
+  }
+
+  .members-menu-loading-indicator {
+    margin-left: auto;
+    color: #0c66e4;
+    font-size: 14px;
   }
 
   .members-menu-avatar {
@@ -1847,6 +1997,34 @@
     font-size: 14px;
     color: #ffffff;
     font-weight: 400;
+  }
+
+  // Lista de membros do card
+  .trello-modal-members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .trello-modal-member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+    cursor: default;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
   }
   </style>
 

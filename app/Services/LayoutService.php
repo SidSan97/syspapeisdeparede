@@ -39,6 +39,11 @@ class LayoutService
                 $query->approved()->with('commentator')->orderBy('created_at', 'desc');
             }]);
 
+            // Carregar membros do card
+            // Busca na tabela pivot layout_card_user usando card_id (id do OrderBudget)
+            // e com base no user_id busca os dados do usuário na tabela users
+            $orderBudget->load('users');
+
             $comments = $orderBudget->comments->map(function ($comment) {
                 return [
                     'id' => $comment->id,
@@ -47,6 +52,14 @@ class LayoutService
                     'user_id' => $comment->commentator_id ?? null,
                     'created_at' => $comment->created_at,
                     'updated_at' => $comment->updated_at,
+                ];
+            })->toArray();
+
+            // Mapear membros: busca na layout_card_user por card_id e pega o nome do usuário
+            $members = $orderBudget->users->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
                 ];
             })->toArray();
 
@@ -65,6 +78,7 @@ class LayoutService
                 'layout_column_names_id' => $orderBudget->layout_column_names_id,
                 'description' => $orderBudget->description,
                 'comments' => $comments,
+                'members' => $members,
                 'image' => $wallImage,
                 'budget' => $this->transformBudget($budget),
                 'wall' => $this->transformWall($wall),

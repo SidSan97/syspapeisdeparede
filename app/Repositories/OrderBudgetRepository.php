@@ -29,4 +29,23 @@ class OrderBudgetRepository {
 
         return $this->orderBudget->fresh();
     }
+
+    public function addMember(int $orderBudgetId, int $userId)
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+        $user = \App\Models\User::findOrFail($userId);
+
+        // Verificar se o relacionamento já existe
+        if ($orderBudget->users()->where('users.id', $user->id)->exists()) {
+            throw new \Exception('Usuário já está adicionado a este card');
+        }
+
+        // Adicionar o usuário ao card
+        $orderBudget->users()->attach($user->id);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+        ];
+    }
 }
