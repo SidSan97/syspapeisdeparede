@@ -20,13 +20,23 @@
                         Adicionar membro
                     </button>
 
-                    <button 
-                      class="btn btn-secondary" 
+                    <button
+                      v-if="!isCurrentUserMember"
+                      class="btn btn-secondary"
                       @click="joinAsMember"
                       :disabled="joiningAsMember"
                     >
                       <i class="bi bi-plus-circle"></i>
                       {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
+                    </button>
+                    <button
+                      v-else
+                      class="btn btn-danger"
+                      @click="leaveAsMember"
+                      :disabled="leavingAsMember"
+                    >
+                      <i class="bi bi-x-circle"></i>
+                      {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
                     </button>
 
                     <div v-if="showMembersMenu" class="members-menu">
@@ -91,14 +101,22 @@
                       v-for="member in card.members"
                       :key="member.id"
                       class="trello-modal-member-avatar"
+                      :class="{ 'is-clickable': canRemoveMembers }"
                       :style="{ backgroundColor: getAvatarColor(member.name) }"
                       :title="member.name"
+                      @click="canRemoveMembers ? handleMemberClick(member) : null"
                     >
                       {{ getInitials(member.name) }}
+                      <div v-if="showMemberMenu && selectedMember?.id === member.id" class="member-menu-popover" @click.stop>
+                        <button class="member-menu-remove" @click="removeMember(member)">
+                          <i class="fa fa-times"></i>
+                          Remover do card
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div class="trello-modal-section">
                   <h3 class="trello-modal-section-title">
                     <i class="fa fa-calendar"></i> Prazo
@@ -479,6 +497,9 @@
   const addingMember = ref(false);
   const currentAddingMemberId = ref(null);
   const joiningAsMember = ref(false);
+  const leavingAsMember = ref(false);
+  const showMemberMenu = ref(false);
+  const selectedMember = ref(null);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -771,12 +792,27 @@
   }
 
 
+  const isCurrentUserMember = computed(() => {
+    if (!auth.user?.id || !props.card?.members) {
+      return false;
+    }
+    return props.card.members.some(member => member.id === auth.user.id);
+  });
+
+  const canRemoveMembers = computed(() => {
+    return auth.user?.user_type_id === 2;
+  });
+
   const filteredMembers = computed(() => {
+    // Filtrar membros que já estão no card
+    const cardMemberIds = props.card?.members?.map(m => m.id) || [];
+    let members = availableMembers.value.filter(member => !cardMemberIds.includes(member.id));
+
     if (!memberSearchQuery.value.trim()) {
-      return availableMembers.value;
+      return members;
     }
     const query = memberSearchQuery.value.toLowerCase().trim();
-    return availableMembers.value.filter(member =>
+    return members.filter(member =>
       member.name.toLowerCase().includes(query)
     );
   });
@@ -840,9 +876,6 @@
 
       // Fechar o menu de membros após adicionar
       closeMembersMenu();
-
-      // Remover o membro da lista de disponíveis (opcional)
-      availableMembers.value = availableMembers.value.filter(m => m.id !== member.id);
 
       // Adicionar o membro à lista do card
       if (props.card && !props.card.members) {
@@ -916,6 +949,109 @@
       }
     } finally {
       joiningAsMember.value = false;
+    }
+  }
+
+  async function leaveAsMember() {
+    if (!props.card?.id || leavingAsMember.value || !auth.user?.id) {
+      return;
+    }
+
+    leavingAsMember.value = true;
+
+    try {
+      const response = await axios.delete(`v1/budgets/order-budgets/${props.card.id}/members/${auth.user.id}`);
+
+      // Remover o usuário logado da lista de membros do card
+      if (props.card && Array.isArray(props.card.members)) {
+        props.card.members = props.card.members.filter(m => m.id !== auth.user.id);
+      }
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Você saiu do card com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao sair do card:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao sair do card. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      leavingAsMember.value = false;
+    }
+  }
+
+  function handleMemberClick(member) {
+    if (showMemberMenu.value && selectedMember.value?.id === member.id) {
+      showMemberMenu.value = false;
+      selectedMember.value = null;
+    } else {
+      showMemberMenu.value = true;
+      selectedMember.value = member;
+    }
+  }
+
+  async function removeMember(member) {
+    if (!props.card?.id || !member?.id) {
+      return;
+    }
+
+    if (window.Swal) {
+      const result = await window.Swal.fire({
+        title: 'Remover membro?',
+        text: `Deseja remover ${member.name} do card?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, remover',
+        cancelButtonText: 'Cancelar',
+      });
+
+      if (!result.isConfirmed) {
+        showMemberMenu.value = false;
+        selectedMember.value = null;
+        return;
+      }
+    }
+
+    try {
+      const response = await axios.delete(`v1/budgets/order-budgets/${props.card.id}/members/${member.id}`);
+
+      // Remover o membro da lista do card
+      if (props.card && Array.isArray(props.card.members)) {
+        props.card.members = props.card.members.filter(m => m.id !== member.id);
+      }
+
+      // Adicionar o membro de volta à lista de disponíveis
+      if (!availableMembers.value.find(m => m.id === member.id)) {
+        availableMembers.value.push(member);
+      }
+
+      showMemberMenu.value = false;
+      selectedMember.value = null;
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Membro removido com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao remover membro:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao remover membro. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
     }
   }
 
@@ -1062,7 +1198,26 @@
       descriptionText.value = newCard.description || '';
       originalDescription.value = newCard.description || '';
     }
+    // Fechar menu de membro quando o card mudar
+    showMemberMenu.value = false;
+    selectedMember.value = null;
   }, { immediate: true });
+
+  // Fechar menu de membro ao clicar fora
+  watch(() => showMemberMenu.value, (isOpen) => {
+    if (isOpen) {
+      const closeMenu = (e) => {
+        if (!e.target.closest('.trello-modal-member-avatar')) {
+          showMemberMenu.value = false;
+          selectedMember.value = null;
+          document.removeEventListener('click', closeMenu);
+        }
+      };
+      setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+      }, 0);
+    }
+  });
   </script>
 
 <style lang="scss" scoped>
@@ -2075,10 +2230,52 @@
     flex-shrink: 0;
     cursor: default;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
 
     &:hover {
       transform: scale(1.1);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    &.is-clickable {
+      cursor: pointer;
+    }
+  }
+
+  .member-menu-popover {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background-color: #ffffff;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 180px;
+    overflow: hidden;
+  }
+
+  .member-menu-remove {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: #d32f2f;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #fee;
+    }
+
+    i {
+      font-size: 12px;
     }
   }
   </style>

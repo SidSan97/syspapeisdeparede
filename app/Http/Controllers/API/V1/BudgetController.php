@@ -14,6 +14,7 @@ use App\Services\LayoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class BudgetController extends Controller
@@ -432,7 +433,7 @@ class BudgetController extends Controller
             ], 201);
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'já está adicionado') ? 400 : 500;
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao adicionar membro: ' . $e->getMessage(),
@@ -440,12 +441,16 @@ class BudgetController extends Controller
         }
     }
 
-    public function removeMember(Request $request, int $orderBudgetId): JsonResponse
+    public function removeMember(Request $request, int $orderBudgetId, ?int $memberId = null): JsonResponse
     {
         try {
-            $validated = $request->validate([
+            $input = [
+                'user_id' => $memberId ?? $request->input('user_id'),
+            ];
+
+            $validated = Validator::make($input, [
                 'user_id' => ['required', 'integer', 'exists:users,id'],
-            ]);
+            ])->validate();
 
             $user = $request->user();
             $data = $this->orderBudgetRepository->removeMember($orderBudgetId, $validated['user_id'], $user);
@@ -457,7 +462,7 @@ class BudgetController extends Controller
             ], 200);
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'não está adicionado') ? 400 : 500;
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao remover membro: ' . $e->getMessage(),
