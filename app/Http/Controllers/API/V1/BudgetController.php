@@ -265,7 +265,12 @@ class BudgetController extends Controller
                 'layout_column_names_id' => ['required', 'integer', 'exists:layout_column_names,id'],
             ]);
 
-            $orderBudget = $this->orderBudgetRepository->editLayoutColumn($validated['order_budget_id'], $validated['layout_column_names_id']);
+            $user = $request->user();
+            $orderBudget = $this->orderBudgetRepository->editLayoutColumn(
+                $validated['order_budget_id'],
+                $validated['layout_column_names_id'],
+                $user
+            );
 
             return response()->json([
                 'success' => true,
@@ -287,7 +292,12 @@ class BudgetController extends Controller
                 'description' => ['nullable', 'string', 'max:500'],
             ]);
 
-            $orderBudget = $this->orderBudgetRepository->updateOrderBudgetDescription($orderBudgetId, $validated['description']);
+            $user = $request->user();
+            $orderBudget = $this->orderBudgetRepository->updateOrderBudgetDescription(
+                $orderBudgetId,
+                $validated['description'],
+                $user
+            );
 
             return response()->json([
                 'success' => true,
@@ -412,7 +422,8 @@ class BudgetController extends Controller
                 'user_id' => ['required', 'integer', 'exists:users,id'],
             ]);
 
-            $data = $this->orderBudgetRepository->addMember($orderBudgetId, $validated['user_id']);
+            $user = $request->user();
+            $data = $this->orderBudgetRepository->addMember($orderBudgetId, $validated['user_id'], $user);
 
             return response()->json([
                 'success' => true,
@@ -425,6 +436,31 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao adicionar membro: ' . $e->getMessage(),
+            ], $statusCode);
+        }
+    }
+
+    public function removeMember(Request $request, int $orderBudgetId): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'user_id' => ['required', 'integer', 'exists:users,id'],
+            ]);
+
+            $user = $request->user();
+            $data = $this->orderBudgetRepository->removeMember($orderBudgetId, $validated['user_id'], $user);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Membro removido com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'não está adicionado') ? 400 : 500;
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao remover membro: ' . $e->getMessage(),
             ], $statusCode);
         }
     }

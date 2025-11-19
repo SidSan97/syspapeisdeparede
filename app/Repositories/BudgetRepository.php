@@ -9,8 +9,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\OrderBudget;
+use App\Services\LayoutCardHistoryService;
 
 class BudgetRepository {
+
+    protected $historyService;
+
+    public function __construct(LayoutCardHistoryService $historyService)
+    {
+        $this->historyService = $historyService;
+    }
 
     public function all()
     {
@@ -168,8 +176,11 @@ class BudgetRepository {
             $updatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
         }
 
+        $newFiles = [];
         if (!empty($mergedFiles)) {
             $updatePayload['files_referring_model'] = $mergedFiles;
+            // Identificar novos arquivos adicionados
+            $newFiles = array_diff($mergedFiles, $existingFiles);
         } elseif (array_key_exists('files_referring_model', $data)) {
             $updatePayload['files_referring_model'] = null;
         }
@@ -180,6 +191,24 @@ class BudgetRepository {
         }
 
         $budget->update($updatePayload);
+
+        // Registrar no histórico os novos arquivos adicionados
+        if (!empty($newFiles) && Auth::check()) {
+            $user = Auth::user();
+            // Buscar todos os OrderBudgets relacionados a este budget
+            $orderBudgets = OrderBudget::where('budget_id', $budget->id)->get();
+            
+            foreach ($newFiles as $filePath) {
+                $fileName = basename($filePath);
+                // Criar URL pública para o arquivo
+                $fileUrl = asset('storage/' . $filePath);
+                
+                // Registrar em cada card relacionado
+                foreach ($orderBudgets as $orderBudget) {
+                    $this->historyService->logFileAttachment($orderBudget->id, $user, $fileName, $fileUrl);
+                }
+            }
+        }
 
         return $budget->fresh(['rooms.walls.collectionModel']);
     }
@@ -202,7 +231,8 @@ class BudgetRepository {
                     ]);
                 },
                 'layoutColumnName',
-                'users' // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
+                'users', // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
+                'history' // Carrega o histórico do card
             ])
             ->get();
     }

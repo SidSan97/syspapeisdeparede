@@ -50,4 +50,12 @@ class OrderBudget extends Model
         return $this->belongsToMany(User::class, 'layout_card_user', 'card_id', 'user_id')
             ->withTimestamps();
     }
+
+    /**
+     * Get the history entries for this order budget card.
+     */
+    public function history()
+    {
+        return $this->hasMany(LayoutCardHistory::class, 'card_id');
+    }
 }

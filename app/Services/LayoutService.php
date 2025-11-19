@@ -44,6 +44,9 @@ class LayoutService
             // e com base no user_id busca os dados do usuário na tabela users
             $orderBudget->load('users');
 
+            // Carregar histórico do card
+            $orderBudget->load('history');
+
             $comments = $orderBudget->comments->map(function ($comment) {
                 return [
                     'id' => $comment->id,
@@ -63,6 +66,16 @@ class LayoutService
                 ];
             })->toArray();
 
+            // Mapear histórico do card
+            $history = $orderBudget->history->map(function ($historyItem) {
+                return [
+                    'id' => $historyItem->id,
+                    'description' => $historyItem->description,
+                    'created_at' => $historyItem->created_at,
+                    'updated_at' => $historyItem->updated_at,
+                ];
+            })->toArray();
+
             return [
                 'id' => $orderBudget->id,
                 'budget_id' => $budget->id,
@@ -79,6 +92,7 @@ class LayoutService
                 'description' => $orderBudget->description,
                 'comments' => $comments,
                 'members' => $members,
+                'history' => $history,
                 'image' => $wallImage,
                 'budget' => $this->transformBudget($budget),
                 'wall' => $this->transformWall($wall),

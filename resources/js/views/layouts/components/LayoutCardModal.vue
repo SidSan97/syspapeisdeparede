@@ -82,11 +82,11 @@
 
             <div class="modal-content-layout">
               <div class="trello-modal-main">
-                <div class="trello-modal-section">
+                <div v-if="card.members && card.members.length > 0" class="trello-modal-section">
                   <h3 class="trello-modal-section-title">
                     <i class="fa fa-user"></i> Membros
                   </h3>
-                  <div v-if="card.members && card.members.length > 0" class="trello-modal-members-list">
+                  <div class="trello-modal-members-list">
                     <div
                       v-for="member in card.members"
                       :key="member.id"
@@ -96,9 +96,6 @@
                     >
                       {{ getInitials(member.name) }}
                     </div>
-                  </div>
-                  <div v-else class="trello-modal-info text-muted">
-                    Nenhum membro adicionado
                   </div>
                 </div>
                 
@@ -408,27 +405,33 @@
                     </div>
                   </div>
 
-                  <!-- Atividades -->
+                  <!-- Atividades e Histórico -->
                   <div class="trello-modal-activity">
                     <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
                       <div
                         v-for="(activity, activityIndex) in activityItems"
                         :key="activity.id || activityIndex"
                         class="trello-modal-activity-item"
+                        :class="{ 'is-history': activity.type === 'history' }"
                       >
                         <div class="trello-modal-activity-header">
                           <div class="trello-modal-activity-author-wrapper">
-                            <div class="trello-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                            <div v-if="activity.type !== 'history'" class="trello-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
                               {{ getInitials(getActivityUser(activity)) }}
                             </div>
-                            <span class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
+                            <div v-else class="trello-modal-activity-icon">
+                              <i class="fa fa-history"></i>
+                            </div>
+                            <span v-if="activity.type !== 'history'" class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
+                            <span v-else class="trello-modal-activity-author">Histórico</span>
                           </div>
                           <span class="trello-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
                         </div>
-                        <div class="trello-modal-activity-content">
-                          {{ getActivityText(activity) }}
-                        </div>
+                        <div class="trello-modal-activity-content" v-html="getActivityText(activity)"></div>
                       </div>
+                    </div>
+                    <div v-else class="trello-modal-info text-muted">
+                      Nenhuma atividade registrada.
                     </div>
                   </div>
                 </div>
@@ -510,22 +513,44 @@
       return [];
     }
 
+    const activities = [];
+
+    // Adicionar histórico do card
+    if (Array.isArray(props.card.history) && props.card.history.length > 0) {
+      props.card.history.forEach((historyItem) => {
+        activities.push({
+          id: `history-${historyItem.id}`,
+          type: 'history',
+          description: historyItem.description,
+          created_at: historyItem.created_at,
+          date: historyItem.created_at,
+        });
+      });
+    }
+
+    // Adicionar atividades existentes
     if (Array.isArray(props.card.activities) && props.card.activities.length > 0) {
-      return props.card.activities;
+      activities.push(...props.card.activities);
     }
 
+    // Adicionar comentário do budget se existir
     if (props.card.budget?.comment_referring_model) {
-      return [
-        {
-          id: 'budget-comment',
-          user_name: props.card.responsible_name || 'Comentário',
-          created_at: props.card.updated_at,
-          comment: props.card.budget.comment_referring_model,
-        },
-      ];
+      activities.push({
+        id: 'budget-comment',
+        type: 'comment',
+        user_name: props.card.responsible_name || 'Comentário',
+        created_at: props.card.updated_at,
+        date: props.card.updated_at,
+        comment: props.card.budget.comment_referring_model,
+      });
     }
 
-    return [];
+    // Ordenar por data (mais recente primeiro)
+    return activities.sort((a, b) => {
+      const dateA = new Date(a.created_at || a.date || 0);
+      const dateB = new Date(b.created_at || b.date || 0);
+      return dateB - dateA;
+    });
   });
 
   function formatCurrency(value) {
@@ -629,6 +654,10 @@
     }
     if (typeof activity === 'string') {
       return activity;
+    }
+    // Se for histórico, retornar a descrição (que pode conter HTML)
+    if (activity.type === 'history' && activity.description) {
+      return activity.description;
     }
     return activity.text || activity.comment || activity.description || activity.message || '';
   }
@@ -1246,6 +1275,32 @@
     font-size: 13px;
     color: #172b4d;
     line-height: 1.4;
+
+    :deep(a) {
+      color: #0079bf;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .trello-modal-activity-item.is-history {
+    border-left: 3px solid #36b37e;
+  }
+
+  .trello-modal-activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #36b37e;
+    color: #ffffff;
+    font-size: 14px;
+    flex-shrink: 0;
   }
 
   .trello-modal-description {
