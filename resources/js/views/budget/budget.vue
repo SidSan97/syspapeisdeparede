@@ -1,69 +1,149 @@
 <template>
   <section class="content">
     <Page title="Orçamentos">
-      <div class="card">
-        <div class="card-body p-0">
-          <div v-if="loading" class="p-4 text-center text-muted">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <div class="d-flex flex-column gap-3">
+            <div class="d-flex justify-content-end">
+              <button class="btn btn-primary btn-lg" type="button" @click="goToCreateBudget">
+                Criar orçamento
+              </button>
+            </div>
+
+            <div class="row buttons-filters">
+              <div class="col-lg-4">
+                <div class="input-group input-group-lg search-input">
+                  <span class="input-group-text bg-body-secondary border border-secondary text-muted">
+                    <i class="fa fa-search"></i>
+                  </span>
+                  <input
+                    v-model="searchQuery"
+                    type="search"
+                    class="form-control border border-secondary bg-body-secondary"
+                    placeholder="Pesquisar orçamento"
+                    aria-label="Pesquisar orçamento"
+                  >
+                </div>
+              </div>
+
+              <div class="dropdown col-lg-3 mt-2 mt-lg-0">
+                <button
+                  class="btn btn-outline-secondary btn-lg d-flex align-items-center gap-2"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  {{ currentStatusLabel }}
+                  <i class="fa fa-chevron-down small"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  <li>
+                    <button
+                      class="dropdown-item"
+                      type="button"
+                      :class="{ active: statusFilter === 'all' }"
+                      @click="setStatusFilter('all')"
+                    >
+                      Todas as situações
+                    </button>
+                  </li>
+                  <li v-for="option in statusOptions" :key="option.value">
+                    <button
+                      class="dropdown-item"
+                      type="button"
+                      :class="{ active: statusFilter === option.value }"
+                      @click="setStatusFilter(option.value)"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-0 mt-4">
+          <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
             Carregando orçamentos...
           </div>
 
-          <EmptyState v-else-if="budgets.length === 0" heading="Nenhum orçamento cadastrado" icon="file-alt" class="p-5">
-            Crie um novo orçamento para começar.
+          <EmptyState
+            v-else-if="filteredBudgets.length === 0"
+            heading="Nenhum orçamento encontrado"
+            icon="file-alt"
+            class="p-5"
+          >
+            Ajuste os filtros ou crie um novo orçamento.
           </EmptyState>
 
-          <ul v-else class="list-group list-group-flush">
-            <li v-for="budget in budgets" :key="budget.id" class="list-group-item">
-              <div class="d-flex align-items-start justify-content-between gap-3">
-                <div class="flex-grow-1">
-                  <h5 class="mb-1 text-body fw-semibold">
-                    {{ budget.name }}
-                  </h5>
-                  <div class="text-muted small">
-                    <span class="fw-semibold text-dark">
-                      {{ formatCurrency(budget.total_amount) }}
-                    </span>
-                    <span class="mx-2">•</span>
-                    <span>
-                      Prazo: {{ formatDeliveryTime(budget.delivery_time) }}
-                    </span>
-                  </div>
-                  <div v-if="isCancelled(budget)" class="text-danger small fw-semibold mt-2">
-                    Status: Cancelado
-                  </div>
-                </div>
-
-                <div class="dropdown">
-                  <button class="btn btn-link text-secondary px-2" type="button" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="fa fa-ellipsis-v"></i>
-                    <span class="visually-hidden">Opções</span>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <button class="dropdown-item" type="button" @click="openDetailsModal(budget)">
-                        Ver detalhes
+          <div v-else class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Número</th>
+                  <th scope="col">Data</th>
+                  <th scope="col">Orçamento</th>
+                  <th scope="col">Situação</th>
+                  <th scope="col" class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="budget in filteredBudgets" :key="budget.id">
+                  <td class="fw-semibold">#{{ budget.id }}</td>
+                  <td>{{ formatDate(budget.created_at || budget.createdAt) }}</td>
+                  <td>
+                    <button
+                      class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
+                      @click="openDetailsModal(budget)"
+                    >
+                      {{ budget.name }}
+                    </button>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2 text-capitalize">
+                      <span class="status-dot" :class="`status-dot-${getStatusVariant(budget.status)}`"></span>
+                      {{ formatStatusLabel(budget.status) }}
+                    </div>
+                  </td>
+                  <td class="text-end">
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa fa-ellipsis-h"></i>
                       </button>
-                    </li>
-                    <li>
-                      <button class="dropdown-item" type="button" @click="openGeneratePdfModal(budget)">
-                        Gerar PDF
-                      </button>
-                    </li>
-                    <li v-if="budget.status !== 'cancelado'">
-                      <button class="dropdown-item" type="button" @click="openOrderModal(budget)">
-                        Fazer pedido
-                      </button>
-                    </li>
-                    <li v-if="budget.status !== 'cancelado'">
-                      <button class="dropdown-item text-danger" type="button" @click="openCancelModal(budget)">
-                        Cancelar
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </li>
-          </ul>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <button class="dropdown-item" type="button" @click="openDetailsModal(budget)">
+                            Ver detalhes
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item" type="button" @click="openGeneratePdfModal(budget)">
+                            Gerar PDF
+                          </button>
+                        </li>
+                        <li v-if="!isCancelled(budget)">
+                          <button class="dropdown-item" type="button" @click="openOrderModal(budget)">
+                            Fazer pedido
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item" type="button" @click="shareBudget(budget)">
+                            Compartilhar
+                          </button>
+                        </li>
+                        <li v-if="!isCancelled(budget)">
+                          <button class="dropdown-item text-danger" type="button" @click="openCancelModal(budget)">
+                            Cancelar
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </Page>
@@ -208,6 +288,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
@@ -216,6 +297,8 @@ import axios from 'axios';
 
 const budgets = ref([]);
 const loading = ref(true);
+const searchQuery = ref('');
+const statusFilter = ref('all');
 const showCancelModal = ref(false);
 const budgetToCancel = ref(null);
 const cancelling = ref(false);
@@ -229,10 +312,11 @@ const generatingPdf = ref(false);
 const pdfError = ref('');
 const showOrderModal = ref(false);
 const orderBudget = ref(null);
+const router = useRouter();
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
-  currency: 'BRL'
+  currency: 'BRL',
 });
 
 function formatCurrency(value) {
@@ -250,6 +334,19 @@ function formatDeliveryTime(days) {
   }
 
   return `${days} ${days === 1 ? 'dia' : 'dias'}`;
+}
+
+function formatDate(value) {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR').format(date);
 }
 
 function normalizeBudget(budget) {
@@ -303,6 +400,37 @@ function normalizeBudget(budget) {
   };
 }
 
+const statusOptions = [
+  { label: 'Em aberto', value: 'em aberto' },
+  { label: 'Aprovado', value: 'aprovado' },
+  { label: 'Cancelado', value: 'cancelado' },
+];
+
+const filteredBudgets = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  const status = statusFilter.value;
+
+  return budgets.value.filter((budget) => {
+    const matchesQuery = !query
+      || budget.name?.toLowerCase().includes(query)
+      || String(budget.id).includes(query);
+
+    const normalizedStatus = (budget.status || '').toString().toLowerCase();
+    const matchesStatus = status === 'all' || normalizedStatus === status;
+
+    return matchesQuery && matchesStatus;
+  });
+});
+
+const currentStatusLabel = computed(() => {
+  if (statusFilter.value === 'all') {
+    return 'Situação';
+  }
+
+  const match = statusOptions.find((option) => option.value === statusFilter.value);
+  return match ? match.label : 'Situação';
+});
+
 async function fetchBudgets() {
   try {
     loading.value = true;
@@ -326,6 +454,63 @@ async function fetchBudgets() {
 function isCancelled(budget) {
   const status = (budget?.status ?? '').toString().toLowerCase();
   return status === 'cancelled' || status === 'cancelado';
+}
+
+function formatStatusLabel(status) {
+  if (!status) {
+    return '—';
+  }
+  const normalized = status.toString().toLowerCase();
+  const match = statusOptions.find((option) => option.value === normalized);
+  if (match) {
+    return match.label;
+  }
+  return status;
+}
+
+function getStatusVariant(status) {
+  const normalized = (status || '').toString().toLowerCase();
+  if (normalized.includes('cancel')) {
+    return 'danger';
+  }
+  if (normalized.includes('aprov')) {
+    return 'success';
+  }
+  return 'info';
+}
+
+function setStatusFilter(value) {
+  statusFilter.value = value;
+}
+
+function goToCreateBudget() {
+  router.push('/budgets/create').catch(() => {});
+}
+
+async function shareBudget(budget) {
+  const shareUrl = `${window.location.origin}/budgets/${budget.id}`;
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: budget.name,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shareUrl);
+      window.Toast?.fire({
+        icon: 'success',
+        title: 'Link copiado para a área de transferência',
+      });
+      return;
+    }
+  } catch (error) {
+    console.error('Erro ao compartilhar orçamento:', error);
+  }
+
+  alert(shareUrl);
 }
 
 function openCancelModal(budget) {
@@ -548,3 +733,48 @@ function handleOrderUpdated(updatedBudgetRaw) {
   }
 }
 </script>
+
+<style scoped>
+.search-input .form-control,
+.search-input .input-group-text {
+  border-radius: 0.375rem;
+  padding-block: 0.85rem;
+}
+
+.search-input .input-group-text {
+  border-right: none;
+}
+
+.search-input .form-control {
+  border-left: none;
+}
+
+.search-input .form-control:focus {
+  border-color: var(--bs-secondary);
+  box-shadow: none;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-success {
+  background-color: var(--bs-success);
+}
+
+.status-dot-danger {
+  background-color: var(--bs-danger);
+}
+
+.status-dot-info {
+  background-color: var(--bs-info);
+}
+
+.input-group-text, .buttons-filters button, input {
+    height: 46px !important;
+}
+</style>

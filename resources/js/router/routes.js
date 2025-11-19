@@ -37,6 +37,11 @@ const routes = [
                 component: () => import('../views/colecao-arts/CollectionModels.vue'),
             },
             {
+                path: '/colecao-arts/colecao/:id',
+                name: 'CollectionSubcategories',
+                component: () => import('../views/colecao-arts/CollectionSubcategories.vue'),
+            },
+            {
                 path: '/colecao-arts/catalogo',
                 name: 'CollectionCatalog',
                 component: () => import('../views/colecao-arts/CollectionCatalog.vue'),

@@ -35,7 +35,7 @@ if (window.LaravelApp.user) {
   });
   auth.ready = true;
 } else {
-  // 
+  //
 }
 
 app.use(router)
