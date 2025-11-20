@@ -382,16 +382,42 @@ const saveSubcategory = async () => {
     return;
   }
 
+  // Se uma subcategoria foi selecionada, usar ela. Caso contrário, criar nova subcategoria
+  const subcategoryId = formData.value.parent_subcategory_id 
+    ? Number(formData.value.parent_subcategory_id)
+    : null;
+
   saving.value = true;
   try {
-    // Por enquanto, apenas envia o nome e collection_art_id (o backend não suporta imagem direta ainda)
-    // As imagens são adicionadas depois através do endpoint de collection-images
-    const payload = {
-      name: formData.value.name.trim(),
-      collection_art_id: Number(formData.value.collection_art_id),
-    };
+    let finalSubcategoryId = subcategoryId;
 
-    await axios.post('v1/collection-art-subcategories', payload);
+    // Se não há subcategoria selecionada, criar uma nova
+    if (!finalSubcategoryId) {
+      const payload = {
+        name: formData.value.name.trim(),
+        collection_art_id: Number(formData.value.collection_art_id),
+      };
+
+      const response = await axios.post('v1/collection-art-subcategories', payload);
+      finalSubcategoryId = response.data?.data?.id || response.data?.id;
+    }
+
+    // Se há imagem, enviar para collection_images
+    if (formData.value.image && finalSubcategoryId) {
+      const formDataToSend = new FormData();
+      formDataToSend.append('collection_arts_id', finalSubcategoryId);
+      formDataToSend.append('images[]', formData.value.image);
+      
+      if (formData.value.name.trim()) {
+        formDataToSend.append('names[]', formData.value.name.trim());
+      }
+
+      await axios.post('v1/collection-images', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
 
     swalSuccess('Subcategoria adicionada com sucesso!');
     addModal.value?.hide();

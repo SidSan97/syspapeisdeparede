@@ -405,20 +405,38 @@ const handleImageChange = (event) => {
 
 const saveCollection = async () => {
   if (!formData.value.name.trim()) {
-    swalError('Por favor, preencha o nome da coleção.');
+    swalError('Por favor, preencha o nome.');
+    return;
+  }
+
+  // Validar se há subcategoria selecionada para enviar imagem
+  if (!formData.value.subcategory_id) {
+    swalError('Por favor, selecione uma subcategoria.');
+    return;
+  }
+
+  if (!formData.value.image) {
+    swalError('Por favor, selecione uma imagem.');
     return;
   }
 
   saving.value = true;
   try {
-    // Por enquanto, apenas envia o nome (o backend não suporta image_cover ainda)
-    const payload = {
-      name: formData.value.name.trim(),
-    };
+    const subcategoryId = Number(formData.value.subcategory_id);
 
-    await axios.post('v1/collection-arts', payload);
+    // Enviar imagem para collection_images usando o ID da subcategoria
+    const formDataToSend = new FormData();
+    formDataToSend.append('collection_arts_id', subcategoryId);
+    formDataToSend.append('images[]', formData.value.image);
+    formDataToSend.append('names[]', formData.value.name.trim());
 
-    swalSuccess('Coleção adicionada com sucesso!');
+    await axios.post('v1/collection-images', formDataToSend, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    swalSuccess('Imagem adicionada com sucesso!');
     addModal.value?.hide();
     
     // Recarregar a lista
@@ -427,7 +445,7 @@ const saveCollection = async () => {
     const errorMessage =
       error.response?.data?.message ||
       error.response?.data?.error ||
-      'Não foi possível adicionar a coleção.';
+      'Não foi possível adicionar a imagem.';
     swalError(errorMessage);
   } finally {
     saving.value = false;
