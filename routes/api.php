@@ -110,6 +110,7 @@ Route::prefix('v1')->group(function () {
 
     // Layout Column Names
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');
+    Route::post('layout-column-names', [LayoutColumnNameController::class, 'store'])->middleware('auth:api');
     Route::put('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'update'])->middleware('auth:api');
     Route::delete('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'destroy'])->middleware('auth:api');
 

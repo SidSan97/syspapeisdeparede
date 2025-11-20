@@ -10,6 +10,31 @@ use Illuminate\Http\Request;
 class LayoutColumnNameController extends Controller
 {
     /**
+     * Cria uma nova coluna de layout
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+            ]);
+
+            $column = LayoutColumnName::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $column,
+                'message' => 'Coluna criada com sucesso',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao criar coluna: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Lista todas as colunas de layout
      */
     public function index(): JsonResponse

@@ -19,7 +19,7 @@
                     v-model="editingNames[column.id]"
                     @keyup.enter="saveColumnName(column.id)"
                     @keyup.esc="cancelEdit(column.id)"
-                    class="trello-column-input"
+                    class="trello-column-input w-100"
                     :ref="el => editInputRefs[column.id] = el"
                   />
                   <button
@@ -82,6 +82,43 @@
               </div>
             </div>
           </div>
+          
+          <!-- Botão Adicionar Nova Coluna -->
+          <div class="trello-column trello-column-add">
+            <button
+              v-if="!showAddColumnModal"
+              class="trello-add-column-btn"
+              @click="openAddColumnModal"
+            >
+              <i class="fa fa-plus"></i>
+              <span>Adicionar outra lista</span>
+            </button>
+            <div v-else class="trello-add-column-form">
+              <input
+                v-model="newColumnName"
+                @keyup.enter="createColumn"
+                @keyup.esc="closeAddColumnModal"
+                class="trello-add-column-input"
+                placeholder="Digite o nome da lista..."
+                ref="newColumnInputRef"
+              />
+              <div class="trello-add-column-actions">
+                <button
+                  class="trello-add-column-submit-btn"
+                  @click="createColumn"
+                  :disabled="!newColumnName.trim() || creatingColumn"
+                >
+                  {{ creatingColumn ? 'Criando...' : 'Adicionar Lista' }}
+                </button>
+                <button
+                  class="trello-add-column-cancel-btn"
+                  @click="closeAddColumnModal"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Page>
@@ -108,6 +145,10 @@ const editingColumns = ref({});
 const editingNames = ref({});
 const savingColumn = ref(null);
 const editInputRefs = ref({});
+const showAddColumnModal = ref(false);
+const newColumnName = ref('');
+const creatingColumn = ref(false);
+const newColumnInputRef = ref(null);
 
 function getCardsByColumn(columnId) {
   return cards.value.filter(card => card.column === columnId);
@@ -290,6 +331,49 @@ async function handleDrop(event, columnId) {
 
 function handleClickOutside() {
   openMenuColumn.value = null;
+}
+
+function openAddColumnModal() {
+  showAddColumnModal.value = true;
+  newColumnName.value = '';
+  nextTick(() => {
+    if (newColumnInputRef.value) {
+      newColumnInputRef.value.focus();
+    }
+  });
+}
+
+function closeAddColumnModal() {
+  showAddColumnModal.value = false;
+  newColumnName.value = '';
+}
+
+async function createColumn() {
+  const name = newColumnName.value?.trim();
+  if (!name || creatingColumn.value) {
+    return;
+  }
+
+  try {
+    creatingColumn.value = true;
+    const { data } = await axios.post('v1/layout-column-names', {
+      name: name,
+    });
+
+    if (data.success) {
+      // Adicionar a nova coluna à lista
+      columns.value.push({
+        id: data.data.id,
+        name: data.data.name,
+      });
+      closeAddColumnModal();
+    }
+  } catch (error) {
+    console.error('Erro ao criar coluna:', error);
+    alert('Erro ao criar a coluna. Tente novamente.');
+  } finally {
+    creatingColumn.value = false;
+  }
 }
 
 onMounted(async () => {
@@ -575,6 +659,114 @@ onUnmounted(() => {
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.trello-column-add {
+  flex: 0 0 300px;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+}
+
+.trello-add-column-btn {
+  width: 100%;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #5e6c84;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+
+  &:hover {
+    background-color: #f4f5f7;
+    color: #172b4d;
+  }
+
+  i {
+    font-size: 16px;
+  }
+}
+
+.trello-add-column-form {
+  width: 100%;
+  background-color: #ebecf0;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.trello-add-column-input {
+  width: 100%;
+  background-color: #ffffff;
+  border: 2px solid #0079bf;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #172b4d;
+  margin-bottom: 8px;
+  outline: none;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #5e6c84;
+  }
+
+  &:focus {
+    border-color: #0052cc;
+  }
+}
+
+.trello-add-column-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trello-add-column-submit-btn {
+  flex: 1;
+  background-color: #0079bf;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #0052cc;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.trello-add-column-cancel-btn {
+  background: none;
+  border: none;
+  color: #5e6c84;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: #dfe1e6;
+    color: #172b4d;
   }
 }
 
