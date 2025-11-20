@@ -5,7 +5,7 @@
       <header class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 fw-semibold">{{ collectionName || 'Coleção' }}</h1>
         <div class="d-flex gap-2">
-          <button class="btn btn-primary" type="button">
+          <button class="btn btn-primary" type="button" @click="openAddModal">
             Adicionar
           </button>
           <button class="btn btn-outline-secondary" type="button">
@@ -69,14 +69,139 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Adicionar Subcategoria -->
+    <div
+      class="modal fade"
+      id="add-subcategory-modal"
+      tabindex="-1"
+      aria-labelledby="add-subcategory-modal-label"
+      aria-hidden="true"
+      ref="addModalRef"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="add-subcategory-modal-label">Adicionar item</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveSubcategory">
+              <!-- Nome -->
+              <div class="mb-3">
+                <label for="subcategory-name" class="form-label">Nome</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="subcategory-name"
+                  v-model="formData.name"
+                  placeholder="Digite o nome"
+                  required
+                />
+              </div>
+
+              <!-- Imagem -->
+              <div class="mb-3">
+                <label for="subcategory-image" class="form-label">Imagem</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input
+                    type="file"
+                    class="form-control d-none"
+                    id="subcategory-image"
+                    accept="image/*"
+                    @change="handleImageChange"
+                    ref="fileInputRef"
+                  />
+                  <label
+                    for="subcategory-image"
+                    class="btn btn-outline-secondary mb-0"
+                    style="cursor: pointer;"
+                  >
+                    Escolher Arquivo
+                  </label>
+                  <span class="text-muted">{{ selectedFileName || 'Nenhum arquivo escolhido' }}</span>
+                </div>
+              </div>
+
+              <!-- Categoria -->
+              <div class="mb-3">
+                <label for="subcategory-category" class="form-label">Categoria</label>
+                <select
+                  class="form-select"
+                  id="subcategory-category"
+                  v-model="formData.collection_art_id"
+                  @change="fetchSubcategoriesForCollection(formData.collection_art_id)"
+                  required
+                >
+                  <option value="">Selecionar categoria</option>
+                  <option
+                    v-for="collection in collections"
+                    :key="collection.id"
+                    :value="collection.id"
+                  >
+                    {{ collection.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Subcategoria -->
+              <div class="mb-3">
+                <label for="subcategory-subcategory" class="form-label">Subcategoria</label>
+                <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <span>Carregando...</span>
+                </div>
+                <select
+                  v-else
+                  class="form-select"
+                  id="subcategory-subcategory"
+                  v-model="formData.parent_subcategory_id"
+                >
+                  <option value="">Selecionar categoria</option>
+                  <option
+                    v-for="subcategory in availableSubcategories"
+                    :key="subcategory.id"
+                    :value="subcategory.id"
+                  >
+                    {{ subcategory.name }}
+                  </option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="saveSubcategory"
+              :disabled="saving"
+            >
+              {{ saving ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, useTemplateRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import { swalError } from '../../../utils/alerts';
+import { swalError, swalSuccess } from '../../../utils/alerts';
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
@@ -84,9 +209,23 @@ const DEFAULT_COVER =
 const route = useRoute();
 const router = useRouter();
 
-const loading = ref(false);
+const loading = ref(true);
 const subcategories = ref([]);
 const collectionName = ref('');
+const collections = ref([]);
+const availableSubcategories = ref([]);
+const loadingSubcategories = ref(false);
+const addModalRef = useTemplateRef('addModalRef');
+const fileInputRef = useTemplateRef('fileInputRef');
+const addModal = ref(null);
+const saving = ref(false);
+const formData = ref({
+  name: '',
+  image: null,
+  collection_art_id: '',
+  parent_subcategory_id: '',
+});
+const selectedFileName = ref('');
 
 const buildStorageUrl = (path) => {
   if (!path) {
@@ -158,13 +297,134 @@ const viewSubcategoryImages = (subcategory) => {
   router.push(`/colecao-arts/subcategoria/${subcategory.id}`);
 };
 
-onMounted(() => {
+const fetchCollections = async () => {
+  try {
+    const { data } = await axios.get('v1/collection-arts', {
+      params: { per_page: 100 },
+    });
+    const payload = data?.data ?? data ?? {};
+    const items = payload.items ?? payload ?? [];
+    collections.value = Array.isArray(items) ? items.map((item) => ({
+      id: Number(item.id ?? 0),
+      name: (item.name ?? '').toString(),
+    })) : [];
+  } catch (error) {
+    collections.value = [];
+  }
+};
+
+const fetchSubcategoriesForCollection = async (collectionId) => {
+  if (!collectionId) {
+    availableSubcategories.value = [];
+    loadingSubcategories.value = false;
+    return;
+  }
+  loadingSubcategories.value = true;
+  availableSubcategories.value = [];
+  formData.value.parent_subcategory_id = '';
+  try {
+    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
+    const payload = data?.data ?? data ?? {};
+    const subcategoriesList = payload.subcategories ?? [];
+    availableSubcategories.value = Array.isArray(subcategoriesList)
+      ? subcategoriesList.map((item) => ({
+          id: Number(item.id ?? 0),
+          name: (item.name ?? '').toString(),
+        }))
+      : [];
+  } catch (error) {
+    availableSubcategories.value = [];
+  } finally {
+    loadingSubcategories.value = false;
+  }
+};
+
+const openAddModal = () => {
+  if (addModal.value) {
+    formData.value = {
+      name: '',
+      image: null,
+      collection_art_id: route.params.id ? Number(route.params.id) : '',
+      parent_subcategory_id: '',
+    };
+    selectedFileName.value = '';
+    availableSubcategories.value = [];
+    loadingSubcategories.value = false;
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
+    if (formData.value.collection_art_id) {
+      fetchSubcategoriesForCollection(formData.value.collection_art_id);
+    }
+    addModal.value.show();
+  }
+};
+
+const handleImageChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    formData.value.image = file;
+    selectedFileName.value = file.name;
+  } else {
+    formData.value.image = null;
+    selectedFileName.value = '';
+  }
+};
+
+const saveSubcategory = async () => {
+  if (!formData.value.name.trim()) {
+    swalError('Por favor, preencha o nome da subcategoria.');
+    return;
+  }
+
+  if (!formData.value.collection_art_id) {
+    swalError('Por favor, selecione uma categoria.');
+    return;
+  }
+
+  saving.value = true;
+  try {
+    // Por enquanto, apenas envia o nome e collection_art_id (o backend não suporta imagem direta ainda)
+    // As imagens são adicionadas depois através do endpoint de collection-images
+    const payload = {
+      name: formData.value.name.trim(),
+      collection_art_id: Number(formData.value.collection_art_id),
+    };
+
+    await axios.post('v1/collection-art-subcategories', payload);
+
+    swalSuccess('Subcategoria adicionada com sucesso!');
+    addModal.value?.hide();
+    
+    // Recarregar a lista
+    const collectionId = route.params.id || formData.value.collection_art_id;
+    await fetchSubcategories(Number(collectionId));
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'Não foi possível adicionar a subcategoria.';
+    swalError(errorMessage);
+  } finally {
+    saving.value = false;
+  }
+};
+
+onMounted(async () => {
+  // Carregar categorias ao abrir a página
+  await fetchCollections();
+
   const collectionId = route.params.id;
   if (collectionId) {
     fetchSubcategories(Number(collectionId));
     document.title = 'Subcategorias';
   } else {
     router.push('/colecao-arts');
+  }
+
+  // Inicializar modal Bootstrap
+  if (addModalRef.value) {
+    addModal.value = new window.bootstrap.Modal(addModalRef.value);
   }
 });
 </script>

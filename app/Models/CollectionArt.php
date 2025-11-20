@@ -15,6 +15,7 @@ class CollectionArt extends Model
 
     protected $fillable = [
         'name',
+        'image_cover',
     ];
 
     public function subcategories(): HasMany
