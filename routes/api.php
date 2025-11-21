@@ -107,6 +107,7 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'addMember'])->middleware('auth:api');
     Route::delete('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
+    Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
 
     // Layout Column Names
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

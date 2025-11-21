@@ -324,6 +324,42 @@
                     Nenhum link disponível
                   </div>
                 </div>
+
+                <!-- Carregar Arte -->
+                <div v-if="card.budget" class="trello-modal-section">
+                  <div class="form-check mb-3">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="`load-art-${card.id}`"
+                      v-model="showLoadArtInput"
+                    />
+                    <label class="form-check-label" :for="`load-art-${card.id}`">
+                      Carregar arte
+                    </label>
+                  </div>
+                  <div v-if="showLoadArtInput" class="trello-modal-load-art">
+                    <input
+                      type="file"
+                      :ref="el => artFileInput = el"
+                      accept="image/*"
+                      @change="handleArtFileChange"
+                      class="form-control"
+                      :disabled="uploadingArt"
+                    />
+                    <button
+                      v-if="selectedArtFile"
+                      type="button"
+                      class="btn btn-primary btn-sm mt-2"
+                      @click="uploadArt"
+                      :disabled="uploadingArt"
+                    >
+                      <span v-if="uploadingArt" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                      <i v-else class="fa fa-upload me-2"></i>
+                      {{ uploadingArt ? 'Enviando...' : 'Enviar Arte' }}
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <aside class="trello-modal-sidebar">
@@ -455,6 +491,7 @@
   <script setup>
   import { computed, ref, watch } from 'vue';
   import { useAuthStore } from '@/stores/auth';
+  import axios from 'axios';
 
   const props = defineProps({
     card: {
@@ -491,6 +528,12 @@
   const leavingAsMember = ref(false);
   const showMemberMenu = ref(false);
   const selectedMember = ref(null);
+
+  // Carregar arte
+  const showLoadArtInput = ref(false);
+  const selectedArtFile = ref(null);
+  const artFileInput = ref(null);
+  const uploadingArt = ref(false);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -1184,6 +1227,71 @@
     }
   }
 
+  // Funções para carregar arte
+  function handleArtFileChange(event) {
+    const file = event.target.files?.[0];
+    if (file) {
+      selectedArtFile.value = file;
+    }
+  }
+
+  async function uploadArt() {
+    if (!selectedArtFile.value || !props.card?.id || !props.card?.budget?.user_id || !auth.user?.id) {
+      return;
+    }
+
+    uploadingArt.value = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('art_file', selectedArtFile.value);
+      formData.append('order_budget_id', props.card.id);
+      formData.append('dealer_id', props.card.budget.user_id);
+      formData.append('designer_id', auth.user.id);
+
+      const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data?.success) {
+        // Atualizar o card localmente
+        if (props.card) {
+          props.card.status = 'Pendente de Revisão';
+          if (props.card.budget) {
+            props.card.budget.status = 'Pendente de Revisão';
+          }
+        }
+
+        // Limpar o formulário
+        selectedArtFile.value = null;
+        showLoadArtInput.value = false;
+        if (artFileInput.value) {
+          artFileInput.value.value = '';
+        }
+
+        if (window.Toast) {
+          window.Toast.fire({
+            icon: 'success',
+            title: response.data.message || 'Arte carregada com sucesso',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar arte:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao carregar arte. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      uploadingArt.value = false;
+    }
+  }
+
   // Inicializar descrição quando o card mudar
   watch(() => props.card, (newCard) => {
     if (newCard) {
@@ -1193,6 +1301,9 @@
     // Fechar menu de membro quando o card mudar
     showMemberMenu.value = false;
     selectedMember.value = null;
+    // Resetar upload de arte
+    showLoadArtInput.value = false;
+    selectedArtFile.value = null;
   }, { immediate: true });
 
   // Fechar menu de membro ao clicar fora
@@ -1930,6 +2041,10 @@
     i {
       font-size: 12px;
     }
+  }
+
+  .trello-modal-load-art {
+    margin-top: 12px;
   }
 
   .trello-modal-comment {
