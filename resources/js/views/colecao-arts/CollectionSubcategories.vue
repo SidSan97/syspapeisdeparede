@@ -8,7 +8,7 @@
           <button class="btn btn-primary" type="button" @click="openAddModal">
             Adicionar
           </button>
-          <button class="btn btn-outline-secondary" type="button">
+          <button class="btn btn-outline-secondary" type="button"  @click="goToFavorites">
             Meus favoritos
           </button>
           <div class="dropdown">
@@ -240,6 +240,10 @@ const buildStorageUrl = (path) => {
   return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
 };
 
+const goToFavorites = () => {
+  router.push('/colecao-arts/favoritos');
+};
+
 const normalizeSubcategory = (item = {}) => {
   let cover = DEFAULT_COVER;
   if (item.images && Array.isArray(item.images) && item.images.length > 0) {
@@ -383,7 +387,7 @@ const saveSubcategory = async () => {
   }
 
   // Se uma subcategoria foi selecionada, usar ela. Caso contrário, criar nova subcategoria
-  const subcategoryId = formData.value.parent_subcategory_id 
+  const subcategoryId = formData.value.parent_subcategory_id
     ? Number(formData.value.parent_subcategory_id)
     : null;
 
@@ -407,7 +411,7 @@ const saveSubcategory = async () => {
       const formDataToSend = new FormData();
       formDataToSend.append('collection_arts_id', finalSubcategoryId);
       formDataToSend.append('images[]', formData.value.image);
-      
+
       if (formData.value.name.trim()) {
         formDataToSend.append('names[]', formData.value.name.trim());
       }
@@ -421,7 +425,7 @@ const saveSubcategory = async () => {
 
     swalSuccess('Subcategoria adicionada com sucesso!');
     addModal.value?.hide();
-    
+
     // Recarregar a lista
     const collectionId = route.params.id || formData.value.collection_art_id;
     await fetchSubcategories(Number(collectionId));
