@@ -17,13 +17,25 @@
                   </div>
                   <div class="fw-semibold fs-5">{{ details.name }}</div>
                   <div class="text-muted small mt-2">
-                    Valor total: <span class="fw-semibold">{{ details.totalFormatted }}</span>
-                  </div>
-                  <div class="text-muted small">
                     Prazo de entrega: {{ details.deliveryTime }}
                   </div>
                   <div v-if="details.status" class="text-muted small">
                     Status: {{ details.status }}
+                  </div>
+                </div>
+
+                <!-- Valores do Orçamento -->
+                <div class="border rounded p-3 mt-3">
+                  <h6 class="fw-semibold mb-3">Valores do Orçamento</h6>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="text-muted small">Total à Vista</div>
+                      <div class="fw-semibold fs-5 text-success">{{ details.totalVistaFormatted }}</div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="text-muted small">Total a Prazo</div>
+                      <div class="fw-semibold fs-5 text-primary">{{ details.totalPrazoFormatted }}</div>
+                    </div>
                   </div>
                 </div>
 
@@ -259,6 +271,12 @@ const details = computed(() => {
   );
   const total = Number.isFinite(totalRaw) ? totalRaw : 0;
 
+  const totalVistaRaw = Number(budget.total_amount ?? budget.totalAmount ?? 0);
+  const totalVista = Number.isFinite(totalVistaRaw) ? totalVistaRaw : 0;
+
+  const totalPrazoRaw = Number(budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0);
+  const totalPrazo = Number.isFinite(totalPrazoRaw) ? totalPrazoRaw : 0;
+
   const customerName =
     budget.customer_name ??
     budget.customerName ??
@@ -285,6 +303,10 @@ const details = computed(() => {
     name: budget.name ?? 'Não informado',
     total,
     totalFormatted: formatCurrency(total),
+    totalVista,
+    totalVistaFormatted: formatCurrency(totalVista),
+    totalPrazo,
+    totalPrazoFormatted: formatCurrency(totalPrazo),
     deliveryTime: formatDeliveryTime(
       budget.delivery_time ?? budget.deliveryTime ?? null,
     ),

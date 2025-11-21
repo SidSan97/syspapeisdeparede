@@ -82,6 +82,7 @@ class LayoutService
                 'budget_wall_id' => $wall->id,
                 'name' => $cardName,
                 'total_amount' => (float) $budget->total_amount,
+                'total_amount_installments' => (float) $budget->total_amount_installments,
                 'delivery_time' => $budget->delivery_time ?? 0,
                 'delivery_date_start' => $deliveryDates['start'],
                 'delivery_date_end' => $deliveryDates['end'],

@@ -190,10 +190,17 @@
 
                 <div class="trello-modal-section">
                   <h3 class="trello-modal-section-title">
-                    <i class="fa fa-money"></i> Valor do Orçamento
+                    <i class="fa fa-money"></i> Valores do Orçamento
                   </h3>
                   <div class="trello-modal-info">
-                    <span class="trello-modal-amount">{{ formatCurrency(card.total_amount) }}</span>
+                    <div class="mb-2">
+                      <div class="text-muted small mb-1">Total à Vista</div>
+                      <div class="trello-modal-amount text-success">{{ formatCurrency(card.total_amount || 0) }}</div>
+                    </div>
+                    <div class="mb-2">
+                      <div class="text-muted small mb-1">Total a Prazo</div>
+                      <div class="trello-modal-amount text-primary">{{ formatCurrency(card.total_amount_installments || 0) }}</div>
+                    </div>
                   </div>
                 </div>
 
@@ -559,6 +566,7 @@
   });
 
   function formatCurrency(value) {
+    console.log(value);
     if (value === null || value === undefined) {
       return currencyFormatter.format(0);
     }

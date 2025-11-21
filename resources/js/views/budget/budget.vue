@@ -127,11 +127,6 @@
                             Fazer pedido
                           </button>
                         </li>
-                        <li>
-                          <button class="dropdown-item" type="button" @click="shareBudget(budget)">
-                            Compartilhar
-                          </button>
-                        </li>
                         <li v-if="!isCancelled(budget)">
                           <button class="dropdown-item text-danger" type="button" @click="openCancelModal(budget)">
                             Cancelar

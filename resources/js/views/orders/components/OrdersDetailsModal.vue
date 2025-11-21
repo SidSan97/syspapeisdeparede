@@ -41,17 +41,28 @@
                       <div class="text-muted small">Nome do Pedido</div>
                       <div class="fw-semibold fs-5">{{ details.name }}</div>
                     </div>
-                    <div class="col-md-4">
-                      <div class="text-muted small">Valor Total</div>
-                      <div class="fw-semibold fs-5 text-primary">{{ details.totalFormatted }}</div>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                       <div class="text-muted small">Prazo de Entrega</div>
                       <div class="fw-semibold">{{ details.deliveryTime }}</div>
                     </div>
-                    <div class="col-md-4">
-                      <div class="text-muted small">Área Total</div>
-                      <div class="fw-semibold">{{ details.totalArea }} m²</div>
+                    <div class="col-md-6">
+                      <div class="text-muted small">Metros</div>
+                      <div class="fw-semibold">{{ details.totalArea }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Valores do Orçamento -->
+                <div class="border rounded p-3 mb-4">
+                  <h6 class="fw-semibold mb-3">Valores do Orçamento</h6>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="text-muted small">Total à Vista</div>
+                      <div class="fw-semibold fs-5 text-success">{{ details.totalVistaFormatted }}</div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="text-muted small">Total a Prazo</div>
+                      <div class="fw-semibold fs-5 text-primary">{{ details.totalPrazoFormatted }}</div>
                     </div>
                   </div>
                 </div>
@@ -490,6 +501,12 @@ const details = computed(() => {
   const totalRaw = Number(pedido.total_amount ?? pedido.totalAmount ?? 0);
   const total = Number.isFinite(totalRaw) ? totalRaw : 0;
 
+  const totalVistaRaw = Number(pedido.total_amount ?? pedido.totalAmount ?? 0);
+  const totalVista = Number.isFinite(totalVistaRaw) ? totalVistaRaw : 0;
+
+  const totalPrazoRaw = Number(pedido.total_amount_installments ?? pedido.totalAmountInstallments ?? 0);
+  const totalPrazo = Number.isFinite(totalPrazoRaw) ? totalPrazoRaw : 0;
+
   const totalAreaRaw = Number(pedido.total_area ?? pedido.totalArea ?? 0);
   const totalArea = Number.isFinite(totalAreaRaw) ? totalAreaRaw : 0;
 
@@ -498,6 +515,10 @@ const details = computed(() => {
     name: pedido.name ?? 'Não informado',
     total,
     totalFormatted: formatCurrency(total),
+    totalVista,
+    totalVistaFormatted: formatCurrency(totalVista),
+    totalPrazo,
+    totalPrazoFormatted: formatCurrency(totalPrazo),
     totalArea: totalArea.toFixed(2),
     deliveryTime: formatDeliveryTime(pedido.delivery_time ?? pedido.deliveryTime ?? null),
     status: pedido.status ?? null,
