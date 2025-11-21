@@ -5,11 +5,13 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
+use App\Http\Requests\Budget\UploadArtRequest;
 use App\Models\Budget;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
+use App\Repositories\RequestLayoutArtRepository;
 use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
@@ -27,19 +29,22 @@ class BudgetController extends Controller
     protected $generatePaymentService;
     protected $layoutService;
     protected $orderBudgetRepository;
+    protected $requestLayoutArtRepository;
 
     public function __construct(
         BudgetRepository $repository,
         GeneratePdfService $generatePdfService,
         GeneratePaymentService $generatePaymentService,
         LayoutService $layoutService,
-        OrderBudgetRepository $orderBudgetRepository
+        OrderBudgetRepository $orderBudgetRepository,
+        RequestLayoutArtRepository $requestLayoutArtRepository
     ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
         $this->generatePaymentService = $generatePaymentService;
         $this->layoutService = $layoutService;
         $this->orderBudgetRepository = $orderBudgetRepository;
+        $this->requestLayoutArtRepository = $requestLayoutArtRepository;
     }
 
     public function index(): JsonResponse
@@ -573,57 +578,24 @@ class BudgetController extends Controller
         return $data;
     }
 
-    public function uploadArt(Request $request): JsonResponse
+    public function uploadArt(UploadArtRequest $request): JsonResponse
     {
         try {
-            $request->validate([
-                'art_file' => 'required|image|max:10240', // 10MB max
-                'order_budget_id' => 'required|exists:order_budgets,id',
-                'dealer_id' => 'required|exists:users,id',
-                'designer_id' => 'required|exists:users,id',
-            ]);
-
-            $orderBudget = OrderBudget::findOrFail($request->order_budget_id);
-
-            // Upload do arquivo
             $file = $request->file('art_file');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('request_layouts_art', $filename, 'public');
 
-            // Salvar na tabela request_layouts_art
-            $requestLayoutArt = RequestLayoutArt::create([
-                'dealer_id' => $request->dealer_id,
-                'designer_id' => $request->designer_id,
-                'path_file' => $path,
-            ]);
-
-            // Atualizar status do order_budget
-            $orderBudget->update([
-                'status' => 'Pendente de Revisão',
-            ]);
-
-            // Atualizar status do budget
-            if ($orderBudget->budget) {
-                $orderBudget->budget->update([
-                    'status' => 'Pendente de Revisão',
-                ]);
-            }
+            $data = $this->requestLayoutArtRepository->uploadArt(
+                $file,
+                $request->order_budget_id,
+                $request->dealer_id,
+                $request->designer_id,
+                $request->budget_id
+            );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Arte carregada com sucesso',
-                'data' => [
-                    'id' => $requestLayoutArt->id,
-                    'path_file' => $path,
-                    'url' => asset('storage/' . $path),
-                ],
+                'data' => $data,
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro de validação',
-                'errors' => $e->errors(),
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

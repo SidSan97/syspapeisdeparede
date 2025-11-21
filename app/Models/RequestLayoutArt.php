@@ -15,12 +15,14 @@ class RequestLayoutArt extends Model
     protected $fillable = [
         'dealer_id',
         'designer_id',
+        'budget_id',
         'path_file',
     ];
 
     protected $casts = [
         'dealer_id' => 'integer',
         'designer_id' => 'integer',
+        'budget_id' => 'integer',
         'path_file' => 'string',
     ];
 
@@ -38,6 +40,14 @@ class RequestLayoutArt extends Model
     public function designer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'designer_id');
+    }
+
+    /**
+     * Get the budget that owns the request.
+     */
+    public function budget(): BelongsTo
+    {
+        return $this->belongsTo(Budget::class, 'budget_id');
     }
 }
 

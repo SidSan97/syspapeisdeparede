@@ -326,7 +326,7 @@ class BudgetRepository {
 
     public function getLayoutsForProduction()
     {
-        return OrderBudget::where('status', 'Aprovado')
+        return OrderBudget::where('status', 'Pendente de Revisão')
             ->whereNotNull('budget_wall_id')
             ->with([
                 'budget' => function ($query) {
