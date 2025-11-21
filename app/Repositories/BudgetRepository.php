@@ -46,11 +46,15 @@ class BudgetRepository {
         $selectedCarrier = $data['selectedCarrier'] ?? null;
 
         $totalArea = BudgetCalculator::calculateTotalArea($rooms);
-        $totalAmount = BudgetCalculator::calculateTotalAmount(
+        $totalAmount = BudgetCalculator::calculateTotalAmountVista(
             $totalArea,
             $rooms,
-            $selectedCarrier,
-            $data['paymentMethod'] ?? null
+            $selectedCarrier
+        );
+        $totalAmountInstallments = BudgetCalculator::calculateTotalAmountPrazo(
+            $totalArea,
+            $rooms,
+            $selectedCarrier
         );
         $deliveryTime = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
 
@@ -61,6 +65,7 @@ class BudgetRepository {
             $selectedCarrier,
             $totalArea,
             $totalAmount,
+            $totalAmountInstallments,
             $deliveryTime
         ) {
             $budget = Budget::create([
@@ -68,6 +73,7 @@ class BudgetRepository {
                 'name' => $data['name'],
                 'total_area' => $totalArea,
                 'total_amount' => $totalAmount,
+                'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
                 'payment_method' => $data['paymentMethod'] ?? null,
                 'installment_limit' => ($data['paymentMethod'] ?? null) === 'installment'
@@ -140,11 +146,15 @@ class BudgetRepository {
         $selectedCarrier = $data['selectedCarrier'] ?? null;
 
         $totalArea = BudgetCalculator::calculateTotalArea($rooms);
-        $totalAmount = BudgetCalculator::calculateTotalAmount(
+        $totalAmount = BudgetCalculator::calculateTotalAmountVista(
             $totalArea,
             $rooms,
-            $selectedCarrier,
-            $data['paymentMethod'] ?? null
+            $selectedCarrier
+        );
+        $totalAmountInstallments = BudgetCalculator::calculateTotalAmountPrazo(
+            $totalArea,
+            $rooms,
+            $selectedCarrier
         );
         $deliveryTime = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
 
@@ -156,6 +166,7 @@ class BudgetRepository {
             $selectedCarrier,
             $totalArea,
             $totalAmount,
+            $totalAmountInstallments,
             $deliveryTime
         ) {
             // Atualizar dados do orçamento
@@ -163,6 +174,7 @@ class BudgetRepository {
                 'name' => $data['name'],
                 'total_area' => $totalArea,
                 'total_amount' => $totalAmount,
+                'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
                 'payment_method' => $data['paymentMethod'] ?? null,
                 'installment_limit' => ($data['paymentMethod'] ?? null) === 'installment'

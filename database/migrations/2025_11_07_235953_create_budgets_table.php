@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('name');
             $table->decimal('total_area', 10, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);
+            $table->decimal('total_amount_installments', 12, 2)->default(0);
             $table->unsignedInteger('delivery_time')->default(0);
             $table->string('payment_method')->nullable();
             $table->unsignedTinyInteger('installment_limit')->nullable();

@@ -266,22 +266,6 @@
                   </div>
                 </div>
 
-                <!-- Imagens de Upload -->
-                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
-                    <i class="fa fa-upload"></i> Imagens Enviadas
-                  </h3>
-                  <div class="trello-modal-model-images">
-                    <div
-                      v-for="(file, fileIndex) in card.uploaded_files"
-                      :key="fileIndex"
-                      class="trello-modal-model-image"
-                    >
-                      <img :src="getImageUrl(file)" :alt="file.name || 'Imagem enviada'" />
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Imagens de Coleção -->
                 <div v-if="card.budget" class="trello-modal-section">
                   <h3 class="trello-modal-section-title">

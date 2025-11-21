@@ -16,6 +16,7 @@ class Budget extends Model
         'name',
         'total_area',
         'total_amount',
+        'total_amount_installments',
         'delivery_time',
         'payment_method',
         'installment_limit',
@@ -36,6 +37,7 @@ class Budget extends Model
     protected $casts = [
         'total_area' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'total_amount_installments' => 'decimal:2',
         'delivery_time' => 'integer',
         'installment_limit' => 'integer',
         'installments' => 'integer',

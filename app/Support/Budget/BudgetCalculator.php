@@ -6,7 +6,8 @@ use App\Models\CollectionModel;
 
 class BudgetCalculator
 {
-    public const PRICE_PER_SQUARE_METER = 50;
+    public const PRICE_VISTA = 41.90;
+    public const PRICE_PRAZO = 47.90;
     public const STRIP_WIDTH = 0.6;
 
     public const STRIP_HEIGHT_OPTIONS = [
@@ -35,19 +36,20 @@ class BudgetCalculator
         }));
     }
 
+    /**
+     * Calcula a área da parede como: quantidade de faixas × tamanho da faixa
+     * (não é m², é metros)
+     */
     public static function calculateWallArea(array $wall): float
     {
-        $width = (float) ($wall['width'] ?? 0);
-        $height = (float) ($wall['height'] ?? 0);
-        $area = max($width, 0) * max($height, 0);
+        $strips = self::calculateStripCount($wall);
+        $stripHeight = self::calculateStripHeight($wall);
 
-        foreach (self::getContinuations($wall) as $continuation) {
-            $continuationWidth = max((float) ($continuation['width'] ?? 0), 0);
-            $continuationHeight = max((float) ($continuation['height'] ?? 0), 0);
-            $area += $continuationWidth * $continuationHeight;
+        if ($strips > 0 && $stripHeight !== null) {
+            return round($strips * $stripHeight, 2);
         }
 
-        return round($area, 2);
+        return 0.0;
     }
 
     public static function calculateStripHeight(array $wall): ?float
@@ -141,26 +143,63 @@ class BudgetCalculator
         return round($total, 2);
     }
 
-    public static function calculateTotalAmount(
+    /**
+     * Calcula o total à vista: metros × precoVista + modelos + frete
+     */
+    public static function calculateTotalAmountVista(
         float $totalArea,
         array $rooms,
-        ?array $selectedCarrier,
-        ?string $paymentMethod
+        ?array $selectedCarrier
     ): float {
         self::$modelCache = [];
 
-        $subtotal = $totalArea * self::PRICE_PER_SQUARE_METER;
+        $subtotal = $totalArea * self::PRICE_VISTA;
         $subtotal += self::calculateModelCost($rooms);
 
         if ($selectedCarrier !== null) {
             $subtotal += (float) ($selectedCarrier['price'] ?? 0);
         }
 
-        if ($paymentMethod === 'pix') {
-            $subtotal *= 0.95;
+        return round($subtotal, 2);
+    }
+
+    /**
+     * Calcula o total a prazo: metros × precoPrazo + modelos + frete
+     */
+    public static function calculateTotalAmountPrazo(
+        float $totalArea,
+        array $rooms,
+        ?array $selectedCarrier
+    ): float {
+        self::$modelCache = [];
+
+        $subtotal = $totalArea * self::PRICE_PRAZO;
+        $subtotal += self::calculateModelCost($rooms);
+
+        if ($selectedCarrier !== null) {
+            $subtotal += (float) ($selectedCarrier['price'] ?? 0);
         }
 
         return round($subtotal, 2);
+    }
+
+    /**
+     * Calcula o total baseado na forma de pagamento (mantido para compatibilidade)
+     */
+    public static function calculateTotalAmount(
+        float $totalArea,
+        array $rooms,
+        ?array $selectedCarrier,
+        ?string $paymentMethod
+    ): float {
+        if ($paymentMethod === 'pix') {
+            return self::calculateTotalAmountVista($totalArea, $rooms, $selectedCarrier);
+        } elseif ($paymentMethod === 'installment') {
+            return self::calculateTotalAmountPrazo($totalArea, $rooms, $selectedCarrier);
+        }
+
+        // Default: retorna o valor à vista
+        return self::calculateTotalAmountVista($totalArea, $rooms, $selectedCarrier);
     }
 
     public static function calculateDeliveryTime(array $rooms, ?array $selectedCarrier): int
