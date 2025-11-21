@@ -57,6 +57,11 @@ const routes = [
                 component: () => import('../views/colecao-arts/SubcategoryImages.vue'),
             },
             {
+                path: '/colecao-arts/favoritos',
+                name: 'MyFavorites',
+                component: () => import('../views/colecao-arts/MyFavorites.vue'),
+            },
+            {
                 path: '/pedidos',
                 name: 'Pedidos',
                 component: () => import('../views/orders/Orders.vue'),

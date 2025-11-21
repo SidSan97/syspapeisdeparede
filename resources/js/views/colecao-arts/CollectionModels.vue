@@ -8,7 +8,11 @@
           <button class="btn btn-primary" type="button" @click="openAddModal">
             Adicionar
           </button>
-          <button class="btn btn-outline-secondary" type="button">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            @click="goToFavorites"
+          >
             Meus favoritos
           </button>
           <div class="dropdown">
@@ -332,6 +336,10 @@ const viewCollectionSubcategories = (collection) => {
   router.push(`/colecao-arts/colecao/${collection.id}`);
 };
 
+const goToFavorites = () => {
+  router.push('/colecao-arts/favoritos');
+};
+
 const fetchCollectionsForModal = async () => {
   try {
     const { data } = await axios.get('v1/collection-arts', {
@@ -438,7 +446,7 @@ const saveCollection = async () => {
 
     swalSuccess('Imagem adicionada com sucesso!');
     addModal.value?.hide();
-    
+
     // Recarregar a lista
     await fetchCollections();
   } catch (error) {
@@ -455,7 +463,7 @@ const saveCollection = async () => {
 onMounted(async () => {
   // Carregar categorias ao abrir a página
   await fetchCollectionsForModal();
-  
+
   fetchCollections();
   document.title = 'Coleção';
 

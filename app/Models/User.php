@@ -71,4 +71,12 @@ class User extends Authenticatable implements Commentator //implements MustVerif
             ->withTimestamps();
     }
 
+    /**
+     * Get the favorite collection images for this user.
+     */
+    public function favoriteCollectionImages(): BelongsToMany
+    {
+        return $this->belongsToMany(CollectionImage::class, 'my_favorites_collection_images', 'user_id', 'collection_image_id')
+            ->withTimestamps();
+    }
 }

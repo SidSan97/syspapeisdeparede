@@ -12,9 +12,9 @@
             Voltar
           </button>
         </div>
-        <h1 class="h3 mb-2 text-primary fw-semibold">{{ subcategoryName || 'Imagens' }}</h1>
-        <p class="text-muted mb-0" v-if="collectionName">
-          Coleção: {{ collectionName }}
+        <h1 class="h3 mb-2 text-primary fw-semibold">Meus Favoritos</h1>
+        <p class="text-muted mb-0">
+          Imagens que você favoritou
         </p>
       </header>
 
@@ -22,7 +22,7 @@
         Carregando imagens...
       </div>
       <div v-else-if="!images.length" class="text-center text-muted py-5">
-        Nenhuma imagem cadastrada nesta subcategoria.
+        Nenhuma imagem favoritada ainda.
       </div>
       <div v-else class="image-gallery">
         <figure
@@ -41,10 +41,9 @@
             />
             <button
               type="button"
-              class="image-gallery__favorite-btn"
-              :class="{ 'is-favorited': image.is_favorited }"
+              class="image-gallery__favorite-btn is-favorited"
               @click.stop="toggleFavorite(image)"
-              :title="image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+              title="Remover dos favoritos"
             >
               <i class="fa fa-heart"></i>
             </button>
@@ -75,21 +74,18 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { swalError } from '../../../utils/alerts';
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
 
-const route = useRoute();
 const router = useRouter();
 
 const loading = ref(false);
 const images = ref([]);
 const modalImage = ref(null);
-const subcategoryName = ref('');
-const collectionName = ref('');
 
 const buildStorageUrl = (path) => {
   if (!path) {
@@ -122,46 +118,19 @@ const normalizeImage = (image) => ({
   name: image.name ?? '',
   path_name: image.path_name ?? image.pathName ?? '',
   url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
-  is_favorited: image.is_favorited ?? false,
+  is_favorited: true, // All images in favorites are favorited
 });
 
-const fetchSubcategoryImages = async (subcategoryId) => {
-  if (!subcategoryId) {
-    return;
-  }
-
+const fetchFavoriteImages = async () => {
   loading.value = true;
   try {
-    const { data } = await axios.get(`v1/collection-art-subcategories/${subcategoryId}`);
-    const payload = data?.data ?? data ?? {};
-
-    subcategoryName.value = payload.name ?? '';
-
-    if (payload.collection_art) {
-      collectionName.value = payload.collection_art.name ?? '';
-    }
-
-    const imagesList = Array.isArray(payload.images) ? payload.images : [];
-    const normalizedImages = imagesList.map(normalizeImage);
-
-    // Check favorite status for each image
-    await Promise.all(
-      normalizedImages.map(async (image) => {
-        try {
-          const { data: favoriteData } = await axios.get(
-            `v1/collection-images/${image.id}/check-favorite`
-          );
-          image.is_favorited = favoriteData?.data?.is_favorited ?? false;
-        } catch (error) {
-          image.is_favorited = false;
-        }
-      })
-    );
-
-    images.value = normalizedImages;
+    const { data } = await axios.get('v1/my-favorite-collection-images');
+    const payload = data?.data ?? data ?? [];
+    const imagesList = Array.isArray(payload) ? payload : [];
+    images.value = imagesList.map(normalizeImage);
   } catch (error) {
     images.value = [];
-    swalError('Não foi possível carregar as imagens desta subcategoria.');
+    swalError('Não foi possível carregar suas imagens favoritas.');
   } finally {
     loading.value = false;
   }
@@ -182,9 +151,14 @@ const closeModal = () => {
 const toggleFavorite = async (image) => {
   try {
     const { data } = await axios.post(`v1/collection-images/${image.id}/toggle-favorite`);
-    image.is_favorited = data?.data?.is_favorited ?? false;
+    const isFavorited = data?.data?.is_favorited ?? false;
+
+    if (!isFavorited) {
+      // Remove from list if unfavorited
+      images.value = images.value.filter(img => img.id !== image.id);
+    }
   } catch (error) {
-    swalError('Não foi possível atualizar o favorito. Tente novamente.');
+    swalError('Não foi possível remover o favorito. Tente novamente.');
   }
 };
 
@@ -193,13 +167,8 @@ const goBack = () => {
 };
 
 onMounted(() => {
-  const subcategoryId = route.params.id;
-  if (subcategoryId) {
-    fetchSubcategoryImages(Number(subcategoryId));
-    document.title = 'Imagens da Subcategoria';
-  } else {
-    goBack();
-  }
+  fetchFavoriteImages();
+  document.title = 'Meus Favoritos';
 });
 </script>
 
@@ -246,6 +215,16 @@ onMounted(() => {
   transform: scale(1.05);
 }
 
+.image-gallery__caption {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--bs-body-color);
+  text-align: center;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+}
+
 .image-gallery__favorite-btn {
   position: absolute;
   top: 0.75rem;
@@ -279,16 +258,6 @@ onMounted(() => {
 .image-gallery__favorite-btn.is-favorited:hover {
   background: rgba(220, 53, 69, 1);
   color: #fff;
-}
-
-.image-gallery__caption {
-  margin: 0;
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--bs-body-color);
-  text-align: center;
-  background: var(--bs-body-bg);
-  border-top: 1px solid var(--bs-border-color);
 }
 
 .image-modal {

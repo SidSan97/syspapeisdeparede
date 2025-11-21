@@ -7,6 +7,7 @@ use App\Http\Controllers\API\V1\{
     CollectionImageController,
     CollectionModelController,
     LayoutColumnNameController,
+    MyFavoriteCollectionImageController,
     ProfileController,
     UserController,
 };
@@ -89,6 +90,14 @@ Route::prefix('v1')->group(function () {
         'collection-art-subcategories' => CollectionArtSubcategoryController::class,
         'collection-images' => CollectionImageController::class,
     ]);
+
+    // My Favorite Collection Images
+    //----------------------------------
+    Route::get('my-favorite-collection-images', [MyFavoriteCollectionImageController::class, 'index'])->middleware('auth:api');
+    Route::post('collection-images/{collectionImage}/toggle-favorite', [MyFavoriteCollectionImageController::class, 'toggle'])->middleware('auth:api');
+    Route::get('collection-images/{collectionImage}/check-favorite', [MyFavoriteCollectionImageController::class, 'check'])->middleware('auth:api');
+
+    // Orçamentos
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
@@ -109,7 +118,7 @@ Route::prefix('v1')->group(function () {
     Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
 
-    // Layout Column Names
+    // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');
     Route::post('layout-column-names', [LayoutColumnNameController::class, 'store'])->middleware('auth:api');
     Route::put('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'update'])->middleware('auth:api');
