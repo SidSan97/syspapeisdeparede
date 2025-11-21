@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class RequestLayoutArt extends Model
+{
+    use HasFactory;
+
+    protected $table = 'request_layouts_art';
+
+    protected $fillable = [
+        'dealer_id',
+        'designer_id',
+        'path_file',
+    ];
+
+    protected $casts = [
+        'dealer_id' => 'integer',
+        'designer_id' => 'integer',
+        'path_file' => 'string',
+    ];
+
+    /**
+     * Get the dealer (revendedor) that owns the request.
+     */
+    public function dealer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dealer_id');
+    }
+
+    /**
+     * Get the designer that owns the request.
+     */
+    public function designer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'designer_id');
+    }
+}
+

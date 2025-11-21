@@ -221,7 +221,7 @@ class BudgetController extends Controller
                     $orderBudgets[] = \App\Models\OrderBudget::create([
                         'budget_id' => $budget->id,
                         'budget_wall_id' => $wall->id,
-                        'status' => 'Liberado para produção',
+                        'status' => 'Aprovado',
                         'layout_column_names_id' => $firstColumn->id,
                     ]);
                 }
