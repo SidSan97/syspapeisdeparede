@@ -11,47 +11,53 @@
             >
               <div class="trello-column-header">
                 <div class="trello-column-header-left">
-                  <h3 v-if="!editingColumns[column.id]" class="trello-column-title">
+                  <h3 v-if="!editingColumns[column.id]" class="trello-column-title mb-0">
                     {{ column.name }}
                   </h3>
-                  <div v-else class="trello-column-edit">
+                  <div v-else class="trello-column-edit d-flex align-items-center gap-2">
                     <input
                       v-model="editingNames[column.id]"
                       @keyup.enter="saveColumnName(column.id)"
                       @keyup.esc="cancelEdit(column.id)"
-                      class="trello-column-input w-100"
+                      class="form-control form-control-sm"
                       :ref="el => editInputRefs[column.id] = el"
                     />
                     <button
                       @click="saveColumnName(column.id)"
-                      class="trello-column-save-btn"
+                      class="btn btn-primary btn-sm"
                       :disabled="savingColumn === column.id"
                     >
                       <i class="fa fa-check"></i>
                     </button>
                   </div>
                 </div>
-                <div class="trello-column-header-right">
-                  <span class="trello-column-count">{{ getCardsByColumn(column.id).length }}</span>
-                  <div class="trello-column-menu">
+                <div class="trello-column-header-right d-flex align-items-center gap-2">
+                  <span class="badge trello-column-count-badge">{{ getCardsByColumn(column.id).length }}</span>
+                  <div class="dropdown">
                     <button
-                      class="trello-column-menu-btn"
+                      class="btn btn-sm btn-link text-decoration-none p-1 trello-column-menu-btn"
+                      type="button"
                       @click.stop="toggleColumnMenu(column.id)"
+                      :aria-expanded="openMenuColumn === column.id"
                     >
                       <i class="fa fa-ellipsis-v"></i>
                     </button>
-                    <div
+                    <ul
                       v-if="openMenuColumn === column.id"
-                      class="trello-column-menu-dropdown"
+                      class="dropdown-menu dropdown-menu-end show"
                       @click.stop
                     >
-                      <button @click="startEditColumn(column.id)" class="trello-column-menu-item">
-                        <i class="fa fa-edit"></i> Editar
-                      </button>
-                      <button @click="confirmDeleteColumn(column.id)" class="trello-column-menu-item danger">
-                        <i class="fa fa-trash"></i> Excluir
-                      </button>
-                    </div>
+                      <li>
+                        <button @click="startEditColumn(column.id)" class="dropdown-item" type="button">
+                          <i class="fa fa-edit me-2"></i> Editar
+                        </button>
+                      </li>
+                      <li>
+                        <button @click="confirmDeleteColumn(column.id)" class="dropdown-item text-danger" type="button">
+                          <i class="fa fa-trash me-2"></i> Excluir
+                        </button>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -103,35 +109,37 @@
             <div class="trello-column trello-column-add">
               <button
                 v-if="!showAddColumnModal"
-                class="trello-add-column-btn"
+                class="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2"
                 @click="openAddColumnModal"
               >
                 <i class="fa fa-plus"></i>
                 <span>Adicionar outra lista</span>
               </button>
-              <div v-else class="trello-add-column-form">
-                <input
-                  v-model="newColumnName"
-                  @keyup.enter="createColumn"
-                  @keyup.esc="closeAddColumnModal"
-                  class="trello-add-column-input"
-                  placeholder="Digite o nome da lista..."
-                  ref="newColumnInputRef"
-                />
-                <div class="trello-add-column-actions">
-                  <button
-                    class="trello-add-column-submit-btn"
-                    @click="createColumn"
-                    :disabled="!newColumnName.trim() || creatingColumn"
-                  >
-                    {{ creatingColumn ? 'Criando...' : 'Adicionar Lista' }}
-                  </button>
-                  <button
-                    class="trello-add-column-cancel-btn"
-                    @click="closeAddColumnModal"
-                  >
-                    <i class="fa fa-times"></i>
-                  </button>
+              <div v-else class="card">
+                <div class="card-body p-2">
+                  <input
+                    v-model="newColumnName"
+                    @keyup.enter="createColumn"
+                    @keyup.esc="closeAddColumnModal"
+                    class="form-control form-control-sm mb-2"
+                    placeholder="Digite o nome da lista..."
+                    ref="newColumnInputRef"
+                  />
+                  <div class="d-flex gap-2">
+                    <button
+                      class="btn btn-primary btn-sm flex-fill"
+                      @click="createColumn"
+                      :disabled="!newColumnName.trim() || creatingColumn"
+                    >
+                      {{ creatingColumn ? 'Criando...' : 'Adicionar Lista' }}
+                    </button>
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      @click="closeAddColumnModal"
+                    >
+                      <i class="fa fa-times"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -477,44 +485,46 @@
 
   <style lang="scss" scoped>
   .trello-container {
-    padding: 20px;
+    padding: 1.25rem;
     height: calc(100vh - 120px);
     overflow: hidden;
-    background-color: #f4f5f7;
+    background-color: var(--bs-body-bg);
   }
 
   .trello-board {
     display: flex;
-    gap: 12px;
+    gap: 0.75rem;
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 10px;
+    padding-bottom: 0.625rem;
 
     &::-webkit-scrollbar {
       height: 12px;
     }
 
     &::-webkit-scrollbar-track {
-      background: #e4e6eb;
+      background: var(--bs-border-color);
       border-radius: 6px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #c1c7d0;
+      background: var(--bs-secondary);
       border-radius: 6px;
+      opacity: 0.5;
 
       &:hover {
-        background: #a5adba;
+        background: var(--bs-secondary);
+        opacity: 0.7;
       }
     }
   }
 
   .trello-column {
     flex: 0 0 300px;
-    background-color: #ebecf0;
-    border-radius: 8px;
-    padding: 8px;
+    background-color: var(--bs-secondary-bg);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
     display: flex;
     flex-direction: column;
     max-height: 100%;
@@ -525,9 +535,95 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
     position: relative;
+    overflow: visible;
+    z-index: 10;
+  }
+
+  .trello-column-header-right {
+    position: relative;
+  }
+
+  .trello-column-header-right .dropdown {
+    position: relative;
+  }
+
+  .trello-column-menu-btn {
+    color: var(--bs-body-color);
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+      color: var(--bs-body-color);
+      background-color: var(--bs-secondary-bg);
+      opacity: 0.8;
+    }
+  }
+
+  .trello-column-count-badge {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+  }
+
+  .trello-column-header-right .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    z-index: 1050;
+    min-width: 150px;
+    background-color: var(--bs-dropdown-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    box-shadow: var(--bs-box-shadow-lg);
+    padding: 0.25rem 0;
+    display: block;
+  }
+
+  .trello-column-header-right .dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    clear: both;
+    font-weight: 400;
+    color: var(--bs-dropdown-color);
+    text-align: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+
+    &:hover {
+      background-color: var(--bs-dropdown-link-hover-bg);
+      color: var(--bs-dropdown-link-hover-color);
+    }
+
+    &:focus {
+      background-color: var(--bs-dropdown-link-hover-bg);
+      color: var(--bs-dropdown-link-hover-color);
+    }
+
+    &.text-danger {
+      color: var(--bs-danger);
+
+      &:hover {
+        background-color: var(--bs-danger-bg-subtle);
+        color: var(--bs-danger);
+      }
+
+      &:focus {
+        background-color: var(--bs-danger-bg-subtle);
+        color: var(--bs-danger);
+      }
+    }
+
+    i {
+      width: 1rem;
+      text-align: center;
+    }
   }
 
   .trello-column-header-left {
@@ -535,35 +631,20 @@
     min-width: 0;
   }
 
-  .trello-column-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
   .trello-column-title {
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: #172b4d;
+    color: var(--bs-body-color);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-  }
-
-  .trello-column-count {
-    background-color: #dfe1e6;
-    color: #5e6c84;
-    border-radius: 12px;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: 600;
   }
 
   .trello-column-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 4px;
+    padding: 0 0.25rem;
 
     &::-webkit-scrollbar {
       width: 8px;
@@ -574,21 +655,24 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #c1c7d0;
+      background: var(--bs-secondary);
       border-radius: 4px;
+      opacity: 0.5;
 
       &:hover {
-        background: #a5adba;
+        background: var(--bs-secondary);
+        opacity: 0.7;
       }
     }
   }
 
   .trello-card {
-    background-color: #ffffff;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    background-color: var(--bs-card-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
     cursor: pointer;
-    box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+    box-shadow: var(--bs-box-shadow-sm);
     transition: all 0.2s ease;
     user-select: none;
     display: flex;
@@ -596,7 +680,8 @@
     overflow: hidden;
 
     &:hover {
-      box-shadow: 0 2px 4px rgba(9, 30, 66, 0.15);
+      box-shadow: var(--bs-box-shadow);
+      transform: translateY(-2px);
     }
 
     &:active {
@@ -608,7 +693,7 @@
     width: 100%;
     height: 150px;
     overflow: hidden;
-    background-color: #f4f5f7;
+    background-color: var(--bs-secondary-bg);
     flex-shrink: 0;
 
     img {
@@ -619,9 +704,9 @@
   }
 
   .trello-card-footer {
-    background-color: #1d2125;
-    color: #ffffff;
-    padding: 8px 12px;
+    background-color: var(--bs-dark);
+    color: var(--bs-white);
+    padding: 0.5rem 0.75rem;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -632,13 +717,13 @@
   .trello-card-footer-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.25rem;
     width: 100%;
   }
 
   .trello-card-footer-text {
-    font-size: 12px;
-    color: #ffffff;
+    font-size: 0.75rem;
+    color: var(--bs-white);
     font-weight: 400;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -648,20 +733,20 @@
   .trello-card-footer-meta {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0.75rem;
     flex-wrap: wrap;
   }
 
   .trello-card-footer .trello-card-deadline {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
     color: rgba(255, 255, 255, 0.7);
 
     i {
       color: rgba(255, 255, 255, 0.7);
-      font-size: 11px;
+      font-size: 0.6875rem;
     }
   }
 
@@ -670,13 +755,13 @@
   .trello-card-attachment-count {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 11px;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
     color: rgba(255, 255, 255, 0.7);
 
     i {
       color: rgba(255, 255, 255, 0.7);
-      font-size: 11px;
+      font-size: 0.6875rem;
     }
 
     span {
@@ -684,244 +769,26 @@
     }
   }
 
-  .trello-card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .trello-card-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #172b4d;
-    line-height: 1.4;
-  }
-
-  .trello-card-deadline {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #5e6c84;
-
-    i {
-      color: #5e6c84;
-    }
-  }
-
-  .trello-column-menu {
-    position: relative;
-  }
-
-  .trello-column-menu-btn {
-    background: none;
-    border: none;
-    color: #5e6c84;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    font-size: 14px;
-
-    &:hover {
-      background-color: #dfe1e6;
-      color: #172b4d;
-    }
-  }
-
-  .trello-column-menu-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 4px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(9, 30, 66, 0.15);
-    min-width: 150px;
-    z-index: 1000;
-    overflow: hidden;
-  }
-
-  .trello-column-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-    color: #172b4d;
-    font-size: 14px;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: #f4f5f7;
-    }
-
-    &.danger {
-      color: #d32f2f;
-
-      &:hover {
-        background-color: #ffebee;
-      }
-    }
-
-    i {
-      width: 16px;
-      text-align: center;
-    }
-  }
-
-  .trello-column-edit {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .trello-column-input {
-    flex: 1;
-    padding: 4px 8px;
-    border: 2px solid #0079bf;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #172b4d;
-    outline: none;
-
-    &:focus {
-      border-color: #0052cc;
-    }
-  }
-
-  .trello-column-save-btn {
-    background-color: #0079bf;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-
-    &:hover:not(:disabled) {
-      background-color: #0052cc;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
   .trello-column-add {
     flex: 0 0 300px;
     display: flex;
     align-items: flex-start;
-    padding-top: 8px;
+    padding-top: 0.5rem;
   }
 
-  .trello-add-column-btn {
-    width: 100%;
-    background-color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #5e6c84;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
-
-    &:hover {
-      background-color: #f4f5f7;
-      color: #172b4d;
+  @media (max-width: 768px) {
+    .trello-container {
+      padding: 0.75rem;
+      height: calc(100vh - 100px);
     }
 
-    i {
-      font-size: 16px;
+    .trello-column {
+      flex: 0 0 280px;
+    }
+
+    .trello-column-add {
+      flex: 0 0 280px;
     }
   }
-
-  .trello-add-column-form {
-    width: 100%;
-    background-color: #ebecf0;
-    border-radius: 8px;
-    padding: 8px;
-  }
-
-  .trello-add-column-input {
-    width: 100%;
-    background-color: #ffffff;
-    border: 2px solid #0079bf;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    color: #172b4d;
-    margin-bottom: 8px;
-    outline: none;
-    box-sizing: border-box;
-
-    &::placeholder {
-      color: #5e6c84;
-    }
-
-    &:focus {
-      border-color: #0052cc;
-    }
-  }
-
-  .trello-add-column-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .trello-add-column-submit-btn {
-    flex: 1;
-    background-color: #0079bf;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-
-    &:hover:not(:disabled) {
-      background-color: #0052cc;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
-  .trello-add-column-cancel-btn {
-    background: none;
-    border: none;
-    color: #5e6c84;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 16px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-      background-color: #dfe1e6;
-      color: #172b4d;
-    }
-  }
-
   </style>
 
