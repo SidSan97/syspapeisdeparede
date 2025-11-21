@@ -244,7 +244,7 @@
 
                                                     <!-- Wall Calculation -->
                                                     <div class="alert alert-success" v-if="getWallArea(wall) > 0">
-                                                        <strong>Área total:</strong> {{ getWallArea(wall).toFixed(2) }} m²
+                                                        <strong>Metro:</strong> {{ getWallArea(wall).toFixed(2) }} m
                                                         <br>
                                                         <strong>Quantidade de faixas:</strong> {{ calculateStrips(wall) }}
                                                         <br>
@@ -458,8 +458,8 @@
                         </div>
                     </div>
 
-                    <!-- Seção: Resumo -->
-                    <div class="card mb-4">
+                     <!-- Seção: Resumo -->
+                     <div class="card mb-4">
                         <div class="card-header bg-transparent">
                             <h5 class="mb-0 fw-semibold">Resumo</h5>
                         </div>
@@ -474,8 +474,8 @@
                                     <strong>{{ totalWalls }}</strong>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Área Total:</span>
-                                    <strong>{{ totalArea.toFixed(2) }} m²</strong>
+                                    <span class="text-muted">Metros:</span>
+                                    <strong>{{ totalArea.toFixed(2) }}</strong>
                                 </div>
                                 <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Frete:</span>
@@ -487,9 +487,15 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0 fw-semibold">Total do Orçamento</h5>
-                                <h4 class="mb-0 text-primary">R$ {{ totalBudget.toFixed(2) }}</h4>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
+                                    <h5 class="mb-0 text-success">R$ {{ totalBudgetVista.toFixed(2) }}</h5>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
+                                    <h5 class="mb-0 text-primary">R$ {{ totalBudgetPrazo.toFixed(2) }}</h5>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -528,6 +534,9 @@ const STRIP_HEIGHT_OPTIONS = [
     5.1, 5.2, 5.3, 5.4, 5.5, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8,
     6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
 ];
+
+const PRECO_VISTA = 41.90;
+const PRECO_PRAZO = 47.90;
 
 const createDefaultContinuation = () => ({
                         direction: '',
@@ -632,7 +641,9 @@ const budget = reactive({
     selectedCarrier: null,
     paymentMethod: '',
     installmentLimit: 12,
-    installments: 1
+    installments: 1,
+    total_amount: 0,
+    total_amount_installments: 0
 });
 
 async function fetchCollectionModels() {
@@ -804,7 +815,9 @@ function normalizeBudgetFromAPI(budgetData) {
         selectedCarrier: selectedCarrierIndex,
         paymentMethod: budgetData.payment_method || '',
         installmentLimit: budgetData.installment_limit || 12,
-        installments: budgetData.installments || 1
+        installments: budgetData.installments || 1,
+        total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
+        total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0
     };
 }
 
@@ -889,13 +902,9 @@ const totalArea = computed(() => {
     return area;
 });
 
-const totalBudget = computed(() => {
+// Calcular custo dos modelos
+const totalModelsCost = computed(() => {
     let total = 0;
-    // Cálculo baseado na área (simulado)
-    const pricePerSquareMeter = 50; // Preço por m² simulado
-    total = totalArea.value * pricePerSquareMeter;
-
-    // Adicionar custos dos modelos por parede
     budget.rooms.forEach(room => {
         room.walls.forEach(wall => {
             if (wall.model) {
@@ -906,18 +915,53 @@ const totalBudget = computed(() => {
             }
         });
     });
-
-    // Adicionar frete
-    if (budget.selectedCarrier !== null && budget.carriers[budget.selectedCarrier]) {
-        total += budget.carriers[budget.selectedCarrier].price;
-    }
-
-    // Aplicar desconto PIX (5%)
-    if (budget.paymentMethod === 'pix') {
-        total = total * 0.95;
-    }
-
     return total;
+});
+
+// Calcular custo do frete
+const freightCost = computed(() => {
+    if (budget.selectedCarrier !== null && budget.carriers[budget.selectedCarrier]) {
+        return budget.carriers[budget.selectedCarrier].price;
+    }
+    return 0;
+});
+
+// Calcular total à vista dinamicamente
+const calculatedTotalBudgetVista = computed(() => {
+    return (totalArea.value * PRECO_VISTA) + totalModelsCost.value + freightCost.value;
+});
+
+// Calcular total a prazo dinamicamente
+const calculatedTotalBudgetPrazo = computed(() => {
+    return (totalArea.value * PRECO_PRAZO) + totalModelsCost.value + freightCost.value;
+});
+
+// Total à vista: usar valor do banco se não houver mudanças, senão calcular dinamicamente
+const totalBudgetVista = computed(() => {
+    if (hasChanges.value) {
+        return calculatedTotalBudgetVista.value;
+    }
+    // Por padrão, usar valores do banco que vieram na requisição
+    return budget.total_amount || calculatedTotalBudgetVista.value;
+});
+
+// Total a prazo: usar valor do banco se não houver mudanças, senão calcular dinamicamente
+const totalBudgetPrazo = computed(() => {
+    if (hasChanges.value) {
+        return calculatedTotalBudgetPrazo.value;
+    }
+    // Por padrão, usar valores do banco que vieram na requisição
+    return budget.total_amount_installments || calculatedTotalBudgetPrazo.value;
+});
+
+// Total baseado na forma de pagamento selecionada
+const totalBudget = computed(() => {
+    if (budget.paymentMethod === 'pix') {
+        return totalBudgetVista.value;
+    } else if (budget.paymentMethod === 'installment') {
+        return totalBudgetPrazo.value;
+    }
+    return 0;
 });
 
 // Methods
@@ -1084,23 +1128,14 @@ function getWallContinuations(wall) {
 }
 
 function getWallArea(wall) {
-    let area = 0;
-    const baseWidth = Number(wall.width) || 0;
-    const baseHeight = Number(wall.height) || 0;
+    const strips = calculateStrips(wall);
+    const stripHeight = calculateStripHeight(wall);
 
-    if (baseWidth && baseHeight) {
-        area += baseWidth * baseHeight;
+    if (strips > 0 && stripHeight) {
+        return strips * stripHeight;
     }
 
-    getWallContinuations(wall).forEach((continuation) => {
-        const continuationWidth = Number(continuation.width) || 0;
-        const continuationHeight = Number(continuation.height) || 0;
-        if (continuationWidth && continuationHeight) {
-            area += continuationWidth * continuationHeight;
-        }
-    });
-
-    return area;
+    return 0;
 }
 
 function getStripCalculation(wall) {
@@ -1252,9 +1287,13 @@ function updateBudget() {
         .then(response => {
             console.log('Orçamento atualizado:', response.data);
             swalSuccess('Orçamento atualizado com sucesso!');
-            // Atualizar originalBudget para refletir as mudanças salvas
+            // Atualizar originalBudget e budget para refletir as mudanças salvas
             const updatedData = response.data?.data || budget;
-            originalBudget.value = JSON.parse(JSON.stringify(normalizeBudgetFromAPI(updatedData)));
+            const normalized = normalizeBudgetFromAPI(updatedData);
+            // Atualizar valores salvos no budget
+            budget.total_amount = normalized.total_amount;
+            budget.total_amount_installments = normalized.total_amount_installments;
+            originalBudget.value = JSON.parse(JSON.stringify(normalized));
             // Redirecionar para a lista de orçamentos
             setTimeout(() => {
                 router.push('/budget');
@@ -1389,3 +1428,4 @@ function updateBudget() {
     }
 }
 </style>
+
