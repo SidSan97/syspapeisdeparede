@@ -1,15 +1,15 @@
 <template>
     <Teleport v-if="card" to="body">
-      <div class="trello-modal-overlay" @click="handleClose">
-        <div class="trello-modal" @click.stop>
-          <div class="trello-modal-header">
-            <h2 class="trello-modal-title">{{ card.name }}</h2>
-            <button class="trello-modal-close" @click="handleClose">
+      <div class="layout-modal-overlay" @click="handleClose">
+        <div class="layout-modal" @click.stop>
+          <div class="layout-modal-header">
+            <h2 class="layout-modal-title">{{ card.name }}</h2>
+            <button class="layout-modal-close" @click="handleClose">
               <i class="fa fa-times"></i>
             </button>
           </div>
-          <div class="trello-modal-body">
-            <div v-if="coverImage" class="trello-modal-cover">
+          <div class="layout-modal-body">
+            <div v-if="coverImage" class="layout-modal-cover">
               <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
             </div>
 
@@ -91,16 +91,16 @@
             </div>
 
             <div class="modal-content-layout">
-              <div class="trello-modal-main">
-                <div v-if="card.members && card.members.length > 0" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+              <div class="layout-modal-main">
+                <div v-if="card.members && card.members.length > 0" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-user"></i> Membros
                   </h3>
-                  <div class="trello-modal-members-list">
+                  <div class="layout-modal-members-list">
                     <div
                       v-for="member in card.members"
                       :key="member.id"
-                      class="trello-modal-member-avatar"
+                      class="layout-modal-member-avatar"
                       :class="{ 'is-clickable': canRemoveMembers }"
                       :style="{ backgroundColor: getAvatarColor(member.name) }"
                       :title="member.name"
@@ -117,38 +117,38 @@
                   </div>
                 </div>
 
-                <div class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-calendar"></i> Prazo
                   </h3>
-                  <div class="trello-modal-info">
+                  <div class="layout-modal-info">
                     <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
-                    <span class="trello-modal-info-label">{{ card.delivery_time }} dias</span>
+                    <span class="layout-modal-info-label">{{ card.delivery_time }} dias</span>
                   </div>
                 </div>
 
-                <div class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-align-left"></i> Descrição
                   </h3>
-                  <div v-if="!isEditingDescription" class="trello-modal-description" :class="{ 'is-empty': !card.description }" @click="startEditingDescription">
+                  <div v-if="!isEditingDescription" class="layout-modal-description" :class="{ 'is-empty': !card.description }" @click="startEditingDescription">
                     {{ card.description || 'Adicione uma descrição mais detalhada...' }}
                   </div>
-                  <div v-else class="trello-modal-description-edit">
+                  <div v-else class="layout-modal-description-edit">
                     <textarea
                       v-model="descriptionText"
-                      class="trello-modal-description-textarea"
+                      class="layout-modal-description-textarea"
                       maxlength="500"
                       rows="4"
                       placeholder="Adicione uma descrição mais detalhada..."
                     ></textarea>
-                    <div class="trello-modal-description-footer">
-                      <span class="trello-modal-description-counter">{{ descriptionText.length }}/500</span>
-                      <div class="trello-modal-description-actions">
-                        <button class="trello-modal-description-cancel" @click="cancelEditingDescription">
+                    <div class="layout-modal-description-footer">
+                      <span class="layout-modal-description-counter">{{ descriptionText.length }}/500</span>
+                      <div class="layout-modal-description-actions">
+                        <button class="layout-modal-description-cancel" @click="cancelEditingDescription">
                           Cancelar
                         </button>
-                        <button class="trello-modal-description-save" @click="saveDescription" :disabled="isSavingDescription">
+                        <button class="layout-modal-description-save" @click="saveDescription" :disabled="isSavingDescription">
                           {{ isSavingDescription ? 'Salvando...' : 'Salvar' }}
                         </button>
                       </div>
@@ -156,27 +156,27 @@
                   </div>
                 </div>
 
-                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-paperclip"></i> Anexos
                   </h3>
-                  <div class="trello-modal-attachments">
+                  <div class="layout-modal-attachments">
                     <div
                       v-for="(file, fileIndex) in card.uploaded_files"
                       :key="fileIndex"
-                      class="trello-modal-attachment"
+                      class="layout-modal-attachment"
                     >
-                      <div class="trello-modal-attachment-preview">
+                      <div class="layout-modal-attachment-preview">
                         <img v-if="isImageFile(file)" :src="getImageUrl(file)" :alt="getAttachmentName(file, fileIndex)" />
                         <i v-else class="fa fa-file"></i>
                       </div>
-                      <div class="trello-modal-attachment-body">
-                        <div class="trello-modal-attachment-name">{{ getAttachmentName(file, fileIndex) }}</div>
-                        <div class="trello-modal-attachment-meta">
+                      <div class="layout-modal-attachment-body">
+                        <div class="layout-modal-attachment-name">{{ getAttachmentName(file, fileIndex) }}</div>
+                        <div class="layout-modal-attachment-meta">
                           {{ formatDate(file.created_at) }}
                         </div>
                         <a
-                          class="trello-modal-attachment-button"
+                          class="layout-modal-attachment-button"
                           :href="getImageUrl(file)"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -188,81 +188,81 @@
                   </div>
                 </div>
 
-                <div class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-money"></i> Valores do Orçamento
                   </h3>
-                  <div class="row trello-modal-info">
+                  <div class="row layout-modal-info">
                     <div class="col-md-6 mb-2">
                       <div class="text-muted small mb-1">Total à Vista</div>
-                      <div class="trello-modal-amount text-success">{{ formatCurrency(card.total_amount || 0) }}</div>
+                      <div class="layout-modal-amount text-success">{{ formatCurrency(card.total_amount || 0) }}</div>
                     </div>
                     <div class="col-md-6 mb-2">
                       <div class="text-muted small mb-1">Total a Prazo</div>
-                      <div class="trello-modal-amount text-primary">{{ formatCurrency(card.total_amount_installments || 0) }}</div>
+                      <div class="layout-modal-amount text-primary">{{ formatCurrency(card.total_amount_installments || 0) }}</div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Detalhes da Parede -->
-                <div v-if="card.wall" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.wall" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-ruler"></i> Detalhes da Parede
                   </h3>
-                  <div class="trello-modal-wall-details">
-                    <div class="trello-modal-wall-info-grid">
-                      <div class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Nome da Parede</div>
-                        <div class="trello-modal-wall-info-value">{{ card.wall.name || 'Não informado' }}</div>
+                  <div class="layout-modal-wall-details">
+                    <div class="layout-modal-wall-info-grid">
+                      <div class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Nome da Parede</div>
+                        <div class="layout-modal-wall-info-value">{{ card.wall.name || 'Não informado' }}</div>
                       </div>
-                      <div class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Largura</div>
-                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.width) }} m</div>
+                      <div class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Largura</div>
+                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.width) }} m</div>
                       </div>
-                      <div class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Altura</div>
-                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
+                      <div class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Altura</div>
+                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
                       </div>
-                      <div class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Área Total</div>
-                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
+                      <div class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Área Total</div>
+                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
                       </div>
-                      <div v-if="card.wall.strip_height" class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Altura da Faixa</div>
-                        <div class="trello-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
+                      <div v-if="card.wall.strip_height" class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Altura da Faixa</div>
+                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
                       </div>
-                      <div v-if="card.wall.strip_count" class="trello-modal-wall-info-item">
-                        <div class="trello-modal-wall-info-label">Quantidade de Faixas</div>
-                        <div class="trello-modal-wall-info-value">{{ card.wall.strip_count }}</div>
+                      <div v-if="card.wall.strip_count" class="layout-modal-wall-info-item">
+                        <div class="layout-modal-wall-info-label">Quantidade de Faixas</div>
+                        <div class="layout-modal-wall-info-value">{{ card.wall.strip_count }}</div>
                       </div>
                     </div>
 
                     <!-- Continuações -->
-                    <div v-if="card.wall.continue_same_art && card.wall.continuations && card.wall.continuations.length > 0" class="trello-modal-continuations">
-                      <h4 class="trello-modal-continuations-title">
+                    <div v-if="card.wall.continue_same_art && card.wall.continuations && card.wall.continuations.length > 0" class="layout-modal-continuations">
+                      <h4 class="layout-modal-continuations-title">
                         <i class="fa fa-arrows-h"></i> Continuações
                       </h4>
-                      <div class="trello-modal-continuations-list">
+                      <div class="layout-modal-continuations-list">
                         <div
                           v-for="(continuation, index) in card.wall.continuations"
                           :key="index"
-                          class="trello-modal-continuation-item"
+                          class="layout-modal-continuation-item"
                         >
-                          <div class="trello-modal-continuation-header">
-                            <span class="trello-modal-continuation-number">Continuação {{ index + 1 }}</span>
+                          <div class="layout-modal-continuation-header">
+                            <span class="layout-modal-continuation-number">Continuação {{ index + 1 }}</span>
                           </div>
-                          <div class="trello-modal-continuation-details">
-                            <div class="trello-modal-continuation-detail">
-                              <span class="trello-modal-continuation-label">Largura:</span>
-                              <span class="trello-modal-continuation-value">{{ formatNumber(continuation.width) }} m</span>
+                          <div class="layout-modal-continuation-details">
+                            <div class="layout-modal-continuation-detail">
+                              <span class="layout-modal-continuation-label">Largura:</span>
+                              <span class="layout-modal-continuation-value">{{ formatNumber(continuation.width) }} m</span>
                             </div>
-                            <div class="trello-modal-continuation-detail">
-                              <span class="trello-modal-continuation-label">Altura:</span>
-                              <span class="trello-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
+                            <div class="layout-modal-continuation-detail">
+                              <span class="layout-modal-continuation-label">Altura:</span>
+                              <span class="layout-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
                             </div>
-                            <div class="trello-modal-continuation-detail">
-                              <span class="trello-modal-continuation-label">Área:</span>
-                              <span class="trello-modal-continuation-value">
+                            <div class="layout-modal-continuation-detail">
+                              <span class="layout-modal-continuation-label">Área:</span>
+                              <span class="layout-modal-continuation-value">
                                 {{ formatNumber((Number(continuation.width) || 0) * (Number(continuation.height) || 0)) }} m²
                               </span>
                             </div>
@@ -274,67 +274,67 @@
                 </div>
 
                 <!-- Imagens de Coleção -->
-                <div v-if="card.budget" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.budget" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-cube"></i> Modelos selecionados
                   </h3>
                   <div v-if="getCollectionModels(card.budget).length > 0">
                     {{ getCollectionModels(card.budget).map(model => model.name).join(', ') }}
                   </div>
-                  <div v-else class="trello-modal-info text-muted">
+                  <div v-else class="layout-modal-info text-muted">
                     Nenhum modelo selecionado
                   </div>
                 </div>
 
                 <!-- Imagens da Parede Específica -->
-                <div v-if="card.wall && card.wall.collection_model" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.wall && card.wall.collection_model" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-image"></i> Imagens da Parede
                   </h3>
-                  <div v-if="card.wall.collection_model.files && card.wall.collection_model.files.length > 0" class="trello-modal-model-images">
+                  <div v-if="card.wall.collection_model.files && card.wall.collection_model.files.length > 0" class="layout-modal-model-images">
                     <div
                       v-for="(file, fileIndex) in card.wall.collection_model.files"
                       :key="fileIndex"
-                      class="trello-modal-model-image"
+                      class="layout-modal-model-image"
                     >
                       <img :src="getImageUrl(file)" :alt="file.name || 'Imagem da parede'" />
                     </div>
                   </div>
-                  <div v-else class="trello-modal-info text-muted">
+                  <div v-else class="layout-modal-info text-muted">
                     Nenhuma imagem disponível para esta parede
                   </div>
                 </div>
 
-                <div v-if="card.budget" class="trello-modal-section">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.budget" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-link"></i> Links
                   </h3>
-                  <div v-if="card.budget.link_referring_model" class="trello-modal-info">
+                  <div v-if="card.budget.link_referring_model" class="layout-modal-info">
                     <a
                       :href="card.budget.link_referring_model"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="trello-modal-link"
+                      class="layout-modal-link"
                     >
                       <i class="fa fa-external-link"></i>
                       {{ card.budget.link_referring_model }}
                     </a>
                   </div>
-                  <div v-else class="trello-modal-info text-muted">
+                  <div v-else class="layout-modal-info text-muted">
                     Nenhum link disponível
                   </div>
                 </div>
 
                 <!-- Solicitações de Artes -->
-                <div v-if="card.budget" class="trello-modal-section p-1">
-                  <h3 class="trello-modal-section-title">
+                <div v-if="card.budget" class="layout-modal-section p-1">
+                  <h3 class="layout-modal-section-title">
                     <i class="fa fa-paint-brush"></i> Solicitações de Artes
                   </h3>
-                  <div v-if="loadingRequestArts" class="trello-modal-info text-muted">
+                  <div v-if="loadingRequestArts" class="layout-modal-info text-muted">
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     Carregando solicitações de artes...
                   </div>
-                  <div v-else-if="requestLayoutArts.length === 0" class="trello-modal-info text-muted">
+                  <div v-else-if="requestLayoutArts.length === 0" class="layout-modal-info text-muted">
                     Nenhuma solicitação de arte encontrada para este card.
                   </div>
                   <div v-else class="accordion" id="requestArtsAccordion">
@@ -367,61 +367,61 @@
                         data-bs-parent="#requestArtsAccordion"
                       >
                         <div class="accordion-body">
-                          <div class="trello-modal-art-item-content">
-                            <div class="trello-modal-art-header">
-                              <div class="trello-modal-art-date">
+                          <div class="layout-modal-art-item-content">
+                            <div class="layout-modal-art-header">
+                              <div class="layout-modal-art-date">
                                 {{ formatDate(art.created_at) }}
                               </div>
                             </div>
 
-                            <div v-if="art.wall_info" class="trello-modal-art-wall-info">
-                              <div class="trello-modal-art-info-row">
-                                <span class="trello-modal-art-info-label">Ambiente:</span>
-                                <span class="trello-modal-art-info-value">{{ art.wall_info.room_name || 'N/A' }}</span>
+                            <div v-if="art.wall_info" class="layout-modal-art-wall-info">
+                              <div class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Ambiente:</span>
+                                <span class="layout-modal-art-info-value">{{ art.wall_info.room_name || 'N/A' }}</span>
                               </div>
-                              <div class="trello-modal-art-info-row">
-                                <span class="trello-modal-art-info-label">Parede:</span>
-                                <span class="trello-modal-art-info-value">{{ art.wall_info.wall_name || 'N/A' }}</span>
+                              <div class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Parede:</span>
+                                <span class="layout-modal-art-info-value">{{ art.wall_info.wall_name || 'N/A' }}</span>
                               </div>
-                              <div v-if="art.wall_info.width || art.wall_info.height" class="trello-modal-art-info-row">
-                                <span class="trello-modal-art-info-label">Dimensões:</span>
-                                <span class="trello-modal-art-info-value">
+                              <div v-if="art.wall_info.width || art.wall_info.height" class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Dimensões:</span>
+                                <span class="layout-modal-art-info-value">
                                   {{ formatNumber(art.wall_info.width) }}m x {{ formatNumber(art.wall_info.height) }}m
                                   <span v-if="art.wall_info.total_area"> ({{ formatNumber(art.wall_info.total_area) }} m²)</span>
                                 </span>
                               </div>
                             </div>
 
-                            <div v-if="art.dealer_name || art.designer_name" class="trello-modal-art-authors">
-                              <div v-if="art.dealer_name" class="trello-modal-art-author">
+                            <div v-if="art.dealer_name || art.designer_name" class="layout-modal-art-authors">
+                              <div v-if="art.dealer_name" class="layout-modal-art-author">
                                 <i class="fa fa-user-tie me-1"></i>
-                                <span class="trello-modal-art-author-label">Revendedor:</span>
-                                <span class="trello-modal-art-author-name">{{ art.dealer_name }}</span>
+                                <span class="layout-modal-art-author-label">Revendedor:</span>
+                                <span class="layout-modal-art-author-name">{{ art.dealer_name }}</span>
                               </div>
-                              <div v-if="art.designer_name" class="trello-modal-art-author">
+                              <div v-if="art.designer_name" class="layout-modal-art-author">
                                 <i class="fa fa-user me-1"></i>
-                                <span class="trello-modal-art-author-label">Designer:</span>
-                                <span class="trello-modal-art-author-name">{{ art.designer_name }}</span>
+                                <span class="layout-modal-art-author-label">Designer:</span>
+                                <span class="layout-modal-art-author-name">{{ art.designer_name }}</span>
                               </div>
                             </div>
 
-                            <div v-if="art.comment" class="trello-modal-art-comment">
-                              <div class="trello-modal-art-comment-label">Comentário:</div>
-                              <div class="trello-modal-art-comment-text">{{ art.comment }}</div>
+                            <div v-if="art.comment" class="layout-modal-art-comment">
+                              <div class="layout-modal-art-comment-label">Comentário:</div>
+                              <div class="layout-modal-art-comment-text">{{ art.comment }}</div>
                             </div>
 
-                            <div v-if="art.image_url" class="trello-modal-art-image">
+                            <div v-if="art.image_url" class="layout-modal-art-image">
                               <img
                                 :src="art.image_url"
                                 :alt="`Arte ${art.id}`"
-                                class="trello-modal-art-image-preview"
+                                class="layout-modal-art-image-preview"
                                 @error="handleImageError"
                               />
                               <a
                                 :href="art.image_url"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="trello-modal-art-image-link"
+                                class="layout-modal-art-image-link"
                               >
                                 <i class="fa fa-external-link me-1"></i>
                                 Abrir em nova aba
@@ -435,7 +435,7 @@
                 </div>
 
                 <!-- Carregar Arte -->
-                <div v-if="card.budget" class="trello-modal-section">
+                <div v-if="card.budget" class="layout-modal-section">
                   <div class="form-check mb-3">
                     <input
                       class="form-check-input"
@@ -447,7 +447,7 @@
                       Carregar arte
                     </label>
                   </div>
-                  <div v-if="showLoadArtInput" class="trello-modal-load-art">
+                  <div v-if="showLoadArtInput" class="layout-modal-load-art">
                     <input
                       type="file"
                       :ref="el => artFileInput = el"
@@ -479,32 +479,32 @@
                 </div>
               </div>
 
-              <aside class="trello-modal-sidebar">
-                <div class="trello-modal-sidebar-header">
+              <aside class="layout-modal-sidebar">
+                <div class="layout-modal-sidebar-header">
                   <h3>Comentários e atividade</h3>
-                  <button class="trello-modal-details-button" type="button" @click="toggleDetails">
+                  <button class="layout-modal-details-button" type="button" @click="toggleDetails">
                     {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
                   </button>
                 </div>
 
                 <!-- Caixa de texto para escrever comentários -->
-                <div class="trello-modal-comment-input-section">
-                  <div class="trello-modal-comment-input-wrapper">
+                <div class="layout-modal-comment-input-section">
+                  <div class="layout-modal-comment-input-wrapper">
                     <textarea
                       v-model="newCommentText"
-                      class="trello-modal-comment-textarea"
+                      class="layout-modal-comment-textarea"
                       maxlength="500"
                       rows="3"
                       placeholder="Escrever um comentário..."
                       @focus="isEditingComment = true"
                     ></textarea>
-                    <div v-if="isEditingComment" class="trello-modal-comment-input-footer">
-                      <span class="trello-modal-comment-counter">{{ newCommentText.length }}/500</span>
-                      <div class="trello-modal-comment-input-actions">
-                        <button class="trello-modal-comment-cancel" @click="cancelNewComment">
+                    <div v-if="isEditingComment" class="layout-modal-comment-input-footer">
+                      <span class="layout-modal-comment-counter">{{ newCommentText.length }}/500</span>
+                      <div class="layout-modal-comment-input-actions">
+                        <button class="layout-modal-comment-cancel" @click="cancelNewComment">
                           Cancelar
                         </button>
-                        <button class="trello-modal-comment-save" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
+                        <button class="layout-modal-comment-save" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
                           {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
                         </button>
                       </div>
@@ -515,84 +515,84 @@
                 <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
                 <div v-if="showDetails">
                   <!-- Lista de comentários -->
-                  <div class="trello-modal-comments-list">
+                  <div class="layout-modal-comments-list">
                     <div
                       v-for="comment in cardComments"
                       :key="comment.id"
-                      class="trello-modal-comment-item"
+                      class="layout-modal-comment-item"
                     >
-                      <div v-if="editingCommentId !== comment.id" class="trello-modal-comment-content">
-                        <div class="trello-modal-comment-header">
-                          <div class="trello-modal-comment-author-wrapper">
-                            <div class="trello-modal-comment-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
+                      <div v-if="editingCommentId !== comment.id" class="layout-modal-comment-content">
+                        <div class="layout-modal-comment-header">
+                          <div class="layout-modal-comment-author-wrapper">
+                            <div class="layout-modal-comment-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
                               {{ getInitials(comment.user_name) }}
                             </div>
-                            <span class="trello-modal-comment-author">{{ comment.user_name }}</span>
+                            <span class="layout-modal-comment-author">{{ comment.user_name }}</span>
                           </div>
-                          <span class="trello-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
+                          <span class="layout-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
                         </div>
-                        <div class="trello-modal-comment-text">{{ comment.comment }}</div>
-                        <div class="trello-modal-comment-actions">
-                          <button class="trello-modal-comment-action-btn" @click="startEditComment(comment)">
+                        <div class="layout-modal-comment-text">{{ comment.comment }}</div>
+                        <div class="layout-modal-comment-actions">
+                          <button class="layout-modal-comment-action-btn" @click="startEditComment(comment)">
                             Editar
                           </button>
-                          <span class="trello-modal-comment-action-separator">/</span>
-                          <button class="trello-modal-comment-action-btn trello-modal-comment-delete" @click="deleteComment(comment.id)">
+                          <span class="layout-modal-comment-action-separator">/</span>
+                          <button class="layout-modal-comment-action-btn layout-modal-comment-delete" @click="deleteComment(comment.id)">
                             Excluir
                           </button>
                         </div>
                       </div>
-                      <div v-else class="trello-modal-comment-edit">
+                      <div v-else class="layout-modal-comment-edit">
                         <textarea
                           v-model="editingCommentText"
-                          class="trello-modal-comment-textarea"
+                          class="layout-modal-comment-textarea"
                           maxlength="500"
                           rows="3"
                         ></textarea>
-                        <div class="trello-modal-comment-input-footer">
-                          <span class="trello-modal-comment-counter">{{ editingCommentText.length }}/500</span>
-                          <div class="trello-modal-comment-input-actions">
-                            <button class="trello-modal-comment-cancel" @click="cancelEditComment">
+                        <div class="layout-modal-comment-input-footer">
+                          <span class="layout-modal-comment-counter">{{ editingCommentText.length }}/500</span>
+                          <div class="layout-modal-comment-input-actions">
+                            <button class="layout-modal-comment-cancel" @click="cancelEditComment">
                               Cancelar
                             </button>
-                            <button class="trello-modal-comment-save" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
+                            <button class="layout-modal-comment-save" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
                               {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
                             </button>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div v-if="cardComments.length === 0" class="trello-modal-info text-muted">
+                    <div v-if="cardComments.length === 0" class="layout-modal-info text-muted">
                       Nenhum comentário ainda.
                     </div>
                   </div>
 
                   <!-- Atividades e Histórico -->
-                  <div class="trello-modal-activity">
-                    <div v-if="activityItems.length > 0" class="trello-modal-activity-list">
+                  <div class="layout-modal-activity">
+                    <div v-if="activityItems.length > 0" class="layout-modal-activity-list">
                       <div
                         v-for="(activity, activityIndex) in activityItems"
                         :key="activity.id || activityIndex"
-                        class="trello-modal-activity-item"
+                        class="layout-modal-activity-item"
                         :class="{ 'is-history': activity.type === 'history' }"
                       >
-                        <div class="trello-modal-activity-header">
-                          <div class="trello-modal-activity-author-wrapper">
-                            <div v-if="activity.type !== 'history'" class="trello-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                        <div class="layout-modal-activity-header">
+                          <div class="layout-modal-activity-author-wrapper">
+                            <div v-if="activity.type !== 'history'" class="layout-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
                               {{ getInitials(getActivityUser(activity)) }}
                             </div>
-                            <div v-else class="trello-modal-activity-icon">
+                            <div v-else class="layout-modal-activity-icon">
                               <i class="fa fa-history"></i>
                             </div>
-                            <span v-if="activity.type !== 'history'" class="trello-modal-activity-author">{{ getActivityUser(activity) }}</span>
-                            <span v-else class="trello-modal-activity-author">Histórico</span>
+                            <span v-if="activity.type !== 'history'" class="layout-modal-activity-author">{{ getActivityUser(activity) }}</span>
+                            <span v-else class="layout-modal-activity-author">Histórico</span>
                           </div>
-                          <span class="trello-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
+                          <span class="layout-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
                         </div>
-                        <div class="trello-modal-activity-content" v-html="getActivityText(activity)"></div>
+                        <div class="layout-modal-activity-content" v-html="getActivityText(activity)"></div>
                       </div>
                     </div>
-                    <div v-else class="trello-modal-info text-muted">
+                    <div v-else class="layout-modal-info text-muted">
                       Nenhuma atividade registrada.
                     </div>
                   </div>
@@ -1500,7 +1500,7 @@
   watch(() => showMemberMenu.value, (isOpen) => {
     if (isOpen) {
       const closeMenu = (e) => {
-        if (!e.target.closest('.trello-modal-member-avatar')) {
+        if (!e.target.closest('.layout-modal-member-avatar')) {
           showMemberMenu.value = false;
           selectedMember.value = null;
           document.removeEventListener('click', closeMenu);
@@ -1515,7 +1515,7 @@
 
 <style lang="scss" scoped>
   // Modal Styles
-  .trello-modal-overlay {
+  .layout-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -1539,7 +1539,7 @@
     }
   }
 
-  .trello-modal {
+  .layout-modal {
     background-color: var(--bs-modal-bg, var(--bs-body-bg));
     border-radius: 0.5rem;
     width: 100%;
@@ -1563,7 +1563,7 @@
     }
   }
 
-  .trello-modal-header {
+  .layout-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1571,14 +1571,14 @@
     border-bottom: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-title {
+  .layout-modal-title {
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--bs-body-color);
     margin: 0;
   }
 
-  .trello-modal-close {
+  .layout-modal-close {
     background: none;
     border: none;
     font-size: 1.25rem;
@@ -1594,13 +1594,13 @@
     }
   }
 
-  .trello-modal-body {
+  .layout-modal-body {
     padding: 0;
     overflow-y: auto;
     flex: 1;
   }
 
-  .trello-modal-cover {
+  .layout-modal-cover {
     width: 100%;
     height: 200px;
     border-radius: 0;
@@ -1623,12 +1623,12 @@
     padding: 24px;
   }
 
-  .trello-modal-main {
+  .layout-modal-main {
     min-width: 0;
     border-right: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-sidebar {
+  .layout-modal-sidebar {
     background-color: var(--bs-secondary-bg);
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
@@ -1639,7 +1639,7 @@
     overflow-y: auto;
   }
 
-  .trello-modal-sidebar-header {
+  .layout-modal-sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1654,7 +1654,7 @@
     }
   }
 
-  .trello-modal-details-button {
+  .layout-modal-details-button {
     border: none;
     background-color: var(--bs-dark, var(--bs-body-color));
     color: var(--bs-white, var(--bs-body-bg));
@@ -1669,33 +1669,33 @@
     }
   }
 
-  .trello-modal-activity-list {
+  .layout-modal-activity-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .trello-modal-activity-item {
+  .layout-modal-activity-item {
     padding: 0.75rem;
     background-color: var(--bs-card-bg);
     border-radius: 0.375rem;
     border: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-activity-header {
+  .layout-modal-activity-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 6px;
   }
 
-  .trello-modal-activity-author-wrapper {
+  .layout-modal-activity-author-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .trello-modal-activity-avatar {
+  .layout-modal-activity-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -1708,18 +1708,18 @@
     flex-shrink: 0;
   }
 
-  .trello-modal-activity-author {
+  .layout-modal-activity-author {
     font-weight: 600;
     color: var(--bs-body-color);
     font-size: 0.8125rem;
   }
 
-  .trello-modal-activity-date {
+  .layout-modal-activity-date {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-activity-content {
+  .layout-modal-activity-content {
     font-size: 0.8125rem;
     color: var(--bs-body-color);
     line-height: 1.4;
@@ -1734,11 +1734,11 @@
     }
   }
 
-  .trello-modal-activity-item.is-history {
+  .layout-modal-activity-item.is-history {
     border-left: 3px solid var(--bs-success);
   }
 
-  .trello-modal-activity-icon {
+  .layout-modal-activity-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -1751,7 +1751,7 @@
     flex-shrink: 0;
   }
 
-  .trello-modal-description {
+  .layout-modal-description {
     padding: 1rem;
     border-radius: 0.5rem;
     min-height: 80px;
@@ -1770,13 +1770,13 @@
     }
   }
 
-  .trello-modal-description-edit {
+  .layout-modal-description-edit {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .trello-modal-description-textarea {
+  .layout-modal-description-textarea {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid var(--bs-border-color);
@@ -1799,24 +1799,24 @@
     }
   }
 
-  .trello-modal-description-footer {
+  .layout-modal-description-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  .trello-modal-description-counter {
+  .layout-modal-description-counter {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-description-actions {
+  .layout-modal-description-actions {
     display: flex;
     gap: 0.5rem;
   }
 
-  .trello-modal-description-cancel,
-  .trello-modal-description-save {
+  .layout-modal-description-cancel,
+  .layout-modal-description-save {
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
     font-size: 0.875rem;
@@ -1826,7 +1826,7 @@
     border: none;
   }
 
-  .trello-modal-description-cancel {
+  .layout-modal-description-cancel {
     background-color: var(--bs-secondary-bg);
     color: var(--bs-body-color);
 
@@ -1835,7 +1835,7 @@
     }
   }
 
-  .trello-modal-description-save {
+  .layout-modal-description-save {
     background-color: var(--bs-primary);
     color: var(--bs-white);
 
@@ -1850,17 +1850,17 @@
   }
 
   // Estilos de comentários
-  .trello-modal-comment-input-section {
+  .layout-modal-comment-input-section {
     margin-bottom: 16px;
   }
 
-  .trello-modal-comment-input-wrapper {
+  .layout-modal-comment-input-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .trello-modal-comment-textarea {
+  .layout-modal-comment-textarea {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid var(--bs-border-color);
@@ -1883,24 +1883,24 @@
     }
   }
 
-  .trello-modal-comment-input-footer {
+  .layout-modal-comment-input-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  .trello-modal-comment-counter {
+  .layout-modal-comment-counter {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-comment-input-actions {
+  .layout-modal-comment-input-actions {
     display: flex;
     gap: 0.5rem;
   }
 
-  .trello-modal-comment-cancel,
-  .trello-modal-comment-save {
+  .layout-modal-comment-cancel,
+  .layout-modal-comment-save {
     padding: 0.375rem 0.75rem;
     border-radius: 0.25rem;
     font-size: 0.8125rem;
@@ -1910,7 +1910,7 @@
     border: none;
   }
 
-  .trello-modal-comment-cancel {
+  .layout-modal-comment-cancel {
     background-color: var(--bs-secondary-bg);
     color: var(--bs-body-color);
 
@@ -1919,7 +1919,7 @@
     }
   }
 
-  .trello-modal-comment-save {
+  .layout-modal-comment-save {
     background-color: var(--bs-primary);
     color: var(--bs-white);
 
@@ -1933,39 +1933,39 @@
     }
   }
 
-  .trello-modal-comments-list {
+  .layout-modal-comments-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-bottom: 16px;
   }
 
-  .trello-modal-comment-item {
+  .layout-modal-comment-item {
     padding: 0.75rem;
     background-color: var(--bs-card-bg);
     border-radius: 0.375rem;
     border: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-comment-content {
+  .layout-modal-comment-content {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .trello-modal-comment-header {
+  .layout-modal-comment-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  .trello-modal-comment-author-wrapper {
+  .layout-modal-comment-author-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .trello-modal-comment-avatar {
+  .layout-modal-comment-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -1978,25 +1978,25 @@
     flex-shrink: 0;
   }
 
-  .trello-modal-comment-author {
+  .layout-modal-comment-author {
     font-weight: 600;
     color: var(--bs-body-color);
     font-size: 0.8125rem;
   }
 
-  .trello-modal-comment-date {
+  .layout-modal-comment-date {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-comment-text {
+  .layout-modal-comment-text {
     font-size: 0.8125rem;
     color: var(--bs-body-color);
     line-height: 1.4;
     word-wrap: break-word;
   }
 
-  .trello-modal-comment-actions {
+  .layout-modal-comment-actions {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -2006,14 +2006,14 @@
     min-height: 24px;
   }
 
-  .trello-modal-comment-action-separator {
+  .layout-modal-comment-action-separator {
     color: var(--bs-border-color);
     font-size: 0.6875rem;
     padding: 0 0.125rem;
     user-select: none;
   }
 
-  .trello-modal-comment-action-btn {
+  .layout-modal-comment-action-btn {
     background: none;
     border: none;
     color: var(--bs-secondary);
@@ -2037,7 +2037,7 @@
       opacity: 0.7;
     }
 
-    &.trello-modal-comment-delete {
+    &.layout-modal-comment-delete {
       &:hover {
         background-color: var(--bs-danger-bg-subtle);
         color: var(--bs-danger);
@@ -2045,19 +2045,19 @@
     }
   }
 
-  .trello-modal-comment-edit {
+  .layout-modal-comment-edit {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .trello-modal-attachments {
+  .layout-modal-attachments {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .trello-modal-attachment {
+  .layout-modal-attachment {
     display: flex;
     gap: 0.75rem;
     padding: 0.75rem;
@@ -2066,7 +2066,7 @@
     align-items: center;
   }
 
-  .trello-modal-attachment-preview {
+  .layout-modal-attachment-preview {
     width: 64px;
     height: 64px;
     border-radius: 0.375rem;
@@ -2088,25 +2088,25 @@
     }
   }
 
-  .trello-modal-attachment-body {
+  .layout-modal-attachment-body {
     display: flex;
     flex-direction: column;
     gap: 6px;
     flex: 1;
   }
 
-  .trello-modal-attachment-name {
+  .layout-modal-attachment-name {
     font-weight: 600;
     color: var(--bs-body-color);
     font-size: 0.875rem;
   }
 
-  .trello-modal-attachment-meta {
+  .layout-modal-attachment-meta {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-attachment-button {
+  .layout-modal-attachment-button {
     align-self: flex-start;
     padding: 0.375rem 0.75rem;
     background-color: var(--bs-dark, var(--bs-body-color));
@@ -2121,7 +2121,7 @@
     }
   }
 
-  .trello-modal-image {
+  .layout-modal-image {
     width: 100%;
     max-height: 300px;
     margin-bottom: 1.5rem;
@@ -2136,7 +2136,7 @@
     }
   }
 
-  .trello-modal-section {
+  .layout-modal-section {
     margin-bottom: 24px;
 
     &:last-child {
@@ -2144,7 +2144,7 @@
     }
   }
 
-  .trello-modal-section-title {
+  .layout-modal-section-title {
     font-size: 1rem;
     font-weight: 600;
     color: var(--bs-body-color);
@@ -2158,13 +2158,13 @@
     }
   }
 
-  .trello-modal-info {
+  .layout-modal-info {
     color: var(--bs-body-color);
     font-size: 0.875rem;
     line-height: 1.5;
   }
 
-  .trello-modal-info-label {
+  .layout-modal-info-label {
     display: inline-block;
     margin-left: 0.5rem;
     padding: 0.125rem 0.5rem;
@@ -2174,37 +2174,37 @@
     color: var(--bs-secondary);
   }
 
-  .trello-modal-amount {
+  .layout-modal-amount {
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--bs-primary);
   }
 
-  .trello-modal-models {
+  .layout-modal-models {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
 
-  .trello-modal-model {
+  .layout-modal-model {
     padding: 0.75rem;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.375rem;
   }
 
-  .trello-modal-model-name {
+  .layout-modal-model-name {
     font-weight: 600;
     color: var(--bs-body-color);
     margin-bottom: 0.5rem;
   }
 
-  .trello-modal-model-images {
+  .layout-modal-model-images {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .trello-modal-model-image {
+  .layout-modal-model-image {
     width: 120px;
     height: 120px;
     border-radius: 0.25rem;
@@ -2218,7 +2218,7 @@
     }
   }
 
-  .trello-modal-link {
+  .layout-modal-link {
     color: var(--bs-primary);
     text-decoration: none;
     display: inline-flex;
@@ -2235,11 +2235,11 @@
     }
   }
 
-  .trello-modal-load-art {
+  .layout-modal-load-art {
     margin-top: 12px;
   }
 
-  .trello-modal-comment {
+  .layout-modal-comment {
     padding: 0.75rem;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.375rem;
@@ -2248,41 +2248,41 @@
     white-space: pre-wrap;
   }
 
-  .trello-modal-wall-details {
+  .layout-modal-wall-details {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
 
-  .trello-modal-wall-info-grid {
+  .layout-modal-wall-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
   }
 
-  .trello-modal-wall-info-item {
+  .layout-modal-wall-info-item {
     padding: 0.75rem;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.375rem;
   }
 
-  .trello-modal-wall-info-label {
+  .layout-modal-wall-info-label {
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
     font-weight: 500;
   }
 
-  .trello-modal-wall-info-value {
+  .layout-modal-wall-info-value {
     font-size: 0.875rem;
     color: var(--bs-body-color);
     font-weight: 600;
   }
 
-  .trello-modal-continuations {
+  .layout-modal-continuations {
     margin-top: 8px;
   }
 
-  .trello-modal-continuations-title {
+  .layout-modal-continuations-title {
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--bs-body-color);
@@ -2297,47 +2297,47 @@
     }
   }
 
-  .trello-modal-continuations-list {
+  .layout-modal-continuations-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .trello-modal-continuation-item {
+  .layout-modal-continuation-item {
     padding: 0.75rem;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.375rem;
     border-left: 3px solid var(--bs-primary);
   }
 
-  .trello-modal-continuation-header {
+  .layout-modal-continuation-header {
     margin-bottom: 0.5rem;
   }
 
-  .trello-modal-continuation-number {
+  .layout-modal-continuation-number {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--bs-body-color);
   }
 
-  .trello-modal-continuation-details {
+  .layout-modal-continuation-details {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
   }
 
-  .trello-modal-continuation-detail {
+  .layout-modal-continuation-detail {
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  .trello-modal-continuation-label {
+  .layout-modal-continuation-label {
     font-size: 0.75rem;
     color: var(--bs-secondary);
   }
 
-  .trello-modal-continuation-value {
+  .layout-modal-continuation-value {
     font-size: 0.8125rem;
     color: var(--bs-body-color);
     font-weight: 600;
@@ -2348,7 +2348,7 @@
       grid-template-columns: 1fr;
     }
 
-    .trello-modal-sidebar {
+    .layout-modal-sidebar {
       position: static;
       max-height: none;
     }
@@ -2509,14 +2509,14 @@
   }
 
   // Lista de membros do card
-  .trello-modal-members-list {
+  .layout-modal-members-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
   }
 
-  .trello-modal-member-avatar {
+  .layout-modal-member-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -2579,7 +2579,7 @@
   }
 
   // Estilos para Solicitações de Artes
-  .trello-modal-arts-list {
+  .layout-modal-arts-list {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -2625,20 +2625,20 @@
     padding: 1rem;
   }
 
-  .trello-modal-art-item-content {
+  .layout-modal-art-item-content {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .trello-modal-art-item {
+  .layout-modal-art-item {
     padding: 1rem;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.5rem;
     border: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-art-header {
+  .layout-modal-art-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2647,7 +2647,7 @@
     border-bottom: 1px solid var(--bs-border-color);
   }
 
-  .trello-modal-art-title {
+  .layout-modal-art-title {
     font-weight: 600;
     color: var(--bs-body-color);
     font-size: 0.9375rem;
@@ -2656,7 +2656,7 @@
     gap: 0.5rem;
   }
 
-  .trello-modal-art-badge {
+  .layout-modal-art-badge {
     display: inline-block;
     padding: 0.125rem 0.5rem;
     background-color: var(--bs-info-bg-subtle);
@@ -2666,19 +2666,18 @@
     font-weight: 500;
   }
 
-  .trello-modal-art-date {
+  .layout-modal-art-date {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
-  .trello-modal-art-wall-info {
+  .layout-modal-art-wall-info {
     margin-bottom: 0.75rem;
     padding: 0.75rem;
     background-color: var(--bs-body-bg);
     border-radius: 0.375rem;
   }
 
-  .trello-modal-art-info-row {
+  .layout-modal-art-info-row {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
@@ -2689,17 +2688,17 @@
     }
   }
 
-  .trello-modal-art-info-label {
+  .layout-modal-art-info-label {
     color: var(--bs-secondary);
     font-weight: 500;
   }
 
-  .trello-modal-art-info-value {
+  .layout-modal-art-info-value {
     color: var(--bs-body-color);
     font-weight: 600;
   }
 
-  .trello-modal-art-authors {
+  .layout-modal-art-authors {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -2709,51 +2708,51 @@
     border-radius: 0.375rem;
   }
 
-  .trello-modal-art-author {
+  .layout-modal-art-author {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.8125rem;
   }
 
-  .trello-modal-art-author-label {
+  .layout-modal-art-author-label {
     color: var(--bs-secondary);
     font-weight: 500;
   }
 
-  .trello-modal-art-author-name {
+  .layout-modal-art-author-name {
     color: var(--bs-body-color);
     font-weight: 600;
   }
 
-  .trello-modal-art-comment {
+  .layout-modal-art-comment {
     margin-bottom: 0.75rem;
     padding: 0.75rem;
     background-color: var(--bs-body-bg);
     border-radius: 0.375rem;
   }
 
-  .trello-modal-art-comment-label {
+  .layout-modal-art-comment-label {
     font-size: 0.75rem;
     color: var(--bs-secondary);
     margin-bottom: 0.5rem;
     font-weight: 500;
   }
 
-  .trello-modal-art-comment-text {
+  .layout-modal-art-comment-text {
     font-size: 0.8125rem;
     color: var(--bs-body-color);
     line-height: 1.5;
     white-space: pre-wrap;
   }
 
-  .trello-modal-art-image {
+  .layout-modal-art-image {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .trello-modal-art-image-preview {
+  .layout-modal-art-image-preview {
     width: 100%;
     max-height: 400px;
     object-fit: contain;
@@ -2762,7 +2761,7 @@
     background-color: var(--bs-body-bg);
   }
 
-  .trello-modal-art-image-link {
+  .layout-modal-art-image-link {
     align-self: flex-start;
     padding: 0.375rem 0.75rem;
     background-color: var(--bs-primary);
