@@ -24,9 +24,10 @@ class RequestLayoutArtRepository
         int $orderBudgetId,
         int $dealerId,
         int $designerId,
-        int $budgetId
+        int $budgetId,
+        string $comment = null
     ): array {
-        return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $budgetId) {
+        return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $budgetId, $comment) {
             // Upload do arquivo
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('request_layouts_art', $filename, 'public');
@@ -37,6 +38,8 @@ class RequestLayoutArtRepository
                 'designer_id' => $designerId,
                 'path_file' => $path,
                 'budget_id' => $budgetId,
+                'order_budget_id' => $orderBudgetId,
+                'comment' => $comment,
             ]);
 
             // Buscar o pedido

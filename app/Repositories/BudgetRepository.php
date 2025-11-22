@@ -35,7 +35,7 @@ class BudgetRepository {
     public function getPendingReviewAndApproved()
     {
         return Budget::with('rooms.walls.collectionModel')
-            ->whereIn('status', ['Pendente de Revisão', 'Aprovado'])
+            ->whereIn('status', ['Pendente de Revisão', 'Aprovar Layout'])
             ->get();
     }
 
@@ -324,9 +324,9 @@ class BudgetRepository {
         return $budget->fresh(['rooms.walls.collectionModel']);
     }
 
-    public function getLayoutsForProduction()
+    public function getLayoutsForApprove()
     {
-        return OrderBudget::where('status', 'Pendente de Revisão')
+        return OrderBudget::where('status', 'Aprovar Layout')
             ->whereNotNull('budget_wall_id')
             ->with([
                 'budget' => function ($query) {

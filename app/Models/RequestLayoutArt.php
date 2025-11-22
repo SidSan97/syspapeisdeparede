@@ -16,6 +16,8 @@ class RequestLayoutArt extends Model
         'dealer_id',
         'designer_id',
         'budget_id',
+        'order_budget_id',
+        'comment',
         'path_file',
     ];
 
@@ -23,7 +25,9 @@ class RequestLayoutArt extends Model
         'dealer_id' => 'integer',
         'designer_id' => 'integer',
         'budget_id' => 'integer',
+        'order_budget_id' => 'integer',
         'path_file' => 'string',
+        'comment' => 'string',
     ];
 
     /**
@@ -48,6 +52,14 @@ class RequestLayoutArt extends Model
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class, 'budget_id');
+    }
+
+    /**
+     * Get the order budget that owns the request.
+     */
+    public function orderBudget(): BelongsTo
+    {
+        return $this->belongsTo(OrderBudget::class, 'order_budget_id');
     }
 }
 

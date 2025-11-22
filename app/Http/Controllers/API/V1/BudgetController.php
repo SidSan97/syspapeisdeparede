@@ -187,6 +187,8 @@ class BudgetController extends Controller
             $budgetUpdated = $this->repository->placeOrder($budget, $data);
             $transformed = $this->transformBudget($budgetUpdated);
 
+            $this->createLayoutOrder($data['id']);
+
             return response()->json([
                 'success' => true,
                 'data' => $transformed,
@@ -198,6 +200,36 @@ class BudgetController extends Controller
                 'message' => 'Erro ao registrar pedido',
             ], 500);
         }
+    }
+
+    public function createLayoutOrder(int $id)
+    {
+        $budget = Budget::with(['rooms.walls'])->findOrFail($id);
+
+        // Atualizar status do orçamento
+        $budget->update(['status' => 'Aprovar Layout']);
+
+        // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
+        $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+
+        if (!$firstColumn) {
+           throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
+        }
+
+        // Criar um OrderBudget para cada parede do orçamento
+        $orderBudgets = [];
+        foreach ($budget->rooms as $room) {
+            foreach ($room->walls as $wall) {
+                $orderBudgets[] = \App\Models\OrderBudget::create([
+                    'budget_id' => $budget->id,
+                    'budget_wall_id' => $wall->id,
+                    'status' => 'Aprovar Layout',
+                    'layout_column_names_id' => $firstColumn->id,
+                ]);
+            }
+        }
+
+        return $orderBudgets;
     }
 
     public function approve(Request $request): JsonResponse
@@ -278,7 +310,7 @@ class BudgetController extends Controller
     public function layouts(): JsonResponse
     {
         try {
-            $orderBudgets = $this->repository->getLayoutsForProduction();
+            $orderBudgets = $this->repository->getLayoutsForApprove();
             $data = $this->layoutService->transformLayouts($orderBudgets);
 
             return response()->json([
@@ -588,7 +620,8 @@ class BudgetController extends Controller
                 $request->order_budget_id,
                 $request->dealer_id,
                 $request->designer_id,
-                $request->budget_id
+                $request->budget_id,
+                $request->comment ?? null,
             );
 
             return response()->json([
