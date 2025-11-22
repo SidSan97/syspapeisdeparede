@@ -326,7 +326,7 @@ class BudgetRepository {
 
     public function getLayoutsForApprove()
     {
-        return OrderBudget::where('status', 'Aprovar Layout')
+        return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
             ->whereNotNull('budget_wall_id')
             ->with([
                 'budget' => function ($query) {

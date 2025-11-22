@@ -325,6 +325,115 @@
                   </div>
                 </div>
 
+                <!-- Solicitações de Artes -->
+                <div v-if="card.budget" class="trello-modal-section p-1">
+                  <h3 class="trello-modal-section-title">
+                    <i class="fa fa-paint-brush"></i> Solicitações de Artes
+                  </h3>
+                  <div v-if="loadingRequestArts" class="trello-modal-info text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Carregando solicitações de artes...
+                  </div>
+                  <div v-else-if="requestLayoutArts.length === 0" class="trello-modal-info text-muted">
+                    Nenhuma solicitação de arte encontrada para este card.
+                  </div>
+                  <div v-else class="accordion" id="requestArtsAccordion">
+                    <div
+                      v-for="(art, artIndex) in requestLayoutArts"
+                      :key="art.id || artIndex"
+                      class="accordion-item mb-3"
+                    >
+                      <h2 class="accordion-header">
+                        <button
+                          class="accordion-button p-3 me-1"
+                          :class="{ collapsed: artIndex !== 0 }"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          :data-bs-target="`#art-${artIndex}`"
+                          :aria-expanded="artIndex === 0"
+                          :aria-controls="`art-${artIndex}`"
+                        >
+                          <i class="fa fa-image me-2"></i>
+                          Arte #{{ art.id }}
+                          <span v-if="art.wall_name" class="badge bg-info ms-2">
+                            {{ art.wall_name }}
+                          </span>
+                        </button>
+                      </h2>
+                      <div
+                        :id="`art-${artIndex}`"
+                        class="accordion-collapse collapse"
+                        :class="{ show: artIndex === 0 }"
+                        data-bs-parent="#requestArtsAccordion"
+                      >
+                        <div class="accordion-body">
+                          <div class="trello-modal-art-item-content">
+                            <div class="trello-modal-art-header">
+                              <div class="trello-modal-art-date">
+                                {{ formatDate(art.created_at) }}
+                              </div>
+                            </div>
+
+                            <div v-if="art.wall_info" class="trello-modal-art-wall-info">
+                              <div class="trello-modal-art-info-row">
+                                <span class="trello-modal-art-info-label">Ambiente:</span>
+                                <span class="trello-modal-art-info-value">{{ art.wall_info.room_name || 'N/A' }}</span>
+                              </div>
+                              <div class="trello-modal-art-info-row">
+                                <span class="trello-modal-art-info-label">Parede:</span>
+                                <span class="trello-modal-art-info-value">{{ art.wall_info.wall_name || 'N/A' }}</span>
+                              </div>
+                              <div v-if="art.wall_info.width || art.wall_info.height" class="trello-modal-art-info-row">
+                                <span class="trello-modal-art-info-label">Dimensões:</span>
+                                <span class="trello-modal-art-info-value">
+                                  {{ formatNumber(art.wall_info.width) }}m x {{ formatNumber(art.wall_info.height) }}m
+                                  <span v-if="art.wall_info.total_area"> ({{ formatNumber(art.wall_info.total_area) }} m²)</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div v-if="art.dealer_name || art.designer_name" class="trello-modal-art-authors">
+                              <div v-if="art.dealer_name" class="trello-modal-art-author">
+                                <i class="fa fa-user-tie me-1"></i>
+                                <span class="trello-modal-art-author-label">Revendedor:</span>
+                                <span class="trello-modal-art-author-name">{{ art.dealer_name }}</span>
+                              </div>
+                              <div v-if="art.designer_name" class="trello-modal-art-author">
+                                <i class="fa fa-user me-1"></i>
+                                <span class="trello-modal-art-author-label">Designer:</span>
+                                <span class="trello-modal-art-author-name">{{ art.designer_name }}</span>
+                              </div>
+                            </div>
+
+                            <div v-if="art.comment" class="trello-modal-art-comment">
+                              <div class="trello-modal-art-comment-label">Comentário:</div>
+                              <div class="trello-modal-art-comment-text">{{ art.comment }}</div>
+                            </div>
+
+                            <div v-if="art.image_url" class="trello-modal-art-image">
+                              <img
+                                :src="art.image_url"
+                                :alt="`Arte ${art.id}`"
+                                class="trello-modal-art-image-preview"
+                                @error="handleImageError"
+                              />
+                              <a
+                                :href="art.image_url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="trello-modal-art-image-link"
+                              >
+                                <i class="fa fa-external-link me-1"></i>
+                                Abrir em nova aba
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Carregar Arte -->
                 <div v-if="card.budget" class="trello-modal-section">
                   <div class="form-check mb-3">
@@ -544,6 +653,10 @@
   const uploadingArt = ref(false);
   const artComment = ref('');
 
+  // Solicitações de arte
+  const requestLayoutArts = ref([]);
+  const loadingRequestArts = ref(false);
+
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -618,7 +731,6 @@
   });
 
   function formatCurrency(value) {
-    console.log(value);
     if (value === null || value === undefined) {
       return currencyFormatter.format(0);
     }
@@ -1277,9 +1389,13 @@
         // Limpar o formulário
         selectedArtFile.value = null;
         showLoadArtInput.value = false;
+        artComment.value = '';
         if (artFileInput.value) {
           artFileInput.value.value = '';
         }
+
+        // Recarregar lista de artes
+        await fetchRequestLayoutArts();
 
         if (window.Toast) {
           window.Toast.fire({
@@ -1302,11 +1418,75 @@
     }
   }
 
+  function resolveImageUrl(path) {
+    if (!path) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const baseUrl = window.location.origin.replace(/\/$/, '');
+    return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
+  }
+
+  function handleImageError(event) {
+    event.target.style.display = 'none';
+  }
+
+  async function fetchRequestLayoutArts() {
+    if (!props.card?.id || !props.card?.budget?.id || !auth.user?.id) {
+      requestLayoutArts.value = [];
+      loadingRequestArts.value = false;
+      return;
+    }
+
+    try {
+      loadingRequestArts.value = true;
+
+      const budgetId = props.card.budget.id;
+      const orderBudgetId = props.card.id;
+
+      const params = {
+        budget_id: budgetId,
+        order_budget_id: orderBudgetId,
+        dealer_id: auth.user.id,
+      };
+
+      const response = await axios.get('v1/budgets/request-layout-arts', {
+        params,
+      });
+
+      const data = response?.data || response;
+
+      if (data?.success && Array.isArray(data.data)) {
+        requestLayoutArts.value = data.data.map((art) => ({
+          id: art.id,
+          comment: art.comment || null,
+          image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+          created_at: art.created_at || art.createdAt || null,
+          designer_name: art.designer?.name || art.designer_name || null,
+          dealer_name: art.dealer?.name || art.dealer_name || null,
+          wall_info: art.wall_info || null,
+          wall_name: art.wall_info?.wall_name || null,
+        }));
+      } else {
+        requestLayoutArts.value = [];
+      }
+    } catch (error) {
+      console.error('Erro ao buscar solicitações de artes:', error);
+      requestLayoutArts.value = [];
+    } finally {
+      loadingRequestArts.value = false;
+    }
+  }
+
   // Inicializar descrição quando o card mudar
   watch(() => props.card, (newCard) => {
     if (newCard) {
       descriptionText.value = newCard.description || '';
       originalDescription.value = newCard.description || '';
+      // Buscar requisições de arte quando o card mudar
+      fetchRequestLayoutArts();
     }
     // Fechar menu de membro quando o card mudar
     showMemberMenu.value = false;
@@ -2396,6 +2576,208 @@
 
     i {
       font-size: 0.75rem;
+    }
+  }
+
+  // Estilos para Solicitações de Artes
+  .trello-modal-arts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .accordion-item {
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .accordion-button {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border: none;
+    font-weight: 500;
+
+    &:not(.collapsed) {
+      background-color: var(--bs-secondary-bg);
+      color: var(--bs-body-color);
+      box-shadow: none;
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+      border-color: var(--bs-primary);
+      z-index: 3;
+    }
+
+    &::after {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    }
+
+    [data-bs-theme="dark"] &::after {
+      filter: invert(1) grayscale(100%) brightness(200%);
+    }
+  }
+
+  .accordion-body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    padding: 1rem;
+  }
+
+  .trello-modal-art-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .trello-modal-art-item {
+    padding: 1rem;
+    background-color: var(--bs-secondary-bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+  }
+
+  .trello-modal-art-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .trello-modal-art-title {
+    font-weight: 600;
+    color: var(--bs-body-color);
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .trello-modal-art-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--bs-info-bg-subtle);
+    color: var(--bs-info-text-emphasis);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .trello-modal-art-date {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+  }
+
+  .trello-modal-art-wall-info {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--bs-body-bg);
+    border-radius: 0.375rem;
+  }
+
+  .trello-modal-art-info-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8125rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .trello-modal-art-info-label {
+    color: var(--bs-secondary);
+    font-weight: 500;
+  }
+
+  .trello-modal-art-info-value {
+    color: var(--bs-body-color);
+    font-weight: 600;
+  }
+
+  .trello-modal-art-authors {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--bs-body-bg);
+    border-radius: 0.375rem;
+  }
+
+  .trello-modal-art-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .trello-modal-art-author-label {
+    color: var(--bs-secondary);
+    font-weight: 500;
+  }
+
+  .trello-modal-art-author-name {
+    color: var(--bs-body-color);
+    font-weight: 600;
+  }
+
+  .trello-modal-art-comment {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--bs-body-bg);
+    border-radius: 0.375rem;
+  }
+
+  .trello-modal-art-comment-label {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  .trello-modal-art-comment-text {
+    font-size: 0.8125rem;
+    color: var(--bs-body-color);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .trello-modal-art-image {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .trello-modal-art-image-preview {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 0.375rem;
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-body-bg);
+  }
+
+  .trello-modal-art-image-link {
+    align-self: flex-start;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+
+    &:hover {
+      background-color: var(--bs-primary-emphasis);
+      color: var(--bs-white);
     }
   }
   </style>

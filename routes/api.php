@@ -117,6 +117,7 @@ Route::prefix('v1')->group(function () {
     Route::delete('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
+    Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
 
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

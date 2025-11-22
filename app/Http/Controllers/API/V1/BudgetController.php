@@ -636,4 +636,103 @@ class BudgetController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get request layout arts for a budget and order budget
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getRequestLayoutArts(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'budget_id' => ['required', 'integer', 'exists:budgets,id'],
+                'dealer_id' => ['required', 'integer', 'exists:users,id'],
+                'order_budget_id' => ['nullable', 'integer', 'exists:order_budgets,id'],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dados inválidos',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $budgetId = $request->input('budget_id');
+            $orderBudgetId = $request->input('order_budget_id'); // Opcional
+            $dealerId = $request->input('dealer_id');
+
+            // Buscar request_layouts_art - se order_budget_id for fornecido, filtrar por ele também
+            $query = RequestLayoutArt::where('budget_id', $budgetId)
+                ->where('dealer_id', $dealerId);
+
+            if ($orderBudgetId) {
+                $query->where('order_budget_id', $orderBudgetId);
+            }
+
+            $requestLayoutArts = $query->with(['designer:id,name', 'dealer:id,name', 'orderBudget.wall.room'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Formatar dados com informações da parede
+            $formattedArts = $requestLayoutArts->map(function ($art) {
+                $wallInfo = null;
+
+                if ($art->orderBudget && $art->orderBudget->wall) {
+                    $wall = $art->orderBudget->wall;
+                    $room = $wall->room;
+
+                    $wallInfo = [
+                        'wall_name' => $wall->name ?: 'Parede sem nome',
+                        'room_name' => $room ? ($room->name ?: 'Ambiente sem nome') : 'N/A',
+                        'width' => $wall->width,
+                        'height' => $wall->height,
+                        'total_area' => $wall->total_area,
+                    ];
+                }
+
+                $imageUrl = null;
+                if ($art->path_file) {
+                    $imageUrl = Storage::disk('public')->exists($art->path_file)
+                        ? asset('storage/' . $art->path_file)
+                        : null;
+                }
+
+                return [
+                    'id' => $art->id,
+                    'budget_id' => $art->budget_id,
+                    'order_budget_id' => $art->order_budget_id,
+                    'dealer_id' => $art->dealer_id,
+                    'designer_id' => $art->designer_id,
+                    'comment' => $art->comment,
+                    'path_file' => $art->path_file,
+                    'image_url' => $imageUrl,
+                    'created_at' => $art->created_at?->toIso8601String(),
+                    'designer' => $art->designer ? [
+                        'id' => $art->designer->id,
+                        'name' => $art->designer->name,
+                    ] : null,
+                    'designer_name' => $art->designer?->name,
+                    'dealer' => $art->dealer ? [
+                        'id' => $art->dealer->id,
+                        'name' => $art->dealer->name,
+                    ] : null,
+                    'dealer_name' => $art->dealer?->name,
+                    'wall_info' => $wallInfo,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedArts,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar solicitações de artes: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

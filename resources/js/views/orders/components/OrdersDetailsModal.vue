@@ -234,6 +234,200 @@
                   </div>
                 </div>
 
+                <!-- Solicitação de Artes -->
+                <div class="border rounded p-3 mb-4">
+                  <h6 class="fw-semibold mb-3">
+                    <i class="fa fa-paint-brush me-2"></i>
+                    Solicitação de Artes
+                  </h6>
+
+                  <div v-if="loadingRequestArts" class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Carregando solicitações de artes...
+                  </div>
+                  <div v-else-if="requestLayoutArts.length === 0" class="text-center text-muted py-3">
+                    Nenhuma solicitação de arte encontrada para este pedido.
+                  </div>
+                  <div v-else class="accordion" id="requestArtsAccordion">
+                    <div
+                      v-for="(art, artIndex) in requestLayoutArts"
+                      :key="art.id || artIndex"
+                      class="accordion-item mb-3"
+                    >
+                      <h2 class="accordion-header">
+                        <button
+                          class="accordion-button"
+                          :class="{ collapsed: artIndex !== 0 }"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          :data-bs-target="`#art-${artIndex}`"
+                          :aria-expanded="artIndex === 0"
+                          :aria-controls="`art-${artIndex}`"
+                        >
+                          <i class="fa fa-image me-2"></i>
+                          Arte #{{ art.id }}
+                          <span v-if="art.wall_name" class="badge bg-info ms-2">
+                            {{ art.wall_name }}
+                          </span>
+                        </button>
+                      </h2>
+                      <div
+                        :id="`art-${artIndex}`"
+                        class="accordion-collapse collapse"
+                        :class="{ show: artIndex === 0 }"
+                        data-bs-parent="#requestArtsAccordion"
+                      >
+                        <div class="accordion-body">
+                          <div v-if="art.wall_info" class="mb-3 p-2 rounded border" style="background-color: var(--bs-secondary-bg);">
+                            <div class="row g-2">
+                              <div class="col-md-6">
+                                <div class="text-muted small">Ambiente</div>
+                                <div class="fw-semibold">{{ art.wall_info.room_name || 'N/A' }}</div>
+                              </div>
+                              <div class="col-md-6">
+                                <div class="text-muted small">Parede</div>
+                                <div class="fw-semibold">{{ art.wall_info.wall_name || 'N/A' }}</div>
+                              </div>
+                              <div v-if="art.wall_info.width" class="col-md-4">
+                                <div class="text-muted small">Largura</div>
+                                <div class="fw-semibold">{{ formatNumber(art.wall_info.width) }} m</div>
+                              </div>
+                              <div v-if="art.wall_info.height" class="col-md-4">
+                                <div class="text-muted small">Altura</div>
+                                <div class="fw-semibold">{{ formatNumber(art.wall_info.height) }} m</div>
+                              </div>
+                              <div v-if="art.wall_info.total_area" class="col-md-4">
+                                <div class="text-muted small">Área</div>
+                                <div class="fw-semibold">{{ formatNumber(art.wall_info.total_area) }} m²</div>
+                              </div>
+                            </div>
+                          </div>
+                          <!-- Informações do Autor -->
+                          <div class="mb-3 p-2 border rounded" style="background-color: var(--bs-secondary-bg);">
+                            <div class="row g-2">
+                              <div v-if="art.dealer_name" class="col-md-6">
+                                <div class="text-muted small">
+                                  <i class="fa fa-user-tie me-1"></i>
+                                  Revendedor
+                                </div>
+                                <div class="fw-semibold">{{ art.dealer_name }}</div>
+                              </div>
+                              <div v-if="art.designer_name" class="col-md-6">
+                                <div class="text-muted small">
+                                  <i class="fa fa-user me-1"></i>
+                                  Designer
+                                </div>
+                                <div class="fw-semibold">{{ art.designer_name }}</div>
+                              </div>
+                              <div v-if="art.created_at" class="col-12">
+                                <div class="text-muted small">
+                                  <i class="fa fa-calendar me-1"></i>
+                                  Enviado em: {{ formatDate(art.created_at) }}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div v-if="art.comment" class="mb-3">
+                            <div class="text-muted small mb-1">Comentário</div>
+                            <div class="p-2 rounded border" style="background-color: var(--bs-secondary-bg); color: var(--bs-body-color);">{{ art.comment }}</div>
+                          </div>
+                          <div v-if="art.image_url" class="mb-3">
+                            <div class="text-muted small mb-2">Imagem da Arte</div>
+                            <div class="d-flex justify-content-center">
+                              <img
+                                :src="art.image_url"
+                                :alt="`Arte ${art.id}`"
+                                class="img-thumbnail"
+                                style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                                @error="handleImageError"
+                              />
+                            </div>
+                            <div class="mt-2 text-center">
+                              <a
+                                :href="art.image_url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="btn btn-sm btn-outline-primary"
+                              >
+                                <i class="fa fa-external-link me-1"></i>
+                                Abrir em nova aba
+                              </a>
+                            </div>
+                          </div>
+
+                          <!-- Formulário para adicionar comentário e arquivo -->
+                          <div class="mt-4 p-3 border rounded" style="background-color: var(--bs-secondary-bg);">
+                            <h6 class="fw-semibold mb-3" style="color: var(--bs-body-color);">
+                              <i class="fa fa-plus-circle me-2"></i>
+                              Adicionar Comentário/Arquivo
+                            </h6>
+                            <form @submit.prevent="handleSubmitArt(art)" enctype="multipart/form-data">
+                              <div class="row g-3">
+                                <div class="col-12">
+                                  <label :for="`artComment-${art.id}`" class="form-label small text-muted">
+                                    Comentário <span class="text-muted">(opcional)</span>
+                                  </label>
+                                  <textarea
+                                    :id="`artComment-${art.id}`"
+                                    v-model="artForms[art.id].comment"
+                                    class="form-control"
+                                    rows="3"
+                                    placeholder="Digite seu comentário sobre a arte..."
+                                  ></textarea>
+                                </div>
+                                <div class="col-12">
+                                  <label :for="`artFile-${art.id}`" class="form-label small text-muted">
+                                    Imagem da Arte <span class="text-danger">*</span>
+                                  </label>
+                                  <input
+                                    :id="`artFile-${art.id}`"
+                                    :ref="el => setArtFileInput(art.id, el)"
+                                    type="file"
+                                    accept="image/*"
+                                    class="form-control"
+                                    @change="(e) => handleFileChange(e, art.id)"
+                                    :disabled="artForms[art.id].uploading"
+                                  />
+                                  <div class="form-text">
+                                    Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 10MB
+                                  </div>
+                                </div>
+                                <div class="col-12">
+                                  <button
+                                    type="submit"
+                                    class="btn btn-primary btn-sm"
+                                    :disabled="artForms[art.id].uploading || !artForms[art.id].file"
+                                  >
+                                    <span
+                                      v-if="artForms[art.id].uploading"
+                                      class="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                      aria-hidden="true"
+                                    ></span>
+                                    <i v-else class="fa fa-upload me-2"></i>
+                                    {{ artForms[art.id].uploading ? 'Enviando...' : 'Enviar' }}
+                                  </button>
+                                  <button
+                                    v-if="artForms[art.id].comment || artForms[art.id].file"
+                                    type="button"
+                                    class="btn btn-outline-secondary btn-sm ms-2"
+                                    @click="resetArtForm(art.id)"
+                                    :disabled="artForms[art.id].uploading"
+                                  >
+                                    <i class="fa fa-times me-2"></i>
+                                    Limpar
+                                  </button>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Datas -->
                 <div class="border rounded p-3 mb-4">
                   <h6 class="fw-semibold mb-3">Informações adicionais</h6>
@@ -288,9 +482,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
   pedido: {
@@ -305,9 +500,14 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'approve']);
 
+const auth = useAuthStore();
 const processing = ref(false);
 const actionType = ref(null);
 const paymentUrl = ref(null);
+const requestLayoutArts = ref([]);
+const loadingRequestArts = ref(false);
+const artForms = ref({});
+const artFileInputs = ref({});
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -405,6 +605,232 @@ function extractFileName(path) {
 
   const segments = String(path).split('/');
   return segments[segments.length - 1] ?? path;
+}
+
+function formatDate(date) {
+  if (!date) {
+    return '';
+  }
+
+  try {
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return typeof date === 'string' ? date : '';
+    }
+
+    return parsedDate.toLocaleString('pt-BR');
+  } catch (error) {
+    return typeof date === 'string' ? date : '';
+  }
+}
+
+function resolveImageUrl(path) {
+  if (!path) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const baseUrl = window.location.origin.replace(/\/$/, '');
+  return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
+}
+
+function handleImageError(event) {
+  event.target.style.display = 'none';
+}
+
+async function fetchRequestLayoutArts() {
+  if (!props.pedido || !auth.user?.id) {
+    requestLayoutArts.value = [];
+    loadingRequestArts.value = false;
+    return;
+  }
+
+  try {
+    loadingRequestArts.value = true;
+
+    const budgetId = props.pedido.id || props.pedido.budget_id || props.pedido.budgetId;
+    // order_budget_id é opcional - se não tiver, buscará todas as artes do orçamento
+    const orderBudgetId = props.pedido.order_budget_id || null;
+
+    if (!budgetId) {
+      requestLayoutArts.value = [];
+      loadingRequestArts.value = false;
+      return;
+    }
+
+    const params = {
+      budget_id: budgetId,
+      dealer_id: auth.user.id,
+    };
+
+    if (orderBudgetId) {
+      params.order_budget_id = orderBudgetId;
+    }
+
+    const response = await axios.get('v1/budgets/request-layout-arts', {
+      params,
+    });
+
+    const data = response?.data || response;
+
+    if (data?.success && Array.isArray(data.data)) {
+      requestLayoutArts.value = data.data.map((art) => {
+        // Inicializar formulário para esta arte
+        if (!artForms.value[art.id]) {
+          artForms.value[art.id] = {
+            comment: '',
+            file: null,
+            uploading: false,
+          };
+        }
+
+        return {
+          id: art.id,
+          budget_id: art.budget_id || budgetId,
+          order_budget_id: art.order_budget_id || orderBudgetId,
+          dealer_id: art.dealer_id || auth.user.id,
+          designer_id: art.designer_id || auth.user.id,
+          comment: art.comment || null,
+          image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+          created_at: art.created_at || art.createdAt || null,
+          designer_name: art.designer?.name || art.designer_name || null,
+          dealer_name: art.dealer?.name || art.dealer_name || null,
+          wall_info: art.wall_info || null,
+          wall_name: art.wall_info?.wall_name || null,
+        };
+      });
+    } else {
+      requestLayoutArts.value = [];
+    }
+  } catch (error) {
+    console.error('Erro ao buscar solicitações de artes:', error);
+    console.error('Detalhes do erro:', error.response?.data || error.message);
+    requestLayoutArts.value = [];
+  } finally {
+    loadingRequestArts.value = false;
+  }
+}
+
+function setArtFileInput(artId, el) {
+  if (el) {
+    artFileInputs.value[artId] = el;
+  }
+}
+
+function handleFileChange(event, artId) {
+  const file = event.target.files?.[0];
+  if (file && artForms.value[artId]) {
+    artForms.value[artId].file = file;
+  }
+}
+
+function resetArtForm(artId) {
+  if (artForms.value[artId]) {
+    artForms.value[artId].comment = '';
+    artForms.value[artId].file = null;
+  }
+  if (artFileInputs.value[artId]) {
+    artFileInputs.value[artId].value = '';
+  }
+}
+
+async function handleSubmitArt(art) {
+  if (!art || !auth.user?.id) {
+    await Swal.fire({
+      title: 'Erro',
+      text: 'Não foi possível enviar a arte. Dados insuficientes.',
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  const artFormData = artForms.value[art.id];
+  if (!artFormData) {
+    await Swal.fire({
+      title: 'Erro',
+      text: 'Não foi possível encontrar o formulário da arte.',
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  if (!artFormData.file) {
+    await Swal.fire({
+      title: 'Atenção',
+      text: 'Por favor, selecione uma imagem para enviar.',
+      icon: 'warning',
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  // Validar IDs necessários
+  if (!art.budget_id || !art.order_budget_id) {
+    await Swal.fire({
+      title: 'Erro',
+      text: 'IDs necessários não encontrados na arte.',
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  try {
+    artFormData.uploading = true;
+
+    // Criar FormData para envio do arquivo
+    // Reaproveitar os IDs da arte existente
+    const formData = new FormData();
+    formData.append('art_file', artFormData.file);
+    formData.append('budget_id', art.budget_id);
+    formData.append('order_budget_id', art.order_budget_id);
+    formData.append('dealer_id', art.dealer_id || auth.user.id);
+    formData.append('designer_id', art.designer_id || auth.user.id);
+
+    if (artFormData.comment) {
+      formData.append('comment', artFormData.comment);
+    }
+
+    const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.data?.success) {
+      await Swal.fire({
+        title: 'Sucesso',
+        text: 'Arte enviada com sucesso!',
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+
+      // Limpar formulário desta arte
+      resetArtForm(art.id);
+
+      // Recarregar lista de artes
+      await fetchRequestLayoutArts();
+    } else {
+      throw new Error(response.data?.message || 'Erro ao enviar arte');
+    }
+  } catch (error) {
+    console.error('Erro ao enviar arte:', error);
+    const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
+
+    await Swal.fire({
+      title: 'Erro',
+      text: errorMessage,
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+  } finally {
+    artFormData.uploading = false;
+  }
 }
 
 async function handleApprove() {
@@ -539,8 +965,33 @@ const details = computed(() => {
     rooms: Array.isArray(pedido.rooms) ? pedido.rooms : [],
     createdAt: normalizeDate(pedido.created_at ?? pedido.createdAt ?? null),
     updatedAt: normalizeDate(pedido.updated_at ?? pedido.updatedAt ?? null),
+    budget_id: pedido.budget_id ?? pedido.budgetId ?? null,
   };
 });
+
+// Buscar solicitações de artes quando o modal for aberto
+watch(() => props.visible, async (isVisible) => {
+  if (isVisible && props.pedido && auth.user?.id) {
+    // Aguardar o próximo tick para garantir que os dados estejam disponíveis
+    await nextTick();
+    // Quando o modal abrir, fazer a requisição
+    fetchRequestLayoutArts();
+  } else if (!isVisible) {
+    // Limpar dados quando o modal fechar
+    requestLayoutArts.value = [];
+    loadingRequestArts.value = false;
+    artForms.value = {};
+    artFileInputs.value = {};
+  }
+}, { immediate: false });
+
+// Também observar mudanças no pedido
+watch(() => props.pedido?.id, async (pedidoId) => {
+  if (props.visible && pedidoId && auth.user?.id) {
+    await nextTick();
+    fetchRequestLayoutArts();
+  }
+}, { immediate: false });
 </script>
 
 <style scoped>
@@ -551,6 +1002,42 @@ const details = computed(() => {
 
 .accordion-button {
   font-weight: 500;
+}
+
+.form-label {
+  color: var(--bs-body-color);
+}
+
+.form-control,
+.form-select {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-text {
+  color: var(--bs-secondary);
+}
+
+.text-muted {
+  color: var(--bs-secondary-color) !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: rgba(105, 105, 105, 0.6) !important;
+}
+
+[data-bs-theme="light"] .text-muted,
+:not([data-bs-theme]) .text-muted {
+  color: rgba(44, 44, 44, 0.897) !important;
 }
 </style>
 
