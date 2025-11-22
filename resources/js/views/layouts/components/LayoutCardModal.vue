@@ -192,12 +192,12 @@
                   <h3 class="trello-modal-section-title">
                     <i class="fa fa-money"></i> Valores do Orçamento
                   </h3>
-                  <div class="trello-modal-info">
-                    <div class="mb-2">
+                  <div class="row trello-modal-info">
+                    <div class="col-md-6 mb-2">
                       <div class="text-muted small mb-1">Total à Vista</div>
                       <div class="trello-modal-amount text-success">{{ formatCurrency(card.total_amount || 0) }}</div>
                     </div>
-                    <div class="mb-2">
+                    <div class="col-md-6 mb-2">
                       <div class="text-muted small mb-1">Total a Prazo</div>
                       <div class="trello-modal-amount text-primary">{{ formatCurrency(card.total_amount_installments || 0) }}</div>
                     </div>
@@ -1753,13 +1753,13 @@
 
   .trello-modal-description {
     padding: 1rem;
-    background-color: var(--bs-secondary-bg);
     border-radius: 0.5rem;
     min-height: 80px;
     color: var(--bs-body-color);
     line-height: 1.5;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    border: 1px solid;
 
     &:hover {
       background-color: var(--bs-tertiary-bg);
@@ -2268,7 +2268,6 @@
 
   .trello-modal-wall-info-label {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
     margin-bottom: 0.25rem;
     font-weight: 500;
   }

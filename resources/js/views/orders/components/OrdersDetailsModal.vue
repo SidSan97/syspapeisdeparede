@@ -1026,18 +1026,5 @@ watch(() => props.pedido?.id, async (pedidoId) => {
 .form-text {
   color: var(--bs-secondary);
 }
-
-.text-muted {
-  color: var(--bs-secondary-color) !important;
-}
-
-[data-bs-theme="dark"] .text-muted {
-  color: rgba(105, 105, 105, 0.6) !important;
-}
-
-[data-bs-theme="light"] .text-muted,
-:not([data-bs-theme]) .text-muted {
-  color: rgba(44, 44, 44, 0.897) !important;
-}
 </style>
 
