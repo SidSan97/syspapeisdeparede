@@ -2171,7 +2171,6 @@
     background-color: var(--bs-secondary-bg);
     border-radius: 0.25rem;
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-amount {
