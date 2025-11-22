@@ -184,6 +184,14 @@ class BudgetController extends Controller
 
         try {
             $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($data['id']);
+
+            if ($budget->status !== null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não é possível fazer pedido. O orçamento já possui um status definido.',
+                ], 422);
+            }
+
             $budgetUpdated = $this->repository->placeOrder($budget, $data);
             $transformed = $this->transformBudget($budgetUpdated);
 

@@ -122,7 +122,7 @@
                             Gerar PDF
                           </button>
                         </li>
-                        <li v-if="!isCancelled(budget)">
+                        <li v-if="budget.status === null">
                           <button class="dropdown-item" type="button" @click="openOrderModal(budget)">
                             Fazer pedido
                           </button>
