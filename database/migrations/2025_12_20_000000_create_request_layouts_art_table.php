@@ -37,7 +37,7 @@ return new class extends Migration
 
             $table->foreign('order_budget_id')
                 ->references('id')
-                ->on('orders_budgets')
+                ->on('order_budgets')
                 ->onDelete('cascade');
         });
     }
