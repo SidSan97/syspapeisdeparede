@@ -53,13 +53,23 @@
                     </span>
                   </td>
                   <td class="text-center">
-                    <button
-                      class="btn btn-sm btn-outline-primary"
-                      @click="openDetailsModal(pedido)"
-                    >
-                      <i class="fa fa-eye me-1"></i>
-                      Ver detalhes
-                    </button>
+                    <div class="d-flex gap-2 justify-content-center">
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        @click="openDetailsModal(pedido)"
+                      >
+                        <i class="fa fa-eye me-1"></i>
+                        Ver detalhes
+                      </button>
+                      <button
+                        v-if="pedido.status !== 'Aprovado' && canRegisterPayment"
+                        class="btn btn-sm btn-primary"
+                        @click="openPaymentModal(pedido)"
+                      >
+                        <i class="fa fa-credit-card me-1"></i>
+                        Registrar pagamento
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -75,20 +85,36 @@
       @close="closeDetailsModal"
       @approve="handleApprove"
     />
+
+    <OrdersRegisterPayment
+      :visible="showPaymentModal"
+      :pedido="paymentPedido"
+      @close="closePaymentModal"
+      @success="handlePaymentSuccess"
+    />
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import Page from '../../components/page/Page.vue';
 import EmptyState from '../../components/empty-state/EmptyState.vue';
 import PedidoDetailsModal from './components/OrdersDetailsModal.vue';
+import OrdersRegisterPayment from './components/OrdersRegisterPayment.vue';
+import { useAuthStore } from '@/stores/auth';
 
+const auth = useAuthStore();
 const pedidos = ref([]);
 const loading = ref(false);
 const showDetailsModal = ref(false);
 const selectedPedido = ref(null);
+const showPaymentModal = ref(false);
+const paymentPedido = ref(null);
+
+const canRegisterPayment = computed(() => {
+  return auth.user?.user_type_id === 2;
+});
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -160,6 +186,21 @@ function closeDetailsModal() {
 function handleApprove(pedido) {
   closeDetailsModal();
   // Recarrega a lista para atualizar os status
+  fetchPedidos();
+}
+
+function openPaymentModal(pedido) {
+  paymentPedido.value = pedido;
+  showPaymentModal.value = true;
+}
+
+function closePaymentModal() {
+  showPaymentModal.value = false;
+  paymentPedido.value = null;
+}
+
+function handlePaymentSuccess() {
+  // Recarregar lista de pedidos após sucesso
   fetchPedidos();
 }
 

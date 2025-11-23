@@ -4,8 +4,10 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Budget\PlaceOrderRequest;
+use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
+use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
@@ -18,6 +20,7 @@ use App\Services\LayoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -51,7 +54,7 @@ class BudgetController extends Controller
     {
         try {
             $budgets = $this->repository->all();
-            $data = $this->transformBudgetCollection($budgets);
+            $data = BudgetResource::collection($budgets)->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -70,7 +73,7 @@ class BudgetController extends Controller
     {
         try {
             $budgets = $this->repository->getPendingReview();
-            $data = $this->transformBudgetCollection($budgets);
+            $data = BudgetResource::collection($budgets)->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -89,7 +92,7 @@ class BudgetController extends Controller
     {
         try {
             $budgets = $this->repository->getPendingReviewAndApproved();
-            $data = $this->transformBudgetCollection($budgets);
+            $data = BudgetResource::collection($budgets)->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -110,7 +113,7 @@ class BudgetController extends Controller
 
         try {
             $budget = $this->repository->create($data);
-            $transformed = $this->transformBudget($budget);
+            $transformed = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -133,7 +136,7 @@ class BudgetController extends Controller
         try {
             $budget = \App\Models\Budget::findOrFail($id);
             $budget = $this->repository->update($budget, $data);
-            $transformed = $this->transformBudget($budget);
+            $transformed = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -163,7 +166,7 @@ class BudgetController extends Controller
         try {
             $budget = Budget::findOrFail($validated['id']);
             $budgetUpdated = $this->repository->cancel($budget);
-            $transformed = $this->transformBudget($budgetUpdated);
+            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -193,7 +196,7 @@ class BudgetController extends Controller
             }
 
             $budgetUpdated = $this->repository->placeOrder($budget, $data);
-            $transformed = $this->transformBudget($budgetUpdated);
+            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
 
             $this->createLayoutOrder($data['id']);
 
@@ -279,7 +282,7 @@ class BudgetController extends Controller
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment();
             $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
 
-            $transformed = $this->transformBudget($budget->refresh());
+            $transformed = (new BudgetResource($budget->refresh()))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -551,72 +554,7 @@ class BudgetController extends Controller
         return 'R$ ' . number_format($value, 2, ',', '.');
     }
 
-    protected function makePublicUrl(?string $path): ?string
-    {
-        if (!$path) {
-            return null;
-        }
 
-        $rawUrl = \Illuminate\Support\Facades\Storage::url($path);
-
-        $appUrl = config('app.url') ?: url('/');
-        $appUrl = rtrim($appUrl, '/');
-
-        $parsedPath = parse_url($rawUrl, PHP_URL_PATH) ?: $rawUrl;
-        $parsedQuery = parse_url($rawUrl, PHP_URL_QUERY);
-
-        $finalUrl = $appUrl . $parsedPath;
-
-        if ($parsedQuery) {
-            $finalUrl .= '?' . $parsedQuery;
-        }
-
-        return $finalUrl;
-    }
-
-    /**
-     * @param \Illuminate\Support\Collection<int, Budget> $budgets
-     */
-    protected function transformBudgetCollection(Collection $budgets): array
-    {
-        return $budgets->map(function (Budget $budget) {
-            return $this->transformBudget($budget);
-        })->all();
-    }
-
-    protected function transformBudget(Budget $budget): array
-    {
-        $budget->loadMissing(['rooms.walls.collectionModel.files']);
-
-        $data = $budget->toArray();
-
-        if (!empty($data['rooms']) && is_array($data['rooms'])) {
-            foreach ($data['rooms'] as &$room) {
-                if (!empty($room['walls']) && is_array($room['walls'])) {
-                    foreach ($room['walls'] as &$wall) {
-                        $wall['collection_model_name'] = $wall['collection_model']['name'] ?? null;
-
-                        // Transformar arquivos do modelo de coleção
-                        if (!empty($wall['collection_model']['files']) && is_array($wall['collection_model']['files'])) {
-                            $wall['collection_model']['files'] = array_map(function ($file) {
-                                return [
-                                    'id' => $file['id'] ?? null,
-                                    'name' => $file['file_name'] ?? null,
-                                    'file_name' => $file['file_name'] ?? null,
-                                    'file_path' => $file['file_path'] ?? null,
-                                    'url' => $this->makePublicUrl($file['file_path'] ?? null),
-                                ];
-                            }, $wall['collection_model']['files']);
-                        }
-                    }
-                    unset($wall);
-                }
-            }
-            unset($room);
-        }
-
-        return $data;
-    }
 
     public function uploadArt(UploadArtRequest $request): JsonResponse
     {
@@ -740,6 +678,43 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao buscar solicitações de artes: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function registerPayment(RegisterPaymentRequest $request): JsonResponse
+    {
+        try {
+            // Validar se o usuário tem permissão de admin(user_type_id === 2)
+            $user = Auth::user();
+            if (!$user || $user->user_type_id !== 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para registrar pagamentos.',
+                ], 403);
+            }
+
+            $data = $request->validated();
+            $budget = Budget::findOrFail($data['budget_id']);
+            $file = $request->file('payment_file');
+
+            $budgetUpdated = $this->repository->registerPayment($budget, $file);
+            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'message' => 'Pagamento registrado com sucesso. O pedido foi aprovado.',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orçamento não encontrado',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao registrar pagamento: ' . $e->getMessage(),
             ], 500);
         }
     }

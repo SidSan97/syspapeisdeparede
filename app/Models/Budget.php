@@ -28,6 +28,7 @@ class Budget extends Model
         'carriers_snapshot',
         'primary_budget_room_id',
         'status',
+        'payment_file',
         'comment_referring_model',
         'link_referring_model',
         'files_referring_model',
