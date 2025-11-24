@@ -2016,7 +2016,6 @@
   .layout-modal-comment-action-btn {
     background: none;
     border: none;
-    color: var(--bs-secondary);
     font-size: 0.6875rem;
     font-weight: 500;
     cursor: pointer;
@@ -2153,13 +2152,9 @@
     align-items: center;
     gap: 0.5rem;
 
-    i {
-      color: var(--bs-secondary);
-    }
   }
 
   .layout-modal-info {
-    color: var(--bs-body-color);
     font-size: 0.875rem;
     line-height: 1.5;
   }

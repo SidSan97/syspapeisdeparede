@@ -2,15 +2,29 @@
     <section class="content">
         <div class="container py-4">
             <!-- Header -->
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="router.push('/budget')"
-                >
+            <div class="d-md-flex d-block justify-content-between mb-4">
+                <div class="d-flex">
+                    <button
+                        type="button"
+                        class="btn"
+                        @click="router.push('/budget')"
+                    >
                     <i class="fa fa-arrow-left"></i>
-                </button>
-                <h1 class="h3 mb-0 fw-semibold">Criar pedido</h1>
+                    </button>
+
+                    <h1 class="h3 mb-0 fw-semibold">Criar orçamento</h1>
+                </div>
+
+                <div>
+                    <button
+                        type="button"
+                        class="btn btn-success btn-lg"
+                        @click="saveBudget"
+                        :disabled="saving"
+                    >
+                    <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
+                    </button>
+                </div>
             </div>
 
             <div class="row">
@@ -311,20 +325,8 @@
 
                 <!-- Sidebar: Frete e Pagamento -->
                 <div class="col-12 col-lg-4">
-                    <!-- Botão Salvar -->
-                    <div class="d-grid">
-                        <button
-                            type="button"
-                            class="btn btn-success btn-lg"
-                            @click="saveBudget"
-                            :disabled="saving"
-                        >
-                            <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
-                        </button>
-                    </div>
-
                     <!-- Seção: Frete -->
-                    <div class="card mb-4 mt-2">
+                    <div class="card mb-4">
                         <div class="card-header bg-transparent">
                             <h5 class="mb-0 fw-semibold">Frete</h5>
                         </div>

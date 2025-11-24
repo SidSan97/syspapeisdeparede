@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, useTemplateRef } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, useTemplateRef } from 'vue'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.min.css'
 
@@ -31,9 +31,33 @@ const avatarPreview = ref(null)
 const imageUrl = ref(null)
 const cropper = ref(null)
 const cropModal = ref(null)
+const avatarTriggers = ref([])
 
 const cropModalRef = useTemplateRef('crop-modal')
 const imageRef = useTemplateRef('image')
+
+const openModal = () => {
+  if (!cropModal.value) {
+    cropModal.value = new window.bootstrap.Modal(cropModalRef.value)
+  }
+
+  cropModal.value.show()
+}
+
+const handleAvatarClick = (event) => {
+  event?.preventDefault()
+  openModal()
+}
+
+const bindAvatarTriggers = () => {
+  avatarTriggers.value = Array.from(document.querySelectorAll('.avatar-box'))
+  avatarTriggers.value.forEach((el) => el.addEventListener('click', handleAvatarClick))
+}
+
+const unbindAvatarTriggers = () => {
+  avatarTriggers.value.forEach((el) => el.removeEventListener('click', handleAvatarClick))
+  avatarTriggers.value = []
+}
 
 function closeModal() {
   cropModal.value?.hide()
@@ -66,7 +90,7 @@ function onFileChange(event) {
         })
 
         console.log('dfgljgfoig');
-        
+
       }
     })
   }
@@ -84,7 +108,7 @@ function cropAndUpload() {
 
   const base64Image = canvas.toDataURL('image/jpeg', 0.9)
 
-  axios.post('/v1/profile/avatar', { image: base64Image })
+  axios.post('/v1/profile/avatar', { avatar: base64Image })
     .then(() => {
       avatarPreview.value = base64Image
       closeModal()
@@ -97,5 +121,10 @@ function cropAndUpload() {
 
 onMounted(() => {
   cropModal.value = new window.bootstrap.Modal(cropModalRef.value)
+  bindAvatarTriggers()
+})
+
+onBeforeUnmount(() => {
+  unbindAvatarTriggers()
 })
 </script>

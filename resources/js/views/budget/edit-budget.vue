@@ -2,15 +2,33 @@
     <section class="content">
         <div class="container py-4">
             <!-- Header -->
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="router.push('/budget')"
-                >
+            <div class="d-md-flex d-block justify-content-between mb-4">
+                <div class="d-flex">
+                    <button
+                        type="button"
+                        class="btn"
+                        @click="router.push('/budget')"
+                    >
                     <i class="fa fa-arrow-left"></i>
-                </button>
-                <h1 class="h3 mb-0 fw-semibold">Editar pedido</h1>
+                    </button>
+
+                    <h1 class="h3 mb-0 fw-semibold">Editar orçamento</h1>
+                </div>
+
+                <div>
+                    <button
+                        v-if="hasChanges"
+                        type="button"
+                        class="btn btn-success btn-lg"
+                        @click="updateBudget"
+                        :disabled="saving"
+                        >
+                        <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Alterações' }}
+                    </button>
+                    <div v-else class="alert alert-info mb-0">
+                        <small>Nenhuma alteração detectada</small>
+                    </div>
+                </div>
             </div>
 
             <div class="row">
@@ -330,21 +348,6 @@
 
                 <!-- Sidebar: Frete e Pagamento -->
                 <div class="col-12 col-lg-4">
-                     <!-- Botão Salvar -->
-                     <div class="d-grid" v-if="hasChanges">
-                        <button
-                            type="button"
-                            class="btn btn-success btn-lg"
-                            @click="updateBudget"
-                            :disabled="saving"
-                        >
-                            <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Alterações' }}
-                        </button>
-                    </div>
-                    <div v-else class="alert alert-info mb-0">
-                        <small>Nenhuma alteração detectada</small>
-                    </div>
-
                     <!-- Seção: Frete -->
                     <div class="card mb-4 mt-2">
                         <div class="card-header bg-transparent">

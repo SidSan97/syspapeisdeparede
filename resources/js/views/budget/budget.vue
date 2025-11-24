@@ -1,15 +1,17 @@
 <template>
   <section class="content">
-    <Page title="Orçamentos">
+    <Page>
+      <div class="d-flex justify-content-between mb-4">
+        <h1 class="h3 mb-0 fw-semibold">Orçamentos</h1>
+
+        <button class="btn btn-primary btn-lg" type="button" @click="goToCreateBudget">
+          Criar orçamento
+        </button>
+      </div>
+
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent border-0 pb-0">
           <div class="d-flex flex-column gap-3">
-            <div class="d-flex justify-content-end">
-              <button class="btn btn-primary btn-lg" type="button" @click="goToCreateBudget">
-                Criar orçamento
-              </button>
-            </div>
-
             <div class="row buttons-filters">
               <div class="col-lg-4">
                 <div class="input-group input-group-lg search-input">
@@ -479,7 +481,7 @@ function setStatusFilter(value) {
 }
 
 function goToCreateBudget() {
-  router.push('/budgets/create').catch(() => {});
+  router.push('/budget/new-budget').catch(() => {});
 }
 
 async function shareBudget(budget) {

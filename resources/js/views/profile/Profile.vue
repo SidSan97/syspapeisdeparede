@@ -1,4 +1,5 @@
 <template>
+  <div class="profile-page">
     <div class="card bd-card border-0 mb-4">
       <div class="card-body">
         <h5 class="card-title">Conta</h5>
@@ -48,70 +49,73 @@
         </form>
       </div>
     </div>
-  </template>
+    <ProfilePasswordCard />
+  </div>
+</template>
 
-  <script setup>
-  import { ref, computed, onMounted } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
+import ProfilePasswordCard from './components/ProfilePasswordCard.vue'
 
-  const loading = ref(false)
-  const saving = ref(false)
+const loading = ref(false)
+const saving = ref(false)
 
-  const form = ref(new Form({
-    id: '',
-    name: '',
-    email: '',
-    avatar: '',
-  }))
+const form = ref(new Form({
+  id: '',
+  name: '',
+  email: '',
+  avatar: '',
+}))
 
-  function updateInfo() {
-    saving.value = true
+function updateInfo() {
+  saving.value = true
 
-    form.value
-      .put('v1/profile')
-      .then(response => {
-        Toast.fire({
-          icon: 'success',
-          title: response.data.message,
-        }).then(() => location.reload())
+  form.value
+    .put('v1/profile')
+    .then(response => {
+      Toast.fire({
+        icon: 'success',
+        title: response.data.message,
+      }).then(() => location.reload())
+    })
+    .catch(() => {
+      Toast.fire({
+        icon: 'error',
+        title: 'Algo deu errado! Por favor, tente novamente',
       })
-      .catch(() => {
-        Toast.fire({
-          icon: 'error',
-          title: 'Algo deu errado! Por favor, tente novamente',
-        })
-      })
-      .finally(() => {
-        saving.value = false
-      })
+    })
+    .finally(() => {
+      saving.value = false
+    })
+}
+
+function loadProfile() {
+  loading.value = true
+
+  return axios
+    .get('v1/profile')
+    .then(async ({ data }) => {
+      form.value.fill(data.data)
+    })
+    .finally(() => loading.value = false)
+}
+
+onMounted(async () => {
+  await loadProfile()
+})
+</script>
+
+<style lang="scss" scoped>
+.avatar-box {
+  cursor: pointer;
+
+  .avatar-mask {
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
   }
 
-  function loadProfile() {
-    loading.value = true
-
-    return axios
-      .get('v1/profile')
-      .then(async ({ data }) => {
-        form.value.fill(data.data)
-      })
-      .finally(() => loading.value = false)
+  &:hover .avatar-mask {
+    opacity: .6;
   }
-
-  onMounted(async () => {
-    await loadProfile()
-  })
-  </script>
-
-  <style lang="scss" scoped>
-  .avatar-box {
-    cursor: pointer;
-
-    .avatar-mask {
-      opacity: 0;
-      transition: opacity 0.2s ease-in;
-    }
-
-    &:hover .avatar-mask {
-      opacity: .6;
-    }
-  }
-  </style>
+}
+</style>
