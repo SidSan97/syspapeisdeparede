@@ -61,7 +61,7 @@
             <div class="row g-3">
               <div class="col-md-6 col-lg-4">
                 <label for="subcategoryCollection" class="form-label">Coleção</label>
-                <div class="form-control-plaintext bg-light rounded px-3 py-2 border">
+                <div class="form-control-plaintext rounded px-3 py-2 border">
                   <strong>{{ selectedCollectionForSubcategory?.name ?? '—' }}</strong>
                 </div>
                 <small class="text-muted">A subcategoria será adicionada a esta coleção</small>

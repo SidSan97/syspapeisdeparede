@@ -49,7 +49,7 @@
           class="bd-sidebar-item"
           :class="{ 'active': isActiveRoute('/pedidos') }"
         >
-          <i class="fa fa-box"></i>
+          <i class="fa-lg me-3 fa fa-inbox"></i>
           <span class="bd-sidebar-text">Pedidos</span>
         </RouterLink>
       </div>
@@ -85,7 +85,7 @@
           class="bd-sidebar-item"
           :class="{ 'active': isActiveRoute('/pedidos-producao') }"
         >
-          <i class="fa fa-box"></i>
+          <i class="fa-lg me-3 fa fa-inbox"></i>
           <span class="bd-sidebar-text">Pedidos</span>
         </RouterLink>
       </div>

@@ -74,12 +74,14 @@
         </div>
       </div>
 
-      <section v-if="selectedSubcategoryId" class="card shadow-sm">
+      <section v-if="selectedSubcategoryId" ref="imagesSection" class="card shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div>
               <h5 class="mb-1">Subcategoria selecionada</h5>
-              <p class="mb-0 text-muted">{{ selectedSubcategory?.name ?? '—' }}</p>
+              <strong>
+                <p class="mb-0 text-success">{{ selectedSubcategory?.name ?? '—' }}</p>
+              </strong>
               <small class="text-muted" v-if="selectedSubcategory?.collection_art">
                 Coleção: {{ selectedSubcategory.collection_art.name }}
               </small>
@@ -195,7 +197,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
 
@@ -210,6 +212,7 @@ const isUploading = ref(false);
 const loadingCollections = ref(false);
 const deletingId = ref(null);
 const fileInput = ref(null);
+const imagesSection = ref(null);
 
 const selectedFiles = ref([]);
 let fileIdCounter = 0;
@@ -545,6 +548,12 @@ const handleSelectSubcategory = async (subcategory) => {
   }
 
   await fetchSubcategoryImages(subcategory.id);
+
+  // Aguardar o DOM atualizar e então fazer scroll para a seção de imagens
+  await nextTick();
+  if (imagesSection.value) {
+    imagesSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 const clearSelection = () => {
