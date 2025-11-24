@@ -14,6 +14,9 @@
                   <h3 v-if="!editingColumns[column.id]" class="production-column-title mb-0">
                     {{ column.name }}
                   </h3>
+                  <div v-if="!editingColumns[column.id]" class="production-column-metragem">
+                    Total de metros: {{ getTotalMetragem(column.id) }}
+                  </div>
                   <div v-else class="production-column-edit d-flex align-items-center gap-2">
                     <input
                       v-model="editingNames[column.id]"
@@ -176,6 +179,15 @@
 
   function getCardsByColumn(columnId) {
     return cards.value.filter(card => card.column === columnId);
+  }
+
+  function getTotalMetragem(columnId) {
+    const columnCards = getCardsByColumn(columnId);
+    const total = columnCards.reduce((sum, card) => {
+      const area = card?.wall?.total_area || 0;
+      return sum + Number(area);
+    }, 0);
+    return total.toFixed(2);
   }
 
   function isImageFile(file) {
@@ -640,6 +652,13 @@
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .production-column-metragem {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.25rem;
+    font-weight: 500;
   }
 
   .production-column-content {

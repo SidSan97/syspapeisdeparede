@@ -224,8 +224,8 @@
                         <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.height) }} m</div>
                       </div>
                       <div class="layout-modal-wall-info-item">
-                        <div class="layout-modal-wall-info-label">Área Total</div>
-                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m²</div>
+                        <div class="layout-modal-wall-info-label">Metros</div>
+                        <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m</div>
                       </div>
                       <div v-if="card.wall.strip_height" class="layout-modal-wall-info-item">
                         <div class="layout-modal-wall-info-label">Altura da Faixa</div>
