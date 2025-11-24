@@ -2,6 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Budget;
+use App\Models\BudgetRoom;
+use App\Models\BudgetWall;
+use App\Models\LayoutCardHistory;
+use App\Models\MyFavoriteCollectionImage;
+use App\Models\OrderBudget;
+use App\Models\RequestLayoutArt;
+use App\Observers\TenantObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,5 +33,14 @@ class AppServiceProvider extends ServiceProvider
         });
 
         \Carbon\Carbon::setLocale($this->app->getLocale());
+
+        // Register Tenant Observer for models that need tenant isolation
+        Budget::observe(TenantObserver::class);
+        BudgetRoom::observe(TenantObserver::class);
+        BudgetWall::observe(TenantObserver::class);
+        OrderBudget::observe(TenantObserver::class);
+        RequestLayoutArt::observe(TenantObserver::class);
+        MyFavoriteCollectionImage::observe(TenantObserver::class);
+        LayoutCardHistory::observe(TenantObserver::class);
     }
 }

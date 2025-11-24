@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use BeyondCode\Comments\Traits\HasComments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class OrderBudget extends Model
 {
-    use HasFactory, HasComments;
+    use HasFactory, HasComments, HasTenantScope;
 
     protected $fillable = [
         'budget_id',
+        'tenant_id',
         'budget_wall_id',
         'description',
         'status',

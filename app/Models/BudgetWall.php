@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BudgetWall extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'budget_room_id',
+        'tenant_id',
         'name',
         'position',
         'width',

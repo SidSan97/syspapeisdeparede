@@ -40,7 +40,8 @@
             "app/Helpers/url_helper.php",
             "app/Helpers/template_helper.php",
             "app/Helpers/cast_helper.php",
-            "app/Helpers/application_helper.php"
+            "app/Helpers/application_helper.php",
+            "app/Helpers/tenant_helper.php"
         ]
     },
     "autoload-dev": {

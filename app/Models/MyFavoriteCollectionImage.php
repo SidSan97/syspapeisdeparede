@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MyFavoriteCollectionImage extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $table = 'my_favorites_collection_images';
 
     protected $fillable = [
         'user_id',
+        'tenant_id',
         'collection_image_id',
     ];
 

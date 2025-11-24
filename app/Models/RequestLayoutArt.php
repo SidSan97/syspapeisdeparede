@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RequestLayoutArt extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $table = 'request_layouts_art';
 
@@ -17,6 +18,7 @@ class RequestLayoutArt extends Model
         'designer_id',
         'budget_id',
         'order_budget_id',
+        'tenant_id',
         'comment',
         'path_file',
     ];
