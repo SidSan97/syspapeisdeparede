@@ -18,6 +18,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->unsignedBigInteger('budget_wall_id')->nullable();
             $table->unsignedBigInteger('layout_column_names_id')->nullable();
+            $table->unsignedBigInteger('production_column_names_id')->nullable()->default(1);
             $table->string('description', 500)->nullable();
             $table->string('status', 50);
             $table->timestamps();
@@ -30,6 +31,11 @@ return new class extends Migration
             $table->foreign('layout_column_names_id', 'order_budgets_layout_column_names_id_fk')
                 ->references('id')
                 ->on('layout_column_names')
+                ->onDelete('restrict')
+                ->onUpdate('restrict');
+            $table->foreign('production_column_names_id', 'order_budgets_prod_column_names_id_fk')
+                ->references('id')
+                ->on('production_column_names')
                 ->onDelete('restrict')
                 ->onUpdate('restrict');
         });

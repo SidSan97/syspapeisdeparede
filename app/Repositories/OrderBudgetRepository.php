@@ -15,23 +15,30 @@ class OrderBudgetRepository {
         $this->historyService = $historyService;
     }
 
-    public function editLayoutColumn(int $orderBudgetId, int $layoutColumnNameId, $user = null)
+    public function editLayoutColumn(int $orderBudgetId, int $columnId, $user = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
-        $orderBudget->update([
-            'layout_column_names_id' => $layoutColumnNameId,
-        ]);
+
+        // Atualizar o campo correto baseado no type_page
+        $updateData = [];
+        if ($typePage === 'product') {
+            $updateData['production_column_names_id'] = $columnId;
+        } else {
+            // Default para layout
+            $updateData['layout_column_names_id'] = $columnId;
+        }
+
+        $orderBudget->update($updateData);
 
         // Registrar no histórico se houver usuário
         if ($user) {
-            $newColumn = \App\Models\LayoutColumnName::findOrFail($layoutColumnNameId);
-            $this->historyService->logColumnChange($orderBudgetId, $user, $newColumn);
+            $this->historyService->logColumnChange($orderBudgetId, $user, $columnId, $typePage);
         }
 
         return $orderBudget->fresh();
     }
 
-    public function updateOrderBudgetDescription(int $orderBudgetId, string $description, $user = null)
+    public function updateOrderBudgetDescription(int $orderBudgetId, string $description, $user = null, ?string $typePage = null)
     {
         $this->orderBudget::findOrFail($orderBudgetId)->update([
             'description' => $description ?? null,
@@ -39,13 +46,13 @@ class OrderBudgetRepository {
 
         // Registrar no histórico se houver usuário
         if ($user) {
-            $this->historyService->logDescriptionChange($orderBudgetId, $user);
+            $this->historyService->logDescriptionChange($orderBudgetId, $user, $typePage);
         }
 
         return $this->orderBudget->fresh();
     }
 
-    public function addMember(int $orderBudgetId, int $userId, $actionUser = null)
+    public function addMember(int $orderBudgetId, int $userId, $actionUser = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
         $user = \App\Models\User::findOrFail($userId);
@@ -62,10 +69,10 @@ class OrderBudgetRepository {
         if ($actionUser) {
             // Se o usuário que está adicionando é o mesmo que está sendo adicionado, é um "ingresso"
             if ($actionUser->id === $user->id) {
-                $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user);
+                $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user, $typePage);
             } else {
                 // Caso contrário, é uma adição de membro
-                $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user);
+                $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user, $typePage);
             }
         }
 
@@ -75,7 +82,7 @@ class OrderBudgetRepository {
         ];
     }
 
-    public function removeMember(int $orderBudgetId, int $userId, $actionUser = null)
+    public function removeMember(int $orderBudgetId, int $userId, $actionUser = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
         $user = \App\Models\User::findOrFail($userId);
@@ -92,10 +99,10 @@ class OrderBudgetRepository {
         if ($actionUser) {
             // Se o usuário que está removendo é o mesmo que está sendo removido, é uma "saída"
             if ($actionUser->id === $user->id) {
-                $this->historyService->logMemberLeave($orderBudgetId, $user);
+                $this->historyService->logMemberLeave($orderBudgetId, $user, $typePage);
             } else {
                 // Caso contrário, é uma remoção de membro
-                $this->historyService->logMemberRemoval($orderBudgetId, $actionUser, $user);
+                $this->historyService->logMemberRemoval($orderBudgetId, $actionUser, $user, $typePage);
             }
         }
 

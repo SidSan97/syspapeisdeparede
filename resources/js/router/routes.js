@@ -76,6 +76,11 @@ const routes = [
                 name: 'Layouts',
                 component: () => import('../views/layouts/Layouts.vue'),
             },
+            {
+                path: '/products',
+                name: 'Product',
+                component: () => import('../views/production/Product.vue'),
+            },
             ...settings,
         ]
     },

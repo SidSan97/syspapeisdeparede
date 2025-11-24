@@ -8,6 +8,7 @@ use App\Http\Controllers\API\V1\{
     CollectionModelController,
     LayoutColumnNameController,
     MyFavoriteCollectionImageController,
+    ProductionColumnNameController,
     ProfileController,
     UserController,
 };
@@ -108,6 +109,7 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
     Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
+    Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
     Route::post('budgets/order-budgets/{orderBudget}/comments', [BudgetController::class, 'addComment'])->middleware('auth:api');
@@ -125,6 +127,12 @@ Route::prefix('v1')->group(function () {
     Route::post('layout-column-names', [LayoutColumnNameController::class, 'store'])->middleware('auth:api');
     Route::put('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'update'])->middleware('auth:api');
     Route::delete('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'destroy'])->middleware('auth:api');
+
+    // Production 'trello'
+    Route::get('production-column-names', [ProductionColumnNameController::class, 'index'])->middleware('auth:api');
+    Route::post('production-column-names', [ProductionColumnNameController::class, 'store'])->middleware('auth:api');
+    Route::put('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'update'])->middleware('auth:api');
+    Route::delete('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'destroy'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');

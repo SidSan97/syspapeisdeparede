@@ -1,20 +1,20 @@
 <template>
     <section class="content">
-      <Page title="Layouts" :full-width="true">
-        <div class="trello-container">
-          <div class="trello-board" ref="boardRef">
+      <Page title="Produção" :full-width="true">
+        <div class="production-container">
+          <div class="production-board" ref="boardRef">
             <div
               v-for="column in columns"
               :key="column.id"
-              class="trello-column"
+              class="production-column"
               :data-column-id="column.id"
             >
-              <div class="trello-column-header">
-                <div class="trello-column-header-left">
-                  <h3 v-if="!editingColumns[column.id]" class="trello-column-title mb-0">
+              <div class="production-column-header">
+                <div class="production-column-header-left">
+                  <h3 v-if="!editingColumns[column.id]" class="production-column-title mb-0">
                     {{ column.name }}
                   </h3>
-                  <div v-else class="trello-column-edit d-flex align-items-center gap-2">
+                  <div v-else class="production-column-edit d-flex align-items-center gap-2">
                     <input
                       v-model="editingNames[column.id]"
                       @keyup.enter="saveColumnName(column.id)"
@@ -31,11 +31,11 @@
                     </button>
                   </div>
                 </div>
-                <div class="trello-column-header-right d-flex align-items-center gap-2">
-                  <span class="badge trello-column-count-badge">{{ getCardsByColumn(column.id).length }}</span>
+                <div class="production-column-header-right d-flex align-items-center gap-2">
+                  <span class="badge production-column-count-badge">{{ getCardsByColumn(column.id).length }}</span>
                   <div class="dropdown">
                     <button
-                      class="btn btn-sm btn-link text-decoration-none p-1 trello-column-menu-btn"
+                      class="btn btn-sm btn-link text-decoration-none p-1 production-column-menu-btn"
                       type="button"
                       @click.stop="toggleColumnMenu(column.id)"
                       :aria-expanded="openMenuColumn === column.id"
@@ -62,7 +62,7 @@
                 </div>
               </div>
               <div
-                class="trello-column-content"
+                class="production-column-content"
                 @drop="handleDrop($event, column.id)"
                 @dragover.prevent
                 @dragenter.prevent
@@ -70,31 +70,31 @@
                 <div
                   v-for="card in getCardsByColumn(column.id)"
                   :key="card.id"
-                  class="trello-card"
+                  class="production-card"
                   :draggable="true"
                   @dragstart="handleDragStart($event, card)"
                   @click="openCardModal(card)"
                 >
-                  <div v-if="getCoverImage(card)" class="trello-card-image">
+                  <div v-if="getCoverImage(card)" class="production-card-image">
                     <img :src="getCoverImage(card)" :alt="card.name" />
                   </div>
-                  <div class="trello-card-footer">
-                    <div class="trello-card-footer-content">
-                      <span class="trello-card-footer-text">{{ card.name || 'aaa' }}</span>
-                      <div class="trello-card-footer-meta">
-                        <div class="trello-card-deadline">
+                  <div class="production-card-footer">
+                    <div class="production-card-footer-content">
+                      <span class="production-card-footer-text">{{ card.name || 'aaa' }}</span>
+                      <div class="production-card-footer-meta">
+                        <div class="production-card-deadline">
                           <i class="fa fa-clock-o"></i>
                           <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
                         </div>
-                        <div v-if="getCommentsCount(card) > 0" class="trello-card-comment-count">
+                        <div v-if="getCommentsCount(card) > 0" class="production-card-comment-count">
                           <i class="fa fa-comment"></i>
                           <span>{{ getCommentsCount(card) }}</span>
                         </div>
-                        <div v-if="getActivitiesCount(card) > 0" class="trello-card-activity-count">
+                        <div v-if="getActivitiesCount(card) > 0" class="production-card-activity-count">
                           <i class="fa fa-list"></i>
                           <span>{{ getActivitiesCount(card) }}</span>
                         </div>
-                        <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="trello-card-attachment-count">
+                        <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="production-card-attachment-count">
                           <i class="fa fa-paperclip"></i>
                           <span>{{ card.uploaded_files.length }}</span>
                         </div>
@@ -106,7 +106,7 @@
             </div>
 
             <!-- Botão Adicionar Nova Coluna -->
-            <div class="trello-column trello-column-add">
+            <div class="production-column production-column-add">
               <button
                 v-if="!showAddColumnModal"
                 class="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2"
@@ -148,7 +148,7 @@
       </Page>
 
       <!-- Modal de Detalhes do Card -->
-      <LayoutCardModal :card="selectedCard" @close="closeCardModal" />
+      <ProductCardModal :card="selectedCard" @close="closeCardModal" />
     </section>
   </template>
 
@@ -156,7 +156,7 @@
   import { ref, onMounted, onUnmounted, nextTick } from 'vue';
   import axios from 'axios';
   import Page from '../../components/page/Page.vue';
-  import LayoutCardModal from './components/LayoutCardModal.vue';
+  import ProductCardModal from './components/ProductCardModal.vue';
 
   const cards = ref([]);
   const columns = ref([]);
@@ -251,7 +251,7 @@
 
   async function fetchColumns() {
     try {
-      const { data } = await axios.get('v1/layout-column-names');
+      const { data } = await axios.get('v1/production-column-names');
       const payload = Array.isArray(data?.data) ? data.data : [];
 
       // Mapear para o formato esperado, usando o ID como identificador único
@@ -268,18 +268,18 @@
   async function fetchLayouts() {
     try {
       loading.value = true;
-      const { data } = await axios.get('v1/budgets/layouts');
+      const { data } = await axios.get('v1/budgets/production-layouts');
 
       const payload = Array.isArray(data?.data) ? data.data : [];
 
-      // Usar o layout_column_names_id do banco de dados, ou a primeira coluna se não houver
+      // Usar o production_column_names_id do banco de dados, ou a primeira coluna se não houver
       const firstColumnId = columns.value.length > 0 ? columns.value[0].id : null;
       cards.value = payload.map(card => ({
         ...card,
-        column: card.layout_column_names_id || firstColumnId,
+        column: card.production_column_names_id || firstColumnId,
       }));
     } catch (error) {
-      console.error('Erro ao carregar layouts:', error);
+      console.error('Erro ao carregar layouts de produção:', error);
       cards.value = [];
     } finally {
       loading.value = false;
@@ -319,7 +319,7 @@
 
     try {
       savingColumn.value = columnId;
-      const { data } = await axios.put(`v1/layout-column-names/${columnId}`, {
+      const { data } = await axios.put(`v1/production-column-names/${columnId}`, {
         name: newName,
       });
 
@@ -348,7 +348,7 @@
 
   async function deleteColumn(columnId) {
     try {
-      const { data } = await axios.delete(`v1/layout-column-names/${columnId}`);
+      const { data } = await axios.delete(`v1/production-column-names/${columnId}`);
 
       if (data.success) {
         // Remover a coluna da lista
@@ -372,7 +372,7 @@
               await axios.post('v1/budgets/layouts/update-column', {
                 order_budget_id: card.id,
                 layout_column_names_id: firstColumnId,
-                type_page: 'layout',
+                type_page: 'product',
               });
             } catch (error) {
               console.error(`Erro ao mover card ${card.id}:`, error);
@@ -413,7 +413,7 @@
           await axios.post('v1/budgets/layouts/update-column', {
             order_budget_id: draggedCard.value.id,
             layout_column_names_id: columnId,
-            type_page: 'layout',
+            type_page: 'product',
           });
         } catch (error) {
           console.error('Erro ao atualizar coluna do card:', error);
@@ -453,7 +453,7 @@
 
     try {
       creatingColumn.value = true;
-      const { data } = await axios.post('v1/layout-column-names', {
+      const { data } = await axios.post('v1/production-column-names', {
         name: name,
       });
 
@@ -476,7 +476,7 @@
   onMounted(async () => {
     await fetchColumns();
     await fetchLayouts();
-    document.title = 'Layouts';
+    document.title = 'Produção';
     document.addEventListener('click', handleClickOutside);
   });
 
@@ -486,14 +486,14 @@
   </script>
 
   <style lang="scss" scoped>
-  .trello-container {
+  .production-container {
     padding: 1.25rem;
     height: calc(100vh - 120px);
     overflow: hidden;
     background-color: var(--bs-body-bg);
   }
 
-  .trello-board {
+  .production-board {
     display: flex;
     gap: 0.75rem;
     height: 100%;
@@ -522,7 +522,7 @@
     }
   }
 
-  .trello-column {
+  .production-column {
     flex: 0 0 300px;
     background-color: var(--bs-secondary-bg);
     border-radius: 0.5rem;
@@ -533,7 +533,7 @@
     overflow: hidden;
   }
 
-  .trello-column-header {
+  .production-column-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -544,15 +544,15 @@
     z-index: 10;
   }
 
-  .trello-column-header-right {
+  .production-column-header-right {
     position: relative;
   }
 
-  .trello-column-header-right .dropdown {
+  .production-column-header-right .dropdown {
     position: relative;
   }
 
-  .trello-column-menu-btn {
+  .production-column-menu-btn {
     color: var(--bs-body-color);
     transition: all 0.15s ease-in-out;
 
@@ -563,13 +563,13 @@
     }
   }
 
-  .trello-column-count-badge {
+  .production-column-count-badge {
     background-color: var(--bs-secondary-bg);
     color: var(--bs-body-color);
     border: 1px solid var(--bs-border-color);
   }
 
-  .trello-column-header-right .dropdown-menu {
+  .production-column-header-right .dropdown-menu {
     position: absolute;
     top: calc(100% + 0.25rem);
     right: 0;
@@ -583,7 +583,7 @@
     display: block;
   }
 
-  .trello-column-header-right .dropdown-item {
+  .production-column-header-right .dropdown-item {
     display: block;
     width: 100%;
     padding: 0.5rem 0.75rem;
@@ -628,12 +628,12 @@
     }
   }
 
-  .trello-column-header-left {
+  .production-column-header-left {
     flex: 1;
     min-width: 0;
   }
 
-  .trello-column-title {
+  .production-column-title {
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--bs-body-color);
@@ -642,7 +642,7 @@
     letter-spacing: 0.5px;
   }
 
-  .trello-column-content {
+  .production-column-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -668,7 +668,7 @@
     }
   }
 
-  .trello-card {
+  .production-card {
     background-color: var(--bs-card-bg);
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
@@ -691,7 +691,7 @@
     }
   }
 
-  .trello-card-image {
+  .production-card-image {
     width: 100%;
     height: 150px;
     overflow: hidden;
@@ -705,7 +705,7 @@
     }
   }
 
-  .trello-card-footer {
+  .production-card-footer {
     background-color: var(--bs-dark);
     color: var(--bs-white);
     padding: 0.5rem 0.75rem;
@@ -716,14 +716,14 @@
     min-height: 36px;
   }
 
-  .trello-card-footer-content {
+  .production-card-footer-content {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     width: 100%;
   }
 
-  .trello-card-footer-text {
+  .production-card-footer-text {
     font-size: 0.75rem;
     color: var(--bs-white);
     font-weight: 400;
@@ -732,14 +732,14 @@
     white-space: nowrap;
   }
 
-  .trello-card-footer-meta {
+  .production-card-footer-meta {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
   }
 
-  .trello-card-footer .trello-card-deadline {
+  .production-card-footer .production-card-deadline {
     display: flex;
     align-items: center;
     gap: 0.375rem;
@@ -752,9 +752,9 @@
     }
   }
 
-  .trello-card-comment-count,
-  .trello-card-activity-count,
-  .trello-card-attachment-count {
+  .production-card-comment-count,
+  .production-card-activity-count,
+  .production-card-attachment-count {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -771,7 +771,7 @@
     }
   }
 
-  .trello-column-add {
+  .production-column-add {
     flex: 0 0 300px;
     display: flex;
     align-items: flex-start;
@@ -779,16 +779,16 @@
   }
 
   @media (max-width: 768px) {
-    .trello-container {
+    .production-container {
       padding: 0.75rem;
       height: calc(100vh - 100px);
     }
 
-    .trello-column {
+    .production-column {
       flex: 0 0 280px;
     }
 
-    .trello-column-add {
+    .production-column-add {
       flex: 0 0 280px;
     }
   }

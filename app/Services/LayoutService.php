@@ -13,11 +13,12 @@ class LayoutService
      * Transforma uma coleção de OrderBudgets em dados formatados para layouts
      *
      * @param Collection<int, OrderBudget> $orderBudgets
+     * @param string|null $typePage Filtro de tipo de página ('layout' ou 'product')
      * @return array
      */
-    public function transformLayouts(Collection $orderBudgets): array
+    public function transformLayouts(Collection $orderBudgets, ?string $typePage = null): array
     {
-        return $orderBudgets->map(function (OrderBudget $orderBudget) {
+        return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage) {
             $budget = $orderBudget->budget;
             $wall = $orderBudget->wall;
 
@@ -44,8 +45,14 @@ class LayoutService
             // e com base no user_id busca os dados do usuário na tabela users
             $orderBudget->load('users');
 
-            // Carregar histórico do card
-            $orderBudget->load('history');
+            // Carregar histórico do card (filtrar por type_page se fornecido)
+            if ($typePage) {
+                $orderBudget->load(['history' => function ($query) use ($typePage) {
+                    $query->where('type_page', $typePage);
+                }]);
+            } else {
+                $orderBudget->load('history');
+            }
 
             $comments = $orderBudget->comments->map(function ($comment) {
                 return [
@@ -71,6 +78,7 @@ class LayoutService
                 return [
                     'id' => $historyItem->id,
                     'description' => $historyItem->description,
+                    'type_page' => $historyItem->type_page,
                     'created_at' => $historyItem->created_at,
                     'updated_at' => $historyItem->updated_at,
                 ];
@@ -90,6 +98,7 @@ class LayoutService
                 'delivery_date_end_full' => $deliveryDates['end_full'],
                 'status' => $orderBudget->status,
                 'layout_column_names_id' => $orderBudget->layout_column_names_id,
+                'production_column_names_id' => $orderBudget->production_column_names_id,
                 'description' => $orderBudget->description,
                 'comments' => $comments,
                 'members' => $members,

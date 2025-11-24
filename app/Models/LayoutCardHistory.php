@@ -15,11 +15,13 @@ class LayoutCardHistory extends Model
     protected $fillable = [
         'card_id',
         'description',
+        'type_page',
     ];
 
     protected $casts = [
         'description' => 'string',
         'card_id' => 'integer',
+        'type_page' => 'string',
     ];
 
     /**

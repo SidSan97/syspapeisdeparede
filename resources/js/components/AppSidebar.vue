@@ -73,9 +73,9 @@
       <!-- Grupo 4: Produção -->
       <div class="bd-sidebar-group">
         <RouterLink
-          to="/producao"
+          to="/products"
           class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/producao') }"
+          :class="{ 'active': isActiveRoute('/products') }"
         >
           <i class="fa fa-folder"></i>
           <span class="bd-sidebar-text">Produção</span>

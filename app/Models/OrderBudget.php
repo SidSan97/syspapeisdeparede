@@ -18,6 +18,7 @@ class OrderBudget extends Model
         'description',
         'status',
         'layout_column_names_id',
+        'production_column_names_id',
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class OrderBudget extends Model
         'status' => 'string',
         'layout_column_names_id' => 'integer',
         'budget_wall_id' => 'integer',
+        'production_column_names_id' => 'integer',
     ];
 
     public function budget(): BelongsTo
@@ -40,6 +42,11 @@ class OrderBudget extends Model
     public function layoutColumnName(): BelongsTo
     {
         return $this->belongsTo(LayoutColumnName::class, 'layout_column_names_id');
+    }
+
+    public function productionColumnName(): BelongsTo
+    {
+        return $this->belongsTo(ProductionColumnName::class, 'production_column_names_id');
     }
 
     /**

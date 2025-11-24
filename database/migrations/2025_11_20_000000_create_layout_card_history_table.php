@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('card_id');
             $table->string('description', 500)->nullable();
+            $table->string('type_page', 155)->nullable();
             $table->timestamps();
 
             $table->foreign('card_id', 'layout_card_history_card_id_fk')

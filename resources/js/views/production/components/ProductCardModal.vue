@@ -188,22 +188,6 @@
                   </div>
                 </div>
 
-                <div class="layout-modal-section">
-                  <h3 class="layout-modal-section-title">
-                    <i class="fa fa-money"></i> Valores do Orçamento
-                  </h3>
-                  <div class="row layout-modal-info">
-                    <div class="col-md-6 mb-2">
-                      <div class="text-muted small mb-1">Total à Vista</div>
-                      <div class="layout-modal-amount text-success">{{ formatCurrency(card.total_amount || 0) }}</div>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <div class="text-muted small mb-1">Total a Prazo</div>
-                      <div class="layout-modal-amount text-primary">{{ formatCurrency(card.total_amount_installments || 0) }}</div>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Detalhes da Parede -->
                 <div v-if="card.wall" class="layout-modal-section">
                   <h3 class="layout-modal-section-title">
@@ -605,7 +589,7 @@
     </Teleport>
 </template>
 
-  <script setup>
+<script setup>
   import { computed, ref, watch } from 'vue';
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
@@ -692,10 +676,10 @@
 
     const activities = [];
 
-    // Adicionar histórico do card (filtrar apenas histórico de layout)
+    // Adicionar histórico do card (filtrar apenas histórico de produção)
     if (Array.isArray(props.card.history) && props.card.history.length > 0) {
       props.card.history
-        .filter((historyItem) => historyItem.type_page === 'layout')
+        .filter((historyItem) => historyItem.type_page === 'product')
         .forEach((historyItem) => {
           activities.push({
             id: `history-${historyItem.id}`,
@@ -866,7 +850,7 @@
     try {
       const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/description`, {
         description: descriptionText.value,
-        type_page: 'layout',
+        type_page: 'product',
       });
 
       // Atualizar o card localmente
@@ -1031,7 +1015,7 @@
     try {
       const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/members`, {
         user_id: member.id,
-        type_page: 'layout',
+        type_page: 'product',
       });
 
       // Fechar o menu de membros após adicionar
@@ -1079,7 +1063,7 @@
     try {
       const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/members`, {
         user_id: auth.user.id,
-        type_page: 'layout',
+        type_page: 'product',
       });
 
       // Adicionar o usuário logado à lista de membros do card
@@ -1122,7 +1106,7 @@
 
     try {
       const response = await axios.delete(`v1/budgets/order-budgets/${props.card.id}/members/${auth.user.id}`, {
-        data: { type_page: 'layout' }
+        data: { type_page: 'product' }
       });
 
       // Remover o usuário logado da lista de membros do card
@@ -1186,7 +1170,7 @@
 
     try {
       const response = await axios.delete(`v1/budgets/order-budgets/${props.card.id}/members/${member.id}`, {
-        data: { type_page: 'layout' }
+        data: { type_page: 'product' }
       });
 
       // Remover o membro da lista do card
@@ -1520,7 +1504,7 @@
       }, 0);
     }
   });
-  </script>
+</script>
 
 <style lang="scss" scoped>
   // Modal Styles
@@ -2781,5 +2765,5 @@
       color: var(--bs-white);
     }
   }
-  </style>
+</style>
 

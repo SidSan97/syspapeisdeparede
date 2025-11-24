@@ -322,7 +322,7 @@ class BudgetController extends Controller
     {
         try {
             $orderBudgets = $this->repository->getLayoutsForApprove();
-            $data = $this->layoutService->transformLayouts($orderBudgets);
+            $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
 
             return response()->json([
                 'success' => true,
@@ -337,19 +337,54 @@ class BudgetController extends Controller
         }
     }
 
+    public function productionLayouts(): JsonResponse
+    {
+        try {
+            $orderBudgets = $this->repository->getLayoutsForProduction();
+            $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lista de layouts de produção',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar layouts de produção: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function updateLayoutColumn(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
                 'order_budget_id' => ['required', 'integer', 'exists:order_budgets,id'],
-                'layout_column_names_id' => ['required', 'integer', 'exists:layout_column_names,id'],
+                'layout_column_names_id' => ['required', 'integer'],
+                'type_page' => ['nullable', 'string', 'in:layout,product'],
             ]);
 
             $user = $request->user();
+            $typePage = $validated['type_page'] ?? 'layout'; // Default para layout
+            $columnId = $validated['layout_column_names_id'];
+
+            // Validar se a coluna existe na tabela correta baseado no type_page
+            if ($typePage === 'product') {
+                $request->validate([
+                    'layout_column_names_id' => ['exists:production_column_names,id'],
+                ]);
+            } else {
+                $request->validate([
+                    'layout_column_names_id' => ['exists:layout_column_names,id'],
+                ]);
+            }
+
             $orderBudget = $this->orderBudgetRepository->editLayoutColumn(
                 $validated['order_budget_id'],
-                $validated['layout_column_names_id'],
-                $user
+                $columnId,
+                $user,
+                $typePage
             );
 
             return response()->json([
@@ -370,13 +405,16 @@ class BudgetController extends Controller
         try {
             $validated = $request->validate([
                 'description' => ['nullable', 'string', 'max:500'],
+                'type_page' => ['nullable', 'string', 'in:layout,product'],
             ]);
 
             $user = $request->user();
+            $typePage = $validated['type_page'] ?? null;
             $orderBudget = $this->orderBudgetRepository->updateOrderBudgetDescription(
                 $orderBudgetId,
                 $validated['description'],
-                $user
+                $user,
+                $typePage
             );
 
             return response()->json([
@@ -500,10 +538,12 @@ class BudgetController extends Controller
         try {
             $validated = $request->validate([
                 'user_id' => ['required', 'integer', 'exists:users,id'],
+                'type_page' => ['nullable', 'string', 'in:layout,product'],
             ]);
 
             $user = $request->user();
-            $data = $this->orderBudgetRepository->addMember($orderBudgetId, $validated['user_id'], $user);
+            $typePage = $validated['type_page'] ?? null;
+            $data = $this->orderBudgetRepository->addMember($orderBudgetId, $validated['user_id'], $user, $typePage);
 
             return response()->json([
                 'success' => true,
@@ -525,14 +565,17 @@ class BudgetController extends Controller
         try {
             $input = [
                 'user_id' => $memberId ?? $request->input('user_id'),
+                'type_page' => $request->input('type_page'),
             ];
 
             $validated = Validator::make($input, [
                 'user_id' => ['required', 'integer', 'exists:users,id'],
+                'type_page' => ['nullable', 'string', 'in:layout,product'],
             ])->validate();
 
             $user = $request->user();
-            $data = $this->orderBudgetRepository->removeMember($orderBudgetId, $validated['user_id'], $user);
+            $typePage = $validated['type_page'] ?? null;
+            $data = $this->orderBudgetRepository->removeMember($orderBudgetId, $validated['user_id'], $user, $typePage);
 
             return response()->json([
                 'success' => true,
