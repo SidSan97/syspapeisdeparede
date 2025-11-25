@@ -14,6 +14,7 @@ class ProductionColumnNameSeeder extends Seeder
     {
         $columns = [
             'A fazer',
+            'Produzido',
         ];
 
         foreach ($columns as $column) {

@@ -32,11 +32,17 @@ class BudgetRepository {
             ->get();
     }
 
-    public function getPendingReviewAndApproved()
+    public function getAll()
     {
-        return Budget::with('rooms.walls.collectionModel')
-            ->whereIn('status', ['Pendente de Revisão', 'Aprovar Layout'])
-            ->get();
+        $user = Auth::user();
+
+        $query = Budget::with('rooms.walls.collectionModel');
+
+        if($user->user_type_id !== 2) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->get();
     }
 
     public function create(array $data)

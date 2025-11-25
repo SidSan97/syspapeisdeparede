@@ -91,7 +91,7 @@ class BudgetController extends Controller
     public function orders(): JsonResponse
     {
         try {
-            $budgets = $this->repository->getPendingReviewAndApproved();
+            $budgets = $this->repository->getAll();
             $data = BudgetResource::collection($budgets)->toArray(request());
 
             return response()->json([
@@ -265,18 +265,12 @@ class BudgetController extends Controller
                 ], 400);
             }
 
-            // Criar um OrderBudget para cada parede do orçamento
-            $orderBudgets = [];
-            foreach ($budget->rooms as $room) {
-                foreach ($room->walls as $wall) {
-                    $orderBudgets[] = \App\Models\OrderBudget::create([
-                        'budget_id' => $budget->id,
-                        'budget_wall_id' => $wall->id,
-                        'status' => 'Aprovado',
-                        'layout_column_names_id' => $firstColumn->id,
-                    ]);
-                }
-            }
+            // Atualizar status dos OrderBudget existentes para 'Liberado para produção'
+            \App\Models\OrderBudget::where('budget_id', $budget->id)
+                ->update(['status' => 'Liberado para produção']);
+
+            // Buscar os OrderBudget atualizados para retornar na resposta
+            $orderBudgets = \App\Models\OrderBudget::where('budget_id', $budget->id)->get();
 
             // Gerar link de pagamento
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment();
