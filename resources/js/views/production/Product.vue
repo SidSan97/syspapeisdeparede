@@ -102,6 +102,9 @@
                           <span>{{ card.uploaded_files.length }}</span>
                         </div>
                       </div>
+                      <div v-if="card.production_date" class="production-card-production-date">
+                        Data da produção: {{ formatProductionDate(card.production_date) }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -259,6 +262,24 @@
     }
 
     return count;
+  }
+
+  function formatProductionDate(dateString) {
+    if (!dateString) {
+      return '';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return dateString;
+    }
   }
 
   async function fetchColumns() {
@@ -740,6 +761,14 @@
     flex-direction: column;
     gap: 0.25rem;
     width: 100%;
+  }
+
+  .production-card-production-date {
+    font-size: 0.6875rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .production-card-footer-text {

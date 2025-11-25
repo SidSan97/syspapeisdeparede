@@ -99,6 +99,8 @@ class LayoutService
                 'status' => $orderBudget->status,
                 'layout_column_names_id' => $orderBudget->layout_column_names_id,
                 'production_column_names_id' => $orderBudget->production_column_names_id,
+                'production_date' => $orderBudget->production_date,
+                'production_percentage' => $orderBudget->production_percentage,
                 'description' => $orderBudget->description,
                 'comments' => $comments,
                 'members' => $members,

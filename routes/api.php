@@ -112,6 +112,8 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
+    Route::post('budgets/order-budgets/{orderBudget}/mark-as-produced', [BudgetController::class, 'markAsProduced'])->middleware('auth:api');
+    Route::put('budgets/order-budgets/{orderBudget}/production-percentage', [BudgetController::class, 'updateProductionPercentage'])->middleware('auth:api');
     Route::post('budgets/order-budgets/{orderBudget}/comments', [BudgetController::class, 'addComment'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'updateComment'])->middleware('auth:api');
     Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'deleteComment'])->middleware('auth:api');

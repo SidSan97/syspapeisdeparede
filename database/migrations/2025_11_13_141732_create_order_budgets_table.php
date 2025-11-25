@@ -20,6 +20,8 @@ return new class extends Migration
             $table->unsignedBigInteger('layout_column_names_id')->nullable();
             $table->unsignedBigInteger('production_column_names_id')->nullable()->default(1);
             $table->string('description', 500)->nullable();
+            $table->date('production_date')->nullable();
+            $table->decimal('production_percentage', 3, 1)->default(0);
             $table->string('status', 50);
             $table->timestamps();
 

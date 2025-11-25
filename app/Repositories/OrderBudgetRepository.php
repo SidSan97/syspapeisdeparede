@@ -111,4 +111,41 @@ class OrderBudgetRepository {
             'name' => $user->name,
         ];
     }
+
+    public function markAsProduced(int $orderBudgetId, $user = null, ?string $typePage = null)
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+
+        // Atualizar production_date com a data atual e production_column_names_id para 2
+        $orderBudget->update([
+            'production_date' => now()->toDateString(),
+            'production_column_names_id' => 2,
+        ]);
+
+        // Registrar no histórico se houver usuário
+        if ($user) {
+            $this->historyService->logProductionDateUpdate($orderBudgetId, $user, $typePage);
+        }
+
+        return $orderBudget->fresh();
+    }
+
+    public function updateProductionPercentage(int $orderBudgetId, float $percentage, $user = null, ?string $typePage = null)
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+
+        // Validar porcentagem (0 a 100)
+        $percentage = max(0, min(100, $percentage));
+
+        $orderBudget->update([
+            'production_percentage' => $percentage,
+        ]);
+
+        // Registrar no histórico se houver usuário
+        if ($user) {
+            $this->historyService->logProductionPercentageUpdate($orderBudgetId, $user, $percentage, $typePage);
+        }
+
+        return $orderBudget->fresh();
+    }
 }

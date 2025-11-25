@@ -21,6 +21,8 @@ class OrderBudget extends Model
         'status',
         'layout_column_names_id',
         'production_column_names_id',
+        'production_date',
+        'production_percentage',
     ];
 
     protected $casts = [
@@ -29,6 +31,8 @@ class OrderBudget extends Model
         'layout_column_names_id' => 'integer',
         'budget_wall_id' => 'integer',
         'production_column_names_id' => 'integer',
+        'production_date' => 'date',
+        'production_percentage' => 'decimal:1',
     ];
 
     public function budget(): BelongsTo

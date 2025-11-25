@@ -8,36 +8,52 @@
               <i class="fa fa-times"></i>
             </button>
           </div>
+
           <div class="layout-modal-body">
             <div v-if="coverImage" class="layout-modal-cover">
               <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
             </div>
 
             <div class="container-fluid pt-3">
-                <div class="modal-buttons-options position-relative">
-                    <button class="btn btn-primary me-2" @click="toggleMembersMenu">
-                        <i class="fa-solid fa-plus"></i>
-                        Adicionar membro
-                    </button>
+                <div class="modal-buttons-options position-relative d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-primary me-2" @click="toggleMembersMenu">
+                            <i class="fa-solid fa-plus"></i>
+                            Adicionar membro
+                        </button>
 
-                    <button
-                      v-if="!isCurrentUserMember"
-                      class="btn btn-secondary"
-                      @click="joinAsMember"
-                      :disabled="joiningAsMember"
-                    >
-                      <i class="bi bi-plus-circle"></i>
-                      {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
-                    </button>
-                    <button
-                      v-else
-                      class="btn btn-danger"
-                      @click="leaveAsMember"
-                      :disabled="leavingAsMember"
-                    >
-                      <i class="bi bi-x-circle"></i>
-                      {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
-                    </button>
+                        <button
+                            v-if="!isCurrentUserMember"
+                            class="btn btn-secondary"
+                            @click="joinAsMember"
+                            :disabled="joiningAsMember"
+                        >
+                            <i class="bi bi-plus-circle"></i>
+                            {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
+                        </button>
+                        <button
+                            v-else
+                            class="btn btn-danger"
+                            @click="leaveAsMember"
+                            :disabled="leavingAsMember"
+                        >
+                            <i class="bi bi-x-circle"></i>
+                            {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
+                        </button>
+                    </div>
+
+                    <div class="me-3">
+                        <button
+                            class="btn btn-success"
+                            @click="markAsProduced"
+                            :disabled="markingAsProduced"
+                            v-if="card.production_column_names_id < 2"
+                        >
+                            <span v-if="markingAsProduced" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            {{ markingAsProduced ? 'Atualizando...' : 'Produzido' }}
+                        </button>
+                        <span v-else>{{ card.production_percentage == 100 ? 'Produzido' : 'Em produção' }}</span>
+                    </div>
 
                     <div v-if="showMembersMenu" class="members-menu">
                         <div class="members-menu-header">
@@ -124,6 +140,53 @@
                   <div class="layout-modal-info">
                     <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
                     <span class="layout-modal-info-label">{{ card.delivery_time }} dias</span>
+                  </div>
+                </div>
+
+                <div v-if="card.production_column_names_id >= 2" class="layout-modal-section">
+                  <div v-if="!isEditingProductionPercentage" class="layout-modal-info">
+                    <strong>
+                        <span>Total produzido: </span>
+                    </strong> {{ formatProductionPercentage(card.production_percentage) }}%
+                    <button
+                      class="layout-modal-production-edit-btn"
+                      @click="startEditingProductionPercentage"
+                      title="Editar porcentagem"
+                    >
+                      <i class="fa fa-edit"></i>
+                    </button>
+                  </div>
+                  <div v-else class="layout-modal-production-percentage-edit">
+                    <div class="layout-modal-production-input-wrapper">
+                      <span class="layout-modal-production-label">Total produzido:</span>
+                      <input
+                        v-model.number="productionPercentageText"
+                        type="number"
+                        class="layout-modal-production-input"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        placeholder="0.0"
+                        @keyup.enter="saveProductionPercentage"
+                        @keyup.esc="cancelEditingProductionPercentage"
+                      />
+                      <span class="layout-modal-production-input-suffix">%</span>
+                    </div>
+                    <div class="layout-modal-production-actions">
+                      <button
+                        class="layout-modal-production-cancel"
+                        @click="cancelEditingProductionPercentage"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        class="layout-modal-production-save"
+                        @click="saveProductionPercentage"
+                        :disabled="isSavingProductionPercentage"
+                      >
+                        {{ isSavingProductionPercentage ? 'Salvando...' : 'Salvar' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -640,6 +703,15 @@
   // Solicitações de arte
   const requestLayoutArts = ref([]);
   const loadingRequestArts = ref(false);
+
+  // Marcar como produzido
+  const markingAsProduced = ref(false);
+
+  // Editar porcentagem de produção
+  const isEditingProductionPercentage = ref(false);
+  const productionPercentageText = ref(0);
+  const originalProductionPercentage = ref(0);
+  const isSavingProductionPercentage = ref(false);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -1473,6 +1545,112 @@
     }
   }
 
+  async function markAsProduced() {
+    if (!props.card?.id || markingAsProduced.value) {
+      return;
+    }
+
+    markingAsProduced.value = true;
+
+    try {
+      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/mark-as-produced`);
+
+      // Atualizar o card localmente
+      if (props.card && response.data?.data) {
+        props.card.production_date = response.data.data.production_date;
+        props.card.production_column_names_id = response.data.data.production_column_names_id;
+      }
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Data de produção atualizada com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao marcar como produzido:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao atualizar data de produção. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      markingAsProduced.value = false;
+    }
+  }
+
+  function formatProductionPercentage(value) {
+    if (value === null || value === undefined) {
+      return '0.0';
+    }
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue.toFixed(1) : '0.0';
+  }
+
+  function startEditingProductionPercentage() {
+    originalProductionPercentage.value = props.card?.production_percentage || 0;
+    productionPercentageText.value = originalProductionPercentage.value;
+    isEditingProductionPercentage.value = true;
+  }
+
+  function cancelEditingProductionPercentage() {
+    productionPercentageText.value = originalProductionPercentage.value;
+    isEditingProductionPercentage.value = false;
+  }
+
+  async function saveProductionPercentage() {
+    if (!props.card?.id || isSavingProductionPercentage.value) {
+      return;
+    }
+
+    // Validar valor
+    const percentage = Number(productionPercentageText.value);
+    if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+      if (window.Swal) {
+        window.Swal.fire('Erro!', 'Porcentagem deve estar entre 0 e 100', 'error');
+      } else {
+        alert('Porcentagem deve estar entre 0 e 100');
+      }
+      return;
+    }
+
+    isSavingProductionPercentage.value = true;
+
+    try {
+      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/production-percentage`, {
+        production_percentage: percentage,
+      });
+
+      // Atualizar o card localmente
+      if (props.card && response.data?.data) {
+        props.card.production_percentage = response.data.data.production_percentage;
+      }
+
+      originalProductionPercentage.value = percentage;
+      isEditingProductionPercentage.value = false;
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: response.data.message || 'Porcentagem de produção atualizada com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar porcentagem:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao atualizar porcentagem de produção. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      isSavingProductionPercentage.value = false;
+    }
+  }
+
   // Inicializar descrição quando o card mudar
   watch(() => props.card, (newCard) => {
     if (newCard) {
@@ -1487,6 +1665,10 @@
     // Resetar upload de arte
     showLoadArtInput.value = false;
     selectedArtFile.value = null;
+    // Resetar edição de porcentagem
+    isEditingProductionPercentage.value = false;
+    productionPercentageText.value = newCard?.production_percentage || 0;
+    originalProductionPercentage.value = newCard?.production_percentage || 0;
   }, { immediate: true });
 
   // Fechar menu de membro ao clicar fora
@@ -1709,7 +1891,6 @@
 
   .layout-modal-activity-date {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-activity-content {
@@ -1979,7 +2160,6 @@
 
   .layout-modal-comment-date {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-comment-text {
@@ -2763,6 +2943,111 @@
     &:hover {
       background-color: var(--bs-primary-emphasis);
       color: var(--bs-white);
+    }
+  }
+
+  // Estilos para porcentagem de produção
+  .layout-modal-production-edit-btn {
+    background: none;
+    border: none;
+    color: var(--bs-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--bs-secondary-bg);
+    }
+  }
+
+  .layout-modal-production-percentage-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .layout-modal-production-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bs-body-bg);
+    border: 2px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    transition: border-color 0.2s ease;
+
+    &:focus-within {
+      border-color: var(--bs-primary);
+    }
+  }
+
+  .layout-modal-production-label {
+    font-size: 0.875rem;
+    color: var(--bs-body-color);
+  }
+
+  .layout-modal-production-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+    color: var(--bs-body-color);
+    outline: none;
+    max-width: 80px;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+
+    &[type=number] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+  }
+
+  .layout-modal-production-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .layout-modal-production-cancel,
+  .layout-modal-production-save {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .layout-modal-production-cancel {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+
+    &:hover {
+      background-color: var(--bs-tertiary-bg);
+    }
+  }
+
+  .layout-modal-production-save {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+
+    &:hover:not(:disabled) {
+      background-color: var(--bs-primary-emphasis);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
 </style>
