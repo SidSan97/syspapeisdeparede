@@ -69,6 +69,7 @@
           id="user_type_id"
           class="form-control"
           :class="{ 'is-invalid': form.errors.has('user_type_id') }"
+          @change="handleUserTypeChange"
         >
           <option value="">Selecione um tipo...</option>
           <option :value="typeUser.id" v-for="typeUser in typeUsers" :key="typeUser.id">
@@ -78,11 +79,30 @@
         <has-error :form="form" field="user_type_id"></has-error>
       </div>
     </div>
+
+    <!-- Checkbox de Dropshipping (apenas para tipo 3) -->
+    <div v-if="Number(form.user_type_id) === 3" class="row">
+      <div class="col-12 mb-3">
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            :checked="isDropshippingChecked"
+            @change="handleDropshippingChange"
+            id="is_dropshipping"
+            name="is_dropshipping"
+          />
+          <label class="form-check-label" for="is_dropshipping">
+            Habilitar dropshipping?
+          </label>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -104,10 +124,23 @@ const form = reactive(new Form({
   password: '',
   password_confirmation: '',
   user_type_id: '',
+  is_dropshipping: 0,
   email_verified_at: '',
 }))
 
 const passwordMismatch = ref(false)
+
+// Computed para verificar se o checkbox deve estar marcado
+const isDropshippingChecked = computed(() => {
+  const value = form.is_dropshipping
+  // Aceita 1, "1", true, ou qualquer valor truthy como marcado
+  return Number(value) === 1 || value === true
+})
+
+// Handler para mudança do checkbox
+const handleDropshippingChange = (event) => {
+  form.is_dropshipping = event.target.checked ? 1 : 0
+}
 
 const validatePasswordMatch = () => {
   if (form.password_confirmation) {
@@ -116,6 +149,20 @@ const validatePasswordMatch = () => {
     passwordMismatch.value = false
   }
 }
+
+const handleUserTypeChange = () => {
+  // Se o tipo de usuário não for 3, resetar is_dropshipping para 0
+  if (Number(form.user_type_id) !== 3) {
+    form.is_dropshipping = 0
+  }
+}
+
+// Watch para garantir que is_dropshipping seja 0 quando user_type_id não for 3
+watch(() => form.user_type_id, (newValue) => {
+  if (Number(newValue) !== 3) {
+    form.is_dropshipping = 0
+  }
+})
 
 const validateForm = () => {
   const errors = []

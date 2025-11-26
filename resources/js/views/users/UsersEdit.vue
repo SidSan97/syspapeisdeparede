@@ -54,11 +54,16 @@ async function fetchUser() {
     const user = data.data
 
     formRef.value.form.reset()
+
+    // Garantir que is_dropshipping seja número (0 ou 1)
+    const isDropshipping = Number(user.is_dropshipping) || 0
+
     formRef.value.form.fill({
       id: user.id,
       name: user.name,
       email: user.email,
       user_type_id: user.user_type_id,
+      is_dropshipping: isDropshipping,
       email_verified_at: user.email_verified_at,
     })
   } catch (error) {

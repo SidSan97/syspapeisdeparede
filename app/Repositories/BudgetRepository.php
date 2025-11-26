@@ -101,6 +101,7 @@ class BudgetRepository {
                 'collection_referring_model' => $this->formatCollectionReferringModel(
                     $data['collectionReferringModel'] ?? null
                 ),
+                'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : 0,
                 'raw_payload' => $data,
                 'status' => null,
             ]);
@@ -202,6 +203,7 @@ class BudgetRepository {
                 'collection_referring_model' => $this->formatCollectionReferringModel(
                     $data['collectionReferringModel'] ?? null
                 ),
+                'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : $budget->dropshipping_budget,
                 'raw_payload' => $data,
                 'status' => $data['status'] ?? $budget->status,
             ]);

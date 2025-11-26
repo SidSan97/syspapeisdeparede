@@ -62,6 +62,7 @@ class StoreBudgetRequest extends FormRequest
             'paymentMethod' => ['nullable', 'string', Rule::in(['pix', 'installment'])],
             'installments' => ['nullable', 'integer', 'min:1'],
             'installmentLimit' => ['nullable', 'integer', 'min:1'],
+            'dropshipping_budget' => ['nullable', 'boolean'],
         ];
     }
 }

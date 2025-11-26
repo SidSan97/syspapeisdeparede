@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('link_referring_model', 150)->nullable();
             $table->json('files_referring_model')->nullable();
             $table->text('collection_referring_model')->nullable();
+            $table->tinyInteger('dropshipping_budget')->default(0);
             $table->timestamps();
 
             $table->index('payment_method');

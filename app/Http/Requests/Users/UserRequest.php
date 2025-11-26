@@ -40,6 +40,7 @@ class UserRequest extends FormRequest
             'email'      => ['required', 'string', 'email', 'max:191', 'unique:users'],
             'password'   => ['required', 'string', 'min:6'],
             'password_confirmation' => ['required', 'string', 'same:password'],
+            'is_dropshipping' => ['nullable', 'boolean'],
         ];
     }
 
@@ -57,6 +58,7 @@ class UserRequest extends FormRequest
                 'unique:users,email,' . $this->get('id')
             ],
             'password'   => ['nullable', 'string', 'min:6'],
+            'is_dropshipping' => ['nullable', 'boolean'],
         ];
     }
 }

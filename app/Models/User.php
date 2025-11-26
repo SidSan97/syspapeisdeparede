@@ -29,6 +29,7 @@ class User extends Authenticatable implements Commentator //implements MustVerif
         'password',
         'avatar',
         'user_type_id',
+        'is_dropshipping',
     ];
 
     protected $hidden = [
@@ -41,6 +42,7 @@ class User extends Authenticatable implements Commentator //implements MustVerif
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_dropshipping' => 'integer',
         ];
     }
 
