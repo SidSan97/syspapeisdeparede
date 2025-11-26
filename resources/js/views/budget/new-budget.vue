@@ -1,32 +1,13 @@
 <template>
     <section class="content">
-        <div class="container py-4">
-            <!-- Header -->
-            <div class="d-md-flex d-block justify-content-between mb-4">
-                <div class="d-flex">
-                    <button
-                        type="button"
-                        class="btn"
-                        @click="router.push('/budget')"
-                    >
-                    <i class="fa fa-arrow-left"></i>
-                    </button>
-
-                    <h1 class="h3 mb-0 fw-semibold">Criar orçamento</h1>
-                </div>
-
-                <div>
-                    <button
-                        type="button"
-                        class="btn btn-success btn-lg"
-                        @click="saveBudget"
-                        :disabled="saving"
-                    >
+        <Page title="Criar orçamento" back-to="/budget">
+            <template #actions>
+                <button class="btn btn-success btn-lg" type="button" @click="saveBudget" :disabled="saving">
                     <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
-                    </button>
-                </div>
-            </div>
-
+                </button>
+            </template>
+        
+        <div class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
                     <!-- Seção: Informações Básicas -->
@@ -482,6 +463,7 @@
                 </div>
             </div>
         </div>
+    </Page>
     </section>
 </template>
 
@@ -490,6 +472,7 @@ import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import Page from '@/components/page/Page.vue';
 import { swalSuccess, swalError } from '../../../utils/alerts';
 
 const router = useRouter();

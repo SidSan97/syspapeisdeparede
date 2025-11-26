@@ -1,36 +1,12 @@
 <template>
     <section class="content">
+        <Page title="Editar orçamento" back-to="/budget">
+            <template #actions>
+                <button class="btn btn-success btn-lg" type="button" @click="updateBudget" :disabled="saving">
+                    <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
+                </button>
+            </template>
         <div class="container py-4">
-            <!-- Header -->
-            <div class="d-md-flex d-block justify-content-between mb-4">
-                <div class="d-flex">
-                    <button
-                        type="button"
-                        class="btn"
-                        @click="router.push('/budget')"
-                    >
-                    <i class="fa fa-arrow-left"></i>
-                    </button>
-
-                    <h1 class="h3 mb-0 fw-semibold">Editar orçamento</h1>
-                </div>
-
-                <div>
-                    <button
-                        v-if="hasChanges"
-                        type="button"
-                        class="btn btn-success btn-lg"
-                        @click="updateBudget"
-                        :disabled="saving"
-                        >
-                        <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Alterações' }}
-                    </button>
-                    <div v-else class="alert alert-info mb-0">
-                        <small>Nenhuma alteração detectada</small>
-                    </div>
-                </div>
-            </div>
-
             <div class="row">
                 <div class="col-12 col-lg-8">
                     <!-- Seção: Informações Básicas -->
@@ -505,6 +481,7 @@
                 </div>
             </div>
         </div>
+      </Page>
     </section>
 </template>
 
@@ -514,6 +491,7 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { swalSuccess, swalError } from '../../../utils/alerts';
+import Page from '@/components/page/Page.vue';
 
 const router = useRouter();
 const route = useRoute();

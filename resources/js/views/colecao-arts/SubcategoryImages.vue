@@ -1,22 +1,7 @@
 <template>
   <section class="content">
-    <div class="container py-4">
-      <header class="mb-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm"
-            @click="goBack"
-          >
-            <i class="fa fa-arrow-left me-2"></i>
-            Voltar
-          </button>
-        </div>
-        <h1 class="h3 mb-2 text-primary fw-semibold">{{ subcategoryName || 'Imagens' }}</h1>
-        <p class="text-muted mb-0" v-if="collectionName">
-          Coleção: {{ collectionName }}
-        </p>
-      </header>
+    <Page :title="subcategoryName || 'Imagens'" back-to="/colecao-arts">
+     <div class="container py-4">
 
       <div v-if="loading" class="text-center text-muted py-5">
         Carregando imagens...
@@ -70,6 +55,7 @@
         </div>
       </Teleport>
     </div>
+   </Page>
   </section>
 </template>
 
@@ -78,6 +64,7 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { swalError } from '../../../utils/alerts';
+import Page from '@/components/page/Page.vue';
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';

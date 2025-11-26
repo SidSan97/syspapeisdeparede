@@ -1,13 +1,11 @@
 <template>
   <section class="content">
-    <Page>
-      <div class="d-flex justify-content-between mb-4">
-        <h1 class="h3 mb-0 fw-semibold">Orçamentos</h1>
-
+    <Page title="Orçamentos" back-to="/">
+      <template #actions>
         <button class="btn btn-primary btn-lg" type="button" @click="goToCreateBudget">
           Criar orçamento
         </button>
-      </div>
+      </template>
 
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent border-0 pb-0">
