@@ -43,7 +43,7 @@ const availableItems = [
   {
     label: 'Usuários',
     description: 'Gerencie contas, permissões e acesso à plataforma.',
-    to: null,
+    to: { name: 'UsersList' },
     icon: 'users',
   },
   {
@@ -98,16 +98,9 @@ onMounted(() => {
   border-radius: 1rem;
   text-decoration: none;
   box-shadow: 0 0.75rem 1.5rem rgba(15, 15, 15, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   gap: 1.25rem;
   color: inherit;
   cursor: pointer;
-}
-
-.settings-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(13, 110, 253, 0.35);
-  box-shadow: 0 1.25rem 2.5rem rgba(13, 110, 253, 0.15);
 }
 
 .settings-card__icon {
@@ -144,12 +137,6 @@ onMounted(() => {
 .settings-card__chevron {
   color: var(--bs-secondary-color);
   font-size: 1rem;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.settings-card:hover .settings-card__chevron {
-  transform: translateX(4px);
-  color: var(--bs-primary);
 }
 
 @media (max-width: 575.98px) {

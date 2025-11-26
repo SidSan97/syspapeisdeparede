@@ -1,14 +1,6 @@
 <template>
   <section class="content">
-    <div class="container py-4">
-      <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-          <h1 class="h3 mb-2 text-primary fw-semibold">Catálogo de Imagens</h1>
-          <p class="text-muted mb-0">
-            Gerencie as imagens associadas às coleções de arte.
-          </p>
-        </div>
-      </header>
+    <Page title="Catálogo de Imagens" subtitle="Gerencie as imagens associadas às coleções de arte." back-to="/settings">
 
       <div class="card shadow-sm mb-4">
         <div class="card-body">
@@ -192,7 +184,7 @@
           </div>
         </div>
       </section>
-    </div>
+    </Page>
   </section>
 </template>
 
@@ -200,6 +192,7 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
+import Page from '@/components/page/Page.vue';
 
 const collections = ref([]);
 const collectionSubcategories = reactive({});

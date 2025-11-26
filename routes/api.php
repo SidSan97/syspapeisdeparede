@@ -10,6 +10,7 @@ use App\Http\Controllers\API\V1\{
     MyFavoriteCollectionImageController,
     ProductionColumnNameController,
     ProfileController,
+    TypeUserController,
     UserController,
 };
 use App\Http\Controllers\API\V1\RoleController;
@@ -83,9 +84,11 @@ Route::prefix('v1')->group(function () {
 
     Route::get('users/search', [UserController::class, 'search']);
     Route::get('users/list', [UserController::class, 'list']);
+    Route::get('type-users/list', [TypeUserController::class, 'list']);
 
     Route::apiResources([
         'users' => UserController::class,
+        'type-users' => TypeUserController::class,
         'collection-models' => CollectionModelController::class,
         'collection-arts' => CollectionArtController::class,
         'collection-art-subcategories' => CollectionArtSubcategoryController::class,

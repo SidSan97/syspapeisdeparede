@@ -1,18 +1,12 @@
 <template>
   <section class="content">
-    <div class="container py-4">
-      <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-          <h1 class="h3 mb-2 text-primary fw-semibold">Coleções</h1>
-          <p class="text-muted mb-0">
-            Gerencie as coleções disponíveis para os tipos de arte.
-          </p>
-        </div>
+    <Page title="Coleções" subtitle="Gerencie as coleções disponíveis para os tipos de arte." back-to="/settings">
+      <template #actions>
         <button type="button" class="btn btn-primary" @click="startCreating">
           <i class="fa fa-plus-circle me-2"></i>
           Nova coleção
         </button>
-      </header>
+      </template>
 
       <section v-if="isFormVisible" class="card mb-4 shadow-sm">
         <div class="card-body">
@@ -261,7 +255,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   </section>
 </template>
 
@@ -269,6 +263,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
+import Page from '@/components/page/Page.vue';
 
 const collections = ref([]);
 const isLoading = ref(false);
@@ -913,18 +908,5 @@ onMounted(() => {
   z-index: 10;
 }
 
-@media (max-width: 575.98px) {
-  header > div {
-    text-align: center;
-  }
-
-  header {
-    align-items: stretch !important;
-  }
-
-  header .btn {
-    width: 100%;
-  }
-}
 </style>
 

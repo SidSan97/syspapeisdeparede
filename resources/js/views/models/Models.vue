@@ -1,13 +1,7 @@
 <template>
-  <div class="container">
-    <div class="collection-models">
-      <header class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-          <h2 class="mb-1">Modelos</h2>
-          <p class="text-muted mb-0">
-            Cadastre e edite aqui os modelos utilizados pelos orçamentos.
-          </p>
-        </div>
+  <section class="content">
+    <Page title="Modelos" subtitle="Cadastre e edite aqui os modelos utilizados pelos orçamentos." back-to="/settings">
+      <template #actions>
         <button
           class="btn btn-primary"
           type="button"
@@ -16,13 +10,15 @@
           <i class="fa fa-plus-circle me-2"></i>
           Criar modelo
         </button>
-      </header>
+      </template>
+      
+      <div class="collection-models">
 
       <section v-if="isFormVisible" class="form-container mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="mb-0">
+          <h5 class="mb-0">
             {{ isEditing ? 'Editar modelo' : 'Novo modelo' }}
-          </h4>
+          </h5>
           <button
             type="button"
             class="btn btn-outline-secondary"
@@ -233,14 +229,16 @@
           </table>
         </div>
       </section>
-    </div>
-  </div>
+      </div>
+    </Page>
+  </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { swalSuccess, swalError, swalConfirmation } from '../../../utils/alerts';
+import Page from '@/components/page/Page.vue';
 
 const models = ref([]);
 const pagination = ref({

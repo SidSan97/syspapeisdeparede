@@ -271,10 +271,8 @@
 
                     <!-- Seção: Definir Modelos -->
                     <div class="card mb-4">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0 fw-semibold">Definir Modelos</h5>
-                        </div>
                         <div class="card-body">
+                            <h5 class="card-title">Definir Modelos</h5>
                             <div class="alert alert-info mb-4">
                                 <strong>Cada parede deve conter um modelo:</strong>
                             </div>
@@ -326,10 +324,8 @@
                 <div class="col-12 col-lg-4">
                     <!-- Seção: Frete -->
                     <div class="card mb-4 mt-2">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0 fw-semibold">Frete</h5>
-                        </div>
                         <div class="card-body">
+                            <h5 class="card-title">Frete</h5>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="cep" class="form-label">CEP</label>
@@ -384,10 +380,8 @@
 
                     <!-- Seção: Pagamento -->
                     <div class="card mb-4">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0 fw-semibold">Pagamento</h5>
-                        </div>
                         <div class="card-body">
+                            <h5 class="card-title">Pagamento</h5>
                             <div class="mb-3">
                                 <label for="freightValue" class="form-label">Valor do frete</label>
                                 <div class="input-group">
@@ -439,10 +433,8 @@
 
                      <!-- Seção: Resumo -->
                      <div class="card mb-4">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0 fw-semibold">Resumo</h5>
-                        </div>
                         <div class="card-body">
+                            <h5 class="card-title">Resumo</h5>
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Total de Ambientes:</span>

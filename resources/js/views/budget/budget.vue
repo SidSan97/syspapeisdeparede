@@ -12,17 +12,13 @@
           <div class="d-flex flex-column gap-3">
             <div class="row buttons-filters">
               <div class="col-lg-4">
-                <div class="input-group input-group-lg search-input">
-                  <span class="input-group-text bg-body-secondary border border-secondary text-muted">
+                <div class="input-group input-group-prefix">
+                  <input id="search-query" type="text" class="form-control" placeholder="Pesquisar orçamento"
+                   v-model="searchQuery"
+                  >
+                  <span class="input-group-text">
                     <i class="fa fa-search"></i>
                   </span>
-                  <input
-                    v-model="searchQuery"
-                    type="search"
-                    class="form-control border border-secondary bg-body-secondary"
-                    placeholder="Pesquisar orçamento"
-                    aria-label="Pesquisar orçamento"
-                  >
                 </div>
               </div>
 

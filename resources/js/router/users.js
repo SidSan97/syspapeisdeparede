@@ -1,16 +1,16 @@
 export default [
     {
-        path: '/users',
+        path: 'usuarios',
         name: 'UsersList',
         component: () => import('../views/users/UsersList.vue')
     },
     {
-        path: '/users/create',
+        path: 'usuarios/criar',
         name: 'UsersCreate',
         component: () => import('../views/users/UsersCreate.vue')
     },
     {
-        path: '/users/:id/edit',
+        path: 'usuarios/:id/editar',
         name: 'UsersEdit',
         component: () => import('../views/users/UsersEdit.vue')
     },
