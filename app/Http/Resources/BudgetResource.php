@@ -15,9 +15,33 @@ class BudgetResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['rooms.walls.collectionModel.files']);
+        $this->resource->loadMissing(['rooms.walls.collectionModel.files', 'dropshippingData']);
 
         $data = $this->resource->toArray();
+
+        // Incluir dados de dropshipping se existirem
+        if ($this->resource->relationLoaded('dropshippingData') && $this->resource->dropshippingData) {
+            $dropshippingData = $this->resource->dropshippingData;
+            $data['dropshipping_data'] = [
+                'id' => $dropshippingData->id,
+                'name' => $dropshippingData->name,
+                'person_type' => $dropshippingData->person_type,
+                'cpf_cnpj' => $dropshippingData->cpf_cnpj,
+                'IE' => $dropshippingData->IE,
+                'email' => $dropshippingData->email,
+                'phone' => $dropshippingData->phone,
+                'cep' => $dropshippingData->cep,
+                'uf' => $dropshippingData->uf,
+                'state' => $dropshippingData->state,
+                'city' => $dropshippingData->city,
+                'neighborhood' => $dropshippingData->neighborhood,
+                'public_space' => $dropshippingData->public_space,
+                'complement' => $dropshippingData->complement,
+                'dealer_id' => $dropshippingData->dealer_id,
+            ];
+        } else {
+            $data['dropshipping_data'] = null;
+        }
 
         if (!empty($data['rooms']) && is_array($data['rooms'])) {
             foreach ($data['rooms'] as &$room) {

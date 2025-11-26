@@ -63,6 +63,25 @@ class StoreBudgetRequest extends FormRequest
             'installments' => ['nullable', 'integer', 'min:1'],
             'installmentLimit' => ['nullable', 'integer', 'min:1'],
             'dropshipping_budget' => ['nullable', 'boolean'],
+            'dropshipping_data' => ['nullable', 'array'],
+            'dropshipping_data.name' => ['required_with:dropshipping_data', 'string', 'max:255'],
+            'dropshipping_data.person_type' => ['required_with:dropshipping_data', 'string', Rule::in(['PF', 'PJ'])],
+            'dropshipping_data.cpf_cnpj' => ['required_with:dropshipping_data', 'string', 'max:18'],
+            'dropshipping_data.IE' => [
+                'required_if:dropshipping_data.person_type,PJ',
+                'nullable',
+                'string',
+                'max:18'
+            ],
+            'dropshipping_data.email' => ['required_with:dropshipping_data', 'email', 'max:255'],
+            'dropshipping_data.phone' => ['required_with:dropshipping_data', 'string', 'max:15'],
+            'dropshipping_data.cep' => ['required_with:dropshipping_data', 'string', 'max:9'],
+            'dropshipping_data.uf' => ['required_with:dropshipping_data', 'string', 'size:2'],
+            'dropshipping_data.state' => ['required_with:dropshipping_data', 'string', 'max:30'],
+            'dropshipping_data.city' => ['required_with:dropshipping_data', 'string', 'max:255'],
+            'dropshipping_data.neighborhood' => ['required_with:dropshipping_data', 'string', 'max:255'],
+            'dropshipping_data.public_space' => ['nullable', 'string', 'max:255'],
+            'dropshipping_data.complement' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

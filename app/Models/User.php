@@ -6,6 +6,7 @@ use BeyondCode\Comments\Contracts\Commentator;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -80,5 +81,13 @@ class User extends Authenticatable implements Commentator //implements MustVerif
     {
         return $this->belongsToMany(CollectionImage::class, 'my_favorites_collection_images', 'user_id', 'collection_image_id')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the dropshipping data for this user (as dealer).
+     */
+    public function dropshippingData(): HasMany
+    {
+        return $this->hasMany(DropshippingData::class, 'dealer_id');
     }
 }

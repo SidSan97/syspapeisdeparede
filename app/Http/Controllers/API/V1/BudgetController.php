@@ -14,6 +14,7 @@ use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\RequestLayoutArtRepository;
+use App\Repositories\DropshippingRepository;
 use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
@@ -21,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -33,6 +35,7 @@ class BudgetController extends Controller
     protected $layoutService;
     protected $orderBudgetRepository;
     protected $requestLayoutArtRepository;
+    protected $dropshippingRepository;
 
     public function __construct(
         BudgetRepository $repository,
@@ -40,7 +43,8 @@ class BudgetController extends Controller
         GeneratePaymentService $generatePaymentService,
         LayoutService $layoutService,
         OrderBudgetRepository $orderBudgetRepository,
-        RequestLayoutArtRepository $requestLayoutArtRepository
+        RequestLayoutArtRepository $requestLayoutArtRepository,
+        DropshippingRepository $dropshippingRepository
     ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
@@ -48,6 +52,7 @@ class BudgetController extends Controller
         $this->layoutService = $layoutService;
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->requestLayoutArtRepository = $requestLayoutArtRepository;
+        $this->dropshippingRepository = $dropshippingRepository;
     }
 
     public function index(): JsonResponse
@@ -112,7 +117,22 @@ class BudgetController extends Controller
         $data = $request->validated();
 
         try {
-            $budget = $this->repository->create($data);
+            $budget = DB::transaction(function () use ($data) {
+                // Criar o orçamento
+                $budget = $this->repository->create($data);
+
+                // Criar dados de dropshipping se fornecidos
+                if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
+                    $this->dropshippingRepository->create(
+                        $data['dropshipping_data'],
+                        $budget->id,
+                        Auth::id()
+                    );
+                }
+
+                return $budget;
+            });
+
             $transformed = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([
@@ -124,7 +144,7 @@ class BudgetController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao criar orçamento',
+                'message' => 'Erro ao criar orçamento: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -134,8 +154,37 @@ class BudgetController extends Controller
         $data = $request->validated();
 
         try {
-            $budget = \App\Models\Budget::findOrFail($id);
-            $budget = $this->repository->update($budget, $data);
+            $budget = DB::transaction(function () use ($id, $data) {
+                $budget = \App\Models\Budget::findOrFail($id);
+                $budget = $this->repository->update($budget, $data);
+
+                // Gerenciar dados de dropshipping
+                if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
+                    // Verificar se já existe dropshipping_data para este budget
+                    $existingDropshipping = $budget->dropshippingData;
+
+                    if ($existingDropshipping) {
+                        // Atualizar dados existentes
+                        $this->dropshippingRepository->update(
+                            $data['dropshipping_data'],
+                            $existingDropshipping->id
+                        );
+                    } else {
+                        // Criar novos dados
+                        $this->dropshippingRepository->create(
+                            $data['dropshipping_data'],
+                            $budget->id,
+                            Auth::id()
+                        );
+                    }
+                } elseif (isset($data['dropshipping_budget']) && $data['dropshipping_budget'] === 0) {
+                    // Se dropshipping foi desabilitado, remover dados existentes
+                    $budget->dropshippingData()->delete();
+                }
+
+                return $budget->fresh(['dropshippingData']);
+            });
+
             $transformed = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([

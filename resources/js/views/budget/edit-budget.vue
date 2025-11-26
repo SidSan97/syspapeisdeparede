@@ -34,8 +34,30 @@
                                     <option value="Aprovado">Aprovado</option>
                                 </select>
                             </div>
+
+                            <!-- Checkbox Dropshipping (apenas para user_type_id === 2 ou is_dropshipping === 1) -->
+                            <div v-if="canEnableDropshipping" class="mb-3">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        v-model="enableDropshipping"
+                                        id="enableDropshipping"
+                                    />
+                                    <label class="form-check-label" for="enableDropshipping">
+                                        Habilitar Dropshipping
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Formulário de Dropshipping -->
+                    <DropshippingForm
+                        :enabled="enableDropshipping"
+                        v-model="dropshippingData"
+                        ref="dropshippingFormRef"
+                    />
 
                     <!-- Seção: Ambientes e Paredes -->
                     <div class="card mb-4">
@@ -484,15 +506,21 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { swalSuccess, swalError } from '../../../utils/alerts';
 import Page from '@/components/page/Page.vue';
+import DropshippingForm from './components/DropshippingForm.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const route = useRoute();
+const auth = useAuthStore();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
 const budgetId = ref(null);
 const loadingBudget = ref(false);
 const originalBudget = ref(null);
+const enableDropshipping = ref(false);
+const dropshippingData = ref({});
+const dropshippingFormRef = ref(null);
 
 // Modelos de produto disponíveis
 const productModels = ref([]);
@@ -616,7 +644,14 @@ const budget = reactive({
     installmentLimit: 12,
     installments: 1,
     total_amount: 0,
-    total_amount_installments: 0
+    total_amount_installments: 0,
+    dropshipping_budget: 0,
+    dropshipping_data: null
+});
+
+// Computed para verificar se pode habilitar dropshipping
+const canEnableDropshipping = computed(() => {
+    return auth.user?.user_type_id === 2 || auth.user?.is_dropshipping === 1;
 });
 
 async function fetchCollectionModels() {
@@ -790,7 +825,9 @@ function normalizeBudgetFromAPI(budgetData) {
         installmentLimit: budgetData.installment_limit || 12,
         installments: budgetData.installments || 1,
         total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
-        total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0
+        total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0,
+        dropshipping_budget: budgetData.dropshipping_budget || 0,
+        dropshipping_data: budgetData.dropshipping_data || null
     };
 }
 
@@ -821,6 +858,16 @@ async function loadBudget() {
         // Normalizar e carregar dados
         const normalized = normalizeBudgetFromAPI(budgetData);
         Object.assign(budget, normalized);
+
+        // Carregar dados de dropshipping se existirem
+        if (normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
+            enableDropshipping.value = true;
+            dropshippingData.value = { ...normalized.dropshipping_data };
+        } else {
+            enableDropshipping.value = false;
+            dropshippingData.value = {};
+        }
+
         originalBudget.value = JSON.parse(JSON.stringify(normalized));
 
     } catch (error) {
@@ -1235,6 +1282,14 @@ function updateBudget() {
         return;
     }
 
+    // Validar dropshipping se estiver habilitado
+    if (enableDropshipping.value && dropshippingFormRef.value) {
+        const isValid = dropshippingFormRef.value.validate();
+        if (!isValid) {
+            return;
+        }
+    }
+
     saving.value = true;
 
     const payload = JSON.parse(JSON.stringify(budget));
@@ -1254,6 +1309,15 @@ function updateBudget() {
     if (payload.paymentMethod === 'pix') {
         payload.installmentLimit = null;
         payload.installments = null;
+    }
+
+    // Configurar dropshipping_budget e dropshipping_data
+    payload.dropshipping_budget = enableDropshipping.value ? 1 : 0;
+
+    if (enableDropshipping.value && dropshippingFormRef.value) {
+        payload.dropshipping_data = dropshippingFormRef.value.getData();
+    } else {
+        delete payload.dropshipping_data;
     }
 
     axios.put(`v1/budgets/${budgetId.value}`, payload)

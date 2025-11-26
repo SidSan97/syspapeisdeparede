@@ -6,7 +6,7 @@
                     <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
                 </button>
             </template>
-        
+
         <div class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
@@ -23,8 +23,30 @@
                                     placeholder="Ex: Orçamento Casa - Sala"
                                 />
                             </div>
+
+                            <!-- Checkbox Dropshipping (apenas para user_type_id === 2 ou is_dropshipping === 1) -->
+                            <div v-if="canEnableDropshipping" class="mb-3">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        v-model="enableDropshipping"
+                                        id="enableDropshipping"
+                                    />
+                                    <label class="form-check-label" for="enableDropshipping">
+                                        Habilitar Dropshipping
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Formulário de Dropshipping -->
+                    <DropshippingForm
+                        :enabled="enableDropshipping"
+                        v-model="budget.dropshipping_data"
+                        ref="dropshippingFormRef"
+                    />
 
                     <!-- Seção: Ambientes e Paredes -->
                     <div class="card mb-4">
@@ -250,7 +272,7 @@
                     </div>
 
                     <!-- Seção: Definir Modelos -->
-                    <div class="card mb-4">                    
+                    <div class="card mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Definir Modelos</h5>
                             <div class="alert alert-info mb-4">
@@ -303,7 +325,7 @@
                 <!-- Sidebar: Frete e Pagamento -->
                 <div class="col-12 col-lg-4">
                     <!-- Seção: Frete -->
-                    <div class="card mb-4">                  
+                    <div class="card mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Frete</h5>
                                 <div class="row">
@@ -359,7 +381,7 @@
                     </div>
 
                     <!-- Seção: Pagamento -->
-                    <div class="card mb-4">                                             
+                    <div class="card mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Pagamento</h5>
                             <div class="mb-3">
@@ -412,7 +434,7 @@
                     </div>
 
                     <!-- Seção: Resumo -->
-                    <div class="card mb-4">                    
+                    <div class="card mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Resumo</h5>
                             <div class="mb-3">
@@ -464,11 +486,22 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import Page from '@/components/page/Page.vue';
 import { swalSuccess, swalError } from '../../../utils/alerts';
+import { useAuthStore } from '@/stores/auth';
+import DropshippingForm from './components/DropshippingForm.vue';
 
 const router = useRouter();
+const auth = useAuthStore();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
+const enableDropshipping = ref(false);
+const dropshippingFormRef = ref(null);
+
+const isAdmin = computed(() => auth.user?.user_type_id === 2);
+const canEnableDropshipping = computed(() => {
+  const user = auth.user;
+  return user?.user_type_id === 2 || user?.is_dropshipping === 1 || user?.is_dropshipping === true;
+});
 
 // Modelos de produto disponíveis
 const productModels = ref([]);
@@ -585,7 +618,9 @@ const budget = reactive({
     selectedCarrier: null,
     paymentMethod: '',
     installmentLimit: 12,
-    installments: 1
+    installments: 1,
+    dropshipping_budget: 0,
+    dropshipping_data: {}
 });
 
 async function fetchCollectionModels() {
@@ -860,6 +895,15 @@ function validateBudget() {
         return false;
     }
 
+    // Validar formulário de dropshipping se estiver habilitado
+    if (enableDropshipping.value && dropshippingFormRef.value) {
+        const isValidDropshipping = dropshippingFormRef.value.validate();
+        if (!isValidDropshipping) {
+            showWarning('Por favor, preencha todos os campos obrigatórios do formulário de dropshipping');
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -1083,6 +1127,13 @@ function saveBudget() {
         payload.installments = null;
     }
 
+    // Configurar dropshipping_budget e dropshipping_data
+    payload.dropshipping_budget = enableDropshipping.value ? 1 : 0;
+
+    if (!enableDropshipping.value) {
+        delete payload.dropshipping_data;
+    }
+
     axios.post('v1/budgets', payload)
         .then(response => {
             console.log('Orçamento salvo:', response.data);
@@ -1150,74 +1201,6 @@ function saveBudget() {
 
     &.border-primary {
         box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
-    }
-}
-
-.model-preview {
-    overflow: hidden;
-    border-radius: 0.5rem;
-
-    img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        display: block;
-    }
-
-    .carousel-control {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.45);
-        color: #fff;
-        border: none;
-        width: 2rem;
-        height: 2rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.2s ease;
-
-        &:hover {
-            background: rgba(0, 0, 0, 0.65);
-        }
-
-        &.prev {
-            left: 0.5rem;
-        }
-
-        &.next {
-            right: 0.5rem;
-        }
-
-        i {
-            font-size: 0.9rem;
-        }
-    }
-
-    .carousel-indicators {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 0.35rem;
-
-        span {
-            width: 0.6rem;
-            height: 0.6rem;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
-
-            &.active {
-                background: rgba(255, 255, 255, 0.95);
-                transform: scale(1.1);
-            }
-        }
     }
 }
 </style>
