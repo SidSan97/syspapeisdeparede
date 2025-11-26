@@ -34,20 +34,23 @@ class UserRequest extends FormRequest
     public function createRules(): array
     {
         return [
-            'role'       => ['required', 'string', 'exists:roles,name'],
+            'role'       => ['nullable', 'string', 'exists:roles,name'],
+            'user_type_id' => ['required', 'integer', 'exists:type_users,id'],
             'name'       => ['required', 'string', 'max:191'],
             'email'      => ['required', 'string', 'email', 'max:191', 'unique:users'],
             'password'   => ['required', 'string', 'min:6'],
+            'password_confirmation' => ['required', 'string', 'same:password'],
         ];
     }
 
     public function updateRules(): array
     {
         return [
-            'role'  => ['required', 'string', 'exists:roles,name'],
-            'name'  => ['sometimes', 'string', 'max:191'],
+            'role'       => ['nullable', 'string', 'exists:roles,name'],
+            'user_type_id' => ['required', 'integer', 'exists:type_users,id'],
+            'name'       => ['required', 'string', 'max:191'],
             'email' => [
-                'sometimes',
+                'required',
                 'string',
                 'email',
                 'max:191',

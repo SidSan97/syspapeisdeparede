@@ -1,9 +1,9 @@
 <template>
   <section class="content">
-    <Page title="Usuários" back-to="/settings" v-if="auth.hasPermission('view users')">
+    <Page title="Usuários" back-to="/settings" v-if="auth.user?.user_type_id === 2">
       <template #actions>
         <router-link
-          v-if="auth.hasPermission('create users')"
+          v-if="auth.user?.user_type_id === 2"
           :to="{ name: 'UsersCreate' }"
           class="btn btn-primary"
         >
@@ -14,7 +14,7 @@
 
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent border-0 pb-0">
-          <div class="d-flex flex-column flex-md-row gap-3 mb-4">
+          <!--div class="d-flex flex-column flex-md-row gap-3 mb-4">
             <div class="flex-grow-1">
               <div class="input-group input-group-lg">
                 <span class="input-group-text bg-body-secondary border border-secondary">
@@ -63,6 +63,54 @@
                 </li>
               </ul>
             </div>
+          </div-->
+          <div class="d-flex flex-column gap-3">
+            <div class="row buttons-filters">
+              <div class="col-lg-4">
+                <div class="input-group input-group-prefix">
+                  <input type="search" class="form-control" placeholder="Pesquisar usuário"
+                   v-model="searchQuery"
+                  >
+                  <span class="input-group-text">
+                    <i class="fa fa-search"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="dropdown col-lg-3 mt-2 mt-lg-0">
+                <button
+                    class="btn btn-outline-secondary btn-lg d-flex align-items-center gap-2"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    {{ selectedRoleLabel }}
+                    <i class="fa fa-chevron-down small"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li>
+                        <button
+                            class="dropdown-item"
+                            type="button"
+                            :class="{ active: selectedRoleId === null }"
+                            @click="setRoleFilter(null)"
+                        >
+                            Todos os papéis
+                        </button>
+                    </li>
+                    <li v-for="role in typeUsers" :key="role.id">
+                        <button
+                            class="dropdown-item"
+                            type="button"
+                            :class="{ active: selectedRoleId === role.id }"
+                            @click="setRoleFilter(role.id)"
+                        >
+                            {{ role.name }}
+                        </button>
+                    </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -82,7 +130,7 @@
 
           <div v-else class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
+              <thead>
                 <tr>
                   <th scope="col">#</th>
                   <th scope="col">Usuário</th>
@@ -91,14 +139,13 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="user in filteredUsers" :key="user.id">
-                  <td class="fw-semibold">{{ user.id }}</td>
+                <tr v-for="(user, index) in filteredUsers" :key="user.id">
+                  <td class="fw-semibold">{{ index + 1 }}</td>
                   <td>
                     <div class="d-flex align-items-center gap-3">
                       <div
                         v-if="!user.avatar"
-                        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                        style="width: 40px; height: 40px; font-weight: 600; font-size: 1rem;"
+                        class="rounded-circle d-flex align-items-center justify-content-center user-avatar"
                       >
                         {{ getUserInitial(user.name) }}
                       </div>
@@ -106,8 +153,7 @@
                         v-else
                         :src="getAvatarUrl(user.avatar)"
                         :alt="user.name"
-                        class="rounded-circle"
-                        style="width: 40px; height: 40px; object-fit: cover;"
+                        class="rounded-circle user-avatar-img"
                       />
                       <div>
                         <div class="fw-semibold">{{ user.name }}</div>
@@ -128,9 +174,9 @@
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                       >
-                        <i class="fa fa-ellipsis-h"></i>
+                        <i class="fa fa-ellipsis-v"></i>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
                           <router-link
                             class="dropdown-item"
@@ -163,7 +209,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
@@ -175,7 +221,6 @@ import { useUtils } from '@/composables/useUtils';
 
 const router = useRouter();
 const auth = useAuthStore();
-const { debouncer } = useUtils();
 
 const users = ref([]);
 const typeUsers = ref([]);
@@ -239,7 +284,7 @@ const setRoleFilter = (roleId) => {
 };
 
 const fetchUsers = async () => {
-  if (!auth.hasPermission('view users')) return;
+  if (auth.user?.user_type_id !== 2) return;
 
   loading.value = true;
   try {
@@ -268,7 +313,7 @@ const fetchTypeUsers = async () => {
 };
 
 const confirmDelete = async (user) => {
-  if (!auth.hasPermission('delete users')) return;
+  if (auth.user?.user_type_id !== 2) return;
 
   const result = await swalConfirmation(
     'Excluir usuário?',
@@ -297,14 +342,6 @@ const deleteUser = async (user) => {
   }
 };
 
-const debouncedSearch = debouncer(() => {
-  // A busca é feita via computed filteredUsers
-});
-
-watch(searchQuery, () => {
-  debouncedSearch();
-});
-
 onMounted(async () => {
   document.title = 'Usuários';
   await fetchTypeUsers();
@@ -329,5 +366,60 @@ onMounted(async () => {
 .input-group-lg .input-group-text,
 .input-group-lg .form-control {
   padding-block: 0.85rem;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  font-weight: 600;
+  font-size: 1rem;
+  background-color: #6f42c1;
+  color: white;
+  flex-shrink: 0;
+}
+
+.user-avatar-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.table thead th {
+  border-bottom: 1px solid var(--bs-border-color);
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.table tbody tr:hover {
+  background-color: var(--bs-secondary-bg);
+}
+
+.dropdown-menu {
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-dropdown-bg);
+}
+
+.dropdown-item {
+  color: var(--bs-dropdown-color);
+  padding: 0.5rem 1rem;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bs-dropdown-link-hover-bg);
+  color: var(--bs-dropdown-link-hover-color);
+}
+
+.dropdown-item.text-danger {
+  color: var(--bs-danger);
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger);
 }
 </style>

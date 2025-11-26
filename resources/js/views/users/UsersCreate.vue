@@ -1,12 +1,12 @@
 <template>
   <section class="content">
-    <page title="Criar novo usuário" v-if="auth.hasPermission('create users')">
+    <page title="Criar novo usuário" v-if="auth.user?.user_type_id === 2">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="createUser()">
             <div class="row">
-              <div class="col-lg-6">
-                <UsersForm ref="formRef" :roles="roles"></UsersForm>
+              <div class="col-lg-12">
+                <UsersForm ref="formRef" :type-users="typeUsers"></UsersForm>
               </div>
             </div>
             <hr>
@@ -43,6 +43,11 @@ const roles = ref([])
 const saving = ref(false)
 
 async function createUser() {
+  // Validar formulário antes de submeter
+  if (!formRef.value.validateForm()) {
+    return
+  }
+
   try {
     saving.value = true
 

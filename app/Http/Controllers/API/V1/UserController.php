@@ -69,6 +69,7 @@ class UserController extends BaseController
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'user_type_id' => $request->user_type_id,
         ];
 
         $user = $this->user->create($data);
@@ -84,7 +85,7 @@ class UserController extends BaseController
 
     public function show($id)
     {
-        $user = $this->user->with(['roles:id,name', 'permissions'])->findOrFail($id);
+        $user = $this->user->with(['roles:id,name', 'permissions', 'userType'])->findOrFail($id);
 
         return $this->sendResponse($user, 'Dados do usuário');
     }
@@ -97,9 +98,15 @@ class UserController extends BaseController
 
         $data = $request->validated();
 
-        if (!empty($data['password'])) {
+        // Remover password se estiver vazio
+        if (empty($data['password'])) {
+            unset($data['password']);
+        } else {
             $data['password'] = Hash::make($data['password']);
         }
+
+        // Remover password_confirmation se existir
+        unset($data['password_confirmation']);
 
         $user->update($data);
 

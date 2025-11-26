@@ -1,12 +1,12 @@
 <template>
   <section class="content">
-    <page title="Editar usuário" v-if="auth.hasPermission('edit users')">
+    <page title="Editar usuário" v-if="auth.user?.user_type_id === 2">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="updateUser()">
             <div class="row">
-              <div class="col-lg-6">
-                <UsersForm ref="formRef" :roles="roles"></UsersForm>
+              <div class="col-lg-12">
+                <UsersForm ref="formRef" :type-users="typeUsers" :is-edit="true"></UsersForm>
               </div>
             </div>
             <hr>
@@ -38,12 +38,13 @@ const $router = useRouter()
 const $route = useRoute()
 const auth = useAuthStore()
 
+const Toast = window.Toast
 const formRef = ref()
-const roles = ref([])
+const typeUsers = ref([])
 const saving = ref(false)
 
 async function fetchUser() {
-  if (!auth.hasPermission('edit users')) return;
+  if (auth.user?.user_type_id !== 2) return;
 
   try {
     saving.value = true
@@ -53,12 +54,17 @@ async function fetchUser() {
     const user = data.data
 
     formRef.value.form.reset()
-    formRef.value.form.fill(user)
-    formRef.value.form.role = user.roles[0]?.name
-  } catch (error) {    
+    formRef.value.form.fill({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      user_type_id: user.user_type_id,
+      email_verified_at: user.email_verified_at,
+    })
+  } catch (error) {
     Toast.fire({
       icon: 'error',
-      title: error.response?.data?.message
+      title: error.response?.data?.message || 'Erro ao carregar usuário'
     })
 
     $router.push({ name: 'UsersList' })
@@ -68,7 +74,13 @@ async function fetchUser() {
 }
 
 async function updateUser() {
+  // Validar formulário antes de submeter
+  if (!formRef.value.validateForm()) {
+    return
+  }
+
   try {
+    saving.value = true
     const userId = formRef.value.form.id
 
     const response = await formRef.value.form.put(`v1/users/${userId}`)
@@ -79,21 +91,22 @@ async function updateUser() {
   } catch (error) {
     Toast.fire({
       icon: 'error',
-      title: error.response.data.message
+      title: error.response?.data?.message || 'Erro ao atualizar usuário'
     })
+  } finally {
+    saving.value = false
   }
 }
 
-function fetchRoles() {
-  return axios
-    .get('v1/roles/list')
-    .then(({ data }) => {
-      roles.value = data.data
-    })
+function fetchTypeUsers() {
+  return axios.get('v1/type-users/list').then(({ data }) => {
+    const payload = data?.data ?? data ?? []
+    typeUsers.value = Array.isArray(payload) ? payload : []
+  })
 }
 
 onMounted(async () => {
-  await fetchRoles()
+  await fetchTypeUsers()
   await fetchUser()
 })
 </script>
