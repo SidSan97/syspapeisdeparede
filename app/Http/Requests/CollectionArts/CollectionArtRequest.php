@@ -23,6 +23,7 @@ class CollectionArtRequest extends FormRequest
                 'max:255',
                 Rule::unique('collection_arts', 'name')->ignore($artId),
             ],
+            'image_cover' => ['nullable', 'image', 'max:5120'], // 5MB max
         ];
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\CollectionImageResource;
 use App\Http\Resources\CollectionArtSubcategoryResource;
+use Illuminate\Support\Facades\Storage;
 
 class CollectionArtResource extends JsonResource
 {
@@ -32,6 +33,8 @@ class CollectionArtResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'image_cover' => $this->image_cover,
+            'image_cover_url' => $this->image_cover ? Storage::url($this->image_cover) : null,
             'images_count' => $totalImagesCount > 0 ? $totalImagesCount : ($this->whenCounted('images_count', $this->images_count ?? 0)),
             'subcategories' => CollectionArtSubcategoryResource::collection($this->whenLoaded('subcategories')),
             'images' => CollectionImageResource::collection($allImages->isEmpty() ? $this->whenLoaded('images') : $allImages),

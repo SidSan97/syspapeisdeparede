@@ -27,6 +27,7 @@ class CollectionArtSubcategoryRequest extends FormRequest
                     ->ignore($subcategoryId),
             ],
             'collection_art_id' => ['required', 'integer', 'exists:collection_arts,id'],
+            'sub_collection_image_cover' => ['nullable', 'image', 'max:5120'], // 5MB max
         ];
     }
 }

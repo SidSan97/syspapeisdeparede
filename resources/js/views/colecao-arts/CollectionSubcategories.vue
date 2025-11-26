@@ -227,40 +227,21 @@ const formData = ref({
 });
 const selectedFileName = ref('');
 
-const buildStorageUrl = (path) => {
-  if (!path) {
-    return DEFAULT_COVER;
-  }
-
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
-
-  const baseUrl = window.location.origin.replace(/\/$/, '');
-  return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
-};
-
 const goToFavorites = () => {
   router.push('/colecao-arts/favoritos');
 };
 
 const normalizeSubcategory = (item = {}) => {
-  let cover = DEFAULT_COVER;
-  if (item.images && Array.isArray(item.images) && item.images.length > 0) {
-    const firstImage = item.images[0];
-    cover = firstImage.url ?? buildStorageUrl(firstImage.path_name ?? firstImage.pathName ?? '');
-  }
-
   return {
     id: Number(item.id ?? 0),
     name: (item.name ?? '').toString(),
+    sub_collection_image_cover_url: item.sub_collection_image_cover_url || DEFAULT_COVER,
     images_count: Number(item.images_count ?? 0),
-    cover: cover,
   };
 };
 
 const getSubcategoryBackground = (subcategory) => {
-  const cover = subcategory.cover && subcategory.cover !== DEFAULT_COVER ? subcategory.cover : DEFAULT_COVER;
+  const cover = subcategory.sub_collection_image_cover_url || DEFAULT_COVER;
 
   return {
     backgroundImage: `url("${cover}")`,

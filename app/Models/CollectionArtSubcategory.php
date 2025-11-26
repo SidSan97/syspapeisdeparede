@@ -15,6 +15,7 @@ class CollectionArtSubcategory extends Model
 
     protected $fillable = [
         'name',
+        'sub_collection_image_cover',
         'collection_art_id',
     ];
 

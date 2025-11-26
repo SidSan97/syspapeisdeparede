@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Models\CollectionArtSubcategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class CollectionArtSubcategoryRepository
 {
@@ -38,14 +40,38 @@ class CollectionArtSubcategoryRepository
 
     public function create(array $attributes): CollectionArtSubcategory
     {
+        if (isset($attributes['sub_collection_image_cover']) && $attributes['sub_collection_image_cover'] instanceof UploadedFile) {
+            $attributes['sub_collection_image_cover'] = $this->storeImage($attributes['sub_collection_image_cover']);
+        }
+
         return CollectionArtSubcategory::create($attributes);
     }
 
     public function update(CollectionArtSubcategory $subcategory, array $attributes): CollectionArtSubcategory
     {
+        if (isset($attributes['sub_collection_image_cover']) && $attributes['sub_collection_image_cover'] instanceof UploadedFile) {
+            // Deletar imagem antiga se existir
+            if ($subcategory->sub_collection_image_cover) {
+                $this->deleteImage($subcategory->sub_collection_image_cover);
+            }
+            $attributes['sub_collection_image_cover'] = $this->storeImage($attributes['sub_collection_image_cover']);
+        }
+
         $subcategory->update($attributes);
 
         return $subcategory->refresh();
+    }
+
+    protected function storeImage(UploadedFile $file): string
+    {
+        return $file->store('collection-art-subcategories/covers', ['disk' => 'public']);
+    }
+
+    protected function deleteImage(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function delete(CollectionArtSubcategory $subcategory): bool

@@ -10,6 +10,7 @@ return new class extends Migration {
         Schema::create('collection_arts_subcategories', function (Blueprint $table) {
             $table->id();
             $table->string('name', 50);
+            $table->string('sub_collection_image_cover')->nullable();
             $table->foreignId('collection_art_id')
                 ->constrained('collection_arts')
                 ->cascadeOnDelete()

@@ -35,6 +35,36 @@
                   required
                 />
               </div>
+              <div class="col-md-6 col-lg-4">
+                <label for="collectionImageCover" class="form-label">Imagem de capa</label>
+                <input
+                  id="collectionImageCover"
+                  ref="collectionImageCoverInput"
+                  type="file"
+                  class="form-control"
+                  accept="image/*"
+                  @change="handleCollectionImageChange"
+                />
+                <small class="text-muted d-block mt-1">Formatos aceitos: JPG, PNG, GIF (máx. 5MB)</small>
+              </div>
+              <div v-if="form.imagePreview || currentCollectionImageUrl" class="col-12">
+                <label class="form-label">Preview da imagem de capa</label>
+                <div class="image-preview-wrapper">
+                  <img
+                    :src="form.imagePreview || currentCollectionImageUrl"
+                    alt="Preview da imagem de capa"
+                    class="image-preview"
+                  />
+                  <button
+                    v-if="form.imagePreview || currentCollectionImageUrl"
+                    type="button"
+                    class="btn btn-sm btn-danger image-preview-remove"
+                    @click="removeCollectionImage"
+                  >
+                    <i class="fa fa-times"></i> Remover
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="mt-4 d-flex flex-wrap gap-3 align-items-center justify-content-end justify-content-md-start">
@@ -77,6 +107,36 @@
                   maxlength="50"
                   required
                 />
+              </div>
+              <div class="col-md-6 col-lg-4">
+                <label for="subcategoryImageCover" class="form-label">Imagem de capa</label>
+                <input
+                  id="subcategoryImageCover"
+                  ref="subcategoryImageCoverInput"
+                  type="file"
+                  class="form-control"
+                  accept="image/*"
+                  @change="handleSubcategoryImageChange"
+                />
+                <small class="text-muted d-block mt-1">Formatos aceitos: JPG, PNG, GIF (máx. 5MB)</small>
+              </div>
+              <div v-if="subcategoryForm.imagePreview || currentSubcategoryImageUrl" class="col-12">
+                <label class="form-label">Preview da imagem de capa</label>
+                <div class="image-preview-wrapper">
+                  <img
+                    :src="subcategoryForm.imagePreview || currentSubcategoryImageUrl"
+                    alt="Preview da imagem de capa"
+                    class="image-preview"
+                  />
+                  <button
+                    v-if="subcategoryForm.imagePreview || currentSubcategoryImageUrl"
+                    type="button"
+                    class="btn btn-sm btn-danger image-preview-remove"
+                    @click="removeSubcategoryImage"
+                  >
+                    <i class="fa fa-times"></i> Remover
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -217,6 +277,8 @@ const isEditing = ref(false);
 const isSaving = ref(false);
 const deletingId = ref(null);
 const editingId = ref(null);
+const collectionImageCoverInput = ref(null);
+const currentCollectionImageUrl = ref(null);
 
 // Subcategorias
 const collectionSubcategories = reactive({});
@@ -228,14 +290,20 @@ const isSavingSubcategory = ref(false);
 const deletingSubcategoryId = ref(null);
 const editingSubcategoryId = ref(null);
 const subcategoryFormCollectionId = ref(null);
+const subcategoryImageCoverInput = ref(null);
+const currentSubcategoryImageUrl = ref(null);
 
 const initialState = () => ({
   name: '',
+  imageFile: null,
+  imagePreview: null,
 });
 
 const subcategoryInitialState = () => ({
   name: '',
   collection_art_id: null,
+  imageFile: null,
+  imagePreview: null,
 });
 
 const form = reactive(initialState());
@@ -250,9 +318,28 @@ const selectedCollectionForSubcategory = computed(() => {
   return collections.value.find((c) => c.id === subcategoryFormCollectionId.value) ?? null;
 });
 
+const buildStorageUrl = (path) => {
+  if (!path) return '';
+  const baseUrl = window.location.origin.replace(/\/$/, '');
+  return `${baseUrl}/storage/${path.replace(/^\//, '')}`;
+};
+
+const resolveImageUrl = (url, path) => {
+  if (url && /^https?:\/\//i.test(url)) {
+    return url;
+  }
+  if (url && url.startsWith('/')) {
+    const baseUrl = window.location.origin.replace(/\/$/, '');
+    return `${baseUrl}${url}`;
+  }
+  return buildStorageUrl(url || path || '');
+};
+
 const normalizeCollection = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
+  image_cover: item.image_cover ?? null,
+  image_cover_url: item.image_cover_url || (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
   subcategories: item.subcategories ?? [],
 });
 
@@ -260,6 +347,8 @@ const normalizeSubcategory = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
   collection_art_id: Number(item.collection_art_id ?? 0),
+  sub_collection_image_cover: item.sub_collection_image_cover ?? null,
+  sub_collection_image_cover_url: item.sub_collection_image_cover_url || (item.sub_collection_image_cover ? resolveImageUrl(null, item.sub_collection_image_cover) : null),
   images_count: Number(item.images_count ?? 0),
 });
 
@@ -296,6 +385,12 @@ const fetchCollections = async () => {
 const startCreating = () => {
   editingId.value = null;
   form.name = '';
+  form.imageFile = null;
+  form.imagePreview = null;
+  currentCollectionImageUrl.value = null;
+  if (collectionImageCoverInput.value) {
+    collectionImageCoverInput.value.value = '';
+  }
   isEditing.value = false;
   isFormVisible.value = true;
 };
@@ -309,12 +404,70 @@ const editCollection = (collection) => {
   isEditing.value = true;
   editingId.value = collection.id;
   form.name = collection.name;
+  form.imageFile = null;
+  form.imagePreview = null;
+  currentCollectionImageUrl.value = collection.image_cover_url || null;
+  if (collectionImageCoverInput.value) {
+    collectionImageCoverInput.value.value = '';
+  }
 };
 
 const cancelForm = () => {
   form.name = '';
+  form.imageFile = null;
+  form.imagePreview = null;
+  currentCollectionImageUrl.value = null;
+  if (collectionImageCoverInput.value) {
+    collectionImageCoverInput.value.value = '';
+  }
   editingId.value = null;
   isFormVisible.value = false;
+};
+
+const handleCollectionImageChange = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) {
+    form.imageFile = null;
+    form.imagePreview = null;
+    return;
+  }
+
+  // Validar tamanho (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    swalError('A imagem não pode ser maior que 5MB.');
+    event.target.value = '';
+    form.imageFile = null;
+    form.imagePreview = null;
+    return;
+  }
+
+  // Validar tipo
+  if (!file.type.startsWith('image/')) {
+    swalError('Por favor, selecione um arquivo de imagem válido.');
+    event.target.value = '';
+    form.imageFile = null;
+    form.imagePreview = null;
+    return;
+  }
+
+  form.imageFile = file;
+  currentCollectionImageUrl.value = null;
+
+  // Criar preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    form.imagePreview = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const removeCollectionImage = () => {
+  form.imageFile = null;
+  form.imagePreview = null;
+  currentCollectionImageUrl.value = null;
+  if (collectionImageCoverInput.value) {
+    collectionImageCoverInput.value.value = '';
+  }
 };
 
 const handleSubmit = async () => {
@@ -331,14 +484,26 @@ const handleSubmit = async () => {
   isSaving.value = true;
 
   try {
+    const formData = new FormData();
+    formData.append('name', trimmedName);
+    
+    if (form.imageFile) {
+      formData.append('image_cover', form.imageFile);
+    }
+
     let response;
     if (isEditing.value && editingId.value !== null) {
-      response = await axios.put(`v1/collection-arts/${editingId.value}`, {
-        name: trimmedName,
+      formData.append('_method', 'PUT');
+      response = await axios.post(`v1/collection-arts/${editingId.value}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
     } else {
-      response = await axios.post('v1/collection-arts', {
-        name: trimmedName,
+      response = await axios.post('v1/collection-arts', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
 
@@ -453,6 +618,12 @@ const startCreatingSubcategory = (collection) => {
   editingSubcategoryId.value = null;
   subcategoryForm.name = '';
   subcategoryForm.collection_art_id = collection.id;
+  subcategoryForm.imageFile = null;
+  subcategoryForm.imagePreview = null;
+  currentSubcategoryImageUrl.value = null;
+  if (subcategoryImageCoverInput.value) {
+    subcategoryImageCoverInput.value.value = '';
+  }
   subcategoryFormCollectionId.value = collection.id;
   isEditingSubcategory.value = false;
   isSubcategoryFormVisible.value = true;
@@ -468,15 +639,73 @@ const editSubcategory = (subcategory) => {
   editingSubcategoryId.value = subcategory.id;
   subcategoryForm.name = subcategory.name;
   subcategoryForm.collection_art_id = subcategory.collection_art_id;
+  subcategoryForm.imageFile = null;
+  subcategoryForm.imagePreview = null;
+  currentSubcategoryImageUrl.value = subcategory.sub_collection_image_cover_url || null;
+  if (subcategoryImageCoverInput.value) {
+    subcategoryImageCoverInput.value.value = '';
+  }
   subcategoryFormCollectionId.value = subcategory.collection_art_id;
 };
 
 const cancelSubcategoryForm = () => {
   subcategoryForm.name = '';
   subcategoryForm.collection_art_id = null;
+  subcategoryForm.imageFile = null;
+  subcategoryForm.imagePreview = null;
+  currentSubcategoryImageUrl.value = null;
+  if (subcategoryImageCoverInput.value) {
+    subcategoryImageCoverInput.value.value = '';
+  }
   editingSubcategoryId.value = null;
   subcategoryFormCollectionId.value = null;
   isSubcategoryFormVisible.value = false;
+};
+
+const handleSubcategoryImageChange = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) {
+    subcategoryForm.imageFile = null;
+    subcategoryForm.imagePreview = null;
+    return;
+  }
+
+  // Validar tamanho (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    swalError('A imagem não pode ser maior que 5MB.');
+    event.target.value = '';
+    subcategoryForm.imageFile = null;
+    subcategoryForm.imagePreview = null;
+    return;
+  }
+
+  // Validar tipo
+  if (!file.type.startsWith('image/')) {
+    swalError('Por favor, selecione um arquivo de imagem válido.');
+    event.target.value = '';
+    subcategoryForm.imageFile = null;
+    subcategoryForm.imagePreview = null;
+    return;
+  }
+
+  subcategoryForm.imageFile = file;
+  currentSubcategoryImageUrl.value = null;
+
+  // Criar preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    subcategoryForm.imagePreview = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const removeSubcategoryImage = () => {
+  subcategoryForm.imageFile = null;
+  subcategoryForm.imagePreview = null;
+  currentSubcategoryImageUrl.value = null;
+  if (subcategoryImageCoverInput.value) {
+    subcategoryImageCoverInput.value.value = '';
+  }
 };
 
 const handleSubcategorySubmit = async () => {
@@ -498,16 +727,27 @@ const handleSubcategorySubmit = async () => {
   isSavingSubcategory.value = true;
 
   try {
+    const formData = new FormData();
+    formData.append('name', trimmedName);
+    formData.append('collection_art_id', subcategoryForm.collection_art_id);
+    
+    if (subcategoryForm.imageFile) {
+      formData.append('sub_collection_image_cover', subcategoryForm.imageFile);
+    }
+
     let response;
     if (isEditingSubcategory.value && editingSubcategoryId.value !== null) {
-      response = await axios.put(`v1/collection-art-subcategories/${editingSubcategoryId.value}`, {
-        name: trimmedName,
-        collection_art_id: subcategoryForm.collection_art_id,
+      formData.append('_method', 'PUT');
+      response = await axios.post(`v1/collection-art-subcategories/${editingSubcategoryId.value}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
     } else {
-      response = await axios.post('v1/collection-art-subcategories', {
-        name: trimmedName,
-        collection_art_id: subcategoryForm.collection_art_id,
+      response = await axios.post('v1/collection-art-subcategories', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
 
@@ -647,6 +887,30 @@ onMounted(() => {
 
 .collection-name-clickable:hover {
   color: var(--bs-primary);
+}
+
+.image-preview-wrapper {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.5rem;
+}
+
+.image-preview {
+  max-width: 300px;
+  max-height: 300px;
+  width: auto;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--bs-border-color);
+  object-fit: contain;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
 }
 
 @media (max-width: 575.98px) {

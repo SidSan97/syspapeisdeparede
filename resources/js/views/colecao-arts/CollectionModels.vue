@@ -230,60 +230,22 @@ const selectedFileName = ref('');
 
 const normalizeCollection = (item = {}) => {
   let totalImages = 0;
-  let coverImage = DEFAULT_COVER;
 
   if (item.subcategories && Array.isArray(item.subcategories) && item.subcategories.length > 0) {
     // Calcular total de imagens
     totalImages = item.subcategories.reduce((sum, sub) => sum + Number(sub.images_count ?? 0), 0);
-
-    // Buscar a primeira imagem da primeira subcategoria que tenha imagens
-    for (const subcategory of item.subcategories) {
-      if (subcategory.images && Array.isArray(subcategory.images) && subcategory.images.length > 0) {
-        const firstImage = subcategory.images[0];
-        // A API já retorna a URL completa
-        if (firstImage.url) {
-          coverImage = firstImage.url;
-        } else if (firstImage.path_name || firstImage.pathName) {
-          coverImage = buildStorageUrl(firstImage.path_name ?? firstImage.pathName);
-        }
-        break;
-      }
-    }
-  }
-
-  // Se não encontrou imagem nas subcategorias, tenta pegar das imagens diretas da coleção
-  if (coverImage === DEFAULT_COVER && item.images && Array.isArray(item.images) && item.images.length > 0) {
-    const firstImage = item.images[0];
-    if (firstImage.url) {
-      coverImage = firstImage.url;
-    } else if (firstImage.path_name || firstImage.pathName) {
-      coverImage = buildStorageUrl(firstImage.path_name ?? firstImage.pathName);
-    }
   }
 
   return {
     id: Number(item.id ?? 0),
     name: (item.name ?? '').toString(),
+    image_cover_url: item.image_cover_url || DEFAULT_COVER,
     images_count: totalImages || Number(item.images_count ?? item.imagesCount ?? 0),
-    cover: coverImage,
   };
 };
 
-const buildStorageUrl = (path) => {
-  if (!path) {
-    return DEFAULT_COVER;
-  }
-
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
-
-  const baseUrl = window.location.origin.replace(/\/$/, '');
-  return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
-};
-
 const getCollectionBackground = (collection) => {
-  const cover = collection.cover && collection.cover !== DEFAULT_COVER ? collection.cover : DEFAULT_COVER;
+  const cover = collection.image_cover_url || DEFAULT_COVER;
 
   return {
     backgroundImage: `url("${cover}")`,
@@ -302,24 +264,6 @@ const fetchCollections = async () => {
 
     // Normalizar as coleções
     collections.value = Array.isArray(items) ? items.map(normalizeCollection) : [];
-
-    // Buscar imagens para coleções que não têm cover
-    const fetchPromises = collections.value.map(async (collection, index) => {
-      if (collection.cover === DEFAULT_COVER) {
-        try {
-          const { data: detailData } = await axios.get(`v1/collection-arts/${collection.id}`);
-          const detailPayload = detailData?.data ?? detailData ?? {};
-          const normalized = normalizeCollection(detailPayload);
-          if (normalized.cover !== DEFAULT_COVER) {
-            collections.value[index].cover = normalized.cover;
-          }
-        } catch (error) {
-          // Ignora erro e mantém DEFAULT_COVER
-        }
-      }
-    });
-
-    await Promise.all(fetchPromises);
   } catch (error) {
     collections.value = [];
     swalError('Não foi possível carregar as coleções. Atualize a página e tente novamente.');
