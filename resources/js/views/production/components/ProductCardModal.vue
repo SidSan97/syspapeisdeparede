@@ -275,7 +275,7 @@
                         <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.total_area) }} m</div>
                       </div>
                       <div v-if="card.wall.strip_height" class="layout-modal-wall-info-item">
-                        <div class="layout-modal-wall-info-label">Altura da Faixa</div>
+                        <div class="layout-modal-wall-info-label">Tamanho da Faixa</div>
                         <div class="layout-modal-wall-info-value">{{ formatNumber(card.wall.strip_height) }} m</div>
                       </div>
                       <div v-if="card.wall.strip_count" class="layout-modal-wall-info-item">

@@ -163,8 +163,6 @@
     $formattedDeliveryTime = $budget->delivery_time
         ? $budget->delivery_time . ' ' . ($budget->delivery_time === 1 ? 'dia' : 'dias')
         : 'Não informado';
-    $status = $budget->status ?? 'Em aberto';
-    $statusClass = strtolower($status) === 'cancelado' ? 'cancelled' : '';
 @endphp
 <body>
     <header class="header">
@@ -192,22 +190,8 @@
                 <div>{{ $budget->name ?? 'Não informado' }}</div>
             </div>
             <div>
-                <div class="label">Status</div>
-                <div class="status-badge {{ $statusClass }}">{{ ucfirst($status) }}</div>
-            </div>
-            <div>
                 <div class="label">Prazo estimado</div>
                 <div>{{ $formattedDeliveryTime }}</div>
-            </div>
-        </div>
-    </section>
-
-    <section class="card">
-        <h3>Detalhes financeiros</h3>
-        <div class="totals" style="margin-top: 16px;">
-            <div class="total-item highlight">
-                <div class="label">Valor Total</div>
-                <div class="value">{{ $financial['total_formatted'] }}</div>
             </div>
         </div>
     </section>
@@ -255,7 +239,23 @@
         </table>
     </section>
 
-    <section>
+    <section class="card" style="margin-top: 36px;">
+        <h3>Detalhes financeiros</h3>
+        <div class="totals" style="margin-top: 16px;">
+            <div class="total-item highlight">
+                <div class="label">Valor à Vista</div>
+                <div class="value">{{ $financial['cash_total_formatted'] }}</div>
+            </div>
+            @if($financial['installment_total_formatted'] !== null)
+                <div class="total-item" style="margin-top: 12px;">
+                    <div class="label">Valor a Prazo</div>
+                    <div class="value">{{ $financial['installment_total_formatted'] }}</div>
+                </div>
+            @endif
+        </div>
+    </section>
+
+    <section style="margin-top: 36px;">
         <h3>Observações</h3>
         <p class="notes">
             Este orçamento é válido por 30 dias a partir da data de emissão, salvo ajustes negociados entre as partes.

@@ -204,14 +204,17 @@
               </div>
               <div class="modal-body">
                 <div v-if="selectedBudgetSummary" class="mb-4">
-                  <div class="border rounded p-3 bg-light">
+                  <div class="border rounded p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <span class="text-muted small">Orçamento</span>
-                      <span class="badge bg-secondary">#{{ selectedBudgetSummary.id }}</span>
+                      <span class="badge bg-primary text-light">#{{ selectedBudgetSummary.id }}</span>
                     </div>
                     <div class="fw-semibold">{{ selectedBudgetSummary.name }}</div>
                     <div class="text-muted small mt-2">
-                      Valor original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotal }}</span>
+                      Valor à vista original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotal }}</span>
+                    </div>
+                    <div v-if="selectedBudgetSummary.totalInstallments > 0" class="text-muted small">
+                      Valor a prazo original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotalInstallments }}</span>
                     </div>
                     <div class="text-muted small">
                       Prazo de entrega: {{ selectedBudgetSummary.deliveryTime }}
@@ -222,10 +225,41 @@
                   </div>
                 </div>
                 <p class="mb-3">
-                  Informe o percentual de acréscimo que deseja aplicar ao valor total antes de gerar o PDF.
+                  Edite os valores que serão exibidos no PDF ou informe um percentual de acréscimo para aplicar automaticamente.
                 </p>
+                <div class="row mb-3">
+                  <div class="col-12 col-md-6 mb-3">
+                    <label for="pdfCashValue" class="form-label">Valor à vista (R$)</label>
+                    <input
+                      id="pdfCashValue"
+                      v-model="pdfCashValue"
+                      type="number"
+                      class="form-control"
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      :disabled="generatingPdf"
+                      @input="updateCashValueFromInput"
+                    >
+                  </div>
+                  <div class="col-12 col-md-6 mb-3">
+                    <label for="pdfInstallmentValue" class="form-label">Valor a prazo (R$)</label>
+                    <input
+                      id="pdfInstallmentValue"
+                      v-model="pdfInstallmentValue"
+                      type="number"
+                      class="form-control"
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      :disabled="generatingPdf || !hasInstallmentValue"
+                      @input="updateInstallmentValueFromInput"
+                    >
+                    <small v-if="!hasInstallmentValue" class="text-muted">Não há valor a prazo para este orçamento</small>
+                  </div>
+                </div>
                 <div class="mb-3">
-                  <label for="pdfIncrease" class="form-label">Acréscimo (%)</label>
+                  <label for="pdfIncrease" class="form-label">Ou aplicar acréscimo (%)</label>
                   <input
                     id="pdfIncrease"
                     v-model="pdfPercentage"
@@ -235,20 +269,21 @@
                     step="0.01"
                     placeholder="0"
                     :disabled="generatingPdf"
+                    @input="applyPercentageToValues"
                   >
                 </div>
                 <div v-if="selectedBudgetSummary" class="border rounded p-3 bg-body-secondary">
-                  <div class="d-flex justify-content-between text-muted small">
-                    <span>Acréscimo ({{ pdfPercentageDisplay }}%)</span>
-                    <span>{{ pdfTotals.incrementFormatted }}</span>
-                  </div>
-                  <div class="d-flex justify-content-between fw-semibold mt-2">
-                    <span>Valor atualizado</span>
+                  <div class="d-flex justify-content-between fw-semibold mb-2 pb-2 border-bottom">
+                    <span>Valor à vista para o PDF</span>
                     <span>{{ pdfTotals.totalFormatted }}</span>
+                  </div>
+                  <div v-if="pdfTotals.totalInstallments > 0" class="d-flex justify-content-between fw-semibold mt-2">
+                    <span>Valor a prazo para o PDF</span>
+                    <span>{{ pdfTotals.totalInstallmentsFormatted }}</span>
                   </div>
                 </div>
                 <p class="text-muted small mb-0 mt-3">
-                  O valor final apresentado no PDF será atualizado com o acréscimo informado.
+                  Os valores informados serão exibidos no PDF do orçamento.
                 </p>
                 <p v-if="pdfError" class="text-danger small mt-3 mb-0">
                   {{ pdfError }}
@@ -299,6 +334,8 @@ const budgetToView = ref(null);
 const showPdfModal = ref(false);
 const budgetToGeneratePdf = ref(null);
 const pdfPercentage = ref(0);
+const pdfCashValue = ref(null);
+const pdfInstallmentValue = ref(null);
 const generatingPdf = ref(false);
 const pdfError = ref('');
 const showOrderModal = ref(false);
@@ -346,6 +383,7 @@ function normalizeBudget(budget) {
       id: null,
       name: '',
       total_amount: 0,
+      total_amount_installments: 0,
       delivery_time: null,
       status: null,
       rooms: [],
@@ -361,6 +399,7 @@ function normalizeBudget(budget) {
   }
 
   const totalAmount = budget.total_amount ?? budget.totalAmount ?? 0;
+  const totalAmountInstallments = budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0;
   const deliveryTime = budget.delivery_time ?? budget.deliveryTime ?? null;
   const status = budget.status ?? budget.Status ?? null;
   const commentRef = budget.comment_referring_model ?? budget.commentReferringModel ?? '';
@@ -377,6 +416,7 @@ function normalizeBudget(budget) {
     ...budget,
     name: budget.name ?? '',
     total_amount: totalAmount,
+    total_amount_installments: totalAmountInstallments,
     delivery_time: deliveryTime,
     status,
     rooms,
@@ -573,6 +613,13 @@ function openGeneratePdfModal(budget) {
   budgetToGeneratePdf.value = budget;
   pdfPercentage.value = 0;
   pdfError.value = '';
+  
+  // Inicializar valores editáveis com os valores originais
+  const rawTotal = Number(budget.total_amount ?? budget.totalAmount ?? 0);
+  const rawTotalInstallments = Number(budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0);
+  pdfCashValue.value = Number.isFinite(rawTotal) && rawTotal > 0 ? rawTotal : null;
+  pdfInstallmentValue.value = Number.isFinite(rawTotalInstallments) && rawTotalInstallments > 0 ? rawTotalInstallments : null;
+  
   showPdfModal.value = true;
 }
 
@@ -584,6 +631,8 @@ function closeGeneratePdfModal() {
   showPdfModal.value = false;
   budgetToGeneratePdf.value = null;
   pdfPercentage.value = 0;
+  pdfCashValue.value = null;
+  pdfInstallmentValue.value = null;
   pdfError.value = '';
 }
 
@@ -605,12 +654,17 @@ const selectedBudgetSummary = computed(() => {
 
   const rawTotal = Number(budget.total_amount ?? budget.totalAmount ?? 0);
   const total = Number.isFinite(rawTotal) ? rawTotal : 0;
+  
+  const rawTotalInstallments = Number(budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0);
+  const totalInstallments = Number.isFinite(rawTotalInstallments) ? rawTotalInstallments : 0;
 
   return {
     id: budget.id,
     name: budget.name ?? 'Não informado',
     total,
     formattedTotal: formatCurrency(total),
+    totalInstallments,
+    formattedTotalInstallments: formatCurrency(totalInstallments),
     deliveryTime: formatDeliveryTime(budget.delivery_time),
     status: budget.status ?? null,
   };
@@ -635,6 +689,10 @@ const pdfPercentageDisplay = computed(() => {
   });
 });
 
+const hasInstallmentValue = computed(() => {
+  return selectedBudgetSummary.value && selectedBudgetSummary.value.totalInstallments > 0;
+});
+
 const pdfTotals = computed(() => {
   if (!selectedBudgetSummary.value) {
     return {
@@ -642,30 +700,87 @@ const pdfTotals = computed(() => {
       incrementFormatted: formatCurrency(0),
       total: 0,
       totalFormatted: formatCurrency(0),
+      totalInstallments: 0,
+      totalInstallmentsFormatted: formatCurrency(0),
+      incrementInstallments: 0,
+      incrementInstallmentsFormatted: formatCurrency(0),
     };
   }
 
-  const baseTotal = selectedBudgetSummary.value.total;
-  const increment = Number((baseTotal * (parsedPdfPercentageValue.value / 100)).toFixed(2));
-  const updatedTotal = Number((baseTotal + increment).toFixed(2));
+  // Se há valores editados manualmente, usar eles
+  let updatedTotal = 0;
+  let updatedTotalInstallments = 0;
+  
+  if (pdfCashValue.value !== null && Number.isFinite(Number(pdfCashValue.value))) {
+    updatedTotal = Number(Number(pdfCashValue.value).toFixed(2));
+  } else {
+    // Caso contrário, calcular com porcentagem
+    const baseTotal = selectedBudgetSummary.value.total;
+    const increment = Number((baseTotal * (parsedPdfPercentageValue.value / 100)).toFixed(2));
+    updatedTotal = Number((baseTotal + increment).toFixed(2));
+  }
+
+  if (pdfInstallmentValue.value !== null && Number.isFinite(Number(pdfInstallmentValue.value))) {
+    updatedTotalInstallments = Number(Number(pdfInstallmentValue.value).toFixed(2));
+  } else if (hasInstallmentValue.value) {
+    // Caso contrário, calcular com porcentagem
+    const baseTotalInstallments = selectedBudgetSummary.value.totalInstallments;
+    const incrementInstallments = Number((baseTotalInstallments * (parsedPdfPercentageValue.value / 100)).toFixed(2));
+    updatedTotalInstallments = Number((baseTotalInstallments + incrementInstallments).toFixed(2));
+  }
 
   return {
-    increment,
-    incrementFormatted: formatCurrency(increment),
     total: updatedTotal,
     totalFormatted: formatCurrency(updatedTotal),
+    totalInstallments: updatedTotalInstallments,
+    totalInstallmentsFormatted: formatCurrency(updatedTotalInstallments),
   };
 });
+
+function updateCashValueFromInput() {
+  // Limpar porcentagem quando editar valor diretamente
+  pdfPercentage.value = 0;
+}
+
+function updateInstallmentValueFromInput() {
+  // Limpar porcentagem quando editar valor diretamente
+  pdfPercentage.value = 0;
+}
+
+function applyPercentageToValues() {
+  if (!selectedBudgetSummary.value) return;
+  
+  const parsed = parsePercentage(pdfPercentage.value);
+  if (!Number.isFinite(parsed) || parsed < 0) return;
+  
+  // Aplicar porcentagem aos valores originais
+  const baseTotal = selectedBudgetSummary.value.total;
+  const increment = Number((baseTotal * (parsed / 100)).toFixed(2));
+  pdfCashValue.value = Number((baseTotal + increment).toFixed(2));
+  
+  if (hasInstallmentValue.value) {
+    const baseTotalInstallments = selectedBudgetSummary.value.totalInstallments;
+    const incrementInstallments = Number((baseTotalInstallments * (parsed / 100)).toFixed(2));
+    pdfInstallmentValue.value = Number((baseTotalInstallments + incrementInstallments).toFixed(2));
+  }
+}
 
 async function confirmGeneratePdf() {
   if (!budgetToGeneratePdf.value?.id) {
     return;
   }
 
-  const parsed = parsePercentage(pdfPercentage.value);
+  // Validar valores
+  const cashValue = pdfCashValue.value !== null && Number.isFinite(Number(pdfCashValue.value))
+    ? Number(Number(pdfCashValue.value).toFixed(2))
+    : null;
+  
+  const installmentValue = pdfInstallmentValue.value !== null && Number.isFinite(Number(pdfInstallmentValue.value))
+    ? Number(Number(pdfInstallmentValue.value).toFixed(2))
+    : null;
 
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    pdfError.value = 'Informe uma porcentagem válida.';
+  if (cashValue === null || cashValue < 0) {
+    pdfError.value = 'Informe um valor à vista válido.';
     return;
   }
 
@@ -673,10 +788,17 @@ async function confirmGeneratePdf() {
   pdfError.value = '';
 
   try {
-    const response = await axios.post('v1/budgets/generate-pdf', {
+    const payload = {
       id: budgetToGeneratePdf.value.id,
-      percentage: parsed,
-    }, {
+      cash_value: cashValue,
+    };
+
+    // Incluir valor a prazo apenas se for fornecido e válido
+    if (installmentValue !== null && installmentValue >= 0) {
+      payload.installment_value = installmentValue;
+    }
+
+    const response = await axios.post('v1/budgets/generate-pdf', payload, {
       responseType: 'blob',
     });
 

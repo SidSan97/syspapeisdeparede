@@ -355,12 +355,19 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'id' => ['required', 'integer', 'exists:budgets,id'],
             'percentage' => ['nullable', 'numeric', 'min:0'],
+            'cash_value' => ['nullable', 'numeric', 'min:0'],
+            'installment_value' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         try {
             $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($validated['id']);
 
-            return $this->generatePdfService->generateBudgetPdf($budget, $validated['percentage'] ?? null);
+            return $this->generatePdfService->generateBudgetPdf(
+                $budget,
+                $validated['percentage'] ?? null,
+                $validated['cash_value'] ?? null,
+                $validated['installment_value'] ?? null
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
