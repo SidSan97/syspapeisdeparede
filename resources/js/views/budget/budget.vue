@@ -490,8 +490,9 @@ function normalizeBudget(budget) {
 }
 
 const statusOptions = [
-  { label: 'Em aberto', value: 'em aberto' },
   { label: 'Aprovado', value: 'aprovado' },
+  { label: 'Aprovar Layout', value: 'aprovar layout' },
+  { label: 'Pendente de Revisão', value: 'pendente de revisão' },
   { label: 'Cancelado', value: 'cancelado' },
 ];
 
