@@ -38,17 +38,22 @@ router.beforeEach(async (to, from, next) => {
 
     const userTypeId = auth.user.user_type_id;
 
+    // Usuários do tipo 2 (admin) têm acesso total ao sistema
+    if (userTypeId === 2) {
+        // Permitir acesso a todas as rotas
+        next();
+        return;
+    }
+
     // Verificar acesso às rotas de configurações (apenas user_type_id === 2)
     const settingsRoutes = ['/settings', '/modelos'];
     const isSettingsRoute = settingsRoutes.some(route => to.path.startsWith(route));
     const isCatalogRoute = to.path === '/colecao-arts/catalogo';
 
     if (isSettingsRoute || isCatalogRoute) {
-        if (userTypeId !== 2) {
-            // Redirecionar para dashboard se não for admin
-            next({ path: '/dashboard' });
-            return;
-        }
+        // Redirecionar para dashboard se não for admin
+        next({ path: '/dashboard' });
+        return;
     }
 
     // Verificar acesso para tenants (user_type_id === 3)
@@ -85,6 +90,49 @@ router.beforeEach(async (to, from, next) => {
                 isAllowed = true;
             }
         } else if (to.path === '/pedidos') {
+            isAllowed = true;
+        }
+
+        if (!isAllowed) {
+            // Redirecionar para dashboard se tentar acessar rota não permitida
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
+    // Verificar acesso para usuários de produção (user_type_id === 4)
+    const productionRoutes = ['/layouts', '/products', '/pedidos-producao'];
+    const isProductionRoute = productionRoutes.some(route => to.path.startsWith(route));
+
+    if (isProductionRoute) {
+        if (userTypeId !== 4) {
+            // Redirecionar para dashboard se não for usuário de produção
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
+    // Se for usuário de produção, só pode acessar rotas de produção e perfil
+    if (userTypeId === 4) {
+        const allowedRoutes = [
+            '/dashboard',
+            '/profile',
+            '/layouts',
+            '/products',
+            '/pedidos-producao',
+        ];
+
+        let isAllowed = false;
+
+        if (to.path === '/dashboard' || to.path === '/') {
+            isAllowed = true;
+        } else if (to.path === '/profile') {
+            isAllowed = true;
+        } else if (to.path.startsWith('/layouts')) {
+            isAllowed = true;
+        } else if (to.path.startsWith('/products')) {
+            isAllowed = true;
+        } else if (to.path.startsWith('/pedidos-producao')) {
             isAllowed = true;
         }
 

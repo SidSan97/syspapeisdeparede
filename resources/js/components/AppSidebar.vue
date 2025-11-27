@@ -54,10 +54,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isTenant" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
 
       <!-- Grupo 3: Layouts -->
-      <div v-if="!isTenant" class="bd-sidebar-group">
+      <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/layouts"
           class="bd-sidebar-item"
@@ -68,10 +68,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isTenant" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
 
       <!-- Grupo 4: Produção -->
-      <div v-if="!isTenant" class="bd-sidebar-group">
+      <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/products"
           class="bd-sidebar-item"
@@ -90,10 +90,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isTenant" class="bd-sidebar-divider">
+      <hr v-if="!isTenant && !isProductionUser" class="bd-sidebar-divider">
 
       <!-- Grupo 5: Expedição -->
-      <div v-if="!isTenant" class="bd-sidebar-group">
+      <div v-if="!isTenant && !isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/expedicao"
           class="bd-sidebar-item"
@@ -148,6 +148,7 @@ const route = useRoute();
 
 const isAdmin = computed(() => auth.user?.user_type_id === 2);
 const isTenant = computed(() => auth.user?.user_type_id === 3);
+const isProductionUser = computed(() => auth.user?.user_type_id === 4);
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
