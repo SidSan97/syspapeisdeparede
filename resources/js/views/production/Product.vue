@@ -104,6 +104,10 @@
                       </div>
                       <div v-if="card.production_date" class="production-card-production-date">
                         Data da produção: {{ formatProductionDate(card.production_date) }}
+                        <div v-if="getProductionTimerTextForCard(card)" class="production-card-timer" :class="getProductionTimerClassForCard(card)">
+                          <i class="fa fa-hourglass-half"></i>
+                          <span>{{ getProductionTimerTextForCard(card) }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -163,7 +167,7 @@
   import axios from 'axios';
   import Page from '../../components/page/Page.vue';
   import ProductCardModal from './components/ProductCardModal.vue';
-  import { getCardDisplayName } from '@/utils/cardUtils';
+  import { getCardDisplayName, getProductionTimerText, getProductionTimerClass } from '@/utils/cardUtils';
 
   const cards = ref([]);
   const columns = ref([]);
@@ -180,6 +184,7 @@
   const newColumnName = ref('');
   const creatingColumn = ref(false);
   const newColumnInputRef = ref(null);
+  const currentTime = ref(new Date());
 
   function getCardsByColumn(columnId) {
     return cards.value.filter(card => card.column === columnId);
@@ -281,6 +286,14 @@
     } catch (error) {
       return dateString;
     }
+  }
+
+  function getProductionTimerTextForCard(card) {
+    return getProductionTimerText(card, currentTime.value);
+  }
+
+  function getProductionTimerClassForCard(card) {
+    return getProductionTimerClass(card, currentTime.value, 'production-card-timer');
   }
 
   async function fetchColumns() {
@@ -507,15 +520,25 @@
     }
   }
 
+  let timerInterval = null;
+
   onMounted(async () => {
     await fetchColumns();
     await fetchLayouts();
     document.title = 'Produção';
     document.addEventListener('click', handleClickOutside);
+
+    // Atualizar o timer a cada minuto
+    timerInterval = setInterval(() => {
+      currentTime.value = new Date();
+    }, 60000); // Atualizar a cada 60 segundos
   });
 
   onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
   });
   </script>
 
@@ -770,6 +793,9 @@
     margin-top: 0.25rem;
     padding-top: 0.25rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .production-card-footer-text {
@@ -817,6 +843,51 @@
 
     span {
       font-weight: 500;
+    }
+  }
+
+  .production-card-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+
+    i {
+      font-size: 0.6875rem;
+    }
+
+    span {
+      font-weight: 500;
+    }
+
+    &.production-card-timer-normal {
+      color: rgba(255, 255, 255, 0.7);
+      background-color: rgba(255, 255, 255, 0.1);
+
+      i {
+        color: rgba(255, 255, 255, 0.7);
+      }
+    }
+
+    &.production-card-timer-urgent {
+      color: #ffc107;
+      background-color: rgba(255, 193, 7, 0.2);
+
+      i {
+        color: #ffc107;
+      }
+    }
+
+    &.production-card-timer-overdue {
+      color: #dc3545;
+      background-color: rgba(220, 53, 69, 0.2);
+
+      i {
+        color: #dc3545;
+      }
     }
   }
 
