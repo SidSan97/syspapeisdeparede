@@ -2,40 +2,144 @@
 
 namespace App\Services;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\JsonResponse;
 
 class GeneratePaymentService
 {
-    public function generateLinkPayment(): JsonResponse
+    /**
+     * Dispara a criação de um link de pagamento no Pagar.me
+     */
+    public function generateLinkPayment(array $budget): JsonResponse
     {
-        return response()->json([
-            'payment_settings' => [
-                'cart_settings' => [
-                    'items' => [
-                        [
-                            'amount' => 12000,
-                            'name' => 'Banner',
-                            'default_quantity' => 1,
-                        ],
-                    ],
-                    'items_total_cost' => 12000,
-                    'total_cost' => 12000,
-                    'shipping_cost' => 0,
-                    'shipping_total_cost' => 0,
-                ],
-            ],
-            'name' => 'Banner N12345',
-            'type' => 'order',
-            'total_sessions' => 0,
-            'max_paid_sessions' => 0,
-            'total_paid_sessions' => 0,
-            'max_sessions' => 0,
-            'created_at' => '2024-05-13T01:09:40.6331583Z',
-            'url' => 'https://payment-link.pagar.me/pl_GNe8zkaO2MlBxxGcJcv0BALq9Pon514W',
-            'updated_at' => '2024-05-13T01:09:40.6331583Z',
-            'id' => 'pl_GNe8zkaO2MlBxxGcJcv0BALq9Pon514W',
-            'expires_in' => 0,
-            'status' => 'active',
+        $apiKey = env('PAGARME_API_KEY');
+
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chave da API Pagar.me não configurada.',
+            ], 500);
+        }
+
+        $client = new Client([
+            'base_uri' => 'https://sdx-api.pagar.me',
+            'timeout' => 10,
         ]);
+
+        try {
+            $response = $client->post('/core/v5/paymentlinks', [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Basic ' . base64_encode($apiKey . ':'),
+                ],
+                'json' => ($budget['payment_method'] === 'pix')
+                    ? $this->makePixPayloadData($budget)
+                    : $this->makeCreditCardPayloadData($budget),
+            ]);
+
+            $body = json_decode((string) $response->getBody(), true);
+
+            return response()->json([
+                'success' => true,
+                'data' => $body,
+            ], $response->getStatusCode());
+        } catch (GuzzleException $e) {
+            $errorDetails = $e->getMessage();
+
+            // Tentar obter mais detalhes da resposta se disponível
+            if ($e instanceof RequestException && $e->hasResponse()) {
+                $response = $e->getResponse();
+                $errorBody = json_decode((string) $response->getBody(), true);
+                if ($errorBody) {
+                    $errorDetails = $errorBody;
+                }
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar link de pagamento.',
+                'error' => $errorDetails,
+            ], 500);
+        }
+    }
+
+    /*
+    * Gera o payload para o PIX
+    * @param array $budget
+    * @return array
+    */
+    protected function makePixPayloadData(array $budget): array
+    {
+        return [
+            "is_building" => false,
+            "payment_settings" => [
+                "accepted_payment_methods" => [
+                   'pix'
+                ],
+                "pix_settings" => [
+                    "additional_information" => [
+                        "Name" => "Papel de parede",
+                        "Value" => "Papel de parede"
+                    ],
+                    "expires_in" => 86400 //24h em segundos
+                ]
+            ],
+            "cart_settings" => [
+                "items" => [
+                    [
+                        "name" => "Papel de parede / " . $budget['name'],
+                        "amount" => intval($budget['total_amount'] * 100), //valor do item em centavos
+                        "default_quantity" => 1,
+                        "description" => $budget['comments'] ?? ''
+                    ]
+                ],
+                "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
+            ],
+            "type" => "order"
+        ];
+    }
+
+    /*
+    * Gera o payload para o cartão de crédito
+    * @param array $budget
+    * @return array
+    */
+    protected function makeCreditCardPayloadData(array $budget): array
+    {
+        return [
+            "is_building" => false,
+            "payment_settings" => [
+                "accepted_payment_methods" => [
+                    "credit_card"
+                ],
+                "credit_card_settings" => [
+                    "installments" => [
+                        [
+                            "number" => $budget['installments'] ?? 1,
+                            "total" => intval(($budget['total_amount_installments'] ?? 0) * 100) //valor do item em centavos
+                        ]
+                    ],
+                    "operation_type" => "auth_and_capture",
+                    "delay_to_capture" => 2
+                ]
+            ],
+            "cart_settings" => [
+                "items" => [
+                    [
+                        "name" => "Papel de parede / " . $budget['name'],
+                        "amount" => intval(($budget['total_amount_installments'] ?? 0) * 100), //valor do item em centavos
+                        "description" => $budget['comments'] ?? '',
+                        "default_quantity" => 1
+                    ]
+                ],
+                "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
+            ],
+            "name" => "Papel de parede",
+            "type" => "order",
+            "expires_in" => 1440 //24h em minutos
+        ];
     }
 }

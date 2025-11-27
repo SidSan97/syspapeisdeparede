@@ -413,7 +413,7 @@
                                         </div>
                                     </div>
                                     <div class="col-12" v-if="budget.installmentLimit > 1">
-                                        <div class="card h-100" :class="{ 'border-primary': budget.paymentMethod === 'installment' }" @click="budget.paymentMethod = 'installment'" style="cursor: pointer;">
+                                        <div class="card h-100" :class="{ 'border-primary': budget.paymentMethod === 'credit_card' }" @click="budget.paymentMethod = 'credit_card'" style="cursor: pointer;">
                                             <div class="card-body text-center py-3">
                                                 <i class="fa fa-credit-card fa-2x mb-2"></i>
                                                 <h6 class="mb-1">A Prazo (Cartão ou Boleto)</h6>
@@ -423,7 +423,7 @@
                                     </div>
                                 </div>
 
-                                <div v-if="budget.paymentMethod === 'installment'" class="mt-3">
+                                <div v-if="budget.paymentMethod === 'credit_card'" class="mt-3">
                                     <label for="installments" class="form-label">Número de Parcelas</label>
                                     <select v-model.number="budget.installments" id="installments" class="form-control">
                                         <option v-for="n in budget.installmentLimit" :key="n" :value="n">{{ n }}x</option>
@@ -794,7 +794,7 @@ const totalBudgetPrazo = computed(() => {
 const totalBudget = computed(() => {
     if (budget.paymentMethod === 'pix') {
         return totalBudgetVista.value;
-    } else if (budget.paymentMethod === 'installment') {
+    } else if (budget.paymentMethod === 'credit_card') {
         return totalBudgetPrazo.value;
     }
     return 0;

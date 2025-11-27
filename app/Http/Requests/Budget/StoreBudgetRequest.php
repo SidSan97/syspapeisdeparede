@@ -59,7 +59,7 @@ class StoreBudgetRequest extends FormRequest
             'selectedCarrier.name' => ['required_with:selectedCarrier', 'string', 'max:255'],
             'selectedCarrier.price' => ['required_with:selectedCarrier', 'numeric', 'min:0'],
             'selectedCarrier.deliveryTime' => ['required_with:selectedCarrier', 'integer', 'min:0'],
-            'paymentMethod' => ['nullable', 'string', Rule::in(['pix', 'installment'])],
+            'paymentMethod' => ['nullable', 'string', Rule::in(['pix', 'credit_card'])],
             'installments' => ['nullable', 'integer', 'min:1'],
             'installmentLimit' => ['nullable', 'integer', 'min:1'],
             'dropshipping_budget' => ['nullable', 'boolean'],

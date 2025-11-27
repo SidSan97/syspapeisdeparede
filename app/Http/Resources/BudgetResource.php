@@ -68,6 +68,8 @@ class BudgetResource extends JsonResource
             unset($room);
         }
 
+        $data['payment_method'] = self::normalizePaymentMethod($data['payment_method'] ?? null);
+
         return $data;
     }
 
@@ -95,6 +97,32 @@ class BudgetResource extends JsonResource
         }
 
         return $finalUrl;
+    }
+
+    protected static function normalizePaymentMethod(?string $method): ?string
+    {
+        if ($method === null) {
+            return null;
+        }
+
+        return $method === 'installment' ? 'credit_card' : $method;
+    }
+
+    public static function getBudgetPaymentData(array $budget)
+    {
+        $data = [
+            'id' => $budget['id'],
+            'name' => $budget['name'],
+            'comments' => $budget['comment_referring_model'] ?? '',
+            'total_amount' => (float)($budget['total_amount'] ?? 0),
+            'total_amount_installments' => (float)($budget['total_amount_installments'] ?? 0),
+            'payment_method' => self::normalizePaymentMethod($budget['payment_method'] ?? null),
+            'installment_limit' => $budget['installment_limit'] ?? null,
+            'installments' => $budget['installments'] ?? null,
+            'carrier_price' => (float)($budget['selected_carrier_price'] ?? 0),
+        ];
+
+        return $data;
     }
 }
 

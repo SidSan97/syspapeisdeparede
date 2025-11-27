@@ -130,7 +130,7 @@ class BudgetController extends Controller
                             'message' => 'CPF/CNPJ inválido',
                         ], 422);
                     }
-                    
+
                     $this->dropshippingRepository->create(
                         $data['dropshipping_data'],
                         $budget->id,
@@ -308,6 +308,7 @@ class BudgetController extends Controller
 
         try {
             $budget = Budget::with(['rooms.walls'])->findOrFail($validated['id']);
+            $budgetPaymentData = BudgetResource::getBudgetPaymentData($budget->toArray());
 
             // Atualizar status do orçamento para 'Aprovado'
             $budget->update(['status' => 'Aprovado']);
@@ -330,8 +331,16 @@ class BudgetController extends Controller
             $orderBudgets = \App\Models\OrderBudget::where('budget_id', $budget->id)->get();
 
             // Gerar link de pagamento
-            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment();
+            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($budgetPaymentData);
             $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
+
+            // Extrair URL do link de pagamento
+            $paymentUrl = null;
+            if ($paymentLinkData['success'] ?? false) {
+                // A API do Pagar.me retorna a URL em diferentes estruturas possíveis
+                $apiResponse = $paymentLinkData['data'] ?? [];
+                $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
+            }
 
             $transformed = (new BudgetResource($budget->refresh()))->toArray(request());
 
@@ -339,7 +348,11 @@ class BudgetController extends Controller
                 'success' => true,
                 'data' => $transformed,
                 'order_budgets' => $orderBudgets,
-                'payment_link' => $paymentLinkData,
+                'payment_link' => [
+                    'success' => $paymentLinkData['success'] ?? false,
+                    'url' => $paymentUrl,
+                    'data' => $paymentLinkData['data'] ?? null,
+                ],
                 'message' => 'Orçamento aprovado com sucesso',
             ]);
         } catch (\Exception $e) {

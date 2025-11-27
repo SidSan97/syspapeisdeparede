@@ -194,7 +194,7 @@ class BudgetCalculator
     ): float {
         if ($paymentMethod === 'pix') {
             return self::calculateTotalAmountVista($totalArea, $rooms, $selectedCarrier);
-        } elseif ($paymentMethod === 'installment') {
+        } elseif ($paymentMethod === 'credit_card') {
             return self::calculateTotalAmountPrazo($totalArea, $rooms, $selectedCarrier);
         }
 

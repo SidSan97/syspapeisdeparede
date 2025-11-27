@@ -82,10 +82,10 @@ class BudgetRepository {
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
                 'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'installment'
+                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
                     ? ($data['installmentLimit'] ?? null)
                     : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'installment'
+                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
                     ? (int) ($data['installments'] ?? 1)
                     : null,
                 'cep' => $data['cep'] ?? null,
@@ -184,10 +184,10 @@ class BudgetRepository {
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
                 'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'installment'
+                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
                     ? ($data['installmentLimit'] ?? null)
                     : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'installment'
+                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
                     ? (int) ($data['installments'] ?? 1)
                     : null,
                 'cep' => $data['cep'] ?? null,

@@ -27,7 +27,7 @@
                       <div class="text-muted small">Status</div>
                       <div>
                         <span
-                          class="badge fs-6"
+                          class="fs-6"
                           :class="{
                             'bg-warning text-dark': details.status === 'Pendente de Revisão',
                             'bg-success': details.status === 'Aprovado',
@@ -143,7 +143,7 @@
                   <h6 class="fw-semibold mb-3">Referências do Modelo</h6>
                   <div v-if="details.comment" class="mb-3">
                     <div class="text-muted small mb-1">Descrição</div>
-                    <div class="bg-light p-2 rounded">{{ details.comment }}</div>
+                    <div class="p-2 rounded">{{ details.comment }}</div>
                   </div>
                   <div v-if="details.link" class="mb-3">
                     <div class="text-muted small mb-1">Link de Referência</div>
@@ -550,9 +550,10 @@ function formatDeliveryTime(days) {
 
 function formatPaymentMethod(method) {
   const methods = {
-    cash: 'Dinheiro',
-    card: 'Cartão',
-    installment: 'Parcelado',
+    //cash: 'Dinheiro',
+    //card: 'Cartão',
+    credit_card: 'Cartão de Crédito',
+    //installment: 'Parcelado',
     pix: 'PIX',
   };
 
@@ -560,11 +561,17 @@ function formatPaymentMethod(method) {
 }
 
 function formatInstallmentValue(details) {
-  if (!details.total || !details.installments) {
+  if (!details.installments) {
     return '';
   }
 
-  const value = details.total / details.installments;
+  // Usar total a prazo se disponível, senão usar total geral
+  const total = details.totalPrazo || details.total || 0;
+  if (!total) {
+    return '';
+  }
+
+  const value = total / details.installments;
   return formatCurrency(value);
 }
 
@@ -866,15 +873,25 @@ async function handleApprove() {
     }
 
     // Obter link de pagamento da resposta
-    if (approveResponse.data?.payment_link?.url) {
-      paymentUrl.value = approveResponse.data.payment_link.url;
+    const paymentLink = approveResponse.data?.payment_link;
+    if (paymentLink) {
+      // Tentar diferentes estruturas possíveis da URL
+      paymentUrl.value = paymentLink.url
+        || paymentLink.data?.url
+        || paymentLink.data?.checkout_url
+        || paymentLink.data?.public_url
+        || null;
+
+      if (!paymentUrl.value && paymentLink.data) {
+        console.warn('URL de pagamento não encontrada na resposta:', paymentLink);
+      }
     }
 
     emit('approve', props.pedido);
 
     await Swal.fire({
       title: 'Pedido aprovado',
-      text: 'O pedido foi aprovado com sucesso. O link de pagamento está disponível abaixo.',
+      text: 'O pedido foi aprovado com sucesso. Acesse os DETALHES DO PEDIDO para acessar o link de pagamento.',
       icon: 'success',
       confirmButtonText: 'OK',
     });

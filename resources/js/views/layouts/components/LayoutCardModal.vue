@@ -2562,7 +2562,7 @@
   .member-menu-remove {
     width: 100%;
     padding: 0.625rem 1rem;
-    background: none;
+    background: antiquewhite;
     border: none;
     text-align: left;
     color: var(--bs-danger);
