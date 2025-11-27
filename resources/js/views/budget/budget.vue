@@ -56,6 +56,55 @@
                 </ul>
               </div>
             </div>
+
+            <!-- Filtros de Admin (Período e Revendedor) -->
+            <div v-if="isAdmin" class="row buttons-filters mt-2">
+              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+                <label for="dateFrom" class="form-label small mb-1">Data Inicial</label>
+                <input
+                  id="dateFrom"
+                  v-model="dateFrom"
+                  type="date"
+                  class="form-control"
+                  :disabled="loading"
+                />
+              </div>
+              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+                <label for="dateTo" class="form-label small mb-1">Data Final</label>
+                <input
+                  id="dateTo"
+                  v-model="dateTo"
+                  type="date"
+                  class="form-control"
+                  :disabled="loading"
+                />
+              </div>
+              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+                <label for="userFilter" class="form-label small mb-1">Revendedor</label>
+                <select
+                  id="userFilter"
+                  v-model="selectedUserId"
+                  class="form-control"
+                  :disabled="loading || loadingUsers"
+                >
+                  <option :value="null">Todos os revendedores</option>
+                  <option v-for="user in users" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-lg w-100"
+                  @click="clearFilters"
+                  :disabled="loading"
+                >
+                  <i class="fa fa-times me-2"></i>
+                  Limpar Filtros
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -313,18 +362,27 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
 import BudgetOrderModal from '@/components/budget/BudgetOrderModal.vue';
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
+const auth = useAuthStore();
 const budgets = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const statusFilter = ref('all');
+const dateFrom = ref('');
+const dateTo = ref('');
+const selectedUserId = ref(null);
+const users = ref([]);
+const loadingUsers = ref(false);
+
+const isAdmin = computed(() => auth.user?.user_type_id === 2);
 const showCancelModal = ref(false);
 const budgetToCancel = ref(null);
 const cancelling = ref(false);
@@ -442,14 +500,56 @@ const filteredBudgets = computed(() => {
   const status = statusFilter.value;
 
   return budgets.value.filter((budget) => {
+    // Filtro de busca
     const matchesQuery = !query
       || budget.name?.toLowerCase().includes(query)
       || String(budget.id).includes(query);
 
+    // Filtro de status
     const normalizedStatus = (budget.status || '').toString().toLowerCase();
     const matchesStatus = status === 'all' || normalizedStatus === status;
 
-    return matchesQuery && matchesStatus;
+    // Filtro de período (apenas para admin)
+    let matchesPeriod = true;
+    if (isAdmin.value && (dateFrom.value || dateTo.value)) {
+      const budgetDateStr = budget.created_at || budget.createdAt;
+      if (!budgetDateStr) {
+        matchesPeriod = false;
+      } else {
+        const budgetDate = new Date(budgetDateStr);
+        if (Number.isNaN(budgetDate.getTime())) {
+          matchesPeriod = false;
+        } else {
+          const budgetDateOnly = new Date(budgetDate.getFullYear(), budgetDate.getMonth(), budgetDate.getDate());
+
+          if (dateFrom.value) {
+            const fromDate = new Date(dateFrom.value);
+            fromDate.setHours(0, 0, 0, 0);
+            if (budgetDateOnly < fromDate) {
+              matchesPeriod = false;
+            }
+          }
+
+          if (dateTo.value && matchesPeriod) {
+            const toDate = new Date(dateTo.value);
+            toDate.setHours(23, 59, 59, 999);
+            const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+            if (budgetDateOnly > toDateOnly) {
+              matchesPeriod = false;
+            }
+          }
+        }
+      }
+    }
+
+    // Filtro de revendedor (apenas para admin)
+    let matchesUser = true;
+    if (isAdmin.value && selectedUserId.value !== null) {
+      const budgetUserId = budget.user_id || budget.userId || budget.user?.id;
+      matchesUser = Number(budgetUserId) === Number(selectedUserId.value);
+    }
+
+    return matchesQuery && matchesStatus && matchesPeriod && matchesUser;
   });
 });
 
@@ -604,8 +704,44 @@ async function confirmCancelBudget() {
   }
 }
 
+async function fetchUsers() {
+  if (!isAdmin.value) {
+    return;
+  }
+
+  try {
+    loadingUsers.value = true;
+    const response = await axios.get('v1/users/search');
+
+    if (response.data?.success && response.data?.data) {
+      // Se a resposta estiver paginada, pegar o array de dados
+      if (response.data.data.data && Array.isArray(response.data.data.data)) {
+        users.value = response.data.data.data;
+      } else if (Array.isArray(response.data.data)) {
+        users.value = response.data.data;
+      } else {
+        users.value = [];
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    users.value = [];
+  } finally {
+    loadingUsers.value = false;
+  }
+}
+
+function clearFilters() {
+  dateFrom.value = '';
+  dateTo.value = '';
+  selectedUserId.value = null;
+}
+
 onMounted(() => {
   fetchBudgets();
+  if (isAdmin.value) {
+    fetchUsers();
+  }
   document.title = 'Orçamentos';
 });
 
@@ -613,13 +749,13 @@ function openGeneratePdfModal(budget) {
   budgetToGeneratePdf.value = budget;
   pdfPercentage.value = 0;
   pdfError.value = '';
-  
+
   // Inicializar valores editáveis com os valores originais
   const rawTotal = Number(budget.total_amount ?? budget.totalAmount ?? 0);
   const rawTotalInstallments = Number(budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0);
   pdfCashValue.value = Number.isFinite(rawTotal) && rawTotal > 0 ? rawTotal : null;
   pdfInstallmentValue.value = Number.isFinite(rawTotalInstallments) && rawTotalInstallments > 0 ? rawTotalInstallments : null;
-  
+
   showPdfModal.value = true;
 }
 
@@ -654,7 +790,7 @@ const selectedBudgetSummary = computed(() => {
 
   const rawTotal = Number(budget.total_amount ?? budget.totalAmount ?? 0);
   const total = Number.isFinite(rawTotal) ? rawTotal : 0;
-  
+
   const rawTotalInstallments = Number(budget.total_amount_installments ?? budget.totalAmountInstallments ?? 0);
   const totalInstallments = Number.isFinite(rawTotalInstallments) ? rawTotalInstallments : 0;
 
@@ -710,7 +846,7 @@ const pdfTotals = computed(() => {
   // Se há valores editados manualmente, usar eles
   let updatedTotal = 0;
   let updatedTotalInstallments = 0;
-  
+
   if (pdfCashValue.value !== null && Number.isFinite(Number(pdfCashValue.value))) {
     updatedTotal = Number(Number(pdfCashValue.value).toFixed(2));
   } else {
@@ -749,15 +885,15 @@ function updateInstallmentValueFromInput() {
 
 function applyPercentageToValues() {
   if (!selectedBudgetSummary.value) return;
-  
+
   const parsed = parsePercentage(pdfPercentage.value);
   if (!Number.isFinite(parsed) || parsed < 0) return;
-  
+
   // Aplicar porcentagem aos valores originais
   const baseTotal = selectedBudgetSummary.value.total;
   const increment = Number((baseTotal * (parsed / 100)).toFixed(2));
   pdfCashValue.value = Number((baseTotal + increment).toFixed(2));
-  
+
   if (hasInstallmentValue.value) {
     const baseTotalInstallments = selectedBudgetSummary.value.totalInstallments;
     const incrementInstallments = Number((baseTotalInstallments * (parsed / 100)).toFixed(2));
@@ -774,7 +910,7 @@ async function confirmGeneratePdf() {
   const cashValue = pdfCashValue.value !== null && Number.isFinite(Number(pdfCashValue.value))
     ? Number(Number(pdfCashValue.value).toFixed(2))
     : null;
-  
+
   const installmentValue = pdfInstallmentValue.value !== null && Number.isFinite(Number(pdfInstallmentValue.value))
     ? Number(Number(pdfInstallmentValue.value).toFixed(2))
     : null;
@@ -892,6 +1028,6 @@ function handleOrderUpdated(updatedBudgetRaw) {
 }
 
 .input-group-text, .buttons-filters button, input {
-    height: 46px !important;
+    height: 36px !important;
 }
 </style>
