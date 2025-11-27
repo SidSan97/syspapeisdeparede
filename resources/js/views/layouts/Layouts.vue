@@ -80,7 +80,7 @@
                   </div>
                   <div class="trello-card-footer">
                     <div class="trello-card-footer-content">
-                      <span class="trello-card-footer-text">{{ card.name || 'aaa' }}</span>
+                      <span class="trello-card-footer-text">{{ getCardDisplayName(card) }}</span>
                       <div class="trello-card-footer-meta">
                         <div class="trello-card-deadline">
                           <i class="fa fa-clock-o"></i>
@@ -157,6 +157,7 @@
   import axios from 'axios';
   import Page from '../../components/page/Page.vue';
   import LayoutCardModal from './components/LayoutCardModal.vue';
+  import { getCardDisplayName } from '@/utils/cardUtils';
 
   const cards = ref([]);
   const columns = ref([]);

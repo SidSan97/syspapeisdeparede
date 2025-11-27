@@ -3,7 +3,7 @@
       <div class="layout-modal-overlay" @click="handleClose">
         <div class="layout-modal" @click.stop>
           <div class="layout-modal-header">
-            <h2 class="layout-modal-title">{{ card.name }}</h2>
+            <h2 class="layout-modal-title">{{ getCardDisplayName(card) }}</h2>
             <button class="layout-modal-close" @click="handleClose">
               <i class="fa fa-times"></i>
             </button>
@@ -656,6 +656,7 @@
   import { computed, ref, watch } from 'vue';
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
+  import { getCardDisplayName } from '@/utils/cardUtils';
 
   const props = defineProps({
     card: {

@@ -83,7 +83,7 @@
                   </div>
                   <div class="production-card-footer">
                     <div class="production-card-footer-content">
-                      <span class="production-card-footer-text">{{ card.name || 'aaa' }}</span>
+                      <span class="production-card-footer-text">{{ getCardDisplayName(card) }}</span>
                       <div class="production-card-footer-meta">
                         <div class="production-card-deadline">
                           <i class="fa fa-clock-o"></i>
@@ -163,6 +163,7 @@
   import axios from 'axios';
   import Page from '../../components/page/Page.vue';
   import ProductCardModal from './components/ProductCardModal.vue';
+  import { getCardDisplayName } from '@/utils/cardUtils';
 
   const cards = ref([]);
   const columns = ref([]);
