@@ -54,10 +54,10 @@
         </RouterLink>
       </div>
 
-      <hr class="bd-sidebar-divider">
+      <hr v-if="!isTenant" class="bd-sidebar-divider">
 
       <!-- Grupo 3: Layouts -->
-      <div class="bd-sidebar-group">
+      <div v-if="!isTenant" class="bd-sidebar-group">
         <RouterLink
           to="/layouts"
           class="bd-sidebar-item"
@@ -68,10 +68,10 @@
         </RouterLink>
       </div>
 
-      <hr class="bd-sidebar-divider">
+      <hr v-if="!isTenant" class="bd-sidebar-divider">
 
       <!-- Grupo 4: Produção -->
-      <div class="bd-sidebar-group">
+      <div v-if="!isTenant" class="bd-sidebar-group">
         <RouterLink
           to="/products"
           class="bd-sidebar-item"
@@ -90,10 +90,10 @@
         </RouterLink>
       </div>
 
-      <hr class="bd-sidebar-divider">
+      <hr v-if="!isTenant" class="bd-sidebar-divider">
 
       <!-- Grupo 5: Expedição -->
-      <div class="bd-sidebar-group">
+      <div v-if="!isTenant" class="bd-sidebar-group">
         <RouterLink
           to="/expedicao"
           class="bd-sidebar-item"
@@ -104,10 +104,10 @@
         </RouterLink>
       </div>
 
-      <hr class="bd-sidebar-divider">
+      <hr v-if="isAdmin" class="bd-sidebar-divider">
 
       <!-- Grupo 6: Configurações -->
-      <div class="bd-sidebar-group">
+      <div v-if="isAdmin" class="bd-sidebar-group">
         <RouterLink
           to="/settings"
           class="bd-sidebar-item"
@@ -138,11 +138,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
+const auth = useAuthStore();
 const isCollapsed = ref(true); // Começar como true para evitar flash
 const route = useRoute();
+
+const isAdmin = computed(() => auth.user?.user_type_id === 2);
+const isTenant = computed(() => auth.user?.user_type_id === 3);
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

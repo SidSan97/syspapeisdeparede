@@ -49,11 +49,13 @@
                         </ul>
                     </li>
 
+                    @if(Auth::check() && Auth::user()->user_type_id === 2)
                     <li class="nav-item">
                         <router-link :to="'/settings'" class="nav-link px-2">
                             <i class="fa fa-cog"></i>
                         </router-link>
                     </li>
+                    @endif
 
                     <li class="nav-item dropdown">
                         <a id="navbarDropdown" class="nav-link" href="#" role="button"
@@ -62,7 +64,7 @@
                         </a>
 
                         <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            
+
                             <div class="dropdown-item">
                                 <div class="d-flex gap-3">
                                     <img class="avatar avatar-lg" src="{{ Auth::user()->avatar ? asset(Storage::url(Auth::user()->avatar)) : asset('assets/img/avatar.svg') }}" alt="Avatar">
@@ -72,7 +74,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <router-link
                                 :to="'/profile'"
                                 class="dropdown-item"
