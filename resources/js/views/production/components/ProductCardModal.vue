@@ -1050,7 +1050,7 @@
       loadingMembers.value = true;
       const response = await window.axios.get('v1/users/search', {
         params: {
-          user_type_id: 4
+          user_type_id: 3
         }
       });
 

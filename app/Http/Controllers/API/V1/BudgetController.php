@@ -286,10 +286,12 @@ class BudgetController extends Controller
 
         // Criar um OrderBudget para cada parede do orçamento
         $orderBudgets = [];
+        $tenantId = $budget->tenant_id; // Preservar tenant_id do orçamento
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
                 $orderBudgets[] = \App\Models\OrderBudget::create([
                     'budget_id' => $budget->id,
+                    'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
                     'layout_column_names_id' => $firstColumn->id,

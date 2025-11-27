@@ -74,8 +74,12 @@ class BudgetRepository {
             $totalAmountInstallments,
             $deliveryTime
         ) {
+            $user = Auth::user();
+            $tenantId = ($user->user_type_id == 3) ? $user->id : null;
+
             $budget = Budget::create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
+                'tenant_id' => $tenantId,
                 'name' => $data['name'],
                 'total_area' => $totalArea,
                 'total_amount' => $totalAmount,
@@ -108,6 +112,7 @@ class BudgetRepository {
 
             foreach ($rooms as $roomIndex => $roomData) {
                 $room = $budget->rooms()->create([
+                    'tenant_id' => $tenantId,
                     'name' => $roomData['name'] ?? null,
                     'position' => $roomIndex,
                     'raw_payload' => $roomData,
@@ -120,6 +125,7 @@ class BudgetRepository {
                     $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
 
                     $room->walls()->create([
+                        'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
@@ -208,12 +214,16 @@ class BudgetRepository {
                 'status' => $data['status'] ?? $budget->status,
             ]);
 
+            // Preservar tenant_id do orçamento existente
+            $tenantId = $budget->tenant_id;
+
             // Remover rooms e walls antigas
             $budget->rooms()->delete();
 
             // Criar novas rooms e walls
             foreach ($rooms as $roomIndex => $roomData) {
                 $room = $budget->rooms()->create([
+                    'tenant_id' => $tenantId,
                     'name' => $roomData['name'] ?? null,
                     'position' => $roomIndex,
                     'raw_payload' => $roomData,
@@ -226,6 +236,7 @@ class BudgetRepository {
                     $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
 
                     $room->walls()->create([
+                        'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,

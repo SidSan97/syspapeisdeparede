@@ -16,7 +16,7 @@ class TenantService
     {
         if (Auth::check()) {
             $user = Auth::user();
-            if ($user->user_type_id == 4) {
+            if ($user->user_type_id == 3) {
                 return $user->id;
             }
         }
@@ -25,14 +25,14 @@ class TenantService
     }
 
     /**
-     * Check if the current user is a tenant (user_type_id = 4).
+     * Check if the current user is a tenant (user_type_id = 3).
      *
      * @return bool
      */
     public static function isTenant(): bool
     {
         if (Auth::check()) {
-            return Auth::user()->user_type_id == 4;
+            return Auth::user()->user_type_id == 3;
         }
 
         return false;

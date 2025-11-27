@@ -21,12 +21,10 @@ class TenantScope implements Scope
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Only apply tenant scope for users with user_type_id = 4
-            if ($user->user_type_id == 4) {
-                $builder->where(function ($query) use ($user) {
-                    $query->where('tenant_id', $user->id)
-                          ->orWhereNull('tenant_id'); // Include records without tenant (global data)
-                });
+            // Only apply tenant scope for users with user_type_id = 3
+            if ($user->user_type_id == 3) {
+                // Tenants should only see their own records
+                $builder->where('tenant_id', $user->id);
             }
         }
     }
