@@ -18,6 +18,7 @@ use App\Repositories\DropshippingRepository;
 use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
+use App\Support\DocumentValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -123,6 +124,13 @@ class BudgetController extends Controller
 
                 // Criar dados de dropshipping se fornecidos
                 if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
+                    if (!DocumentValidator::validateCPFCNPJ($data['dropshipping_data']['cpf_cnpj'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'CPF/CNPJ inválido',
+                        ], 422);
+                    }
+                    
                     $this->dropshippingRepository->create(
                         $data['dropshipping_data'],
                         $budget->id,
