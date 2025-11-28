@@ -13,7 +13,6 @@ class TypeUserSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            'Usuário',
             'Administrador',
             'Revendedor',
             'Designer',
