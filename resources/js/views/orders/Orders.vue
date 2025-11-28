@@ -58,7 +58,6 @@
                         class="btn btn-sm btn-outline-primary"
                         @click="openDetailsModal(pedido)"
                       >
-                        <i class="fa fa-eye me-1"></i>
                         Ver detalhes
                       </button>
                       <button
@@ -66,7 +65,6 @@
                         class="btn btn-sm btn-primary"
                         @click="openPaymentModal(pedido)"
                       >
-                        <i class="fa fa-credit-card me-1"></i>
                         Registrar pagamento
                       </button>
                     </div>

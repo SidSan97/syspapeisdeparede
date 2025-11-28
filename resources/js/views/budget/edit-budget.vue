@@ -2,8 +2,8 @@
     <section class="content">
         <Page title="Editar orçamento" back-to="/budget">
             <template #actions>
-                <button class="btn btn-success btn-lg" type="button" @click="updateBudget" :disabled="saving">
-                    <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
+                <button class="btn btn-primary me-3" type="button" @click="updateBudget" :disabled="saving">
+                    {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
                 </button>
             </template>
         <div class="container py-4">
@@ -368,7 +368,7 @@
                                             @click="calculateFreight"
                                             :disabled="!budget.cep || calculatingFreight"
                                         >
-                                            <i class="fa fa-truck"></i> Calcular Frete
+                                             Calcular Frete
                                         </button>
                                     </div>
                                 </div>

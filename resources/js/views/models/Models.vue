@@ -7,7 +7,6 @@
           type="button"
           @click="startCreating"
         >
-          <i class="fa fa-plus-circle me-2"></i>
           Criar modelo
         </button>
       </template>
@@ -210,7 +209,6 @@
                       class="btn btn-outline-primary edit-button"
                       @click="editModel(model)"
                     >
-                      <i class="fa fa-edit me-1"></i>
                       Editar
                     </button>
                     <button
@@ -219,7 +217,6 @@
                       :disabled="deletingId === model.id"
                       @click="confirmDelete(model)"
                     >
-                      <i class="fa fa-trash me-1"></i>
                       Excluir
                     </button>
                   </div>

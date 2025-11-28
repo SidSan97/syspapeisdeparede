@@ -3,7 +3,6 @@
     <Page title="Coleções" subtitle="Gerencie as coleções disponíveis para os tipos de arte." back-to="/settings">
       <template #actions>
         <button type="button" class="btn btn-primary" @click="startCreating">
-          <i class="fa fa-plus-circle me-2"></i>
           Nova coleção
         </button>
       </template>
@@ -187,11 +186,9 @@
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-success" @click="startCreatingSubcategory(collection)">
-                          <i class="fa fa-plus me-1"></i>
                           Subcategoria
                         </button>
                         <button type="button" class="btn btn-outline-primary" @click="editCollection(collection)">
-                          <i class="fa fa-edit me-1"></i>
                           Editar
                         </button>
                         <button
@@ -200,7 +197,6 @@
                           :disabled="deletingId === collection.id"
                           @click="confirmDelete(collection)"
                         >
-                          <i class="fa fa-trash me-1"></i>
                           Excluir
                         </button>
                       </div>
@@ -232,7 +228,6 @@
                                   class="btn btn-outline-primary btn-sm"
                                   @click="editSubcategory(subcategory)"
                                 >
-                                  <i class="fa fa-edit"></i>
                                 </button>
                                 <button
                                   type="button"
@@ -240,7 +235,6 @@
                                   :disabled="deletingSubcategoryId === subcategory.id"
                                   @click="confirmDeleteSubcategory(subcategory)"
                                 >
-                                  <i class="fa fa-trash"></i>
                                 </button>
                               </div>
                             </div>

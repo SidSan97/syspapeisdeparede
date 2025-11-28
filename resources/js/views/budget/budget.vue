@@ -1,8 +1,8 @@
 <template>
   <section class="content">
-    <Page title="Orçamentos" back-to="/">
+    <Page title="Orçamentos">
       <template #actions>
-        <button class="btn btn-primary btn-lg" type="button" @click="goToCreateBudget">
+        <button class="btn btn-primary" type="button" @click="goToCreateBudget">
           Criar orçamento
         </button>
       </template>

@@ -1,9 +1,9 @@
 <template>
     <section class="content">
-        <Page title="Criar orçamento" back-to="/budget">
+        <Page title="Criar orçamento">
             <template #actions>
-                <button class="btn btn-success btn-lg" type="button" @click="saveBudget" :disabled="saving">
-                    <i class="fa fa-save"></i> {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
+                <button class="btn btn-primary me-3" type="button" @click="saveBudget" :disabled="saving">
+                    {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
                 </button>
             </template>
 
@@ -348,7 +348,7 @@
                                             @click="calculateFreight"
                                             :disabled="!budget.cep || calculatingFreight"
                                         >
-                                            <i class="fa fa-truck"></i> Calcular Frete
+                                            Calcular Frete
                                         </button>
                                     </div>
                                 </div>
