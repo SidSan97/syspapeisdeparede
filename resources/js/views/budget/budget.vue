@@ -1,5 +1,5 @@
 <template>
-  <section class="content">
+  <section class="container">
     <Page title="Orçamentos">
       <template #actions>
         <button class="btn btn-primary" type="button" @click="goToCreateBudget">
@@ -7,106 +7,107 @@
         </button>
       </template>
 
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent border-0 pb-0">
-          <div class="d-flex flex-column gap-3">
-            <div class="row buttons-filters">
-              <div class="col-lg-4">
-                <div class="input-group input-group-prefix">
-                  <input id="search-query" type="text" class="form-control" placeholder="Pesquisar orçamento"
-                   v-model="searchQuery"
-                  >
-                  <span class="input-group-text">
-                    <i class="fa fa-search"></i>
-                  </span>
-                </div>
-              </div>
+      <div class="border-0 shadow-sm">
+        <form class="row g-3 align-items-center mb-4" role="search">
+          <label for="search-query" class="sr-only">Pesquisar orçamento</label>
 
-              <div class="dropdown col-lg-3 mt-2 mt-lg-0">
-                <button
-                  class="btn btn-outline-secondary btn-lg d-flex align-items-center gap-2"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  {{ currentStatusLabel }}
-                  <i class="fa fa-chevron-down small"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                  <li>
-                    <button
-                      class="dropdown-item"
-                      type="button"
-                      :class="{ active: statusFilter === 'all' }"
-                      @click="setStatusFilter('all')"
-                    >
-                      Todas as situações
-                    </button>
-                  </li>
-                  <li v-for="option in statusOptions" :key="option.value">
-                    <button
+          <div class="col-12 col-md-auto">
+            <div class="input-group input-group-prefix">
+              <input id="search-query" type="text" class="form-control"
+                placeholder="Pesquisar orçamento" v-model="searchQuery">
+              <span class="input-group-text">
+                <i class="fa fa-search"></i>
+              </span>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-auto">
+            <div class="dropdown">
+              <button 
+                class="btn btn-outline-default dropdown-toggle"
+                data-bs-toggle="dropdown" 
+                aria-expanded="false" 
+                :value="statusFilter"
+              >
+                {{ currentStatusLabel }}
+              </button>
+              
+              <ul class="dropdown-menu">
+                <li>
+                  <button 
+                    class="dropdown-item" 
+                    type="button"
+                    @click="setStatusFilter('all')"
+                  >
+                    Todos
+                  </button>
+                </li>
+
+                <li v-for="option in statusOptions" :key="option.value">
+                  <button
                       class="dropdown-item"
                       type="button"
                       :class="{ active: statusFilter === option.value }"
                       @click="setStatusFilter(option.value)"
                     >
                       {{ option.label }}
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Filtros de Admin (Período e Revendedor) -->
-            <div v-if="isAdmin" class="row buttons-filters mt-2">
-              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
-                <label for="dateFrom" class="form-label small mb-1">Data Inicial</label>
-                <input
-                  id="dateFrom"
-                  v-model="dateFrom"
-                  type="date"
-                  class="form-control"
-                  :disabled="loading"
-                />
-              </div>
-              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
-                <label for="dateTo" class="form-label small mb-1">Data Final</label>
-                <input
-                  id="dateTo"
-                  v-model="dateTo"
-                  type="date"
-                  class="form-control"
-                  :disabled="loading"
-                />
-              </div>
-              <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
-                <label for="userFilter" class="form-label small mb-1">Revendedor</label>
-                <select
-                  id="userFilter"
-                  v-model="selectedUserId"
-                  class="form-control"
-                  :disabled="loading || loadingUsers"
-                >
-                  <option :value="null">Todos os revendedores</option>
-                  <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary btn-lg w-100"
-                  @click="clearFilters"
-                  :disabled="loading"
-                >
-                  <i class="fa fa-times me-2"></i>
-                  Limpar Filtros
-                </button>
-              </div>
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
-        </div>
+
+          <div v-if="isAdmin" class="row buttons-filters mt-2">
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="dateFrom" class="form-label small mb-1">Data Inicial</label>
+              <input
+                id="dateFrom"
+                v-model="dateFrom"
+                type="date"
+                class="form-control"
+                :disabled="loading"
+              />
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="dateTo" class="form-label small mb-1">Data Final</label>
+              <input
+                id="dateTo"
+                v-model="dateTo"
+                type="date"
+                class="form-control"
+                :disabled="loading"
+              />
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="userFilter" class="form-label small mb-1">Revendedor</label>
+              <select
+                id="userFilter"
+                v-model="selectedUserId"
+                class="form-control"
+                :disabled="loading || loadingUsers"
+              >
+                <option :value="null">Todos os revendedores</option>
+                <option v-for="user in users" :key="user.id" :value="user.id">
+                  {{ user.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-lg w-100"
+                @click="clearFilters"
+                :disabled="loading"
+              >
+                <i class="fa fa-times me-2"></i>
+                Limpar Filtros
+              </button>
+            </div>
+            </div>
+        </form>
 
         <div class="card-body p-0 mt-4">
           <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
@@ -126,18 +127,18 @@
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th scope="col">Número</th>
-                  <th scope="col">Data</th>
-                  <th scope="col">Orçamento</th>
-                  <th scope="col">Situação</th>
-                  <th scope="col" class="text-end">Ações</th>
+                  <th scope="col" style="width: 64px;">Número</th>
+                  <th scope="col" style="width: 64px;">Data</th>
+                  <th class="text-nowrap" scope="col">Orçamento</th>
+                  <th class="text-nowrap" scope="col">Situação</th>
+                  <th class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="budget in filteredBudgets" :key="budget.id">
-                  <td class="fw-semibold">#{{ budget.id }}</td>
+                  <td class="fw-semibold">{{ budget.id }}</td>
                   <td>{{ formatDate(budget.created_at || budget.createdAt) }}</td>
-                  <td>
+                  <td style="min-width: 240px;">
                     <button
                       class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
                       @click="editBudget(budget)"
@@ -146,14 +147,14 @@
                     </button>
                   </td>
                   <td>
-                    <div class="d-flex align-items-center gap-2 text-capitalize">
+                   
                       <span class="status-dot" :class="`status-dot-${getStatusVariant(budget.status)}`"></span>
                       {{ formatStatusLabel(budget.status) }}
-                    </div>
+                    
                   </td>
-                  <td class="text-end">
+                  <td >
                     <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <button class="btn btn-subtle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-ellipsis-h"></i>
                       </button>
                       <ul class="dropdown-menu dropdown-menu-end">
