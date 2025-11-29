@@ -7,15 +7,14 @@
           :to="{ name: 'UsersCreate' }"
           class="btn btn-primary"
         >
-          <i class="fa fa-plus me-2"></i>
           Adicionar usuário
         </router-link>
       </template>
 
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent border-0 pb-0">
+      <div class="shadow-sm">
+        <div class="border-0 pb-0">
           <div class="d-flex flex-column gap-3">
-            <div class="row buttons-filters">
+            <div class="row buttons-filters mt-3">
               <div class="col-lg-4">
                 <div class="input-group input-group-prefix">
                   <input type="search" class="form-control" placeholder="Pesquisar usuário"
@@ -29,7 +28,7 @@
 
               <div class="dropdown col-lg-3 mt-2 mt-lg-0">
                 <button
-                    class="btn btn-outline-secondary btn-lg d-flex align-items-center gap-2"
+                    class="btn btn-outline-default d-flex align-items-center gap-2"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -78,7 +77,7 @@
             Ajuste os filtros ou adicione um novo usuário.
           </EmptyState>
 
-          <div v-else class="table-responsive">
+          <div v-else class="table-responsive mt-3">
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
@@ -119,7 +118,7 @@
                   <td class="text-end">
                     <div class="dropdown">
                       <button
-                        class="btn btn-sm btn-outline-secondary"
+                        class="btn btn-sm btn-subtle"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
