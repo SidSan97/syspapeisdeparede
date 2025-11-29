@@ -256,7 +256,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
-import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
+import { swalConfirmation } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 
 const collections = ref([]);
@@ -364,7 +365,12 @@ const fetchCollections = async () => {
       }
     });
   } catch (error) {
-    swalError('Não foi possível carregar as coleções. Tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as coleções. Tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     collections.value = [];
   } finally {
     isLoading.value = false;
@@ -423,7 +429,12 @@ const handleCollectionImageChange = (event) => {
 
   // Validar tamanho (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    swalError('A imagem não pode ser maior que 5MB.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'A imagem não pode ser maior que 5MB.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     event.target.value = '';
     form.imageFile = null;
     form.imagePreview = null;
@@ -432,7 +443,12 @@ const handleCollectionImageChange = (event) => {
 
   // Validar tipo
   if (!file.type.startsWith('image/')) {
-    swalError('Por favor, selecione um arquivo de imagem válido.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione um arquivo de imagem válido.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     event.target.value = '';
     form.imageFile = null;
     form.imagePreview = null;
@@ -466,7 +482,12 @@ const handleSubmit = async () => {
 
   const trimmedName = form.name?.trim();
   if (!trimmedName) {
-    swalError('Informe o nome da coleção.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Informe o nome da coleção.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
@@ -511,12 +532,21 @@ const handleSubmit = async () => {
       }
     }
 
-    swalSuccess(isEditing.value ? 'Coleção atualizada com sucesso.' : 'Coleção criada com sucesso.');
+    window.Swal.fire({
+      title: isEditing.value ? 'Coleção atualizada!' : 'Coleção criada!',
+      text: isEditing.value ? 'Coleção atualizada com sucesso.' : 'Coleção criada com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
     cancelForm();
   } catch (error) {
     const message =
       error?.response?.data?.message ?? 'Não foi possível salvar a coleção. Verifique os dados.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isSaving.value = false;
   }
@@ -550,7 +580,11 @@ const destroyCollection = async (collection) => {
   try {
     await axios.delete(`v1/collection-arts/${collection.id}`);
     collections.value = collections.value.filter((item) => item.id !== collection.id);
-    swalSuccess('Coleção excluída com sucesso.');
+    window.Swal.fire({
+      title: 'Coleção excluída!',
+      text: 'Coleção excluída com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
 
     if (isFormVisible.value && editingId.value === collection.id) {
       cancelForm();
@@ -558,7 +592,12 @@ const destroyCollection = async (collection) => {
   } catch (error) {
     const message =
       error?.response?.data?.message ?? 'Não foi possível excluir a coleção. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     deletingId.value = null;
   }
@@ -592,7 +631,12 @@ const fetchSubcategories = async (collectionId) => {
 
     collectionSubcategories[collectionId] = items.map(normalizeSubcategory);
   } catch (error) {
-    swalError('Não foi possível carregar as subcategorias.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as subcategorias.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     collectionSubcategories[collectionId] = [];
   } finally {
     loadingSubcategories[collectionId] = false;
@@ -661,7 +705,12 @@ const handleSubcategoryImageChange = (event) => {
 
   // Validar tamanho (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    swalError('A imagem não pode ser maior que 5MB.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'A imagem não pode ser maior que 5MB.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     event.target.value = '';
     subcategoryForm.imageFile = null;
     subcategoryForm.imagePreview = null;
@@ -670,7 +719,12 @@ const handleSubcategoryImageChange = (event) => {
 
   // Validar tipo
   if (!file.type.startsWith('image/')) {
-    swalError('Por favor, selecione um arquivo de imagem válido.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione um arquivo de imagem válido.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     event.target.value = '';
     subcategoryForm.imageFile = null;
     subcategoryForm.imagePreview = null;
@@ -704,12 +758,22 @@ const handleSubcategorySubmit = async () => {
 
   const trimmedName = subcategoryForm.name?.trim();
   if (!trimmedName) {
-    swalError('Informe o nome da subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Informe o nome da subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   if (!subcategoryForm.collection_art_id) {
-    swalError('Coleção não informada.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Coleção não informada.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
@@ -754,12 +818,21 @@ const handleSubcategorySubmit = async () => {
       collectionSubcategories[collectionId].push(saved);
     }
 
-    swalSuccess(isEditingSubcategory.value ? 'Subcategoria atualizada com sucesso.' : 'Subcategoria criada com sucesso.');
+    window.Swal.fire({
+      title: isEditingSubcategory.value ? 'Subcategoria atualizada!' : 'Subcategoria criada!',
+      text: isEditingSubcategory.value ? 'Subcategoria atualizada com sucesso.' : 'Subcategoria criada com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
     cancelSubcategoryForm();
   } catch (error) {
     const message =
       error?.response?.data?.message ?? 'Não foi possível salvar a subcategoria. Verifique os dados.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isSavingSubcategory.value = false;
   }
@@ -798,7 +871,11 @@ const destroySubcategory = async (subcategory) => {
         (item) => item.id !== subcategory.id
       );
     }
-    swalSuccess('Subcategoria excluída com sucesso.');
+    window.Swal.fire({
+      title: 'Subcategoria excluída!',
+      text: 'Subcategoria excluída com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
 
     if (isSubcategoryFormVisible.value && editingSubcategoryId.value === subcategory.id) {
       cancelSubcategoryForm();
@@ -806,7 +883,12 @@ const destroySubcategory = async (subcategory) => {
   } catch (error) {
     const message =
       error?.response?.data?.message ?? 'Não foi possível excluir a subcategoria. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     deletingSubcategoryId.value = null;
   }

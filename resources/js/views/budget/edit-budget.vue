@@ -503,8 +503,8 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import Swal from 'sweetalert2';
-import { swalSuccess, swalError } from '../../../utils/alerts';
+// Swal importado via window.Swal do plugin
+// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from './components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -556,7 +556,7 @@ const createDefaultWall = () => ({
 });
 
 const showWarning = (message) =>
-    Swal.fire({
+    window.Swal.fire({
         title: 'Atenção',
         text: message,
         icon: 'warning'
@@ -715,33 +715,6 @@ const productModelsMap = computed(() => {
 
 const getModelById = (id) => productModelsMap.value.get(id);
 
-const showPrevImage = (modelId) => {
-    if (!modelSlides[modelId]) {
-        modelSlides[modelId] = 0;
-    }
-
-    const model = getModelById(modelId);
-    if (!model || !model.files.length) {
-        return;
-    }
-
-    modelSlides[modelId] =
-        (modelSlides[modelId] - 1 + model.files.length) % model.files.length;
-};
-
-const showNextImage = (modelId) => {
-    if (!modelSlides[modelId]) {
-        modelSlides[modelId] = 0;
-    }
-
-    const model = getModelById(modelId);
-    if (!model || !model.files.length) {
-        return;
-    }
-
-    modelSlides[modelId] = (modelSlides[modelId] + 1) % model.files.length;
-};
-
 // Detectar mudanças
 const hasChanges = computed(() => {
     if (!originalBudget.value) return false;
@@ -839,7 +812,12 @@ function normalizeBudgetFromAPI(budgetData) {
 async function loadBudget() {
     const id = route.params.id;
     if (!id) {
-        swalError('ID do orçamento não encontrado');
+        window.Swal.fire({
+            title: 'Erro!',
+            text: 'ID do orçamento não encontrado',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
         router.push('/budget');
         return;
     }
@@ -854,7 +832,12 @@ async function loadBudget() {
         const budgetData = budgets.find(b => b.id === budgetId.value);
 
         if (!budgetData) {
-            swalError('Orçamento não encontrado');
+            window.Swal.fire({
+                title: 'Erro!',
+                text: 'Orçamento não encontrado',
+                icon: 'error',
+                confirmButtonText: 'Entendi!',
+            });
             router.push('/budget');
             return;
         }
@@ -876,7 +859,12 @@ async function loadBudget() {
 
     } catch (error) {
         console.error('Erro ao carregar orçamento:', error);
-        swalError('Não foi possível carregar o orçamento');
+        window.Swal.fire({
+            title: 'Erro!',
+            text: 'Não foi possível carregar o orçamento',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
         router.push('/budget');
     } finally {
         loadingBudget.value = false;
@@ -1327,7 +1315,12 @@ function updateBudget() {
     axios.put(`v1/budgets/${budgetId.value}`, payload)
         .then(response => {
             console.log('Orçamento atualizado:', response.data);
-            swalSuccess('Orçamento atualizado com sucesso!');
+            window.Swal.fire({
+                title: 'Orçamento atualizado!',
+                text: response.data?.message ?? 'Orçamento foi atualizado com sucesso!',
+                confirmButtonText: 'Entendi!',
+            });
+
             // Atualizar originalBudget e budget para refletir as mudanças salvas
             const updatedData = response.data?.data || budget;
             const normalized = normalizeBudgetFromAPI(updatedData);
@@ -1343,7 +1336,11 @@ function updateBudget() {
         .catch(error => {
             console.error('Erro ao atualizar orçamento:', error);
             const message = error.response?.data?.message || 'Tente novamente mais tarde.';
-            swalError('Erro ao atualizar orçamento: ' + message);
+            window.Swal.fire({
+                title: 'Erro ao atualizar orçamento!',
+                text: message ?? 'Tente novamente mais tarde.',
+                confirmButtonText: 'Entendi!',
+            });
         })
         .finally(() => {
             saving.value = false;

@@ -234,7 +234,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
-import { swalSuccess, swalError, swalConfirmation } from '../../../utils/alerts';
+import { swalConfirmation } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 
 const models = ref([]);
@@ -359,7 +360,12 @@ const fetchModels = async (page = 1) => {
       last_page: meta.last_page ?? 1,
     };
   } catch (error) {
-    swalError('Erro ao carregar modelos');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Erro ao carregar modelos',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isLoading.value = false;
   }
@@ -430,18 +436,25 @@ const handleSubmit = async () => {
       await fetchModels(pagination.value.current_page);
     }
 
-    swalSuccess(
-      isEditing.value
+    window.Swal.fire({
+      title: isEditing.value ? 'Modelo atualizado!' : 'Modelo cadastrado!',
+      text: isEditing.value
         ? 'Modelo atualizado com sucesso'
-        : 'Modelo cadastrado com sucesso'
-    );
+        : 'Modelo cadastrado com sucesso',
+      confirmButtonText: 'Entendi!',
+    });
 
     cancelForm();
   } catch (error) {
     const message =
       error?.response?.data?.message ??
       'Erro ao salvar modelo. Verifique os campos e tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isSaving.value = false;
   }
@@ -534,12 +547,21 @@ const destroyModel = async (model) => {
       }
     }
 
-    swalSuccess('Modelo excluído com sucesso');
+    window.Swal.fire({
+      title: 'Modelo excluído!',
+      text: 'Modelo excluído com sucesso',
+      confirmButtonText: 'Entendi!',
+    });
   } catch (error) {
     const message =
       error?.response?.data?.message ??
       'Não foi possível excluir o modelo. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     deletingId.value = null;
   }

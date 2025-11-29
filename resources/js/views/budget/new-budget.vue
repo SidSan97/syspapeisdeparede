@@ -483,9 +483,9 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+// Swal importado via window.Swal do plugin
 import Page from '@/components/page/Page.vue';
-import { swalSuccess, swalError } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
 import DropshippingForm from './components/DropshippingForm.vue';
 
@@ -534,7 +534,7 @@ const createDefaultWall = () => ({
 });
 
 const showWarning = (message) =>
-    Swal.fire({
+    window.Swal.fire({
         title: 'Atenção',
         text: message,
         icon: 'warning'
@@ -1137,16 +1137,25 @@ function saveBudget() {
     axios.post('v1/budgets', payload)
         .then(response => {
             console.log('Orçamento salvo:', response.data);
-            swalSuccess('Orçamento salvo com sucesso!');
+            window.Swal.fire({
+                title: 'Orçamento criado!',
+                text: response.data?.message ?? 'Orçamento foi criado com sucesso!',
+                confirmButtonText: 'Entendi!',
+            });
             // Redirecionar para a lista de orçamentos
             setTimeout(() => {
-                window.location.href = '/budget';
+                router.push('/budget');
             }, 1500);
         })
         .catch(error => {
             console.error('Erro ao salvar orçamento:', error);
             const message = error.response?.data?.message || 'Tente novamente mais tarde.';
-            swalError('Erro ao salvar orçamento: ' + message);
+            window.Swal.fire({
+                title: 'Erro ao criar orçamento!',
+                text: message ?? 'Tente novamente mais tarde.',
+                confirmButtonText: 'Entendi!',
+            });
+            
         })
         .finally(() => {
             saving.value = false;

@@ -256,7 +256,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+// Swal importado via window.Swal do plugin
 
 const props = defineProps({
   visible: {
@@ -852,11 +852,10 @@ async function submitOrder() {
     emit('updated', response.data.data);
     emit('close');
 
-    Swal.fire({
+    window.Swal.fire({
       title: 'Pedido realizado',
       text: response.data?.message ?? 'Pedido registrado com sucesso.',
-      icon: 'success',
-      confirmButtonText: 'Entendi',
+      confirmButtonText: 'Entendi!',
     });
   } catch (error) {
     const firstError = error.response?.data?.errors
@@ -869,7 +868,7 @@ async function submitOrder() {
       error.message ??
       'Não foi possível realizar o pedido. Tente novamente.';
 
-    Swal.fire({
+    window.Swal.fire({
       title: 'Não foi possível concluir o pedido',
       text: orderError.value,
       icon: 'error',

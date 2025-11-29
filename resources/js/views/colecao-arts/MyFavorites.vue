@@ -76,7 +76,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { swalError } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
@@ -130,7 +130,12 @@ const fetchFavoriteImages = async () => {
     images.value = imagesList.map(normalizeImage);
   } catch (error) {
     images.value = [];
-    swalError('Não foi possível carregar suas imagens favoritas.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar suas imagens favoritas.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     loading.value = false;
   }
@@ -158,7 +163,12 @@ const toggleFavorite = async (image) => {
       images.value = images.value.filter(img => img.id !== image.id);
     }
   } catch (error) {
-    swalError('Não foi possível remover o favorito. Tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível remover o favorito. Tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   }
 };
 

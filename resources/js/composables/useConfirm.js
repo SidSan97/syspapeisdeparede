@@ -6,20 +6,12 @@ export function useConfirm() {
     rejectLabel = 'Cancelar',
     onAccept = null,
   }) => {
-    const result = await Swal.fire({
+    const result = await window.Swal.fire({
       title,
       text,
       showCancelButton: true,
       showCloseButton: true,
       reverseButtons: true,
-      customClass: {
-        popup: 'bg-body',
-        title: 'h5 text-start text-body',
-        htmlContainer: 'fs-6 text-body text-start',
-        actions: 'justify-content-end w-100 px-5',
-        cancelButton: 'btn btn-subtle',
-        confirmButton: 'btn btn-danger',
-      },
       cancelButtonText: rejectLabel,
       confirmButtonText: acceptLabel,
     });

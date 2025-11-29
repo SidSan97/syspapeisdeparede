@@ -201,7 +201,7 @@
 import { onMounted, ref, useTemplateRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import { swalError, swalSuccess } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
@@ -268,7 +268,12 @@ const fetchSubcategories = async (collectionId) => {
     subcategories.value = subcategoriesList.map(normalizeSubcategory);
   } catch (error) {
     subcategories.value = [];
-    swalError('Não foi possível carregar as subcategorias desta coleção.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as subcategorias desta coleção.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     loading.value = false;
   }
@@ -358,12 +363,22 @@ const handleImageChange = (event) => {
 
 const saveSubcategory = async () => {
   if (!formData.value.name.trim()) {
-    swalError('Por favor, preencha o nome da subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, preencha o nome da subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   if (!formData.value.collection_art_id) {
-    swalError('Por favor, selecione uma categoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione uma categoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
@@ -404,7 +419,11 @@ const saveSubcategory = async () => {
       });
     }
 
-    swalSuccess('Subcategoria adicionada com sucesso!');
+    window.Swal.fire({
+      title: 'Subcategoria adicionada!',
+      text: 'Subcategoria adicionada com sucesso!',
+      confirmButtonText: 'Entendi!',
+    });
     addModal.value?.hide();
 
     // Recarregar a lista
@@ -415,7 +434,12 @@ const saveSubcategory = async () => {
       error.response?.data?.message ||
       error.response?.data?.error ||
       'Não foi possível adicionar a subcategoria.';
-    swalError(errorMessage);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: errorMessage,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     saving.value = false;
   }

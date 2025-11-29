@@ -216,7 +216,8 @@ import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
-import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
+import { swalConfirmation } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import { useUtils } from '@/composables/useUtils';
 
 const router = useRouter();
@@ -295,7 +296,12 @@ const fetchUsers = async () => {
 
     users.value = Array.isArray(items) ? items : [];
   } catch (error) {
-    swalError('Não foi possível carregar os usuários. Tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar os usuários. Tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     users.value = [];
   } finally {
     loading.value = false;
@@ -334,11 +340,20 @@ const deleteUser = async (user) => {
   try {
     await axios.delete(`v1/users/${user.id}`);
     users.value = users.value.filter((item) => item.id !== user.id);
-    swalSuccess('Usuário excluído com sucesso.');
+    window.Swal.fire({
+      title: 'Usuário excluído!',
+      text: 'Usuário excluído com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
   } catch (error) {
     const message =
       error?.response?.data?.message ?? 'Não foi possível excluir o usuário. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   }
 };
 

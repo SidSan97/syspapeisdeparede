@@ -204,7 +204,7 @@
 import { onMounted, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { swalError, swalSuccess } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
@@ -266,7 +266,12 @@ const fetchCollections = async () => {
     collections.value = Array.isArray(items) ? items.map(normalizeCollection) : [];
   } catch (error) {
     collections.value = [];
-    swalError('Não foi possível carregar as coleções. Atualize a página e tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as coleções. Atualize a página e tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     loadingCollections.value = false;
   }
@@ -357,18 +362,33 @@ const handleImageChange = (event) => {
 
 const saveCollection = async () => {
   if (!formData.value.name.trim()) {
-    swalError('Por favor, preencha o nome.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, preencha o nome.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   // Validar se há subcategoria selecionada para enviar imagem
   if (!formData.value.subcategory_id) {
-    swalError('Por favor, selecione uma subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione uma subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   if (!formData.value.image) {
-    swalError('Por favor, selecione uma imagem.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione uma imagem.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
@@ -388,7 +408,11 @@ const saveCollection = async () => {
       },
     });
 
-    swalSuccess('Imagem adicionada com sucesso!');
+    window.Swal.fire({
+      title: 'Imagem adicionada!',
+      text: 'Imagem adicionada com sucesso!',
+      confirmButtonText: 'Entendi!',
+    });
     addModal.value?.hide();
 
     // Recarregar a lista
@@ -398,7 +422,12 @@ const saveCollection = async () => {
       error.response?.data?.message ||
       error.response?.data?.error ||
       'Não foi possível adicionar a imagem.';
-    swalError(errorMessage);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: errorMessage,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     saving.value = false;
   }

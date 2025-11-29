@@ -80,7 +80,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+// Swal importado via window.Swal do plugin
 
 const props = defineProps({
   visible: {
@@ -174,11 +174,10 @@ async function handleSubmit() {
     });
 
     if (response.data?.success) {
-      await Swal.fire({
+      await window.Swal.fire({
         title: 'Sucesso',
         text: 'Pagamento registrado com sucesso! O pedido foi aprovado.',
-        icon: 'success',
-        confirmButtonText: 'OK',
+        confirmButtonText: 'Entendi!',
       });
 
       emit('success');

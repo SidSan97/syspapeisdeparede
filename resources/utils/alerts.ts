@@ -13,11 +13,12 @@ export function simpleAlert(title: string, icon: any | string, footer: string) {
   })
 }
 
-export function swalSuccess(message: string) {
+export function swalSuccess(message: string, title: string = 'Feito!') {
   Swal.fire({
-    title: 'Feito!',
+    title: title,
     text: message,
-    icon: 'success'
+    showConfirmButton: true,
+    confirmButtonText: 'Entendi!'
   })
 }
 

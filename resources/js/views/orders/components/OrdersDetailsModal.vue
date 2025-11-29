@@ -484,7 +484,7 @@
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+// Swal importado via window.Swal do plugin
 import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
@@ -746,7 +746,7 @@ function resetArtForm(artId) {
 
 async function handleSubmitArt(art) {
   if (!art || !auth.user?.id) {
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Erro',
       text: 'Não foi possível enviar a arte. Dados insuficientes.',
       icon: 'error',
@@ -757,7 +757,7 @@ async function handleSubmitArt(art) {
 
   const artFormData = artForms.value[art.id];
   if (!artFormData) {
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Erro',
       text: 'Não foi possível encontrar o formulário da arte.',
       icon: 'error',
@@ -767,7 +767,7 @@ async function handleSubmitArt(art) {
   }
 
   if (!artFormData.file) {
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Atenção',
       text: 'Por favor, selecione uma imagem para enviar.',
       icon: 'warning',
@@ -778,7 +778,7 @@ async function handleSubmitArt(art) {
 
   // Validar IDs necessários
   if (!art.budget_id || !art.order_budget_id) {
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Erro',
       text: 'IDs necessários não encontrados na arte.',
       icon: 'error',
@@ -810,11 +810,10 @@ async function handleSubmitArt(art) {
     });
 
     if (response.data?.success) {
-      await Swal.fire({
+      await window.Swal.fire({
         title: 'Sucesso',
         text: 'Arte enviada com sucesso!',
-        icon: 'success',
-        confirmButtonText: 'OK',
+        confirmButtonText: 'Entendi!',
       });
 
       // Limpar formulário desta arte
@@ -829,7 +828,7 @@ async function handleSubmitArt(art) {
     console.error('Erro ao enviar arte:', error);
     const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
 
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Erro',
       text: errorMessage,
       icon: 'error',
@@ -845,7 +844,7 @@ async function handleApprove() {
     return;
   }
 
-  const result = await Swal.fire({
+  const result = await window.Swal.fire({
     title: 'Aprovar pedido?',
     text: `Tem certeza que deseja aprovar o pedido "${props.pedido.name}"?`,
     icon: 'question',
@@ -889,16 +888,15 @@ async function handleApprove() {
 
     emit('approve', props.pedido);
 
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Pedido aprovado',
       text: 'O pedido foi aprovado com sucesso. Acesse os DETALHES DO PEDIDO para acessar o link de pagamento.',
-      icon: 'success',
-      confirmButtonText: 'OK',
+      confirmButtonText: 'Entendi!',
     });
   } catch (error) {
     const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível aprovar o pedido. Tente novamente.';
 
-    await Swal.fire({
+    await window.Swal.fire({
       title: 'Erro',
       text: errorMessage,
       icon: 'error',
@@ -916,15 +914,14 @@ function copyPaymentUrl() {
   }
 
   navigator.clipboard.writeText(paymentUrl.value).then(() => {
-    Swal.fire({
+    window.Swal.fire({
       title: 'Link copiado!',
       text: 'O link de pagamento foi copiado para a área de transferência.',
-      icon: 'success',
       timer: 2000,
       showConfirmButton: false,
     });
   }).catch(() => {
-    Swal.fire({
+    window.Swal.fire({
       title: 'Erro',
       text: 'Não foi possível copiar o link.',
       icon: 'error',

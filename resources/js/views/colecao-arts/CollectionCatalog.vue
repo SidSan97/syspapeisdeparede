@@ -191,7 +191,8 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
-import { swalConfirmation, swalError, swalSuccess } from '../../../utils/alerts';
+import { swalConfirmation } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 
 const collections = ref([]);
@@ -312,7 +313,12 @@ const fetchCollections = async () => {
     }
   } catch (error) {
     collections.value = [];
-    swalError('Não foi possível carregar as coleções. Atualize a página e tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as coleções. Atualize a página e tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     loadingCollections.value = false;
   }
@@ -336,7 +342,12 @@ const fetchSubcategoryImages = async (subcategoryId) => {
     }));
   } catch (error) {
     collectionImages[subcategoryId] = [];
-    swalError('Não foi possível carregar as imagens desta subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as imagens desta subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isLoadingImages[subcategoryId] = false;
   }
@@ -369,7 +380,12 @@ const fetchSubcategories = async (collectionId) => {
 
     collectionSubcategories[collectionId] = items.map(normalizeSubcategory);
   } catch (error) {
-    swalError('Não foi possível carregar as subcategorias.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as subcategorias.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     collectionSubcategories[collectionId] = [];
   } finally {
     loadingSubcategories[collectionId] = false;
@@ -410,19 +426,34 @@ const handleUpload = async () => {
   }
 
   if (!selectedSubcategoryId.value) {
-    swalError('Selecione uma subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Selecione uma subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   if (!selectedFiles.value.length) {
-    swalError('Selecione ao menos uma imagem para enviar.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Selecione ao menos uma imagem para enviar.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
   // Validar se todos os nomes foram preenchidos
   const filesWithoutName = selectedFiles.value.filter((item) => !item.name?.trim());
   if (filesWithoutName.length > 0) {
-    swalError('Por favor, preencha o nome para todas as imagens.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, preencha o nome para todas as imagens.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
@@ -464,14 +495,23 @@ const handleUpload = async () => {
       await fetchSubcategoryImages(selectedSubcategoryId.value);
     }
 
-    swalSuccess('Imagens adicionadas com sucesso.');
+    window.Swal.fire({
+      title: 'Imagens adicionadas!',
+      text: 'Imagens adicionadas com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
     resetForm();
   } catch (error) {
     const message =
       error?.response?.data?.message ??
       error?.response?.data?.errors?.images?.[0] ??
       'Não foi possível enviar as imagens. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     isUploading.value = false;
   }
@@ -517,12 +557,21 @@ const destroyImage = async (image) => {
       }
     }
 
-    swalSuccess('Imagem removida com sucesso.');
+    window.Swal.fire({
+      title: 'Imagem removida!',
+      text: 'Imagem removida com sucesso.',
+      confirmButtonText: 'Entendi!',
+    });
   } catch (error) {
     const message =
       error?.response?.data?.message ??
       'Não foi possível remover a imagem. Tente novamente.';
-    swalError(message);
+    window.Swal.fire({
+      title: 'Erro!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     deletingId.value = null;
   }

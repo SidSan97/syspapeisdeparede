@@ -63,7 +63,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import { swalError } from '../../../utils/alerts';
+// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 
 const DEFAULT_COVER =
@@ -148,7 +148,12 @@ const fetchSubcategoryImages = async (subcategoryId) => {
     images.value = normalizedImages;
   } catch (error) {
     images.value = [];
-    swalError('Não foi possível carregar as imagens desta subcategoria.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as imagens desta subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   } finally {
     loading.value = false;
   }
@@ -171,7 +176,12 @@ const toggleFavorite = async (image) => {
     const { data } = await axios.post(`v1/collection-images/${image.id}/toggle-favorite`);
     image.is_favorited = data?.data?.is_favorited ?? false;
   } catch (error) {
-    swalError('Não foi possível atualizar o favorito. Tente novamente.');
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível atualizar o favorito. Tente novamente.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
   }
 };
 
