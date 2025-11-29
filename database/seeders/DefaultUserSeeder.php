@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use App\Support\UserType;
 
 class DefaultUserSeeder extends Seeder
 {
@@ -24,6 +25,7 @@ class DefaultUserSeeder extends Seeder
             'name' => 'Usuário Admin',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
+            'user_type_id' => UserType::ADMIN,
         ]);
         $superAdmin->markEmailAsVerified();
 
