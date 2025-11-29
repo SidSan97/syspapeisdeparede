@@ -1,5 +1,5 @@
 <template>
-  <section class="container">
+  <section class="content">
     <Page title="Orçamentos">
       <template #actions>
         <button class="btn btn-primary" type="button" @click="goToCreateBudget">
@@ -243,127 +243,131 @@
         <div class="modal-backdrop fade show"></div>
       </div>
     </Teleport>
-    <Teleport v-if="showPdfModal" to="body">
-      <div>
-        <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Gerar PDF do orçamento</h5>
-                <button type="button" class="btn-close" aria-label="Close" @click="closeGeneratePdfModal"></button>
+    <Teleport to="body">
+      <div
+        ref="pdfModalElement"
+        class="modal fade"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="generatePdfModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="generatePdfModalLabel">Gerar PDF do orçamento</h5>
+              <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div v-if="selectedBudgetSummary" class="mb-4">
+                <div class="border rounded p-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small">Orçamento</span>
+                    <span class="badge bg-primary text-light">#{{ selectedBudgetSummary.id }}</span>
+                  </div>
+                  <div class="fw-semibold">{{ selectedBudgetSummary.name }}</div>
+                  <div class="text-muted small mt-2">
+                    Valor à vista original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotal }}</span>
+                  </div>
+                  <div v-if="selectedBudgetSummary.totalInstallments > 0" class="text-muted small">
+                    Valor a prazo original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotalInstallments }}</span>
+                  </div>
+                  <div class="text-muted small">
+                    Prazo de entrega: {{ selectedBudgetSummary.deliveryTime }}
+                  </div>
+                  <div v-if="selectedBudgetSummary.status" class="text-muted small">
+                    Status atual: {{ selectedBudgetSummary.status }}
+                  </div>
+                </div>
               </div>
-              <div class="modal-body">
-                <div v-if="selectedBudgetSummary" class="mb-4">
-                  <div class="border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <span class="text-muted small">Orçamento</span>
-                      <span class="badge bg-primary text-light">#{{ selectedBudgetSummary.id }}</span>
-                    </div>
-                    <div class="fw-semibold">{{ selectedBudgetSummary.name }}</div>
-                    <div class="text-muted small mt-2">
-                      Valor à vista original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotal }}</span>
-                    </div>
-                    <div v-if="selectedBudgetSummary.totalInstallments > 0" class="text-muted small">
-                      Valor a prazo original: <span class="fw-semibold">{{ selectedBudgetSummary.formattedTotalInstallments }}</span>
-                    </div>
-                    <div class="text-muted small">
-                      Prazo de entrega: {{ selectedBudgetSummary.deliveryTime }}
-                    </div>
-                    <div v-if="selectedBudgetSummary.status" class="text-muted small">
-                      Status atual: {{ selectedBudgetSummary.status }}
-                    </div>
-                  </div>
-                </div>
-                <p class="mb-3">
-                  Edite os valores que serão exibidos no PDF ou informe um percentual de acréscimo para aplicar automaticamente.
-                </p>
-                <div class="row mb-3">
-                  <div class="col-12 col-md-6 mb-3">
-                    <label for="pdfCashValue" class="form-label">Valor à vista (R$)</label>
-                    <input
-                      id="pdfCashValue"
-                      v-model="pdfCashValue"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      placeholder="0,00"
-                      :disabled="generatingPdf"
-                      @input="updateCashValueFromInput"
-                    >
-                  </div>
-                  <div class="col-12 col-md-6 mb-3">
-                    <label for="pdfInstallmentValue" class="form-label">Valor a prazo (R$)</label>
-                    <input
-                      id="pdfInstallmentValue"
-                      v-model="pdfInstallmentValue"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      placeholder="0,00"
-                      :disabled="generatingPdf || !hasInstallmentValue"
-                      @input="updateInstallmentValueFromInput"
-                    >
-                    <small v-if="!hasInstallmentValue" class="text-muted">Não há valor a prazo para este orçamento</small>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label for="pdfIncrease" class="form-label">Ou aplicar acréscimo (%)</label>
+              <p class="mb-3">
+                Edite os valores que serão exibidos no PDF ou informe um percentual de acréscimo para aplicar automaticamente.
+              </p>
+              <div class="row mb-3">
+                <div class="col-12 col-md-6 mb-3">
+                  <label for="pdfCashValue" class="form-label">Valor à vista (R$)</label>
                   <input
-                    id="pdfIncrease"
-                    v-model="pdfPercentage"
+                    id="pdfCashValue"
+                    v-model="pdfCashValue"
                     type="number"
                     class="form-control"
                     min="0"
                     step="0.01"
-                    placeholder="0"
+                    placeholder="0,00"
                     :disabled="generatingPdf"
-                    @input="applyPercentageToValues"
+                    @input="updateCashValueFromInput"
                   >
                 </div>
-                <div v-if="selectedBudgetSummary" class="border rounded p-3 bg-body-secondary">
-                  <div class="d-flex justify-content-between fw-semibold mb-2 pb-2 border-bottom">
-                    <span>Valor à vista para o PDF</span>
-                    <span>{{ pdfTotals.totalFormatted }}</span>
-                  </div>
-                  <div v-if="pdfTotals.totalInstallments > 0" class="d-flex justify-content-between fw-semibold mt-2">
-                    <span>Valor a prazo para o PDF</span>
-                    <span>{{ pdfTotals.totalInstallmentsFormatted }}</span>
-                  </div>
+                <div class="col-12 col-md-6 mb-3">
+                  <label for="pdfInstallmentValue" class="form-label">Valor a prazo (R$)</label>
+                  <input
+                    id="pdfInstallmentValue"
+                    v-model="pdfInstallmentValue"
+                    type="number"
+                    class="form-control"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    :disabled="generatingPdf || !hasInstallmentValue"
+                    @input="updateInstallmentValueFromInput"
+                  >
+                  <small v-if="!hasInstallmentValue" class="text-muted">Não há valor a prazo para este orçamento</small>
                 </div>
-                <p class="text-muted small mb-0 mt-3">
-                  Os valores informados serão exibidos no PDF do orçamento.
-                </p>
-                <p v-if="pdfError" class="text-danger small mt-3 mb-0">
-                  {{ pdfError }}
-                </p>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" :disabled="generatingPdf" @click="closeGeneratePdfModal">
-                  Cancelar
-                </button>
-                <button type="button" class="btn btn-primary" :disabled="generatingPdf" @click="confirmGeneratePdf">
-                  <span
-                    v-if="generatingPdf"
-                    class="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  Gerar PDF
-                </button>
+              <div class="mb-3">
+                <label for="pdfIncrease" class="form-label">Ou aplicar acréscimo (%)</label>
+                <input
+                  id="pdfIncrease"
+                  v-model="pdfPercentage"
+                  type="number"
+                  class="form-control"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  :disabled="generatingPdf"
+                  @input="applyPercentageToValues"
+                >
               </div>
+              <div v-if="selectedBudgetSummary" class="border rounded p-3 bg-body-secondary">
+                <div class="d-flex justify-content-between fw-semibold mb-2 pb-2 border-bottom">
+                  <span>Valor à vista para o PDF</span>
+                  <span>{{ pdfTotals.totalFormatted }}</span>
+                </div>
+                <div v-if="pdfTotals.totalInstallments > 0" class="d-flex justify-content-between fw-semibold mt-2">
+                  <span>Valor a prazo para o PDF</span>
+                  <span>{{ pdfTotals.totalInstallmentsFormatted }}</span>
+                </div>
+              </div>
+              <p class="text-muted small mb-0 mt-3">
+                Os valores informados serão exibidos no PDF do orçamento.
+              </p>
+              <p v-if="pdfError" class="text-danger small mt-3 mb-0">
+                {{ pdfError }}
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" :disabled="generatingPdf" data-bs-dismiss="modal">
+                Cancelar
+              </button>
+              <button type="button" class="btn btn-primary" :disabled="generatingPdf" @click="confirmGeneratePdf">
+                <span
+                  v-if="generatingPdf"
+                  class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Gerar PDF
+              </button>
             </div>
           </div>
         </div>
-        <div class="modal-backdrop fade show"></div>
       </div>
     </Teleport>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import { USER_TYPES } from '@/constants/userTypes';
@@ -401,6 +405,11 @@ const pdfError = ref('');
 const showOrderModal = ref(false);
 const orderBudget = ref(null);
 const router = useRouter();
+
+// Referências para o modal de PDF
+const pdfModalElement = ref(null);
+let pdfModalInstance = null;
+let pdfModalHiddenHandler = null;
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -747,6 +756,14 @@ onMounted(() => {
     fetchUsers();
   }
   document.title = 'Orçamentos';
+  if (showPdfModal.value) {
+    initializePdfModal();
+    showPdfModalInstance();
+  }
+});
+
+onBeforeUnmount(() => {
+  disposePdfModal();
 });
 
 function openGeneratePdfModal(budget) {
@@ -768,13 +785,72 @@ function closeGeneratePdfModal() {
     return;
   }
 
-  showPdfModal.value = false;
   budgetToGeneratePdf.value = null;
   pdfPercentage.value = 0;
   pdfCashValue.value = null;
   pdfInstallmentValue.value = null;
   pdfError.value = '';
+  showPdfModal.value = false;
 }
+
+function initializePdfModal() {
+  if (!pdfModalElement.value || pdfModalInstance) {
+    return;
+  }
+
+  pdfModalInstance = new window.bootstrap.Modal(pdfModalElement.value, {
+    backdrop: true,
+    keyboard: true,
+    focus: true,
+  });
+
+  // Escutar evento de fechamento do Bootstrap
+  pdfModalHiddenHandler = () => {
+    closeGeneratePdfModal();
+  };
+  pdfModalElement.value.addEventListener('hidden.bs.modal', pdfModalHiddenHandler);
+}
+
+function showPdfModalInstance() {
+  if (!pdfModalInstance && pdfModalElement.value) {
+    initializePdfModal();
+  }
+  if (pdfModalInstance) {
+    pdfModalInstance.show();
+  }
+}
+
+function hidePdfModal() {
+  if (pdfModalInstance) {
+    pdfModalInstance.hide();
+  } else {
+    showPdfModal.value = false;
+  }
+}
+
+function disposePdfModal() {
+  if (pdfModalElement.value && pdfModalHiddenHandler) {
+    pdfModalElement.value.removeEventListener('hidden.bs.modal', pdfModalHiddenHandler);
+    pdfModalHiddenHandler = null;
+  }
+  if (pdfModalInstance) {
+    pdfModalInstance.dispose();
+    pdfModalInstance = null;
+  }
+}
+
+// Observar mudanças na prop showPdfModal
+watch(
+  () => showPdfModal.value,
+  (newValue) => {
+    if (newValue) {
+      showPdfModalInstance();
+    } else {
+      hidePdfModal();
+    }
+  },
+  { immediate: true }
+);
 
 function parsePercentage(value) {
   if (value === null || value === undefined || value === '') {

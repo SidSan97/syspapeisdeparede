@@ -1,114 +1,118 @@
 <template>
-  <Teleport v-if="visible" to="body">
-    <div>
-      <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Detalhes do orçamento</h5>
-              <button type="button" class="btn-close" aria-label="Close" @click="handleClose"></button>
-            </div>
-            <div class="modal-body">
-              <div v-if="details" class="budget-details">
-                <div class="border rounded p-3 bg-body-secondary">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small">Identificador</span>
-                    <span class="badge bg-secondary">#{{ details.id }}</span>
-                  </div>
-                  <div class="fw-semibold fs-5">{{ details.name }}</div>
-                  <div class="text-muted small mt-2">
-                    Prazo de entrega: {{ details.deliveryTime }}
-                  </div>
-                  <div v-if="details.status" class="text-muted small">
-                    Status: {{ details.status }}
-                  </div>
+  <Teleport to="body">
+    <div
+      ref="modalElement"
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="budgetDetailsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="budgetDetailsModalLabel">Detalhes do orçamento</h5>
+            <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="details" class="budget-details">
+              <div class="border rounded p-3 bg-body-secondary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Identificador</span>
+                  <span class="badge bg-secondary">#{{ details.id }}</span>
                 </div>
-
-                <!-- Valores do Orçamento -->
-                <div class="border rounded p-3 mt-3">
-                  <h6 class="fw-semibold mb-3">Valores do Orçamento</h6>
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <div class="text-muted small">Total à Vista</div>
-                      <div class="fw-semibold fs-5 text-success">{{ details.totalVistaFormatted }}</div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="text-muted small">Total a Prazo</div>
-                      <div class="fw-semibold fs-5 text-primary">{{ details.totalPrazoFormatted }}</div>
-                    </div>
-                  </div>
+                <div class="fw-semibold fs-5">{{ details.name }}</div>
+                <div class="text-muted small mt-2">
+                  Prazo de entrega: {{ details.deliveryTime }}
                 </div>
-
-                <div class="row gy-3 mt-3">
-                  <div class="col-md-6" v-if="details.customer">
-                    <div class="text-muted small">Cliente</div>
-                    <div class="fw-semibold">{{ details.customer }}</div>
-                  </div>
-                  <div class="col-md-6" v-if="details.customerEmail">
-                    <div class="text-muted small">Contato</div>
-                    <div class="fw-semibold">{{ details.customerEmail }}</div>
-                  </div>
-                  <div class="col-md-6" v-if="details.createdAt">
-                    <div class="text-muted small">Criado em</div>
-                    <div class="fw-semibold">{{ details.createdAt }}</div>
-                  </div>
-                  <div class="col-md-6" v-if="details.updatedAt">
-                    <div class="text-muted small">Atualizado em</div>
-                    <div class="fw-semibold">{{ details.updatedAt }}</div>
-                  </div>
+                <div v-if="details.status" class="text-muted small">
+                  Status: {{ details.status }}
                 </div>
+              </div>
 
-                <div v-if="details.description" class="mt-3">
-                  <div class="text-muted small mb-1">Observações</div>
-                  <p class="mb-0">{{ details.description }}</p>
-                </div>
-
-                <div v-if="details.items && details.items.length" class="mt-4">
-                  <h6 class="fw-semibold mb-2">Itens do orçamento</h6>
-                  <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th>Item</th>
-                          <th class="text-center">Qtd.</th>
-                          <th class="text-end">Valor unitário</th>
-                          <th class="text-end">Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(item, index) in details.items" :key="item.id ?? index">
-                          <td>{{ resolveItemName(item, index) }}</td>
-                          <td class="text-center">
-                            <span v-if="resolveItemQuantity(item) !== null">{{ resolveItemQuantity(item) }}</span>
-                            <span v-else>-</span>
-                          </td>
-                          <td class="text-end">{{ formatMaybeCurrency(resolveItemUnitPrice(item)) }}</td>
-                          <td class="text-end">{{ formatMaybeCurrency(resolveItemTotal(item)) }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+              <!-- Valores do Orçamento -->
+              <div class="border rounded p-3 mt-3">
+                <h6 class="fw-semibold mb-3">Valores do Orçamento</h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="text-muted small">Total à Vista</div>
+                    <div class="fw-semibold fs-5 text-success">{{ details.totalVistaFormatted }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="text-muted small">Total a Prazo</div>
+                    <div class="fw-semibold fs-5 text-primary">{{ details.totalPrazoFormatted }}</div>
                   </div>
                 </div>
               </div>
-              <div v-else class="text-center text-muted py-4">
-                Não foi possível carregar os detalhes do orçamento.
+
+              <div class="row gy-3 mt-3">
+                <div class="col-md-6" v-if="details.customer">
+                  <div class="text-muted small">Cliente</div>
+                  <div class="fw-semibold">{{ details.customer }}</div>
+                </div>
+                <div class="col-md-6" v-if="details.customerEmail">
+                  <div class="text-muted small">Contato</div>
+                  <div class="fw-semibold">{{ details.customerEmail }}</div>
+                </div>
+                <div class="col-md-6" v-if="details.createdAt">
+                  <div class="text-muted small">Criado em</div>
+                  <div class="fw-semibold">{{ details.createdAt }}</div>
+                </div>
+                <div class="col-md-6" v-if="details.updatedAt">
+                  <div class="text-muted small">Atualizado em</div>
+                  <div class="fw-semibold">{{ details.updatedAt }}</div>
+                </div>
+              </div>
+
+              <div v-if="details.description" class="mt-3">
+                <div class="text-muted small mb-1">Observações</div>
+                <p class="mb-0">{{ details.description }}</p>
+              </div>
+
+              <div v-if="details.items && details.items.length" class="mt-4">
+                <h6 class="fw-semibold mb-2">Itens do orçamento</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Item</th>
+                        <th class="text-center">Qtd.</th>
+                        <th class="text-end">Valor unitário</th>
+                        <th class="text-end">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, index) in details.items" :key="item.id ?? index">
+                        <td>{{ resolveItemName(item, index) }}</td>
+                        <td class="text-center">
+                          <span v-if="resolveItemQuantity(item) !== null">{{ resolveItemQuantity(item) }}</span>
+                          <span v-else>-</span>
+                        </td>
+                        <td class="text-end">{{ formatMaybeCurrency(resolveItemUnitPrice(item)) }}</td>
+                        <td class="text-end">{{ formatMaybeCurrency(resolveItemTotal(item)) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" @click="handleClose">
-                Fechar
-              </button>
+            <div v-else class="text-center text-muted py-4">
+              Não foi possível carregar os detalhes do orçamento.
             </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              Fechar
+            </button>
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show"></div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   budget: {
@@ -123,6 +127,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+const modalElement = ref(null);
+let modalInstance = null;
+let hiddenHandler = null;
+
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -131,6 +139,74 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 function handleClose() {
   emit('close');
 }
+
+function initializeModal() {
+  if (!modalElement.value || modalInstance) {
+    return;
+  }
+
+  modalInstance = new window.bootstrap.Modal(modalElement.value, {
+    backdrop: true,
+    keyboard: true,
+    focus: true,
+  });
+
+  // Escutar evento de fechamento do Bootstrap
+  hiddenHandler = () => {
+    handleClose();
+  };
+  modalElement.value.addEventListener('hidden.bs.modal', hiddenHandler);
+}
+
+function showModal() {
+  if (!modalInstance && modalElement.value) {
+    initializeModal();
+  }
+  if (modalInstance) {
+    modalInstance.show();
+  }
+}
+
+function hideModal() {
+  if (modalInstance) {
+    modalInstance.hide();
+  }
+}
+
+function disposeModal() {
+  if (modalElement.value && hiddenHandler) {
+    modalElement.value.removeEventListener('hidden.bs.modal', hiddenHandler);
+    hiddenHandler = null;
+  }
+  if (modalInstance) {
+    modalInstance.dispose();
+    modalInstance = null;
+  }
+}
+
+// Observar mudanças na prop visible
+watch(
+  () => props.visible,
+  (newValue) => {
+    if (newValue) {
+      showModal();
+    } else {
+      hideModal();
+    }
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  if (props.visible) {
+    initializeModal();
+    showModal();
+  }
+});
+
+onBeforeUnmount(() => {
+  disposeModal();
+});
 
 function formatCurrency(value) {
   if (value === null || value === undefined) {
