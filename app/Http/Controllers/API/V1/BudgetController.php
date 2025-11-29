@@ -245,7 +245,7 @@ class BudgetController extends Controller
         try {
             $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($data['id']);
 
-            if ($budget->status !== null) {
+            if ($budget->status !== null && $budget->status !== 'Em aberto') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Não é possível fazer pedido. O orçamento já possui um status definido.',

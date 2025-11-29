@@ -107,7 +107,7 @@ class BudgetRepository {
                 ),
                 'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : 0,
                 'raw_payload' => $data,
-                'status' => null,
+                'status' => 'Em aberto',
             ]);
 
             foreach ($rooms as $roomIndex => $roomData) {

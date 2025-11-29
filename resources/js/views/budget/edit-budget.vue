@@ -30,6 +30,7 @@
                                     class="form-control"
                                 >
                                     <option :value="null">Sem status</option>
+                                    <option value="Em aberto">Em aberto</option>
                                     <option value="Pendente de Revisão">Pendente de Revisão</option>
                                     <option value="Aprovado">Aprovado</option>
                                 </select>

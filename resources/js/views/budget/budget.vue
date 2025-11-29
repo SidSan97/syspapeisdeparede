@@ -167,7 +167,7 @@
                             Gerar PDF
                           </button>
                         </li>
-                        <li v-if="budget.status === null">
+                        <li v-if="budget.status === null || (budget.status && budget.status.toString().toLowerCase() === 'em aberto')">
                           <button class="dropdown-item" type="button" @click="openOrderModal(budget)">
                             Fazer pedido
                           </button>
@@ -490,6 +490,7 @@ function normalizeBudget(budget) {
 }
 
 const statusOptions = [
+  { label: 'Em aberto', value: 'em aberto' },
   { label: 'Aprovado', value: 'aprovado' },
   { label: 'Aprovar Layout', value: 'aprovar layout' },
   { label: 'Pendente de Revisão', value: 'pendente de revisão' },
