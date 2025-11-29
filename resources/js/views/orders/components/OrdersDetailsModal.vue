@@ -1,21 +1,27 @@
 <template>
-  <Teleport v-if="visible" to="body">
-    <div>
-      <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Detalhes do Pedido</h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="Close"
-                @click="handleClose"
-                :disabled="processing"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div v-if="details" class="pedido-details">
+  <Teleport to="body">
+    <div
+      ref="modalElement"
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="ordersDetailsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ordersDetailsModalLabel">Detalhes do Pedido</h5>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Close"
+              data-bs-dismiss="modal"
+              :disabled="processing"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="details" class="pedido-details">
                 <!-- Informações Principais -->
                 <div class="border rounded p-3 bg-body-secondary mb-4">
                   <div class="row g-3">
@@ -459,7 +465,7 @@
               <button
                 v-if="details && details.status !== 'Aprovado'"
                 type="button"
-                class="btn btn-success"
+                class="btn btn-primary"
                 @click="handleApprove"
                 :disabled="processing"
               >
@@ -469,20 +475,17 @@
                   role="status"
                   aria-hidden="true"
                 ></span>
-                <i v-else class="fa fa-check me-2"></i>
                 Aprovar
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show"></div>
-    </div>
   </Teleport>
 </template>
 
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue';
+import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 // Swal importado via window.Swal do plugin
 import { useAuthStore } from '@/stores/auth';
@@ -508,6 +511,9 @@ const requestLayoutArts = ref([]);
 const loadingRequestArts = ref(false);
 const artForms = ref({});
 const artFileInputs = ref({});
+const modalElement = ref(null);
+let modalInstance = null;
+let modalHiddenHandler = null;
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -520,6 +526,50 @@ function handleClose() {
   }
   paymentUrl.value = null;
   emit('close');
+}
+
+function initializeModal() {
+  if (!modalElement.value || modalInstance) {
+    return;
+  }
+
+  modalInstance = new window.bootstrap.Modal(modalElement.value, {
+    backdrop: true,
+    keyboard: true,
+    focus: true,
+  });
+
+  // Escutar evento de fechamento do Bootstrap
+  modalHiddenHandler = () => {
+    handleClose();
+  };
+  modalElement.value.addEventListener('hidden.bs.modal', modalHiddenHandler);
+}
+
+function showModalInstance() {
+  if (!modalInstance && modalElement.value) {
+    initializeModal();
+  }
+  if (modalInstance) {
+    modalInstance.show();
+  }
+}
+
+function hideModal() {
+  if (modalInstance) {
+    modalInstance.hide();
+  }
+}
+
+function disposeModal() {
+  if (modalElement.value && modalHiddenHandler) {
+    modalElement.value.removeEventListener('hidden.bs.modal', modalHiddenHandler);
+    modalHiddenHandler = null;
+  }
+  if (modalInstance) {
+    modalInstance.dispose();
+    modalInstance = null;
+  }
 }
 
 function formatCurrency(value) {
@@ -990,7 +1040,13 @@ watch(() => props.visible, async (isVisible) => {
     await nextTick();
     // Quando o modal abrir, fazer a requisição
     fetchRequestLayoutArts();
-  } else if (!isVisible) {
+    // Mostrar o modal
+    nextTick(() => {
+      showModalInstance();
+    });
+  } else {
+    // Ocultar o modal
+    hideModal();
     // Limpar dados quando o modal fechar
     requestLayoutArts.value = [];
     loadingRequestArts.value = false;
@@ -1006,6 +1062,19 @@ watch(() => props.pedido?.id, async (pedidoId) => {
     fetchRequestLayoutArts();
   }
 }, { immediate: false });
+
+onMounted(() => {
+  if (props.visible) {
+    nextTick(() => {
+      initializeModal();
+      showModalInstance();
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  disposeModal();
+});
 </script>
 
 <style scoped>

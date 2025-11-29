@@ -1,50 +1,56 @@
 <template>
-  <Teleport v-if="visible" to="body">
-    <div>
-      <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Registrar Pagamento</h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="Close"
-                @click="handleClose"
-                :disabled="uploading"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div v-if="pedido" class="mb-3">
+  <Teleport to="body">
+    <div
+      ref="modalElement"
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="ordersRegisterPaymentModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ordersRegisterPaymentModalLabel">Registrar Pagamento</h5>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Close"
+              data-bs-dismiss="modal"
+              :disabled="uploading"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="pedido" class="mb-3">
                 <p class="mb-2">
                   <strong>Pedido:</strong> {{ pedido.name }}
                 </p>
                 <p class="mb-0 text-muted small">
                   Envie o comprovante de pagamento (JPEG ou PDF)
                 </p>
-              </div>
-              <div class="mb-3">
-                <label for="paymentFile" class="form-label">
-                  Arquivo de Pagamento <span class="text-danger">*</span>
-                </label>
-                <input
-                  id="paymentFile"
-                  ref="paymentFileInput"
-                  type="file"
-                  accept=".jpeg,.jpg,.pdf,image/jpeg,application/pdf"
-                  class="form-control"
-                  @change="handleFileChange"
-                  :disabled="uploading"
-                />
-                <div class="form-text">
-                  Formatos aceitos: JPEG, JPG, PDF. Tamanho máximo: 10MB
-                </div>
-              </div>
-              <div v-if="error" class="alert alert-danger mb-0">
-                {{ error }}
+            </div>
+            <div class="mb-3">
+              <label for="paymentFile" class="form-label">
+                Arquivo de Pagamento <span class="text-danger">*</span>
+              </label>
+              <input
+                id="paymentFile"
+                ref="paymentFileInput"
+                type="file"
+                accept=".jpeg,.jpg,.pdf,image/jpeg,application/pdf"
+                class="form-control"
+                @change="handleFileChange"
+                :disabled="uploading"
+              />
+              <div class="form-text">
+                Formatos aceitos: JPEG, JPG, PDF. Tamanho máximo: 10MB
               </div>
             </div>
-            <div class="modal-footer">
+            <div v-if="error" class="alert alert-danger mb-0">
+              {{ error }}
+            </div>
+          </div>
+          <div class="modal-footer">
               <button
                 type="button"
                 class="btn btn-outline-secondary"
@@ -68,17 +74,15 @@
                 <i v-else class="fa fa-upload me-2"></i>
                 {{ uploading ? 'Enviando...' : 'Enviar' }}
               </button>
-            </div>
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show"></div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import axios from 'axios';
 // Swal importado via window.Swal do plugin
 
@@ -99,6 +103,9 @@ const selectedFile = ref(null);
 const paymentFileInput = ref(null);
 const uploading = ref(false);
 const error = ref('');
+const modalElement = ref(null);
+let modalInstance = null;
+let modalHiddenHandler = null;
 
 function handleClose() {
   if (uploading.value) {
@@ -106,6 +113,50 @@ function handleClose() {
   }
   emit('close');
   resetForm();
+}
+
+function initializeModal() {
+  if (!modalElement.value || modalInstance) {
+    return;
+  }
+
+  modalInstance = new window.bootstrap.Modal(modalElement.value, {
+    backdrop: true,
+    keyboard: true,
+    focus: true,
+  });
+
+  // Escutar evento de fechamento do Bootstrap
+  modalHiddenHandler = () => {
+    handleClose();
+  };
+  modalElement.value.addEventListener('hidden.bs.modal', modalHiddenHandler);
+}
+
+function showModalInstance() {
+  if (!modalInstance && modalElement.value) {
+    initializeModal();
+  }
+  if (modalInstance) {
+    modalInstance.show();
+  }
+}
+
+function hideModal() {
+  if (modalInstance) {
+    modalInstance.hide();
+  }
+}
+
+function disposeModal() {
+  if (modalElement.value && modalHiddenHandler) {
+    modalElement.value.removeEventListener('hidden.bs.modal', modalHiddenHandler);
+    modalHiddenHandler = null;
+  }
+  if (modalInstance) {
+    modalInstance.dispose();
+    modalInstance = null;
+  }
 }
 
 function resetForm() {
@@ -193,11 +244,29 @@ async function handleSubmit() {
   }
 }
 
-// Resetar formulário quando o modal fechar
+// Observar mudanças na prop visible
 watch(() => props.visible, (isVisible) => {
-  if (!isVisible) {
+  if (isVisible) {
+    nextTick(() => {
+      showModalInstance();
+    });
+  } else {
+    hideModal();
     resetForm();
   }
+});
+
+onMounted(() => {
+  if (props.visible) {
+    nextTick(() => {
+      initializeModal();
+      showModalInstance();
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  disposeModal();
 });
 </script>
 

@@ -1,13 +1,19 @@
 <template>
-  <Teleport v-if="visible" to="body">
-    <div>
-      <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Fazer pedido</h5>
-              <button type="button" class="btn-close" aria-label="Close" @click="handleClose"></button>
-            </div>
+  <Teleport to="body">
+    <div
+      ref="modalElement"
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="budgetOrderModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="budgetOrderModalLabel">Fazer pedido</h5>
+            <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+          </div>
             <div class="modal-body">
               <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -248,13 +254,11 @@
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show"></div>
-    </div>
   </Teleport>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import axios from 'axios';
 // Swal importado via window.Swal do plugin
 
@@ -281,6 +285,9 @@ const orderExistingFiles = ref([]);
 const orderSubmitting = ref(false);
 const orderError = ref('');
 const orderFileInput = ref(null);
+const modalElement = ref(null);
+let modalInstance = null;
+let modalHiddenHandler = null;
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -292,7 +299,11 @@ watch(
   (visible) => {
     if (visible) {
       initializeForm();
+      nextTick(() => {
+        showModalInstance();
+      });
     } else {
+      hideModal();
       resetForm();
     }
   },
@@ -725,6 +736,50 @@ function handleClose() {
   emit('close');
 }
 
+function initializeModal() {
+  if (!modalElement.value || modalInstance) {
+    return;
+  }
+
+  modalInstance = new window.bootstrap.Modal(modalElement.value, {
+    backdrop: true,
+    keyboard: true,
+    focus: true,
+  });
+
+  // Escutar evento de fechamento do Bootstrap
+  modalHiddenHandler = () => {
+    handleClose();
+  };
+  modalElement.value.addEventListener('hidden.bs.modal', modalHiddenHandler);
+}
+
+function showModalInstance() {
+  if (!modalInstance && modalElement.value) {
+    initializeModal();
+  }
+  if (modalInstance) {
+    modalInstance.show();
+  }
+}
+
+function hideModal() {
+  if (modalInstance) {
+    modalInstance.hide();
+  }
+}
+
+function disposeModal() {
+  if (modalElement.value && modalHiddenHandler) {
+    modalElement.value.removeEventListener('hidden.bs.modal', modalHiddenHandler);
+    modalHiddenHandler = null;
+  }
+  if (modalInstance) {
+    modalInstance.dispose();
+    modalInstance = null;
+  }
+}
+
 function handleOrderFilesChange(event) {
   const files = event?.target?.files ? Array.from(event.target.files) : [];
   orderForm.files = files;
@@ -878,6 +933,19 @@ async function submitOrder() {
     orderSubmitting.value = false;
   }
 }
+
+onMounted(() => {
+  if (props.visible) {
+    nextTick(() => {
+      initializeModal();
+      showModalInstance();
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  disposeModal();
+});
 </script>
 
 <style scoped>
