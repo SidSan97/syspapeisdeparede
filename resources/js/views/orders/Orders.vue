@@ -110,8 +110,10 @@ const selectedPedido = ref(null);
 const showPaymentModal = ref(false);
 const paymentPedido = ref(null);
 
+import { USER_TYPES } from '@/constants/userTypes';
+
 const canRegisterPayment = computed(() => {
-  return auth.user?.user_type_id === 2;
+  return auth.user?.user_type_id === USER_TYPES.ADMIN;
 });
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {

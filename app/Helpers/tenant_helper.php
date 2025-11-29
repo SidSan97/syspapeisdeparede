@@ -2,7 +2,7 @@
 
 if (!function_exists('is_tenant_user')) {
     /**
-     * Check if the current authenticated user is a tenant (user_type_id = 3).
+     * Check if the current authenticated user is a tenant (reseller).
      *
      * @return bool
      */

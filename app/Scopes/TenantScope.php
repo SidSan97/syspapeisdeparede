@@ -21,8 +21,8 @@ class TenantScope implements Scope
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Only apply tenant scope for users with user_type_id = 3
-            if ($user->user_type_id == 3) {
+            // Only apply tenant scope for users who are tenants (resellers)
+            if ($user->isTenant()) {
                 // Tenants should only see their own records
                 $builder->where('tenant_id', $user->id);
             }

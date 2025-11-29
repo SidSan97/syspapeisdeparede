@@ -141,14 +141,15 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const auth = useAuthStore();
 const isCollapsed = ref(true); // Começar como true para evitar flash
 const route = useRoute();
 
-const isAdmin = computed(() => auth.user?.user_type_id === 2);
-const isTenant = computed(() => auth.user?.user_type_id === 3);
-const isProductionUser = computed(() => auth.user?.user_type_id === 4);
+const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
+const isTenant = computed(() => auth.user?.user_type_id === USER_TYPES.RESELLER);
+const isProductionUser = computed(() => auth.user?.user_type_id === USER_TYPES.PRODUCTION);
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <page title="Editar usuário" v-if="auth.user?.user_type_id === 2">
+    <page title="Editar usuário" v-if="auth.user?.user_type_id === USER_TYPES.ADMIN">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="updateUser()">
@@ -44,7 +44,7 @@ const typeUsers = ref([])
 const saving = ref(false)
 
 async function fetchUser() {
-  if (auth.user?.user_type_id !== 2) return;
+  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
 
   try {
     saving.value = true

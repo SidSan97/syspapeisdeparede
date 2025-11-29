@@ -1,5 +1,6 @@
 import {createWebHistory, createRouter} from "vue-router";
 import { useAuthStore } from '@/stores/auth';
+import { USER_TYPES } from '@/constants/userTypes';
 
 import routes from "./routes";
 
@@ -38,14 +39,14 @@ router.beforeEach(async (to, from, next) => {
 
     const userTypeId = auth.user.user_type_id;
 
-    // Usuários do tipo 2 (admin) têm acesso total ao sistema
-    if (userTypeId === 2) {
+    // Usuários do tipo admin têm acesso total ao sistema
+    if (userTypeId === USER_TYPES.ADMIN) {
         // Permitir acesso a todas as rotas
         next();
         return;
     }
 
-    // Verificar acesso às rotas de configurações (apenas user_type_id === 2)
+    // Verificar acesso às rotas de configurações (apenas admin)
     const settingsRoutes = ['/settings', '/modelos'];
     const isSettingsRoute = settingsRoutes.some(route => to.path.startsWith(route));
     const isCatalogRoute = to.path === '/colecao-arts/catalogo';
@@ -56,8 +57,8 @@ router.beforeEach(async (to, from, next) => {
         return;
     }
 
-    // Verificar acesso para tenants (user_type_id === 3)
-    if (userTypeId === 3) {
+    // Verificar acesso para tenants (reseller)
+    if (userTypeId === USER_TYPES.RESELLER) {
         // Rotas permitidas para tenants
         const allowedRoutes = [
             '/dashboard',
@@ -100,12 +101,12 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    // Verificar acesso para usuários de produção (user_type_id === 4)
+    // Verificar acesso para usuários de produção
     const productionRoutes = ['/layouts', '/products', '/pedidos-producao'];
     const isProductionRoute = productionRoutes.some(route => to.path.startsWith(route));
 
     if (isProductionRoute) {
-        if (userTypeId !== 4) {
+        if (userTypeId !== USER_TYPES.PRODUCTION) {
             // Redirecionar para dashboard se não for usuário de produção
             next({ path: '/dashboard' });
             return;

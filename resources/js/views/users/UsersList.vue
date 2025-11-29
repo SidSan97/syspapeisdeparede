@@ -1,9 +1,9 @@
 <template>
   <section class="content">
-    <Page title="Usuários" back-to="/settings" v-if="auth.user?.user_type_id === 2">
+    <Page title="Usuários" back-to="/settings" v-if="auth.hasPermission('view users')">
       <template #actions>
         <router-link
-          v-if="auth.user?.user_type_id === 2"
+          v-if="auth.hasPermission('view users')"
           :to="{ name: 'UsersCreate' }"
           class="btn btn-primary"
         >
@@ -14,56 +14,6 @@
 
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent border-0 pb-0">
-          <!--div class="d-flex flex-column flex-md-row gap-3 mb-4">
-            <div class="flex-grow-1">
-              <div class="input-group input-group-lg">
-                <span class="input-group-text bg-body-secondary border border-secondary">
-                  <i class="fa fa-search text-muted"></i>
-                </span>
-                <input
-                  v-model="searchQuery"
-                  type="search"
-                  class="form-control border border-secondary bg-body-secondary"
-                  placeholder="Pesquisar usuário"
-                  aria-label="Pesquisar usuário"
-                />
-              </div>
-            </div>
-
-            <div class="dropdown">
-              <button
-                class="btn btn-outline-secondary btn-lg d-flex align-items-center gap-2"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                {{ selectedRoleLabel }}
-                <i class="fa fa-chevron-down small"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                <li>
-                  <button
-                    class="dropdown-item"
-                    type="button"
-                    :class="{ active: selectedRoleId === null }"
-                    @click="setRoleFilter(null)"
-                  >
-                    Todos os papéis
-                  </button>
-                </li>
-                <li v-for="role in typeUsers" :key="role.id">
-                  <button
-                    class="dropdown-item"
-                    type="button"
-                    :class="{ active: selectedRoleId === role.id }"
-                    @click="setRoleFilter(role.id)"
-                  >
-                    {{ role.name }}
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div-->
           <div class="d-flex flex-column gap-3">
             <div class="row buttons-filters">
               <div class="col-lg-4">
@@ -217,8 +167,7 @@ import EmptyState from '@/components/empty-state/EmptyState.vue';
 import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
 import { swalConfirmation } from '../../../utils/alerts';
-// Alerts agora usam window.Swal.fire diretamente
-import { useUtils } from '@/composables/useUtils';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -285,7 +234,8 @@ const setRoleFilter = (roleId) => {
 };
 
 const fetchUsers = async () => {
-  if (auth.user?.user_type_id !== 2) return;
+
+  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
 
   loading.value = true;
   try {
@@ -319,7 +269,8 @@ const fetchTypeUsers = async () => {
 };
 
 const confirmDelete = async (user) => {
-  if (auth.user?.user_type_id !== 2) return;
+
+  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
 
   const result = await swalConfirmation(
     'Excluir usuário?',

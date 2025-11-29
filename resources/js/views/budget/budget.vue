@@ -366,6 +366,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
+import { USER_TYPES } from '@/constants/userTypes';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
 import BudgetOrderModal from '@/components/budget/BudgetOrderModal.vue';
@@ -383,7 +384,7 @@ const selectedUserId = ref(null);
 const users = ref([]);
 const loadingUsers = ref(false);
 
-const isAdmin = computed(() => auth.user?.user_type_id === 2);
+const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const showCancelModal = ref(false);
 const budgetToCancel = ref(null);
 const cancelling = ref(false);

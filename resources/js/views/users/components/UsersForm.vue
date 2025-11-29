@@ -80,8 +80,8 @@
       </div>
     </div>
 
-    <!-- Checkbox de Dropshipping (apenas para tipo 3) -->
-    <div v-if="Number(form.user_type_id) === 3" class="row">
+    <!-- Checkbox de Dropshipping (apenas para designer) -->
+    <div v-if="Number(form.user_type_id) === USER_TYPES.RESELLER" class="row">
       <div class="col-12 mb-3">
         <div class="form-check">
           <input
@@ -104,6 +104,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
+import { USER_TYPES } from '@/constants/userTypes'
 
 const props = defineProps({
   typeUsers: {
@@ -151,15 +152,15 @@ const validatePasswordMatch = () => {
 }
 
 const handleUserTypeChange = () => {
-  // Se o tipo de usuário não for 3, resetar is_dropshipping para 0
-  if (Number(form.user_type_id) !== 3) {
+  // Se o tipo de usuário não for designer, resetar is_dropshipping para 0
+  if (Number(form.user_type_id) !== USER_TYPES.RESELLER) {
     form.is_dropshipping = 0
   }
 }
 
-// Watch para garantir que is_dropshipping seja 0 quando user_type_id não for 3
+// Watch para garantir que is_dropshipping seja 0 quando user_type_id não for designer
 watch(() => form.user_type_id, (newValue) => {
-  if (Number(newValue) !== 3) {
+  if (Number(newValue) !== USER_TYPES.RESELLER) {
     form.is_dropshipping = 0
   }
 })
@@ -175,7 +176,6 @@ const validateForm = () => {
     errors.push('O campo <strong>E-mail</strong> é obrigatório.')
   }
 
-  // Validar senha apenas na criação
   if (!props.isEdit) {
     if (!form.password || !form.password.trim()) {
       errors.push('O campo <strong>Senha</strong> é obrigatório.')

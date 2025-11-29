@@ -13,7 +13,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->user_type_id === 2;
+        return $user->isAdmin();
     }
 
     /**
@@ -21,8 +21,8 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        // Usuário pode editar a si mesmo ou se for admin (user_type_id === 2)
-        return $user->id === $model->id || $user->user_type_id === 2;
+        // Usuário pode editar a si mesmo ou se for admin
+        return $user->id === $model->id || $user->isAdmin();
     }
 
     /**
@@ -34,6 +34,6 @@ class UserPolicy
             return false;
         }
 
-        return $user->user_type_id === 2;
+        return $user->isAdmin();
     }
 }

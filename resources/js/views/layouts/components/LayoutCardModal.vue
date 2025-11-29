@@ -610,6 +610,7 @@
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
+  import { USER_TYPES } from '@/constants/userTypes';
 
   const props = defineProps({
     card: {
@@ -960,7 +961,7 @@
   });
 
   const canRemoveMembers = computed(() => {
-    return auth.user?.user_type_id === 2;
+    return auth.user?.user_type_id === USER_TYPES.ADMIN;
   });
 
   const filteredMembers = computed(() => {
@@ -994,7 +995,7 @@
       loadingMembers.value = true;
       const response = await window.axios.get('v1/users/search', {
         params: {
-          user_type_id: 3
+          user_type_id: USER_TYPES.DESIGNER
         }
       });
 

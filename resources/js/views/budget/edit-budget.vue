@@ -36,7 +36,7 @@
                                 </select>
                             </div>
 
-                            <!-- Checkbox Dropshipping (apenas para user_type_id === 2 ou is_dropshipping === 1) -->
+                            <!-- Checkbox Dropshipping (apenas para admin ou is_dropshipping === 1) -->
                             <div v-if="canEnableDropshipping" class="mb-3">
                                 <div class="form-check">
                                     <input
@@ -509,6 +509,7 @@ import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from './components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const router = useRouter();
 const route = useRoute();
@@ -652,7 +653,7 @@ const budget = reactive({
 
 // Computed para verificar se pode habilitar dropshipping
 const canEnableDropshipping = computed(() => {
-    return auth.user?.user_type_id === 2 || auth.user?.is_dropshipping === 1;
+    return auth.user?.user_type_id === USER_TYPES.ADMIN || auth.user?.is_dropshipping === 1;
 });
 
 async function fetchCollectionModels() {

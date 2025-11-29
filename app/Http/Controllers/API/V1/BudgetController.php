@@ -862,9 +862,9 @@ class BudgetController extends Controller
     public function registerPayment(RegisterPaymentRequest $request): JsonResponse
     {
         try {
-            // Validar se o usuário tem permissão de admin(user_type_id === 2)
+            // Validar se o usuário tem permissão de admin
             $user = Auth::user();
-            if (!$user || $user->user_type_id !== 2) {
+            if (!$user || !$user->isAdmin()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Você não tem permissão para registrar pagamentos.',

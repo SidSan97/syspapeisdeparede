@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <page title="Criar novo usuário" v-if="auth.user?.user_type_id === 2">
+    <page title="Criar novo usuário" back-to="/settings/usuarios" v-if="auth.hasPermission('create user')">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="createUser()">
@@ -33,6 +33,7 @@ import EmptyState from '@/components/empty-state/EmptyState.vue'
 import UsersForm from './components/UsersForm.vue'
 
 import { useAuthStore } from '@/stores/auth';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const Toast = window.Toast
 const auth = useAuthStore()

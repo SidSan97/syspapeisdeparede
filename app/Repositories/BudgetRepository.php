@@ -38,7 +38,7 @@ class BudgetRepository {
 
         $query = Budget::with('rooms.walls.collectionModel');
 
-        if($user->user_type_id !== 2) {
+        if(!$user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
@@ -75,7 +75,7 @@ class BudgetRepository {
             $deliveryTime
         ) {
             $user = Auth::user();
-            $tenantId = ($user->user_type_id == 3) ? $user->id : null;
+            $tenantId = $user->isTenant() ? $user->id : null;
 
             $budget = Budget::create([
                 'user_id' => $user->id,

@@ -24,7 +24,7 @@
                                 />
                             </div>
 
-                            <!-- Checkbox Dropshipping (apenas para user_type_id === 2 ou is_dropshipping === 1) -->
+                            <!-- Checkbox Dropshipping (apenas para admin ou is_dropshipping === 1) -->
                             <div v-if="canEnableDropshipping" class="mb-3">
                                 <div class="form-check">
                                     <input
@@ -488,6 +488,7 @@ import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
 import DropshippingForm from './components/DropshippingForm.vue';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -497,10 +498,10 @@ const saving = ref(false);
 const enableDropshipping = ref(false);
 const dropshippingFormRef = ref(null);
 
-const isAdmin = computed(() => auth.user?.user_type_id === 2);
+const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const canEnableDropshipping = computed(() => {
   const user = auth.user;
-  return user?.user_type_id === 2 || user?.is_dropshipping === 1 || user?.is_dropshipping === true;
+  return user?.user_type_id === USER_TYPES.ADMIN || user?.is_dropshipping === 1 || user?.is_dropshipping === true;
 });
 
 // Modelos de produto disponíveis

@@ -83,11 +83,53 @@ class User extends Authenticatable implements Commentator //implements MustVerif
             ->withTimestamps();
     }
 
-    /**
-     * Get the dropshipping data for this user (as dealer).
-     */
     public function dropshippingData(): HasMany
     {
         return $this->hasMany(DropshippingData::class, 'dealer_id');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin') || $this->user_type_id === \App\Support\UserType::ADMIN;
+    }
+
+    public function isReseller(): bool
+    {
+        return $this->hasRole('reseller') || $this->user_type_id === \App\Support\UserType::RESELLER;
+    }
+
+    public function isDesigner(): bool
+    {
+        return $this->hasRole('designer') || $this->user_type_id === \App\Support\UserType::DESIGNER;
+    }
+
+    public function isProduction(): bool
+    {
+        return $this->hasRole('production') || $this->user_type_id === \App\Support\UserType::PRODUCTION;
+    }
+
+    public function isCommercial(): bool
+    {
+        return $this->hasRole('commercial') || $this->user_type_id === \App\Support\UserType::COMMERCIAL;
+    }
+
+    public function isExpedition(): bool
+    {
+        return $this->hasRole('expedition') || $this->user_type_id === \App\Support\UserType::EXPEDITION;
+    }
+
+    public function isRepresentatives(): bool
+    {
+        return $this->hasRole('representatives') || $this->user_type_id === \App\Support\UserType::REPRESENTATIVES;
+    }
+
+    public function isArchitects(): bool
+    {
+        return $this->hasRole('architects') || $this->user_type_id === \App\Support\UserType::ARCHITECTS;
+    }
+
+    public function isTenant(): bool
+    {
+        return $this->hasRole('reseller') || $this->user_type_id === \App\Support\UserType::RESELLER;
     }
 }
