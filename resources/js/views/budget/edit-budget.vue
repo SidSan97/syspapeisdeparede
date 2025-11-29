@@ -375,7 +375,7 @@
                                 </div>
 
                                 <div v-if="budget.carriers && budget.carriers.length > 0" class="mt-4">
-                                    <label class="form-label">Transportadoras Disponíveis</label>
+                                    <label class="form-label">Transportadora</label>
                                     <div class="list-group">
                                         <div
                                             v-for="(carrier, index) in budget.carriers"
@@ -777,14 +777,38 @@ function normalizeBudgetFromAPI(budgetData) {
         });
     }
 
-    // Encontrar transportadora selecionada
+    // Encontrar transportadora selecionada e recriar lista se necessário
+    let carriers = Array.isArray(budgetData.carriers_snapshot)
+        ? budgetData.carriers_snapshot
+        : [];
+    
     let selectedCarrierIndex = null;
-    if (budgetData.selected_carrier_name && budgetData.carriers_snapshot) {
-        const carriers = Array.isArray(budgetData.carriers_snapshot)
-            ? budgetData.carriers_snapshot
-            : [];
-        selectedCarrierIndex = carriers.findIndex(c => c.name === budgetData.selected_carrier_name);
-        if (selectedCarrierIndex < 0) selectedCarrierIndex = null;
+    
+    // Se há frete selecionado mas não há lista de transportadoras, recriar a lista
+    if (budgetData.selected_carrier_name && budgetData.selected_carrier_price !== null && budgetData.selected_carrier_price !== undefined) {
+        if (carriers.length === 0) {
+            // Recriar lista de transportadoras com base no frete selecionado
+            carriers = [
+                {
+                    name: budgetData.selected_carrier_name,
+                    price: Number(budgetData.selected_carrier_price) || 0,
+                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
+                }
+            ];
+            selectedCarrierIndex = 0;
+        } else {
+            // Buscar o índice da transportadora selecionada
+            selectedCarrierIndex = carriers.findIndex(c => c.name === budgetData.selected_carrier_name);
+            if (selectedCarrierIndex < 0) {
+                // Se não encontrou, adicionar a transportadora selecionada à lista
+                carriers.push({
+                    name: budgetData.selected_carrier_name,
+                    price: Number(budgetData.selected_carrier_price) || 0,
+                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
+                });
+                selectedCarrierIndex = carriers.length - 1;
+            }
+        }
     }
 
     const normalizedPaymentMethod = budgetData.payment_method === 'installment'
@@ -797,7 +821,7 @@ function normalizeBudgetFromAPI(budgetData) {
         status: budgetData.status || '',
         rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
         cep: budgetData.cep || '',
-        carriers: budgetData.carriers_snapshot || [],
+        carriers: carriers,
         selectedCarrier: selectedCarrierIndex,
         paymentMethod: normalizedPaymentMethod,
         installmentLimit: budgetData.installment_limit || 12,
