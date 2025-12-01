@@ -70,7 +70,7 @@ class UserController extends BaseController
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'user_type_id' => $request->user_type_id,
-            'is_dropshipping' => (int) $request->user_type_id === \App\Support\UserType::DESIGNER ? ((int) ($request->is_dropshipping ?? 0)) : 0,
+            'is_dropshipping' => (int) $request->user_type_id === \App\Support\UserType::RESELLER ? ((int) ($request->is_dropshipping ?? 0)) : 0,
         ];
 
         $user = $this->user->create($data);
@@ -109,11 +109,12 @@ class UserController extends BaseController
         // Remover password_confirmation se existir
         unset($data['password_confirmation']);
 
-        // Garantir que is_dropshipping seja 0 se user_type_id não for designer
-        if ((int) $data['user_type_id'] !== \App\Support\UserType::DESIGNER) {
+        // Garantir que is_dropshipping seja 0 se user_type_id não for reseller
+        if ((int) $data['user_type_id'] !== \App\Support\UserType::RESELLER) {
             $data['is_dropshipping'] = 0;
         } else {
-            $data['is_dropshipping'] = (int) ($request->is_dropshipping ?? 0);
+            // Garantir que is_dropshipping seja sempre definido, mesmo que não venha na requisição
+            $data['is_dropshipping'] = (int) ($request->input('is_dropshipping', 0));
         }
 
         $user->update($data);
