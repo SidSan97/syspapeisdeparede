@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <page title="Editar usuário" v-if="auth.user?.user_type_id === USER_TYPES.ADMIN">
+    <page title="Editar usuário" back-to="/settings/usuarios" v-if="auth.hasPermission('edit user')">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="updateUser()">
@@ -44,7 +44,7 @@ const typeUsers = ref([])
 const saving = ref(false)
 
 async function fetchUser() {
-  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
+  if (!auth.hasPermission('edit user')) return;
 
   try {
     saving.value = true

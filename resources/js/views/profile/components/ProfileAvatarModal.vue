@@ -88,9 +88,6 @@ function onFileChange(event) {
           aspectRatio: 1,
           viewMode: 1
         })
-
-        console.log('dfgljgfoig');
-
       }
     })
   }
@@ -108,7 +105,7 @@ function cropAndUpload() {
 
   const base64Image = canvas.toDataURL('image/jpeg', 0.9)
 
-  axios.post('/v1/profile/avatar', { avatar: base64Image })
+  axios.post('v1/profile/avatar', { image: base64Image })
     .then(() => {
       avatarPreview.value = base64Image
       closeModal()

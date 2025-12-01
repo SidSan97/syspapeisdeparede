@@ -10,7 +10,8 @@
             :src="form.avatar ? $asset('storage/' + form.avatar) : $asset('assets/img/avatar.svg')" />
 
           <div
-            class="position-absolute bottom-0 top-0 start-0 end-0 bg-dark rounded-circle text-white d-flex justify-content-center align-items-center avatar-mask">
+            class="position-absolute bottom-0 top-0 start-0 end-0 bg-dark rounded-circle text-white d-flex justify-content-center align-items-center avatar-mask"
+            @onclick="openAvatarModal">
             <i class="fas fa-camera fa-lg"></i>
           </div>
         </div>
@@ -51,11 +52,13 @@
     </div>
     <ProfilePasswordCard />
   </div>
+  <ProfileAvatarModal />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import ProfilePasswordCard from './components/ProfilePasswordCard.vue'
+import ProfileAvatarModal from './components/ProfileAvatarModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -66,6 +69,10 @@ const form = ref(new Form({
   email: '',
   avatar: '',
 }))
+
+function openAvatarModal() {
+  cropModal.value?.show()
+}
 
 function updateInfo() {
   saving.value = true
