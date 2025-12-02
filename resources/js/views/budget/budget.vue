@@ -8,20 +8,21 @@
       </template>
 
       <div class="border-0 shadow-sm">
-        <form class="row g-3 align-items-center mb-4" role="search">
+        <form class="g-3 align-items-center mb-4" role="search">
           <label for="search-query" class="sr-only">Pesquisar orçamento</label>
 
-          <div class="col-12 col-md-auto">
-            <div class="input-group input-group-prefix">
-              <input id="search-query" type="text" class="form-control"
-                placeholder="Pesquisar orçamento" v-model="searchQuery">
-              <span class="input-group-text">
-                <i class="fa fa-search"></i>
-              </span>
+          <div class="d-flex">
+            <div class="me-3">
+                <div class="input-group input-group-prefix">
+                    <input id="search-query" type="text" class="form-control"
+                        placeholder="Pesquisar orçamento" v-model="searchQuery">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"></i>
+                    </span>
+                </div>
             </div>
-          </div>
 
-          <div class="col-12 col-sm-auto">
+          <div class="">
             <div class="dropdown">
               <button
                 class="btn btn-outline-default dropdown-toggle"
@@ -55,6 +56,7 @@
                 </li>
               </ul>
             </div>
+          </div>
           </div>
 
           <div v-if="isAdmin" class="row buttons-filters mt-2">
