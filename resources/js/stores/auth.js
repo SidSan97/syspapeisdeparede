@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { USER_TYPES } from '@/constants/userTypes';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -30,6 +31,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await window.axios.get('/api/user');
         if (response.data && response.data.user) {
+            console.log(response.data);
           this.setUser({
             user: response.data.user,
             roles: response.data.roles || [],
@@ -53,10 +55,15 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    isAdmin() {
+      return this.user?.user_type_id === USER_TYPES.ADMIN || this.roles.includes('super admin');
+    },
+
     hasPermission(name) {
       if (!name) return false;
 
-      if (this.roles.includes('super admin')) return true;
+      // Verificar se é admin (super admin ou user_type_id === 1)
+      if (this.isAdmin()) return true;
 
       if (Array.isArray(name)) {
         return name.some(n => this.permissions.includes(n));
@@ -68,7 +75,8 @@ export const useAuthStore = defineStore('auth', {
     hasAllPermissions(names) {
       if (!Array.isArray(names)) return this.hasPermission(names);
 
-      if (this.roles.includes('super admin')) return true;
+      // Verificar se é admin (super admin ou user_type_id === 1)
+      if (this.isAdmin()) return true;
 
       return names.every(n => this.permissions.includes(n));
     },

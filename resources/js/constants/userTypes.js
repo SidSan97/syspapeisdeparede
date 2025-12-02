@@ -1,3 +1,6 @@
+/*
+* Numeração baseada na tabela type_users e seus respectivos nomes e ids
+/* */
 export const USER_TYPES = {
   ADMIN: 1,
   RESELLER: 2,
