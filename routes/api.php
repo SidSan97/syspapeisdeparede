@@ -131,11 +131,11 @@ Route::prefix('v1')->group(function () {
     //----------------------------------
     Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
+    Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
+    Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
     /*Route::get('orders/all', [OrderController::class, 'all'])->middleware('auth:api');
     Route::get('orders/status/{status}', [OrderController::class, 'getByStatus'])->middleware('auth:api');
-    Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
     Route::post('orders', [OrderController::class, 'store'])->middleware('auth:api');
-    Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
     Route::delete('orders/{id}', [OrderController::class, 'destroy'])->middleware('auth:api');
 */
     // Layout 'trello'

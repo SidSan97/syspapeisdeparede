@@ -15,17 +15,47 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['user', 'tenant', 'primaryRoom']);
+        $this->resource->loadMissing(['rooms.walls.collectionModel.files', 'user', 'tenant', 'primaryRoom', 'dropshippingData']);
 
         $data = $this->resource->toArray();
 
         // Transformar arquivos de referência
         if (!empty($data['files_referring_model']) && is_array($data['files_referring_model'])) {
-            $data['files_referring_model'] = array_map(function ($filePath) {
+            $data['files_referring_model'] = array_map(function ($fileItem) {
+                // Extrair o path do item (pode ser string ou array)
+                $path = null;
+
+                if (is_string($fileItem)) {
+                    // Se é uma string simples, é o path
+                    $path = $fileItem;
+                } elseif (is_array($fileItem)) {
+                    // Se é array, pode ter a chave 'path' ou ser indexado numericamente
+                    if (isset($fileItem['path']) && is_string($fileItem['path'])) {
+                        $path = $fileItem['path'];
+                    } elseif (isset($fileItem[0]) && is_string($fileItem[0])) {
+                        $path = $fileItem[0];
+                    }
+                }
+
+                // Se não conseguiu extrair o path, retorna como está
+                if (!$path || !is_string($path)) {
+                    return $fileItem;
+                }
+
+                // Se já tem estrutura completa, preservar
+                if (is_array($fileItem) && isset($fileItem['path'])) {
+                    return [
+                        'path' => $path,
+                        'url' => $fileItem['url'] ?? $this->makePublicUrl($path),
+                        'name' => $fileItem['name'] ?? basename($path),
+                    ];
+                }
+
+                // Criar estrutura a partir do path
                 return [
-                    'path' => $filePath,
-                    'url' => $this->makePublicUrl($filePath),
-                    'name' => basename($filePath),
+                    'path' => $path,
+                    'url' => $this->makePublicUrl($path),
+                    'name' => basename($path),
                 ];
             }, $data['files_referring_model']);
         }
@@ -57,6 +87,56 @@ class OrderResource extends JsonResource
                 'id' => $this->resource->primaryRoom->id,
                 'name' => $this->resource->primaryRoom->name,
             ];
+        }
+
+        // Incluir dados de dropshipping se existirem
+        if ($this->resource->relationLoaded('dropshippingData') && $this->resource->dropshippingData) {
+            $dropshippingData = $this->resource->dropshippingData;
+            $data['dropshipping_data'] = [
+                'id' => $dropshippingData->id,
+                'name' => $dropshippingData->name,
+                'person_type' => $dropshippingData->person_type,
+                'cpf_cnpj' => $dropshippingData->cpf_cnpj,
+                'IE' => $dropshippingData->IE,
+                'email' => $dropshippingData->email,
+                'phone' => $dropshippingData->phone,
+                'cep' => $dropshippingData->cep,
+                'uf' => $dropshippingData->uf,
+                'state' => $dropshippingData->state,
+                'city' => $dropshippingData->city,
+                'neighborhood' => $dropshippingData->neighborhood,
+                'public_space' => $dropshippingData->public_space,
+                'complement' => $dropshippingData->complement,
+                'dealer_id' => $dropshippingData->dealer_id,
+            ];
+        } else {
+            $data['dropshipping_data'] = null;
+        }
+
+        // Transformar rooms e walls
+        if (!empty($data['rooms']) && is_array($data['rooms'])) {
+            foreach ($data['rooms'] as &$room) {
+                if (!empty($room['walls']) && is_array($room['walls'])) {
+                    foreach ($room['walls'] as &$wall) {
+                        $wall['collection_model_name'] = $wall['collection_model']['name'] ?? null;
+
+                        // Transformar arquivos do modelo de coleção
+                        if (!empty($wall['collection_model']['files']) && is_array($wall['collection_model']['files'])) {
+                            $wall['collection_model']['files'] = array_map(function ($file) {
+                                return [
+                                    'id' => $file['id'] ?? null,
+                                    'name' => $file['file_name'] ?? null,
+                                    'file_name' => $file['file_name'] ?? null,
+                                    'file_path' => $file['file_path'] ?? null,
+                                    'url' => $this->makePublicUrl($file['file_path'] ?? null),
+                                ];
+                            }, $wall['collection_model']['files']);
+                        }
+                    }
+                    unset($wall);
+                }
+            }
+            unset($room);
         }
 
         return $data;

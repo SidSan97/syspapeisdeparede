@@ -53,11 +53,11 @@ class OrderRepository
             ->get();
     }
 
-    /*public function find(int $id): ?Order
+    public function find(int $id): ?Order
     {
         $user = Auth::user();
 
-        $query = Order::with(['user', 'tenant', 'primaryRoom']);
+        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom']);
 
         if (!$user->isAdmin()) {
             $query->where(function ($q) use ($user) {
@@ -67,7 +67,7 @@ class OrderRepository
         }
 
         return $query->find($id);
-    }*/
+    }
 
     public function create(array $data): Order
     {

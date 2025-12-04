@@ -115,7 +115,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $transformed->toArray($request),
+                'data' => $transformed->toArray(request()),
                 'message' => 'Pedido criado com sucesso',
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -155,6 +155,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao recuperar pedido',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -202,7 +203,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $transformed->toArray($request),
+                'data' => $transformed->toArray(request()),
                 'message' => 'Pedido atualizado com sucesso',
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
