@@ -248,18 +248,15 @@ class BudgetController extends Controller
         $data = $request->validated();
 
         try {
-            $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($data['id']);
-
-            // Atualizar o Budget com os dados do pedido
-            $budgetUpdated = $this->repository->placeOrder($budget, $data);
+            $budget = Budget::findOrFail($data['id']);
 
             // Criar Order a partir do Budget
-            $order = $this->orderRepository->createFromBudget($budgetUpdated, $data);
+            $order = $this->orderRepository->createFromBudget($budget, $data);
 
             // Criar OrderBudgets usando o Order criado
-            $this->createLayoutOrder($order, $budgetUpdated);
+            $this->createLayoutOrder($order, $budget);
 
-            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
+            $transformed = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -294,7 +291,7 @@ class BudgetController extends Controller
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
                 $orderBudgets[] = \App\Models\OrderBudget::create([
-                    'budget_id' => $budget->id,
+                    'order_id' => $order->id, // ID do Order recém-criado
                     'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',

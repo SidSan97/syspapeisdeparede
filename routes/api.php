@@ -112,7 +112,6 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
-    //Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
     Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');

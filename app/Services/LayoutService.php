@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Budget;
 use App\Models\BudgetWall;
 use App\Models\OrderBudget;
+use App\Models\Order;
 use Illuminate\Support\Collection;
 
 class LayoutService
@@ -19,21 +19,21 @@ class LayoutService
     public function transformLayouts(Collection $orderBudgets, ?string $typePage = null): array
     {
         return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage) {
-            $budget = $orderBudget->budget;
+            $order = $orderBudget->order;
             $wall = $orderBudget->wall;
 
-            if (!$budget || !$wall) {
+            if (!$order || !$wall) {
                 return null;
             }
 
             // Obter imagem da parede específica
             $wallImage = $this->getWallImage($wall);
-            $deliveryDates = $this->calculateDeliveryDates($budget);
+            $deliveryDates = $this->calculateDeliveryDates($order);
 
             // Criar nome do card baseado na parede
             $roomName = $wall->room->name ?? 'Ambiente';
             $wallName = $wall->name ?? 'Parede';
-            $cardName = $budget->name . ' - ' . $roomName . ' - ' . $wallName;
+            $cardName = $order->name . ' - ' . $roomName . ' - ' . $wallName;
 
             // Carregar comentários aprovados
             $orderBudget->load(['comments' => function ($query) {
@@ -86,12 +86,12 @@ class LayoutService
 
             return [
                 'id' => $orderBudget->id,
-                'budget_id' => $budget->id,
+                'order_id' => $order->id,
                 'budget_wall_id' => $wall->id,
                 'name' => $cardName,
-                'total_amount' => (float) $budget->total_amount,
-                'total_amount_installments' => (float) $budget->total_amount_installments,
-                'delivery_time' => $budget->delivery_time ?? 0,
+                'total_amount' => (float) $order->total_amount,
+                'total_amount_installments' => (float) $order->total_amount_installments,
+                'delivery_time' => $order->delivery_time ?? 0,
                 'delivery_date_start' => $deliveryDates['start'],
                 'delivery_date_end' => $deliveryDates['end'],
                 'delivery_date_start_full' => $deliveryDates['start_full'],
@@ -106,9 +106,9 @@ class LayoutService
                 'members' => $members,
                 'history' => $history,
                 'image' => $wallImage,
-                'budget' => $this->transformBudget($budget),
+                'order' => $this->transformOrder($order),
                 'wall' => $this->transformWall($wall),
-                'uploaded_files' => $this->transformUploadedFiles($budget->files_referring_model ?? []),
+                'uploaded_files' => $this->transformUploadedFiles($order->files_referring_model ?? []),
                 'created_at' => $orderBudget->created_at,
                 'updated_at' => $orderBudget->updated_at,
             ];
@@ -136,12 +136,12 @@ class LayoutService
     /**
      * Calcula as datas de entrega baseadas no prazo
      *
-     * @param Budget $budget
+     * @param Order $order
      * @return array
      */
-    protected function calculateDeliveryDates(Budget $budget): array
+    protected function calculateDeliveryDates(Order $order): array
     {
-        $deliveryTime = $budget->delivery_time ?? 0;
+        $deliveryTime = $order->delivery_time ?? 0;
         $startDate = \Carbon\Carbon::now();
         $endDate = $startDate->copy()->addDays($deliveryTime);
 
@@ -158,16 +158,16 @@ class LayoutService
     }
 
     /**
-     * Transforma um Budget em array com dados formatados
+     * Transforma um Order em array com dados formatados
      *
-     * @param Budget $budget
+     * @param Order $order
      * @return array
      */
-    protected function transformBudget(Budget $budget): array
+    protected function transformOrder(Order $order): array
     {
-        $budget->loadMissing(['rooms.walls.collectionModel.files']);
+        $order->loadMissing(['rooms.walls.collectionModel.files']);
 
-        $data = $budget->toArray();
+        $data = $order->toArray();
 
         if (!empty($data['rooms']) && is_array($data['rooms'])) {
             foreach ($data['rooms'] as &$room) {

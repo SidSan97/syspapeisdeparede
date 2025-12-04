@@ -83,7 +83,8 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao listar layouts: ' . $e->getMessage(),
+                'message' => 'Erro ao listar layouts',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

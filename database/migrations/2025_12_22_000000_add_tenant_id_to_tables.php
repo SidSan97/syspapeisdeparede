@@ -31,7 +31,7 @@ return new class extends Migration
 
         // Add tenant_id to order_budgets table
         Schema::table('order_budgets', function (Blueprint $table) {
-            $table->foreignId('tenant_id')->nullable()->after('budget_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('tenant_id')->nullable()->after('order_id')->constrained('users')->onDelete('cascade');
             $table->index('tenant_id');
         });
 

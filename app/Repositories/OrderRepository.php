@@ -48,7 +48,7 @@ class OrderRepository
         return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
             ->whereNotNull('budget_wall_id')
             ->with([
-                'budget' => function ($query) {
+                'order' => function ($query) {
                     $query->with([
                         'rooms.walls.collectionModel.files',
                         'user'

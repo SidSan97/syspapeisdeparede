@@ -6,6 +6,8 @@ use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
@@ -76,6 +78,16 @@ class Order extends Model
     public function primaryRoom(): BelongsTo
     {
         return $this->belongsTo(BudgetRoom::class, 'primary_budget_room_id');
+    }
+
+    public function rooms(): HasMany
+    {
+        return $this->hasMany(BudgetRoom::class)->orderBy('position');
+    }
+
+    public function dropshippingData(): HasOne
+    {
+        return $this->hasOne(DropshippingData::class);
     }
 }
 

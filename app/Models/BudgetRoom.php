@@ -14,6 +14,7 @@ class BudgetRoom extends Model
 
     protected $fillable = [
         'budget_id',
+        'order_id',
         'tenant_id',
         'name',
         'position',
@@ -23,11 +24,17 @@ class BudgetRoom extends Model
     protected $casts = [
         'position' => 'integer',
         'raw_payload' => 'array',
+        'order_id' => 'integer',
     ];
 
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function walls(): HasMany
