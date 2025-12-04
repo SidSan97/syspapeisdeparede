@@ -10,16 +10,19 @@ use App\Repositories\OrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\LayoutService;
+use App\Services\GeneratePaymentService;
 
 class OrderController extends Controller
 {
     protected $repository;
     protected $layoutService;
-    public function __construct(OrderRepository $repository, LayoutService $layoutService)
+    protected $generatePaymentService;
+    public function __construct(OrderRepository $repository, LayoutService $layoutService, GeneratePaymentService $generatePaymentService)
     {
         $this->middleware('auth:api');
         $this->repository = $repository;
         $this->layoutService = $layoutService;
+        $this->generatePaymentService = $generatePaymentService;
     }
 
     public function index(): JsonResponse
@@ -261,6 +264,69 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar pedidos por status',
+            ], 500);
+        }
+    }
+
+    public function approve(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'exists:budgets,id'],
+        ]);
+
+        try {
+            $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
+            $budgetPaymentData = BudgetResource::getBudgetPaymentData($order->toArray());
+
+            // Atualizar status do pedido para 'Aprovado'
+            $order->update(['status' => 'Aprovado']);
+
+            // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
+            $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+
+            if (!$firstColumn) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.',
+                ], 400);
+            }
+
+            // Atualizar status dos OrderBudget existentes para 'Liberado para produção'
+            \App\Models\OrderBudget::where('order_id', $order->id)
+                ->update(['status' => 'Liberado para produção']);
+
+            // Buscar os OrderBudget atualizados para retornar na resposta
+            $orderBudgets = \App\Models\OrderBudget::where('order_id', $order->id)->get();
+
+            // Gerar link de pagamento
+            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
+            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
+
+            // Extrair URL do link de pagamento
+            $paymentUrl = null;
+            if ($paymentLinkData['success'] ?? false) {
+                // A API do Pagar.me retorna a URL em diferentes estruturas possíveis
+                $apiResponse = $paymentLinkData['data'] ?? [];
+                $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
+            }
+
+            $transformed = (new OrderResource($order->refresh()))->toArray(request());
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'order_budgets' => $orderBudgets,
+                'payment_link' => [
+                    'success' => $paymentLinkData['success'] ?? false,
+                    'url' => $paymentUrl,
+                    'data' => $paymentLinkData['data'] ?? null,
+                ],
+                'message' => 'Orçamento aprovado com sucesso',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
             ], 500);
         }
     }

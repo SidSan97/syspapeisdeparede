@@ -109,7 +109,7 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
     Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');
-    Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
+    //Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
     Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
@@ -133,6 +133,7 @@ Route::prefix('v1')->group(function () {
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
     Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
+    Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
     /*Route::get('orders/all', [OrderController::class, 'all'])->middleware('auth:api');
     Route::get('orders/status/{status}', [OrderController::class, 'getByStatus'])->middleware('auth:api');
     Route::post('orders', [OrderController::class, 'store'])->middleware('auth:api');

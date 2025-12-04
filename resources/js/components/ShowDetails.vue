@@ -399,9 +399,12 @@
                             </div>
 
                             <!-- Seção: Pagamento -->
-                            <div class="card mb-4">
-                                <div class="card-header bg-transparent">
-                                    <h5 class="mb-0 fw-semibold">Pagamento</h5>
+                            <div class="card mb-4" :class="{ 'border-success border-2': paymentUrl }">
+                                <div class="card-header bg-transparent" :class="{ 'bg-success-subtle': paymentUrl }">
+                                    <h5 class="mb-0 fw-semibold">
+                                        <i v-if="paymentUrl" class="fa fa-check-circle text-success me-2"></i>
+                                        Pagamento
+                                    </h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-3">
@@ -815,13 +818,13 @@ async function handleApprove() {
     actionType.value = 'approve';
 
     try {
-        // Aprovar o orçamento
-        const approveResponse = await axios.post('v1/budgets/approve', {
+        // Aprovar o pedido
+        const approveResponse = await axios.post('v1/orders/approve', {
             id: data.value.id,
         });
 
         if (!approveResponse.data?.success) {
-            throw new Error(approveResponse.data?.message || 'Erro ao aprovar orçamento');
+            throw new Error(approveResponse.data?.message || 'Erro ao aprovar pedido');
         }
 
         // Obter link de pagamento da resposta
@@ -898,5 +901,10 @@ watch(() => route.params.id, () => {
 <style scoped>
 .accordion-button {
     font-weight: 500;
+}
+
+.card.border-success.border-2 {
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
+    border-color: var(--bs-success) !important;
 }
 </style>

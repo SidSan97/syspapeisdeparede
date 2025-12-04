@@ -309,69 +309,6 @@ class BudgetController extends Controller
         return $orderBudgets;
     }
 
-    public function approve(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:budgets,id'],
-        ]);
-
-        try {
-            $budget = Budget::with(['rooms.walls'])->findOrFail($validated['id']);
-            $budgetPaymentData = BudgetResource::getBudgetPaymentData($budget->toArray());
-
-            // Atualizar status do orçamento para 'Aprovado'
-            $budget->update(['status' => 'Aprovado']);
-
-            // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
-            $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
-
-            if (!$firstColumn) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.',
-                ], 400);
-            }
-
-            // Atualizar status dos OrderBudget existentes para 'Liberado para produção'
-            \App\Models\OrderBudget::where('budget_id', $budget->id)
-                ->update(['status' => 'Liberado para produção']);
-
-            // Buscar os OrderBudget atualizados para retornar na resposta
-            $orderBudgets = \App\Models\OrderBudget::where('budget_id', $budget->id)->get();
-
-            // Gerar link de pagamento
-            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($budgetPaymentData);
-            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
-
-            // Extrair URL do link de pagamento
-            $paymentUrl = null;
-            if ($paymentLinkData['success'] ?? false) {
-                // A API do Pagar.me retorna a URL em diferentes estruturas possíveis
-                $apiResponse = $paymentLinkData['data'] ?? [];
-                $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
-            }
-
-            $transformed = (new BudgetResource($budget->refresh()))->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed,
-                'order_budgets' => $orderBudgets,
-                'payment_link' => [
-                    'success' => $paymentLinkData['success'] ?? false,
-                    'url' => $paymentUrl,
-                    'data' => $paymentLinkData['data'] ?? null,
-                ],
-                'message' => 'Orçamento aprovado com sucesso',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function generatePdf(Request $request)
     {
         $validated = $request->validate([
