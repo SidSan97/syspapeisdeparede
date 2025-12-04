@@ -28,11 +28,13 @@ class DropshippingData extends Model
         'complement',
         'dealer_id',
         'budget_id',
+        'order_id',
     ];
 
     protected $casts = [
         'dealer_id' => 'integer',
         'budget_id' => 'integer',
+        'order_id' => 'integer',
     ];
 
     /**
@@ -49,6 +51,14 @@ class DropshippingData extends Model
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class, 'budget_id');
+    }
+
+    /**
+     * Get the order that owns the dropshipping data.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'order_id');
     }
 }
 

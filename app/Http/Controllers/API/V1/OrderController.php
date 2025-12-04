@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Repositories\OrderRepository;
@@ -21,31 +22,22 @@ class OrderController extends Controller
         $this->layoutService = $layoutService;
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         try {
-            $perPage = (int) $request->get('per_page', 15);
-            $perPage = $perPage > 0 ? $perPage : 15;
-
-            $orders = $this->repository->paginate($perPage);
+            $orders = $this->repository->all();
+            $data = BudgetResource::collection($orders)->toArray(request());
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'items' => OrderResource::collection($orders),
-                    'meta' => [
-                        'current_page' => $orders->currentPage(),
-                        'per_page' => $orders->perPage(),
-                        'total' => $orders->total(),
-                        'last_page' => $orders->lastPage(),
-                    ],
-                ],
+                'data' => $data,
                 'message' => 'Lista de pedidos recuperada com sucesso',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar pedidos',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

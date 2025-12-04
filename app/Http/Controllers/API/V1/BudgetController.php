@@ -76,6 +76,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar orçamentos',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -95,6 +96,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar pedidos pendentes',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -114,6 +116,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar pedidos',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -158,6 +161,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao criar orçamento: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -215,6 +219,7 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar orçamento: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -234,7 +239,7 @@ class BudgetController extends Controller
                 'success' => true,
                 'data' => $transformed,
                 'message' => 'Orçamento cancelado com sucesso',
-            ]);
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

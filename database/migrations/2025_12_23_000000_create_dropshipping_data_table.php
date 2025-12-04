@@ -32,6 +32,9 @@ return new class extends Migration
             $table->foreignId('budget_id')
                 ->constrained('budgets')
                 ->onDelete('cascade');
+            $table->foreignId('order_id')
+                ->constrained('orders')
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -127,7 +127,7 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
     Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
 
-    // Orders
+    // Pedidos
     //----------------------------------
     Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');

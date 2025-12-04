@@ -24,7 +24,7 @@
                   <th class="text-end">Valor Total</th>
                   <th>Prazo de Entrega</th>
                   <th>Status</th>
-                  <th class="text-center">Ações</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -52,21 +52,28 @@
                       {{ pedido.status }}
                     </span>
                   </td>
-                  <td class="text-center">
-                    <div class="d-flex gap-2 justify-content-center">
-                      <button
-                        class="btn btn-sm btn-outline-primary"
-                        @click="openDetailsModal(pedido)"
-                      >
-                        Ver detalhes
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-subtle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa fa-ellipsis-h"></i>
                       </button>
-                      <button
-                        v-if="pedido.status !== 'Aprovado' && canRegisterPayment"
-                        class="btn btn-sm btn-primary"
-                        @click="openPaymentModal(pedido)"
-                      >
-                        Registrar pagamento
-                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <button class="dropdown-item" type="button" @click="openDetailsModal(pedido)">
+                            Ver detalhes
+                          </button>
+                        </li>
+                        <li v-if="pedido.status !== 'Aprovado' && canRegisterPayment">
+                          <button class="dropdown-item" type="button" @click="openPaymentModal(pedido)">
+                            Registrar pagamento
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item" type="button" @click="editOrder(pedido)">
+                            Editar
+                          </button>
+                        </li>
+                      </ul>
                     </div>
                   </td>
                 </tr>
@@ -101,7 +108,9 @@ import EmptyState from '../../components/empty-state/EmptyState.vue';
 import PedidoDetailsModal from './components/OrdersDetailsModal.vue';
 import OrdersRegisterPayment from './components/OrdersRegisterPayment.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const auth = useAuthStore();
 const pedidos = ref([]);
 const loading = ref(false);
@@ -156,7 +165,7 @@ async function fetchPedidos() {
   try {
     loading.value = true;
 
-    const { data } = await axios.get('v1/orders/layouts');
+    const { data } = await axios.get('v1/orders');
 
     const payload = Array.isArray(data?.data)
       ? data.data.map(normalizePedido)
@@ -202,6 +211,10 @@ function closePaymentModal() {
 function handlePaymentSuccess() {
   // Recarregar lista de pedidos após sucesso
   fetchPedidos();
+}
+
+function editOrder(order) {
+  router.push({ name: 'EditOrder', params: { id: order.id } });
 }
 
 onMounted(() => {

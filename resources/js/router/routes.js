@@ -67,6 +67,11 @@ const routes = [
                 component: () => import('../views/orders/Orders.vue'),
             },
             {
+                path: '/pedidos/:id/edit',
+                name: 'EditOrder',
+                component: () => import('../views/orders/edit-order.vue'),
+            },
+            {
                 path: '/modelos',
                 name: 'Models',
                 component: () => import('../views/models/Models.vue'),

@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Budget;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +16,8 @@ class OrderRepository
     {
         $user = Auth::user();
 
-        $query = Order::with(['user', 'tenant', 'primaryRoom']);
+        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom'])
+            ->orderByDesc('created_at');
 
         if (!$user->isAdmin()) {
             $query->where(function ($q) use ($user) {
@@ -24,23 +26,7 @@ class OrderRepository
             });
         }
 
-        return $query->orderByDesc('created_at')->get();
-    }
-
-    public function paginate(int $perPage = 15)
-    {
-        $user = Auth::user();
-
-        $query = Order::with(['user', 'tenant', 'primaryRoom']);
-
-        if (!$user->isAdmin()) {
-            $query->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('tenant_id', $user->id);
-            });
-        }
-
-        return $query->orderByDesc('created_at')->paginate($perPage);
+        return $query->get();
     }
 
     public function getLayoutsForApprove()
