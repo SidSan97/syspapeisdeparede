@@ -8,6 +8,7 @@ use App\Http\Controllers\API\V1\{
     CollectionModelController,
     LayoutColumnNameController,
     MyFavoriteCollectionImageController,
+    OrderController,
     ProductionColumnNameController,
     ProfileController,
     TypeUserController,
@@ -111,7 +112,7 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
-    Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
+    //Route::get('budgets/layouts', [BudgetController::class, 'layouts'])->middleware('auth:api');
     Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
@@ -127,6 +128,17 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
     Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
 
+    // Orders
+    //----------------------------------
+    Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
+    Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
+    /*Route::get('orders/all', [OrderController::class, 'all'])->middleware('auth:api');
+    Route::get('orders/status/{status}', [OrderController::class, 'getByStatus'])->middleware('auth:api');
+    Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
+    Route::post('orders', [OrderController::class, 'store'])->middleware('auth:api');
+    Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
+    Route::delete('orders/{id}', [OrderController::class, 'destroy'])->middleware('auth:api');
+*/
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');
     Route::post('layout-column-names', [LayoutColumnNameController::class, 'store'])->middleware('auth:api');

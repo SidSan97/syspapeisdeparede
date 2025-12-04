@@ -34,4 +34,12 @@ class BudgetRoom extends Model
     {
         return $this->hasMany(BudgetWall::class)->orderBy('position');
     }
+
+    /**
+     * Get the orders that use this room as primary room.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'primary_budget_room_id');
+    }
 }

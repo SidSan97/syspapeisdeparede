@@ -156,7 +156,7 @@ async function fetchPedidos() {
   try {
     loading.value = true;
 
-    const { data } = await axios.get('v1/budgets/orders');
+    const { data } = await axios.get('v1/orders/layouts');
 
     const payload = Array.isArray(data?.data)
       ? data.data.map(normalizePedido)

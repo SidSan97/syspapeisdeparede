@@ -9,10 +9,12 @@ use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
+use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
+use App\Repositories\OrderRepository;
 use App\Repositories\RequestLayoutArtRepository;
 use App\Repositories\DropshippingRepository;
 use App\Services\GeneratePdfService;
@@ -35,6 +37,7 @@ class BudgetController extends Controller
     protected $generatePaymentService;
     protected $layoutService;
     protected $orderBudgetRepository;
+    protected $orderRepository;
     protected $requestLayoutArtRepository;
     protected $dropshippingRepository;
 
@@ -44,6 +47,7 @@ class BudgetController extends Controller
         GeneratePaymentService $generatePaymentService,
         LayoutService $layoutService,
         OrderBudgetRepository $orderBudgetRepository,
+        OrderRepository $orderRepository,
         RequestLayoutArtRepository $requestLayoutArtRepository,
         DropshippingRepository $dropshippingRepository
     ) {
@@ -52,6 +56,7 @@ class BudgetController extends Controller
         $this->generatePaymentService = $generatePaymentService;
         $this->layoutService = $layoutService;
         $this->orderBudgetRepository = $orderBudgetRepository;
+        $this->orderRepository = $orderRepository;
         $this->requestLayoutArtRepository = $requestLayoutArtRepository;
         $this->dropshippingRepository = $dropshippingRepository;
     }
@@ -245,17 +250,16 @@ class BudgetController extends Controller
         try {
             $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($data['id']);
 
-            if ($budget->status !== null && $budget->status !== 'Em aberto') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Não é possível fazer pedido. O orçamento já possui um status definido.',
-                ], 422);
-            }
-
+            // Atualizar o Budget com os dados do pedido
             $budgetUpdated = $this->repository->placeOrder($budget, $data);
-            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
 
-            $this->createLayoutOrder($data['id']);
+            // Criar Order a partir do Budget
+            $order = $this->orderRepository->createFromBudget($budgetUpdated, $data);
+
+            // Criar OrderBudgets usando o Order criado
+            $this->createLayoutOrder($order, $budgetUpdated);
+
+            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -266,14 +270,13 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao registrar pedido',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function createLayoutOrder(int $id)
+    public function createLayoutOrder(Order $order, Budget $budget)
     {
-        $budget = Budget::with(['rooms.walls'])->findOrFail($id);
-
         // Atualizar status do orçamento
         $budget->update(['status' => 'Aprovar Layout']);
 
@@ -284,9 +287,10 @@ class BudgetController extends Controller
            throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
         }
 
-        // Criar um OrderBudget para cada parede do orçamento
+        // Criar um OrderBudget para cada parede do orçamento usando dados do Order
         $orderBudgets = [];
-        $tenantId = $budget->tenant_id; // Preservar tenant_id do orçamento
+        $tenantId = $order->tenant_id ?? $budget->tenant_id;
+
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
                 $orderBudgets[] = \App\Models\OrderBudget::create([
@@ -295,6 +299,7 @@ class BudgetController extends Controller
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
                     'layout_column_names_id' => $firstColumn->id,
+                    'description' => $order->comment_referring_model ?? null,
                 ]);
             }
         }
@@ -387,25 +392,6 @@ class BudgetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao gerar PDF do orçamento',
-            ], 500);
-        }
-    }
-
-    public function layouts(): JsonResponse
-    {
-        try {
-            $orderBudgets = $this->repository->getLayoutsForApprove();
-            $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lista de layouts',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar layouts: ' . $e->getMessage(),
             ], 500);
         }
     }

@@ -88,6 +88,22 @@ class User extends Authenticatable implements Commentator //implements MustVerif
         return $this->hasMany(DropshippingData::class, 'dealer_id');
     }
 
+    /**
+     * Get the orders that belong to this user.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the orders where this user is the tenant.
+     */
+    public function tenantOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'tenant_id');
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasRole('admin') || $this->user_type_id === \App\Support\UserType::ADMIN;

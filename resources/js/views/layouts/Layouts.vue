@@ -269,7 +269,7 @@
   async function fetchLayouts() {
     try {
       loading.value = true;
-      const { data } = await axios.get('v1/budgets/layouts');
+      const { data } = await axios.get('v1/orders/layouts');
 
       const payload = Array.isArray(data?.data) ? data.data : [];
 
