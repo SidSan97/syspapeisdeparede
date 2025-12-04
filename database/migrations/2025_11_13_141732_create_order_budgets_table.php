@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('order_budgets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('budget_id')
-                ->constrained('budgets')
+            $table->foreignId('order_id')
+                ->constrained('orders')
                 ->cascadeOnDelete();
             $table->unsignedBigInteger('budget_wall_id')->nullable();
             $table->unsignedBigInteger('layout_column_names_id')->nullable();

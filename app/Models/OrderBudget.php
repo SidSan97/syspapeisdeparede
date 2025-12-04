@@ -14,7 +14,7 @@ class OrderBudget extends Model
     use HasFactory, HasComments, HasTenantScope;
 
     protected $fillable = [
-        'budget_id',
+        'order_id',
         'tenant_id',
         'budget_wall_id',
         'description',
@@ -35,9 +35,9 @@ class OrderBudget extends Model
         'production_percentage' => 'decimal:1',
     ];
 
-    public function budget(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(Budget::class);
+        return $this->belongsTo(Order::class);
     }
 
     public function wall(): BelongsTo
