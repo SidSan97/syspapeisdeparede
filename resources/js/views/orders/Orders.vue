@@ -183,8 +183,7 @@ async function fetchPedidos() {
 }
 
 function openDetailsModal(pedido) {
-  selectedPedido.value = pedido;
-  showDetailsModal.value = true;
+  router.push({ name: 'ShowOrderDetails', params: { id: pedido.id } });
 }
 
 function closeDetailsModal() {

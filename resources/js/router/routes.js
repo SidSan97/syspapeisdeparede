@@ -32,6 +32,11 @@ const routes = [
                 component: () => import('../views/budget/edit-budget.vue')
             },
             {
+                path: '/budget/:id',
+                name: 'ShowBudgetDetails',
+                component: () => import('../components/ShowDetails.vue')
+            },
+            {
                 path: '/budget',
                 name: 'Budget',
                 component: Budget
@@ -70,6 +75,11 @@ const routes = [
                 path: '/pedidos/:id/edit',
                 name: 'EditOrder',
                 component: () => import('../views/orders/edit-order.vue'),
+            },
+            {
+                path: '/pedidos/:id',
+                name: 'ShowOrderDetails',
+                component: () => import('../components/ShowDetails.vue'),
             },
             {
                 path: '/modelos',

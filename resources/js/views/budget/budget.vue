@@ -548,8 +548,7 @@ function editBudget(budget) {
 }
 
 function openDetailsModal(budget) {
-  budgetToView.value = budget;
-  showDetailsModal.value = true;
+  router.push(`/budget/${budget.id}`);
 }
 
 function closeDetailsModal() {
