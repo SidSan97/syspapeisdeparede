@@ -84,57 +84,6 @@ class OrderController extends Controller
         }
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'user_id' => 'nullable|exists:users,id',
-                'tenant_id' => 'nullable|exists:users,id',
-                'primary_budget_room_id' => 'nullable|exists:budget_rooms,id',
-                'total_area' => 'nullable|numeric|min:0',
-                'total_amount' => 'nullable|numeric|min:0',
-                'total_amount_installments' => 'nullable|numeric|min:0',
-                'delivery_time' => 'nullable|integer|min:0',
-                'payment_method' => 'nullable|string',
-                'installment_limit' => 'nullable|integer|min:1',
-                'installments' => 'nullable|integer|min:1',
-                'cep' => 'nullable|string|max:9',
-                'selected_carrier_name' => 'nullable|string',
-                'selected_carrier_price' => 'nullable|numeric|min:0',
-                'selected_carrier_delivery_time' => 'nullable|integer|min:0',
-                'carriers_snapshot' => 'nullable|array',
-                'status' => 'nullable|string|max:50',
-                'payment_file' => 'nullable|string',
-                'comment_referring_model' => 'nullable|string|max:500',
-                'link_referring_model' => 'nullable|string|max:150',
-                'files_referring_model' => 'nullable|array',
-                'collection_referring_model' => 'nullable|string',
-                'dropshipping_budget' => 'nullable|boolean',
-            ]);
-
-            $order = $this->repository->create($validated);
-            $transformed = new OrderResource($order);
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed->toArray(request()),
-                'message' => 'Pedido criado com sucesso',
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro de validação',
-                'data' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao criar pedido',
-            ], 500);
-        }
-    }
-
     public function show(int $id): JsonResponse
     {
         try {
@@ -327,6 +276,25 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function productionLayouts(): JsonResponse
+    {
+        try {
+            $orderBudgets = $this->repository->getLayoutsForProduction();
+            $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lista de layouts de produção',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar layouts de produção: ' . $e->getMessage(),
             ], 500);
         }
     }

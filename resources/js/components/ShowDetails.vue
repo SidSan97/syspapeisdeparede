@@ -842,12 +842,11 @@ async function handleApprove() {
             }
         }
 
-        // Recarregar os dados para atualizar o status
         await loadData();
 
         await window.Swal.fire({
             title: 'Pedido aprovado',
-            text: 'O pedido foi aprovado com sucesso. Acesse os DETALHES DO PEDIDO para acessar o link de pagamento.',
+            text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
             confirmButtonText: 'Entendi!',
         });
     } catch (error) {

@@ -343,30 +343,6 @@ class BudgetRepository {
         return $budget->fresh(['rooms.walls.collectionModel']);
     }
 
-    public function getLayoutsForProduction()
-    {
-        return OrderBudget::whereIn('status', ['Aprovado', 'Liberado para produção'])
-            ->whereNotNull('budget_wall_id')
-            ->with([
-                'budget' => function ($query) {
-                    $query->with([
-                        'rooms.walls.collectionModel.files',
-                        'user'
-                    ]);
-                },
-                'wall' => function ($query) {
-                    $query->with([
-                        'collectionModel.files',
-                        'room'
-                    ]);
-                },
-                'layoutColumnName',
-                'users', // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
-                'history' // Carrega o histórico do card
-            ])
-            ->get();
-    }
-
     protected function formatCollectionReferringModel($value): ?string
     {
         if ($value === null) {

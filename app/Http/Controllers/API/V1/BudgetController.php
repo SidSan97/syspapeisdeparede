@@ -335,25 +335,6 @@ class BudgetController extends Controller
         }
     }
 
-    public function productionLayouts(): JsonResponse
-    {
-        try {
-            $orderBudgets = $this->repository->getLayoutsForProduction();
-            $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lista de layouts de produção',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar layouts de produção: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function updateLayoutColumn(Request $request): JsonResponse
     {
         try {
