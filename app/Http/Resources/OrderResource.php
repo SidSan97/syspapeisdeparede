@@ -121,7 +121,6 @@ class OrderResource extends JsonResource
             $rawPayload = $data['primary_room']['raw_payload'];
 
             if (!empty($rawPayload['walls']) && is_array($rawPayload['walls'])) {
-                // Buscar todos os model IDs únicos
                 $modelIds = array_filter(array_unique(array_column($rawPayload['walls'], 'model')));
 
                 // Carregar os CollectionModels com seus files
@@ -130,7 +129,6 @@ class OrderResource extends JsonResource
                     ->get()
                     ->keyBy('id');
 
-                // Transformar walls com os dados do CollectionModel
                 $walls = [];
                 foreach ($rawPayload['walls'] as $index => $wallData) {
                     $modelId = $wallData['model'] ?? null;
@@ -206,9 +204,6 @@ class OrderResource extends JsonResource
         return $data;
     }
 
-    /**
-     * Make a public URL from a storage path.
-     */
     protected function makePublicUrl(?string $path): ?string
     {
         if (!$path) {
@@ -232,9 +227,6 @@ class OrderResource extends JsonResource
         return $finalUrl;
     }
 
-    /**
-     * Normalize payment method.
-     */
     protected function normalizePaymentMethod(?string $method): ?string
     {
         if ($method === null) {

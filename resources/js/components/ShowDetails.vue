@@ -818,7 +818,6 @@ async function handleApprove() {
     actionType.value = 'approve';
 
     try {
-        // Aprovar o pedido
         const approveResponse = await axios.post('v1/orders/approve', {
             id: data.value.id,
         });

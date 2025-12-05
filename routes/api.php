@@ -16,6 +16,7 @@ use App\Http\Controllers\API\V1\{
 };
 use App\Http\Controllers\API\V1\RoleController;
 use App\Http\Controllers\AppVersionController;
+use App\Http\Controllers\FrenetController;
 use App\Http\Controllers\GeneratePaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -147,4 +148,7 @@ Route::prefix('v1')->group(function () {
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');
     Route::get('get-link-payment', [GeneratePaymentController::class, 'getLinkPayment'])->middleware('auth:api');
+
+    //Frenet
+    Route::post('frenet/calculate-shipping', [FrenetController::class, 'calculateShipping'])->middleware('auth:api');
 });

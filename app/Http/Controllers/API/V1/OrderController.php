@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\OrderBudget;
 use App\Repositories\OrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,12 +18,19 @@ class OrderController extends Controller
     protected $repository;
     protected $layoutService;
     protected $generatePaymentService;
-    public function __construct(OrderRepository $repository, LayoutService $layoutService, GeneratePaymentService $generatePaymentService)
+    protected $orderBudget;
+
+    public function __construct(OrderRepository $repository,
+        LayoutService $layoutService,
+        GeneratePaymentService $generatePaymentService,
+        OrderBudget $orderBudget
+    )
     {
         $this->middleware('auth:api');
         $this->repository = $repository;
         $this->layoutService = $layoutService;
         $this->generatePaymentService = $generatePaymentService;
+        $this->orderBudget = $orderBudget;
     }
 
     public function index(): JsonResponse
@@ -227,7 +235,6 @@ class OrderController extends Controller
             $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
             $budgetPaymentData = BudgetResource::getBudgetPaymentData($order->toArray());
 
-            // Atualizar status do pedido para 'Aprovado'
             $order->update(['status' => 'Aprovado']);
             $order->update(['paid' => 1]);
 
@@ -241,12 +248,10 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Atualizar status dos OrderBudget existentes para 'Liberado para produção'
-            \App\Models\OrderBudget::where('order_id', $order->id)
+            $this->orderBudget->where('order_id', $order->id)
                 ->update(['status' => 'Liberado para produção']);
 
-            // Buscar os OrderBudget atualizados para retornar na resposta
-            $orderBudgets = \App\Models\OrderBudget::where('order_id', $order->id)->get();
+            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();
 
             // Gerar link de pagamento
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
