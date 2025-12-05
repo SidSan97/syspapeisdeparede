@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Budget;
+use App\Models\Order;
 use App\Support\Budget\BudgetCalculator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -367,25 +368,26 @@ class BudgetRepository {
         return $stringValue !== '' ? $stringValue : null;
     }
 
-    public function registerPayment(Budget $budget, UploadedFile $file): Budget
+    public function registerPayment(Order $order, UploadedFile $file): Order
     {
-        return DB::transaction(function () use ($budget, $file) {
+        return DB::transaction(function () use ($order, $file) {
             $path = $file->store('payments', ['disk' => 'public']);
 
             if (!$path) {
                 throw new \Exception('Erro ao fazer upload do arquivo de pagamento.');
             }
 
-            // Atualizar o budget com o arquivo de pagamento e status
-            $budget->payment_file = $path;
-            $budget->status = 'Aprovado';
-            $budget->save();
+            // Atualizar o pedido com o arquivo de pagamento e status
+            $order->payment_file = $path;
+            $order->status = 'Aprovado';
+            $order->paid = 1;
+            $order->save();
 
             // Atualizar todos os order_budgets associados para 'Aprovado'
-            OrderBudget::where('budget_id', $budget->id)
+            OrderBudget::where('order_id', $order->id)
                 ->update(['status' => 'Aprovado']);
 
-            return $budget->fresh();
+            return $order->fresh();
         });
     }
 }

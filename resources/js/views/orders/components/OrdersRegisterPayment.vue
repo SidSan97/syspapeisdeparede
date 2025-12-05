@@ -216,7 +216,7 @@ async function handleSubmit() {
   try {
     const formData = new FormData();
     formData.append('payment_file', selectedFile.value);
-    formData.append('budget_id', props.pedido.id);
+    formData.append('order_id', props.pedido.id);
 
     const response = await axios.post('v1/budgets/register-payment', formData, {
       headers: {

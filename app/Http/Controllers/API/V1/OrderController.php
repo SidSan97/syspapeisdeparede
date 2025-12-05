@@ -229,6 +229,7 @@ class OrderController extends Controller
 
             // Atualizar status do pedido para 'Aprovado'
             $order->update(['status' => 'Aprovado']);
+            $order->update(['paid' => 1]);
 
             // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
             $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();

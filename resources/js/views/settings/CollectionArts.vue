@@ -184,21 +184,47 @@
                       </div>
                     </td>
                     <td class="text-end">
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-success" @click="startCreatingSubcategory(collection)">
-                          Subcategoria
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" @click="editCollection(collection)">
-                          Editar
-                        </button>
+                      <div class="dropdown">
                         <button
+                          class="btn btn-sm btn-outline-secondary dropdown-toggle"
                           type="button"
-                          class="btn btn-outline-danger"
-                          :disabled="deletingId === collection.id"
-                          @click="confirmDelete(collection)"
+                          :id="`collectionDropdown-${collection.id}`"
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false"
                         >
-                          Excluir
+                          Ações
                         </button>
+                        <ul class="dropdown-menu dropdown-menu-end" :aria-labelledby="`collectionDropdown-${collection.id}`">
+                          <li>
+                            <button
+                              type="button"
+                              class="dropdown-item"
+                              @click="startCreatingSubcategory(collection)"
+                            >
+                              <i class="fa fa-plus me-2"></i> Nova subcategoria
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              class="dropdown-item"
+                              @click="editCollection(collection)"
+                            >
+                              <i class="fa fa-edit me-2"></i> Editar
+                            </button>
+                          </li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <button
+                              type="button"
+                              class="dropdown-item text-danger"
+                              :disabled="deletingId === collection.id"
+                              @click="confirmDelete(collection)"
+                            >
+                              <i class="fa fa-trash me-2"></i> Excluir
+                            </button>
+                          </li>
+                        </ul>
                       </div>
                     </td>
                   </tr>
@@ -222,20 +248,38 @@
                                 <strong>{{ subcategory.name }}</strong>
                                 <small class="text-muted ms-2">{{ formatCount(subcategory.images_count) }}</small>
                               </div>
-                              <div class="btn-group btn-group-sm">
+                              <div class="dropdown">
                                 <button
+                                  class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                   type="button"
-                                  class="btn btn-outline-primary btn-sm"
-                                  @click="editSubcategory(subcategory)"
+                                  :id="`subcategoryDropdown-${subcategory.id}`"
+                                  data-bs-toggle="dropdown"
+                                  aria-expanded="false"
                                 >
+                                  Ações
                                 </button>
-                                <button
-                                  type="button"
-                                  class="btn btn-outline-danger btn-sm"
-                                  :disabled="deletingSubcategoryId === subcategory.id"
-                                  @click="confirmDeleteSubcategory(subcategory)"
-                                >
-                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" :aria-labelledby="`subcategoryDropdown-${subcategory.id}`">
+                                  <li>
+                                    <button
+                                      type="button"
+                                      class="dropdown-item"
+                                      @click="editSubcategory(subcategory)"
+                                    >
+                                      <i class="fa fa-edit me-2"></i> Editar
+                                    </button>
+                                  </li>
+                                  <li><hr class="dropdown-divider"></li>
+                                  <li>
+                                    <button
+                                      type="button"
+                                      class="dropdown-item text-danger"
+                                      :disabled="deletingSubcategoryId === subcategory.id"
+                                      @click="confirmDeleteSubcategory(subcategory)"
+                                    >
+                                      <i class="fa fa-trash me-2"></i> Excluir
+                                    </button>
+                                  </li>
+                                </ul>
                               </div>
                             </div>
                           </div>
@@ -496,7 +540,7 @@ const handleSubmit = async () => {
   try {
     const formData = new FormData();
     formData.append('name', trimmedName);
-    
+
     if (form.imageFile) {
       formData.append('image_cover', form.imageFile);
     }
@@ -783,7 +827,7 @@ const handleSubcategorySubmit = async () => {
     const formData = new FormData();
     formData.append('name', trimmedName);
     formData.append('collection_art_id', subcategoryForm.collection_art_id);
-    
+
     if (subcategoryForm.imageFile) {
       formData.append('sub_collection_image_cover', subcategoryForm.imageFile);
     }
@@ -909,10 +953,6 @@ onMounted(() => {
 .card {
   border: 1px solid var(--bs-border-color);
   border-radius: 1rem;
-}
-
-.btn-group .btn + .btn {
-  margin-left: 0.35rem;
 }
 
 .btn-subtle {

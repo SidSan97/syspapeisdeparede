@@ -23,7 +23,7 @@ class RegisterPaymentRequest extends FormRequest
     {
         return [
             'payment_file' => ['required', 'file', 'mimes:jpeg,jpg,pdf', 'max:10240'], // 10MB
-            'budget_id' => ['required', 'integer', 'exists:budgets,id'],
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
         ];
     }
 
@@ -39,8 +39,8 @@ class RegisterPaymentRequest extends FormRequest
             'payment_file.file' => 'O arquivo deve ser um arquivo válido.',
             'payment_file.mimes' => 'O arquivo deve ser do tipo JPEG, JPG ou PDF.',
             'payment_file.max' => 'O arquivo não pode ser maior que 10MB.',
-            'budget_id.required' => 'O ID do orçamento é obrigatório.',
-            'budget_id.exists' => 'O orçamento informado não existe.',
+            'order_id.required' => 'O ID do pedido é obrigatório.',
+            'order_id.exists' => 'O pedido informado não existe no sistema.',
         ];
     }
 }

@@ -374,7 +374,7 @@
                         <!-- Sidebar: Frete, Pagamento e Resumo -->
                         <div class="col-12 col-lg-4">
                             <!-- Seção: Frete -->
-                            <div class="card mb-4 mt-2">
+                            <div class="card mb-4">
                                 <div class="card-header bg-transparent">
                                     <h5 class="mb-0 fw-semibold">Frete</h5>
                                 </div>

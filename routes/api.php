@@ -109,10 +109,8 @@ Route::prefix('v1')->group(function () {
     Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
     Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');
-    //Route::post('budgets/approve', [BudgetController::class, 'approve'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
-    //Route::get('budgets/production-layouts', [BudgetController::class, 'productionLayouts'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
     Route::post('budgets/order-budgets/{orderBudget}/mark-as-produced', [BudgetController::class, 'markAsProduced'])->middleware('auth:api');
@@ -132,6 +130,7 @@ Route::prefix('v1')->group(function () {
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
     Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts'])->middleware('auth:api');
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
+    Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
 
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

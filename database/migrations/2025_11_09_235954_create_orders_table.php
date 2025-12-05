@@ -57,6 +57,7 @@ return new class extends Migration
 
             // Other fields
             $table->tinyInteger('dropshipping_budget')->default(0);
+            $table->tinyInteger('paid')->default(0);
 
             $table->timestamps();
 

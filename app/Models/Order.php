@@ -37,6 +37,7 @@ class Order extends Model
         'files_referring_model',
         'collection_referring_model',
         'dropshipping_budget',
+        'paid',
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class Order extends Model
         'files_referring_model' => 'array',
         'collection_referring_model' => 'string',
         'dropshipping_budget' => 'integer',
+        'paid' => 'integer:0,1',
     ];
 
     /**

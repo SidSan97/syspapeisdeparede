@@ -778,11 +778,11 @@ class BudgetController extends Controller
             }
 
             $data = $request->validated();
-            $budget = Budget::findOrFail($data['budget_id']);
+            $order = Order::findOrFail($data['order_id']);
             $file = $request->file('payment_file');
 
-            $budgetUpdated = $this->repository->registerPayment($budget, $file);
-            $transformed = (new BudgetResource($budgetUpdated))->toArray(request());
+            $orderUpdated = $this->repository->registerPayment($order, $file);
+            $transformed = (new BudgetResource($orderUpdated))->toArray(request());
 
             return response()->json([
                 'success' => true,
@@ -792,7 +792,7 @@ class BudgetController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Orçamento não encontrado',
+                'message' => 'Pedido não encontrado',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
