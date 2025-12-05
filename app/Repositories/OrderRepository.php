@@ -55,8 +55,10 @@ class OrderRepository
 
     public function getLayoutsForProduction()
     {
-        return OrderBudget::whereIn('status', ['Aprovado', 'Liberado para produção'])
-            ->whereNotNull('budget_wall_id')
+        return OrderBudget::whereNotNull('budget_wall_id')
+            ->whereHas('order', function ($query) {
+                $query->where('paid', 1);
+            })
             ->with([
                 'order' => function ($query) {
                     $query->with([

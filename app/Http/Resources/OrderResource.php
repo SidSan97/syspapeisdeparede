@@ -83,9 +83,11 @@ class OrderResource extends JsonResource
 
         // Incluir informações da room primária
         if ($this->resource->relationLoaded('primaryRoom') && $this->resource->primaryRoom) {
+            $primaryRoom = $this->resource->primaryRoom;
             $data['primary_room'] = [
-                'id' => $this->resource->primaryRoom->id,
-                'name' => $this->resource->primaryRoom->name,
+                'id' => $primaryRoom->id,
+                'name' => $primaryRoom->name,
+                'raw_payload' => $primaryRoom->raw_payload ?? null,
             ];
         }
 
@@ -114,7 +116,69 @@ class OrderResource extends JsonResource
         }
 
         // Transformar rooms e walls
-        if (!empty($data['rooms']) && is_array($data['rooms'])) {
+        if (empty($data['rooms']) && !empty($data['primary_room']['raw_payload'])) {
+            // Construir rooms a partir do raw_payload do primary_room
+            $rawPayload = $data['primary_room']['raw_payload'];
+
+            if (!empty($rawPayload['walls']) && is_array($rawPayload['walls'])) {
+                // Buscar todos os model IDs únicos
+                $modelIds = array_filter(array_unique(array_column($rawPayload['walls'], 'model')));
+
+                // Carregar os CollectionModels com seus files
+                $collectionModels = \App\Models\CollectionModel::with('files')
+                    ->whereIn('id', $modelIds)
+                    ->get()
+                    ->keyBy('id');
+
+                // Transformar walls com os dados do CollectionModel
+                $walls = [];
+                foreach ($rawPayload['walls'] as $index => $wallData) {
+                    $modelId = $wallData['model'] ?? null;
+                    $collectionModel = $modelId ? ($collectionModels[$modelId] ?? null) : null;
+
+                    $wall = [
+                        'id' => null,
+                        'name' => $wallData['name'] ?? null,
+                        'width' => $wallData['width'] ?? null,
+                        'height' => $wallData['height'] ?? null,
+                        'position' => $index,
+                        'continue_same_art' => $wallData['continueSameArt'] ?? false,
+                        'continuations' => $wallData['continuations'] ?? [],
+                    ];
+
+                    // Adicionar dados do collection model
+                    if ($collectionModel) {
+                        $wall['collection_model'] = [
+                            'id' => $collectionModel->id,
+                            'name' => $collectionModel->name,
+                            'files' => $collectionModel->files->map(function ($file) {
+                                return [
+                                    'id' => $file->id,
+                                    'name' => $file->file_name,
+                                    'file_name' => $file->file_name,
+                                    'file_path' => $file->file_path,
+                                    'url' => $this->makePublicUrl($file->file_path),
+                                ];
+                            })->toArray(),
+                        ];
+                        $wall['collection_model_name'] = $collectionModel->name;
+                        $wall['collection_model_id'] = $collectionModel->id;
+                    }
+
+                    $walls[] = $wall;
+                }
+
+                // Criar a estrutura de room
+                $data['rooms'] = [
+                    [
+                        'id' => $data['primary_room']['id'] ?? null,
+                        'name' => $rawPayload['name'] ?? null,
+                        'position' => 0,
+                        'walls' => $walls,
+                    ]
+                ];
+            }
+        } elseif (!empty($data['rooms']) && is_array($data['rooms'])) {
             foreach ($data['rooms'] as &$room) {
                 if (!empty($room['walls']) && is_array($room['walls'])) {
                     foreach ($room['walls'] as &$wall) {

@@ -9,7 +9,7 @@
             Adicionar
           </button>
           <button
-            class="btn btn-outline-secondary"
+            class="btn btn-subtle"
             type="button"
             @click="goToFavorites"
           >
@@ -17,7 +17,7 @@
           </button>
           <div class="dropdown">
             <button
-              class="btn btn-outline-secondary"
+              class="btn btn-subtle"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"

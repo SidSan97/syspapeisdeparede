@@ -5,7 +5,7 @@
         <div class="d-flex align-items-center gap-3 mb-3">
           <button
             type="button"
-            class="btn btn-outline-secondary btn-sm"
+            class="btn btn-subtle"
             @click="goBack"
           >
             <i class="fa fa-arrow-left me-2"></i>

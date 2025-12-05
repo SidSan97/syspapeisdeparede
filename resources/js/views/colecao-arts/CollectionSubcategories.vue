@@ -8,12 +8,12 @@
           <button class="btn btn-primary" type="button" @click="openAddModal">
             Adicionar
           </button>
-          <button class="btn btn-outline-secondary" type="button"  @click="goToFavorites">
+          <button class="btn btn-subtle" type="button"  @click="goToFavorites">
             Meus favoritos
           </button>
           <div class="dropdown">
             <button
-              class="btn btn-outline-secondary"
+              class="btn btn-subtle"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
