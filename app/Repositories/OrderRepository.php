@@ -120,6 +120,15 @@ class OrderRepository
         return $order->delete();
     }
 
+    public function cancel(Order $order): Order
+    {
+        $order->update([
+            'status' => 'cancelado',
+        ]);
+
+        return $order->fresh(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom']);
+    }
+
     public function getByStatus(string $status): Collection
     {
         $user = Auth::user();

@@ -132,6 +132,7 @@ Route::prefix('v1')->group(function () {
     Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts'])->middleware('auth:api');
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
     Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
+    Route::post('orders/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
 
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

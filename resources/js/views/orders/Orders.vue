@@ -47,6 +47,7 @@
                       :class="{
                         'bg-warning text-dark': pedido.status === 'Pendente de Revisão',
                         'bg-success': pedido.status === 'Aprovado',
+                        'bg-danger': isCancelled(pedido),
                       }"
                     >
                       {{ pedido.status }}
@@ -73,6 +74,11 @@
                             Editar
                           </button>
                         </li>
+                        <li v-if="!isCancelled(pedido)">
+                          <button class="dropdown-item text-danger" type="button" @click="openCancelModal(pedido)">
+                            Cancelar
+                          </button>
+                        </li>
                       </ul>
                     </div>
                   </td>
@@ -97,6 +103,48 @@
       @close="closePaymentModal"
       @success="handlePaymentSuccess"
     />
+
+    <Teleport v-if="showCancelModal" to="body">
+      <div>
+        <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Cancelar pedido</h5>
+                <button type="button" class="btn-close" aria-label="Close" @click="closeCancelModal"></button>
+              </div>
+              <div class="modal-body">
+                <p class="mb-3">
+                  Tem certeza que deseja cancelar o pedido
+                  <strong>{{ pedidoToCancel?.name }}</strong>?
+                </p>
+                <p class="text-muted small mb-0">
+                  Essa ação não pode ser desfeita. O status do pedido será alterado para <strong>Cancelado</strong>.
+                </p>
+                <p v-if="cancelError" class="text-danger small mt-3 mb-0">
+                  {{ cancelError }}
+                </p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" :disabled="cancelling" @click="closeCancelModal">
+                  Manter pedido
+                </button>
+                <button type="button" class="btn btn-danger" :disabled="cancelling" @click="confirmCancelPedido">
+                  <span
+                    v-if="cancelling"
+                    class="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  Cancelar pedido
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -118,6 +166,10 @@ const showDetailsModal = ref(false);
 const selectedPedido = ref(null);
 const showPaymentModal = ref(false);
 const paymentPedido = ref(null);
+const showCancelModal = ref(false);
+const pedidoToCancel = ref(null);
+const cancelling = ref(false);
+const cancelError = ref('');
 
 import { USER_TYPES } from '@/constants/userTypes';
 
@@ -214,6 +266,57 @@ function handlePaymentSuccess() {
 
 function editOrder(order) {
   router.push({ name: 'EditOrder', params: { id: order.id } });
+}
+
+function isCancelled(pedido) {
+  const status = (pedido?.status ?? '').toString().toLowerCase();
+  return status === 'cancelled' || status === 'cancelado';
+}
+
+function openCancelModal(pedido) {
+  pedidoToCancel.value = pedido;
+  cancelError.value = '';
+  showCancelModal.value = true;
+}
+
+function closeCancelModal() {
+  if (cancelling.value) {
+    return;
+  }
+
+  showCancelModal.value = false;
+  pedidoToCancel.value = null;
+}
+
+async function confirmCancelPedido() {
+  if (!pedidoToCancel.value?.id) {
+    return;
+  }
+
+  cancelling.value = true;
+  cancelError.value = '';
+
+  try {
+    await axios.post('v1/orders/cancel', {
+      id: pedidoToCancel.value.id,
+    });
+
+    pedidos.value = pedidos.value.map((pedido) =>
+      pedido.id === pedidoToCancel.value.id
+        ? {
+            ...pedido,
+            status: 'cancelado',
+          }
+        : pedido,
+    );
+
+    showCancelModal.value = false;
+    pedidoToCancel.value = null;
+  } catch (error) {
+    cancelError.value = 'Não foi possível cancelar o pedido. Tente novamente.';
+  } finally {
+    cancelling.value = false;
+  }
 }
 
 onMounted(() => {

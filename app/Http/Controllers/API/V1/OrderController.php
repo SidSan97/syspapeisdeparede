@@ -304,5 +304,37 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    public function cancel(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'exists:orders,id'],
+        ]);
+
+        try {
+            $order = $this->repository->find($validated['id']);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pedido não encontrado',
+                ], 404);
+            }
+
+            $orderUpdated = $this->repository->cancel($order);
+            $transformed = (new OrderResource($orderUpdated))->toArray(request());
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'message' => 'Pedido cancelado com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao cancelar pedido',
+            ], 500);
+        }
+    }
 }
 
