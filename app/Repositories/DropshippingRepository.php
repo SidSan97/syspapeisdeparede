@@ -56,4 +56,19 @@ class DropshippingRepository
 
         return $dropshippingData->fresh();
     }
+
+    public function updateOrderId(int $budgetId, int $orderId)
+    {
+        $dropshippingData = $this->dropshippingData::where('budget_id', $budgetId)->first();
+
+        if (!$dropshippingData) {
+            throw new \Exception('Orçamento não encontrado');
+        }
+
+        $dropshippingData->update([
+            'order_id' => $orderId,
+        ]);
+
+        return $dropshippingData->fresh();
+    }
 }

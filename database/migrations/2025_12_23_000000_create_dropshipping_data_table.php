@@ -34,7 +34,8 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->foreignId('order_id')
                 ->constrained('orders')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->nullable();
             $table->timestamps();
         });
     }

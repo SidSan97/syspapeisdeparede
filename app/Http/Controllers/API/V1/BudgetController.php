@@ -258,6 +258,8 @@ class BudgetController extends Controller
             // Criar Order a partir do Budget
             $order = $this->orderRepository->createFromBudget($budget, $data);
 
+            $this->dropshippingRepository->updateOrderId($budget->id, $order->id);
+
             // Criar OrderBudgets usando o Order criado
             $this->createLayoutOrder($order, $budget);
 

@@ -19,12 +19,10 @@ class OrderBudgetRepository {
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
 
-        // Atualizar o campo correto baseado no type_page
         $updateData = [];
         if ($typePage === 'product') {
             $updateData['production_column_names_id'] = $columnId;
         } else {
-            // Default para layout
             $updateData['layout_column_names_id'] = $columnId;
         }
 
@@ -44,7 +42,6 @@ class OrderBudgetRepository {
             'description' => $description ?? null,
         ]);
 
-        // Registrar no histórico se houver usuário
         if ($user) {
             $this->historyService->logDescriptionChange($orderBudgetId, $user, $typePage);
         }
@@ -57,21 +54,16 @@ class OrderBudgetRepository {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
         $user = \App\Models\User::findOrFail($userId);
 
-        // Verificar se o relacionamento já existe
         if ($orderBudget->users()->where('users.id', $user->id)->exists()) {
             throw new \Exception('Usuário já está adicionado a este card');
         }
 
-        // Adicionar o usuário ao card
         $orderBudget->users()->attach($user->id);
 
-        // Registrar no histórico
         if ($actionUser) {
-            // Se o usuário que está adicionando é o mesmo que está sendo adicionado, é um "ingresso"
             if ($actionUser->id === $user->id) {
                 $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user, $typePage);
             } else {
-                // Caso contrário, é uma adição de membro
                 $this->historyService->logMemberJoin($orderBudgetId, $actionUser, $user, $typePage);
             }
         }
@@ -87,21 +79,16 @@ class OrderBudgetRepository {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
         $user = \App\Models\User::findOrFail($userId);
 
-        // Verificar se o relacionamento existe
         if (!$orderBudget->users()->where('users.id', $user->id)->exists()) {
             throw new \Exception('Usuário não está adicionado a este card');
         }
 
-        // Remover o usuário do card
         $orderBudget->users()->detach($user->id);
 
-        // Registrar no histórico
         if ($actionUser) {
-            // Se o usuário que está removendo é o mesmo que está sendo removido, é uma "saída"
             if ($actionUser->id === $user->id) {
                 $this->historyService->logMemberLeave($orderBudgetId, $user, $typePage);
             } else {
-                // Caso contrário, é uma remoção de membro
                 $this->historyService->logMemberRemoval($orderBudgetId, $actionUser, $user, $typePage);
             }
         }
@@ -116,13 +103,11 @@ class OrderBudgetRepository {
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
 
-        // Atualizar production_date com a data atual e production_column_names_id para 2
         $orderBudget->update([
             'production_date' => now()->toDateString(),
             'production_column_names_id' => 2,
         ]);
 
-        // Registrar no histórico se houver usuário
         if ($user) {
             $this->historyService->logProductionDateUpdate($orderBudgetId, $user, $typePage);
         }
@@ -141,7 +126,6 @@ class OrderBudgetRepository {
             'production_percentage' => $percentage,
         ]);
 
-        // Registrar no histórico se houver usuário
         if ($user) {
             $this->historyService->logProductionPercentageUpdate($orderBudgetId, $user, $percentage, $typePage);
         }
