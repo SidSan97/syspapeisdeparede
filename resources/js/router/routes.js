@@ -96,6 +96,11 @@ const routes = [
                 name: 'Product',
                 component: () => import('../views/production/Product.vue'),
             },
+            {
+                path: '/pedidos-producao',
+                name: 'InternalOrders',
+                component: () => import('../views/internalOrders/internal-orders.vue'),
+            },
             ...settings,
         ]
     },

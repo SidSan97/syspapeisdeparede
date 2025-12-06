@@ -31,7 +31,7 @@
                 <tr v-for="pedido in pedidos" :key="pedido.id">
                   <td>
                     <button
-                      class="btn btn-link text-start p-0 text-decoration-none fw-semibold"
+                      class="btn btn-link text-start text-primary p-0 text-decoration-none fw-semibold"
                       @click="openDetailsModal(pedido)"
                     >
                       {{ pedido.name }}
