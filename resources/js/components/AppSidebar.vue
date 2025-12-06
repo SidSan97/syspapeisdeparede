@@ -29,7 +29,7 @@
         <RouterLink
           to="/budget"
           class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/budget') }"
+          :class="{ 'active': isBudgetListActive }"
         >
           <i class="fa fa-file-alt"></i>
           <span class="bd-sidebar-text">Orçamentos</span>
@@ -175,15 +175,17 @@ watch(() => route.path, () => {
   }
 });
 
-// Função para verificar se a rota está ativa
 const isActiveRoute = (path) => {
   return route.path === path || route.path.startsWith(path + '/');
 };
 
+const isBudgetListActive = computed(() => {
+  const path = route.path;
+  return path === '/budget' || (path.startsWith('/budget/') && !path.startsWith('/budget/new-budget') && !path.startsWith('/budget/edit/'));
+});
+
 onMounted(() => {
-  // Verificar largura inicial e definir estado correto
   handleResize();
-  // Escutar redimensionamento da janela
   window.addEventListener('resize', handleResize);
 });
 
@@ -195,13 +197,13 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .bd-sidebar {
   position: fixed;
-  top: 56px; // Altura do header
+  top: 56px; 
   left: 0;
   height: calc(100vh - 56px);
   width: 250px;
   background-color: var(--bs-body-bg);
   border-right: 1px solid var(--bs-border-color);
-  z-index: 1020; // Maior que o header sticky (geralmente 1020)
+  z-index: 1020;
   transition: transform 0.3s ease-in-out, background-color 0.2s ease, border-color 0.2s ease;
   overflow-y: auto;
   overflow-x: hidden;
