@@ -7,7 +7,7 @@
         Carregando imagens...
       </div>
       <div v-else-if="!images.length" class="text-center text-muted py-5">
-        Nenhuma imagem cadastrada nesta subcategoria.
+        Nenhuma imagem cadastrada nesta categoria.
       </div>
       <div v-else class="image-gallery">
         <figure
@@ -112,20 +112,20 @@ const normalizeImage = (image) => ({
   is_favorited: image.is_favorited ?? false,
 });
 
-const fetchSubcategoryImages = async (subcategoryId) => {
-  if (!subcategoryId) {
+const fetchSubcategoryImages = async (categoryId) => {
+  if (!categoryId) {
     return;
   }
 
   loading.value = true;
   try {
-    const { data } = await axios.get(`v1/collection-art-subcategories/${subcategoryId}`);
+    const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
     const payload = data?.data ?? data ?? {};
 
     subcategoryName.value = payload.name ?? '';
 
-    if (payload.collection_art) {
-      collectionName.value = payload.collection_art.name ?? '';
+    if (payload.parent) {
+      collectionName.value = payload.parent.name ?? '';
     }
 
     const imagesList = Array.isArray(payload.images) ? payload.images : [];
@@ -150,7 +150,7 @@ const fetchSubcategoryImages = async (subcategoryId) => {
     images.value = [];
     window.Swal.fire({
       title: 'Erro!',
-      text: 'Não foi possível carregar as imagens desta subcategoria.',
+      text: 'Não foi possível carregar as imagens desta categoria.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
@@ -190,10 +190,10 @@ const goBack = () => {
 };
 
 onMounted(() => {
-  const subcategoryId = route.params.id;
-  if (subcategoryId) {
-    fetchSubcategoryImages(Number(subcategoryId));
-    document.title = 'Imagens da Subcategoria';
+  const categoryId = route.params.id;
+  if (categoryId) {
+    fetchSubcategoryImages(Number(categoryId));
+    document.title = 'Imagens da Categoria';
   } else {
     goBack();
   }

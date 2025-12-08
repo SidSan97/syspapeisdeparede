@@ -95,7 +95,11 @@ Route::prefix('v1')->group(function () {
         'collection-arts' => CollectionArtController::class,
         'collection-art-subcategories' => CollectionArtSubcategoryController::class,
         'collection-images' => CollectionImageController::class,
+        'collection-categories' => \App\Http\Controllers\API\V1\CollectionCategoryController::class,
     ]);
+
+    // Rotas adicionais para collection-categories
+    Route::get('collection-categories/children/{parentId?}', [\App\Http\Controllers\API\V1\CollectionCategoryController::class, 'children'])->middleware('auth:api');
 
     // My Favorite Collection Images
     //----------------------------------

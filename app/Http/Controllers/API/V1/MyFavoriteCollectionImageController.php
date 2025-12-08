@@ -121,7 +121,7 @@ class MyFavoriteCollectionImageController extends BaseController
             }
 
             $favoriteImages = $user->favoriteCollectionImages()
-                ->with(['subcategory.collectionArt'])
+                ->with(['category.parent'])
                 ->get();
 
             Log::info('[MyFavoriteCollectionImage] Index request succeeded', [

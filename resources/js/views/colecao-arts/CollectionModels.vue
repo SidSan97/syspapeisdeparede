@@ -152,9 +152,9 @@
                 </select>
               </div>
 
-              <!-- Subcategoria -->
+              <!-- Subcategoria (opcional) -->
               <div class="mb-3">
-                <label for="collection-subcategory" class="form-label">Subcategoria</label>
+                <label for="collection-subcategory" class="form-label">Subcategoria (opcional)</label>
                 <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
                   <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   <span>Carregando...</span>
@@ -165,7 +165,7 @@
                   id="collection-subcategory"
                   v-model="formData.subcategory_id"
                 >
-                  <option value="">Selecionar categoria</option>
+                  <option value="">Usar categoria selecionada</option>
                   <option
                     v-for="subcategory in availableSubcategories"
                     :key="subcategory.id"
@@ -231,16 +231,26 @@ const selectedFileName = ref('');
 const normalizeCollection = (item = {}) => {
   let totalImages = 0;
 
-  if (item.subcategories && Array.isArray(item.subcategories) && item.subcategories.length > 0) {
-    // Calcular total de imagens
-    totalImages = item.subcategories.reduce((sum, sub) => sum + Number(sub.images_count ?? 0), 0);
+  // Contar imagens diretas da categoria
+  if (item.images && Array.isArray(item.images)) {
+    totalImages += item.images.length;
+  } else if (item.images_count) {
+    totalImages += Number(item.images_count);
+  }
+
+  // Contar imagens dos filhos (children)
+  if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+    totalImages += item.children.reduce((sum, child) => {
+      const childImages = child.images_count ?? (child.images?.length ?? 0);
+      return sum + Number(childImages);
+    }, 0);
   }
 
   return {
     id: Number(item.id ?? 0),
     name: (item.name ?? '').toString(),
     image_cover_url: item.image_cover_url || DEFAULT_COVER,
-    images_count: totalImages || Number(item.images_count ?? item.imagesCount ?? 0),
+    images_count: totalImages,
   };
 };
 
@@ -255,15 +265,17 @@ const getCollectionBackground = (collection) => {
 const fetchCollections = async () => {
   loadingCollections.value = true;
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
 
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
 
-    // Normalizar as coleções
-    collections.value = Array.isArray(items) ? items.map(normalizeCollection) : [];
+    // Normalizar as coleções (apenas categorias raiz)
+    collections.value = Array.isArray(items) 
+      ? items.filter(item => !item.parent_id).map(normalizeCollection) 
+      : [];
   } catch (error) {
     collections.value = [];
     window.Swal.fire({
@@ -291,22 +303,35 @@ const goToFavorites = () => {
 
 const fetchCollectionsForModal = async () => {
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
-    availableCollections.value = Array.isArray(items) ? items.map((item) => ({
-      id: Number(item.id ?? 0),
-      name: (item.name ?? '').toString(),
-    })) : [];
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+    // Buscar todas as categorias (raiz e filhos) para o select
+    const allCategories = [];
+    const flattenCategories = (cats, parentName = '') => {
+      cats.forEach(cat => {
+        const displayName = parentName ? `${parentName} > ${cat.name}` : cat.name;
+        allCategories.push({
+          id: Number(cat.id ?? 0),
+          name: displayName,
+          parent_id: cat.parent_id,
+        });
+        if (cat.children && Array.isArray(cat.children)) {
+          flattenCategories(cat.children, displayName);
+        }
+      });
+    };
+    flattenCategories(items.filter(item => !item.parent_id));
+    availableCollections.value = allCategories;
   } catch (error) {
     availableCollections.value = [];
   }
 };
 
-const fetchSubcategoriesForCollection = async (collectionId) => {
-  if (!collectionId) {
+const fetchSubcategoriesForCollection = async (categoryId) => {
+  if (!categoryId) {
     availableSubcategories.value = [];
     loadingSubcategories.value = false;
     return;
@@ -315,11 +340,11 @@ const fetchSubcategoriesForCollection = async (collectionId) => {
   availableSubcategories.value = [];
   formData.value.subcategory_id = '';
   try {
-    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
-    const payload = data?.data ?? data ?? {};
-    const subcategoriesList = payload.subcategories ?? [];
-    availableSubcategories.value = Array.isArray(subcategoriesList)
-      ? subcategoriesList.map((item) => ({
+    // Buscar filhos da categoria selecionada
+    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const payload = data?.data ?? data ?? [];
+    availableSubcategories.value = Array.isArray(payload)
+      ? payload.map((item) => ({
           id: Number(item.id ?? 0),
           name: (item.name ?? '').toString(),
         }))
@@ -371,11 +396,11 @@ const saveCollection = async () => {
     return;
   }
 
-  // Validar se há subcategoria selecionada para enviar imagem
-  if (!formData.value.subcategory_id) {
+  // Validar se há categoria selecionada
+  if (!formData.value.collection_art_id) {
     window.Swal.fire({
       title: 'Erro!',
-      text: 'Por favor, selecione uma subcategoria.',
+      text: 'Por favor, selecione uma categoria.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
@@ -394,11 +419,11 @@ const saveCollection = async () => {
 
   saving.value = true;
   try {
-    const subcategoryId = Number(formData.value.subcategory_id);
+    const categoryId = Number(formData.value.subcategory_id || formData.value.collection_art_id);
 
-    // Enviar imagem para collection_images usando o ID da subcategoria
+    // Enviar imagem para collection_images usando o ID da categoria
     const formDataToSend = new FormData();
-    formDataToSend.append('collection_arts_id', subcategoryId);
+    formDataToSend.append('collection_category_id', categoryId);
     formDataToSend.append('images[]', formData.value.image);
     formDataToSend.append('names[]', formData.value.name.trim());
 

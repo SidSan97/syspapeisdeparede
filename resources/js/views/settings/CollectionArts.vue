@@ -335,7 +335,7 @@ const initialState = () => ({
 
 const subcategoryInitialState = () => ({
   name: '',
-  collection_art_id: null,
+  parent_id: null,
   imageFile: null,
   imagePreview: null,
 });
@@ -374,15 +374,15 @@ const normalizeCollection = (item = {}) => ({
   name: (item.name ?? '').toString(),
   image_cover: item.image_cover ?? null,
   image_cover_url: item.image_cover_url || (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
-  subcategories: item.subcategories ?? [],
+  children: item.children ?? [],
 });
 
 const normalizeSubcategory = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
-  collection_art_id: Number(item.collection_art_id ?? 0),
-  sub_collection_image_cover: item.sub_collection_image_cover ?? null,
-  sub_collection_image_cover_url: item.sub_collection_image_cover_url || (item.sub_collection_image_cover ? resolveImageUrl(null, item.sub_collection_image_cover) : null),
+  parent_id: Number(item.parent_id ?? 0),
+  image_cover: item.image_cover ?? null,
+  image_cover_url: item.image_cover_url || (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
   images_count: Number(item.images_count ?? 0),
 });
 
@@ -392,20 +392,22 @@ const sortCollections = (items = []) =>
 const fetchCollections = async () => {
   isLoading.value = true;
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
 
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
 
-    const list = Array.isArray(items) ? items.map(normalizeCollection) : [];
+    // Filtrar apenas categorias raiz (sem parent_id)
+    const rootCategories = items.filter(item => !item.parent_id);
+    const list = Array.isArray(rootCategories) ? rootCategories.map(normalizeCollection) : [];
     collections.value = sortCollections(list);
 
     // Inicializar subcategorias
     collections.value.forEach((collection) => {
-      if (collection.subcategories && Array.isArray(collection.subcategories)) {
-        collectionSubcategories[collection.id] = collection.subcategories.map(normalizeSubcategory);
+      if (collection.children && Array.isArray(collection.children)) {
+        collectionSubcategories[collection.id] = collection.children.map(normalizeSubcategory);
       }
     });
   } catch (error) {
@@ -548,13 +550,15 @@ const handleSubmit = async () => {
     let response;
     if (isEditing.value && editingId.value !== null) {
       formData.append('_method', 'PUT');
-      response = await axios.post(`v1/collection-arts/${editingId.value}`, formData, {
+      response = await axios.post(`v1/collection-categories/${editingId.value}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
     } else {
-      response = await axios.post('v1/collection-arts', formData, {
+      // Nova categoria raiz (sem parent_id)
+      formData.append('parent_id', '');
+      response = await axios.post('v1/collection-categories', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -622,7 +626,7 @@ const destroyCollection = async (collection) => {
   deletingId.value = collection.id;
 
   try {
-    await axios.delete(`v1/collection-arts/${collection.id}`);
+    await axios.delete(`v1/collection-categories/${collection.id}`);
     collections.value = collections.value.filter((item) => item.id !== collection.id);
     window.Swal.fire({
       title: 'Coleção excluída!',
@@ -666,9 +670,7 @@ const fetchSubcategories = async (collectionId) => {
 
   loadingSubcategories[collectionId] = true;
   try {
-    const { data } = await axios.get('v1/collection-art-subcategories', {
-      params: { collection_art_id: collectionId },
-    });
+    const { data } = await axios.get(`v1/collection-categories/children/${collectionId}`);
 
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : [];
@@ -694,7 +696,7 @@ const startCreatingSubcategory = (collection) => {
 
   editingSubcategoryId.value = null;
   subcategoryForm.name = '';
-  subcategoryForm.collection_art_id = collection.id;
+  subcategoryForm.parent_id = collection.id;
   subcategoryForm.imageFile = null;
   subcategoryForm.imagePreview = null;
   currentSubcategoryImageUrl.value = null;
@@ -715,19 +717,19 @@ const editSubcategory = (subcategory) => {
   isEditingSubcategory.value = true;
   editingSubcategoryId.value = subcategory.id;
   subcategoryForm.name = subcategory.name;
-  subcategoryForm.collection_art_id = subcategory.collection_art_id;
+  subcategoryForm.parent_id = subcategory.parent_id;
   subcategoryForm.imageFile = null;
   subcategoryForm.imagePreview = null;
-  currentSubcategoryImageUrl.value = subcategory.sub_collection_image_cover_url || null;
+  currentSubcategoryImageUrl.value = subcategory.image_cover_url || null;
   if (subcategoryImageCoverInput.value) {
     subcategoryImageCoverInput.value.value = '';
   }
-  subcategoryFormCollectionId.value = subcategory.collection_art_id;
+  subcategoryFormCollectionId.value = subcategory.parent_id;
 };
 
 const cancelSubcategoryForm = () => {
   subcategoryForm.name = '';
-  subcategoryForm.collection_art_id = null;
+  subcategoryForm.parent_id = null;
   subcategoryForm.imageFile = null;
   subcategoryForm.imagePreview = null;
   currentSubcategoryImageUrl.value = null;
@@ -811,7 +813,7 @@ const handleSubcategorySubmit = async () => {
     return;
   }
 
-  if (!subcategoryForm.collection_art_id) {
+  if (!subcategoryForm.parent_id) {
     window.Swal.fire({
       title: 'Erro!',
       text: 'Coleção não informada.',
@@ -826,22 +828,22 @@ const handleSubcategorySubmit = async () => {
   try {
     const formData = new FormData();
     formData.append('name', trimmedName);
-    formData.append('collection_art_id', subcategoryForm.collection_art_id);
+    formData.append('parent_id', subcategoryForm.parent_id);
 
     if (subcategoryForm.imageFile) {
-      formData.append('sub_collection_image_cover', subcategoryForm.imageFile);
+      formData.append('image_cover', subcategoryForm.imageFile);
     }
 
     let response;
     if (isEditingSubcategory.value && editingSubcategoryId.value !== null) {
       formData.append('_method', 'PUT');
-      response = await axios.post(`v1/collection-art-subcategories/${editingSubcategoryId.value}`, formData, {
+      response = await axios.post(`v1/collection-categories/${editingSubcategoryId.value}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
     } else {
-      response = await axios.post('v1/collection-art-subcategories', formData, {
+      response = await axios.post('v1/collection-categories', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -849,7 +851,7 @@ const handleSubcategorySubmit = async () => {
     }
 
     const saved = normalizeSubcategory(response?.data?.data ?? response?.data ?? {});
-    const collectionId = saved.collection_art_id;
+    const collectionId = saved.parent_id;
 
     if (!collectionSubcategories[collectionId]) {
       collectionSubcategories[collectionId] = [];
@@ -908,8 +910,8 @@ const destroySubcategory = async (subcategory) => {
   deletingSubcategoryId.value = subcategory.id;
 
   try {
-    await axios.delete(`v1/collection-art-subcategories/${subcategory.id}`);
-    const collectionId = subcategory.collection_art_id;
+    await axios.delete(`v1/collection-categories/${subcategory.id}`);
+    const collectionId = subcategory.parent_id;
     if (collectionSubcategories[collectionId]) {
       collectionSubcategories[collectionId] = collectionSubcategories[collectionId].filter(
         (item) => item.id !== subcategory.id

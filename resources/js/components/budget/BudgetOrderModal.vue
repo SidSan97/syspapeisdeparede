@@ -440,15 +440,18 @@ async function ensureCollectionsLoaded() {
   collectionError.value = '';
 
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
 
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+    
+    // Filtrar apenas categorias raiz (sem parent_id)
+    const rootCategories = items.filter(item => !item.parent_id);
 
-    collectionList.value = Array.isArray(items)
-      ? items.map(normalizeCollectionSummary).filter((item) => item.id !== null)
+    collectionList.value = Array.isArray(rootCategories)
+      ? rootCategories.map(normalizeCollectionSummary).filter((item) => item.id !== null)
       : [];
   } catch (error) {
     collectionList.value = [];
@@ -460,7 +463,7 @@ async function ensureCollectionsLoaded() {
 }
 
 function normalizeCollectionSummary(item = {}) {
-  const rawId = item.id ?? item.collection_art_id ?? null;
+  const rawId = item.id ?? null;
   const numericId = rawId === null ? null : Number(rawId);
   const finalId = Number.isNaN(numericId) ? null : numericId;
   const name = (item.name ?? '').toString().trim();
@@ -491,12 +494,12 @@ function getCollectionState(collectionId) {
   return collectionAssets[collectionId];
 }
 
-async function ensureCollectionAssets(collectionId) {
-  if (!collectionId) {
+async function ensureCollectionAssets(categoryId) {
+  if (!categoryId) {
     return;
   }
 
-  const state = getCollectionState(collectionId);
+  const state = getCollectionState(categoryId);
 
   if (state.loading || state.items.length || state.error) {
     return;
@@ -506,7 +509,7 @@ async function ensureCollectionAssets(collectionId) {
   state.error = '';
 
   try {
-    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
+    const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
     const payload = data?.data ?? data ?? {};
     const images = Array.isArray(payload.images)
       ? payload.images.map(normalizeCollectionImage)
@@ -530,8 +533,6 @@ function normalizeCollectionImage(image = {}) {
     image.id ??
     image.collection_image_id ??
     image.collectionImageId ??
-    image.collection_art_id ??
-    image.collectionArtId ??
     null;
 
   const numericId = rawId === null ? null : Number(rawId);

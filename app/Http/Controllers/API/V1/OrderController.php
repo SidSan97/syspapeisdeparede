@@ -228,7 +228,7 @@ class OrderController extends Controller
     public function approve(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:budgets,id'],
+            'id' => ['required', 'integer', 'exists:orders,id'],
         ]);
 
         try {

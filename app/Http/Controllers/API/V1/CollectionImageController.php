@@ -4,8 +4,7 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Requests\CollectionImages\StoreCollectionImageRequest;
 use App\Http\Resources\CollectionImageResource;
-use App\Models\CollectionArt;
-use App\Models\CollectionArtSubcategory;
+use App\Models\CollectionCategory;
 use App\Models\CollectionImage;
 use App\Repositories\CollectionImageRepository;
 use Illuminate\Http\JsonResponse;
@@ -30,14 +29,26 @@ class CollectionImageController extends BaseController
         try {
             $collection = $this->repository
                 ->listGroupedByCollection()
-                ->map(function (CollectionArt $art) {
+                ->map(function (CollectionCategory $category) {
                     $allImages = collect();
-                    foreach ($art->subcategories as $subcategory) {
-                        $allImages = $allImages->merge($subcategory->images);
+                    
+                    // Imagens diretas da categoria
+                    if ($category->images) {
+                        $allImages = $allImages->merge($category->images);
                     }
+                    
+                    // Imagens dos filhos
+                    if ($category->children) {
+                        foreach ($category->children as $child) {
+                            if ($child->images) {
+                                $allImages = $allImages->merge($child->images);
+                            }
+                        }
+                    }
+                    
                     return [
-                        'id' => $art->id,
-                        'name' => $art->name,
+                        'id' => $category->id,
+                        'name' => $category->name,
                         'images' => CollectionImageResource::collection($allImages),
                     ];
                 });
@@ -72,28 +83,30 @@ class CollectionImageController extends BaseController
         ]);
 
         try {
-            $subcategory = CollectionArtSubcategory::findOrFail($request->input('collection_arts_id'));
+            $category = CollectionCategory::findOrFail($request->input('collection_category_id'));
 
             $files = $request->file('images', []);
             $names = $request->input('names', []);
 
-            $this->repository->storeMany($subcategory, $files, $names);
-            $subcategory->load(['images', 'collectionArt']);
+            $this->repository->storeMany($category, $files, $names);
+            $category->load(['images', 'parent']);
 
-            $allImages = $subcategory->images;
+            $allImages = $category->images;
 
             Log::info('[CollectionImage] Store request succeeded', [
                 'user_id' => optional(Auth::user())->id,
-                'subcategory_id' => $subcategory->id,
-                'collection_id' => $subcategory->collection_art_id,
+                'category_id' => $category->id,
+                'parent_id' => $category->parent_id,
                 'total_images' => $allImages->count(),
             ]);
+
+            $rootCategory = $category->getRoot();
 
             return $this->sendResponse(
                 [
                     [
-                        'id' => $subcategory->collection_art_id,
-                        'name' => $subcategory->collectionArt->name,
+                        'id' => $rootCategory->id,
+                        'name' => $rootCategory->name,
                         'images' => CollectionImageResource::collection($allImages),
                     ],
                 ],
@@ -102,7 +115,7 @@ class CollectionImageController extends BaseController
         } catch (\Throwable $exception) {
             Log::error('[CollectionImage] Store request failed', [
                 'user_id' => optional(Auth::user())->id,
-                'collection_arts_id' => $request->input('collection_arts_id'),
+                'collection_category_id' => $request->input('collection_category_id'),
                 'error' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);

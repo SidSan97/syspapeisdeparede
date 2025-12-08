@@ -134,8 +134,8 @@
                 <select
                   class="form-select"
                   id="subcategory-category"
-                  v-model="formData.collection_art_id"
-                  @change="fetchSubcategoriesForCollection(formData.collection_art_id)"
+                  v-model="formData.parent_id"
+                  @change="fetchSubcategoriesForCollection(formData.parent_id)"
                   required
                 >
                   <option value="">Selecionar categoria</option>
@@ -222,7 +222,7 @@ const saving = ref(false);
 const formData = ref({
   name: '',
   image: null,
-  collection_art_id: '',
+  parent_id: '',
   parent_subcategory_id: '',
 });
 const selectedFileName = ref('');
@@ -235,35 +235,36 @@ const normalizeSubcategory = (item = {}) => {
   return {
     id: Number(item.id ?? 0),
     name: (item.name ?? '').toString(),
-    sub_collection_image_cover_url: item.sub_collection_image_cover_url || DEFAULT_COVER,
+    image_cover_url: item.image_cover_url || DEFAULT_COVER,
     images_count: Number(item.images_count ?? 0),
+    parent_id: Number(item.parent_id ?? 0),
   };
 };
 
 const getSubcategoryBackground = (subcategory) => {
-  const cover = subcategory.sub_collection_image_cover_url || DEFAULT_COVER;
+  const cover = subcategory.image_cover_url || DEFAULT_COVER;
 
   return {
     backgroundImage: `url("${cover}")`,
   };
 };
 
-const fetchSubcategories = async (collectionId) => {
-  if (!collectionId) {
+const fetchSubcategories = async (categoryId) => {
+  if (!categoryId) {
     return;
   }
 
   loading.value = true;
   try {
-    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
-    const payload = data?.data ?? data ?? {};
+    // Buscar a categoria para obter o nome
+    const { data: categoryData } = await axios.get(`v1/collection-categories/${categoryId}`);
+    const categoryPayload = categoryData?.data ?? categoryData ?? {};
+    collectionName.value = categoryPayload.name ?? 'Coleção';
 
-    collectionName.value = payload.name ?? 'Coleção';
-
-    const subcategoriesList = [];
-    if (payload.subcategories && Array.isArray(payload.subcategories)) {
-      subcategoriesList.push(...payload.subcategories);
-    }
+    // Buscar os filhos (subcategorias)
+    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const payload = data?.data ?? data ?? [];
+    const subcategoriesList = Array.isArray(payload) ? payload : [];
 
     subcategories.value = subcategoriesList.map(normalizeSubcategory);
   } catch (error) {
@@ -289,12 +290,14 @@ const viewSubcategoryImages = (subcategory) => {
 
 const fetchCollections = async () => {
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
-    collections.value = Array.isArray(items) ? items.map((item) => ({
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+    // Filtrar apenas categorias raiz
+    const rootCategories = items.filter(item => !item.parent_id);
+    collections.value = Array.isArray(rootCategories) ? rootCategories.map((item) => ({
       id: Number(item.id ?? 0),
       name: (item.name ?? '').toString(),
     })) : [];
@@ -303,8 +306,8 @@ const fetchCollections = async () => {
   }
 };
 
-const fetchSubcategoriesForCollection = async (collectionId) => {
-  if (!collectionId) {
+const fetchSubcategoriesForCollection = async (categoryId) => {
+  if (!categoryId) {
     availableSubcategories.value = [];
     loadingSubcategories.value = false;
     return;
@@ -313,11 +316,10 @@ const fetchSubcategoriesForCollection = async (collectionId) => {
   availableSubcategories.value = [];
   formData.value.parent_subcategory_id = '';
   try {
-    const { data } = await axios.get(`v1/collection-arts/${collectionId}`);
-    const payload = data?.data ?? data ?? {};
-    const subcategoriesList = payload.subcategories ?? [];
-    availableSubcategories.value = Array.isArray(subcategoriesList)
-      ? subcategoriesList.map((item) => ({
+    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const payload = data?.data ?? data ?? [];
+    availableSubcategories.value = Array.isArray(payload)
+      ? payload.map((item) => ({
           id: Number(item.id ?? 0),
           name: (item.name ?? '').toString(),
         }))
@@ -334,7 +336,7 @@ const openAddModal = () => {
     formData.value = {
       name: '',
       image: null,
-      collection_art_id: route.params.id ? Number(route.params.id) : '',
+      parent_id: route.params.id ? Number(route.params.id) : '',
       parent_subcategory_id: '',
     };
     selectedFileName.value = '';
@@ -343,8 +345,8 @@ const openAddModal = () => {
     if (fileInputRef.value) {
       fileInputRef.value.value = '';
     }
-    if (formData.value.collection_art_id) {
-      fetchSubcategoriesForCollection(formData.value.collection_art_id);
+    if (formData.value.parent_id) {
+      fetchSubcategoriesForCollection(formData.value.parent_id);
     }
     addModal.value.show();
   }
@@ -372,7 +374,7 @@ const saveSubcategory = async () => {
     return;
   }
 
-  if (!formData.value.collection_art_id) {
+  if (!formData.value.parent_id) {
     window.Swal.fire({
       title: 'Erro!',
       text: 'Por favor, selecione uma categoria.',
@@ -393,19 +395,27 @@ const saveSubcategory = async () => {
 
     // Se não há subcategoria selecionada, criar uma nova
     if (!finalSubcategoryId) {
-      const payload = {
-        name: formData.value.name.trim(),
-        collection_art_id: Number(formData.value.collection_art_id),
-      };
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.value.name.trim());
+      formDataToSend.append('parent_id', Number(formData.value.parent_id));
 
-      const response = await axios.post('v1/collection-art-subcategories', payload);
+      // Se há imagem, adicionar ao criar a categoria
+      if (formData.value.image) {
+        formDataToSend.append('image_cover', formData.value.image);
+      }
+
+      const response = await axios.post('v1/collection-categories', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       finalSubcategoryId = response.data?.data?.id || response.data?.id;
     }
 
-    // Se há imagem, enviar para collection_images
+    // Se há imagem e ainda não foi enviada (se criou nova categoria sem imagem)
     if (formData.value.image && finalSubcategoryId) {
       const formDataToSend = new FormData();
-      formDataToSend.append('collection_arts_id', finalSubcategoryId);
+      formDataToSend.append('collection_category_id', finalSubcategoryId);
       formDataToSend.append('images[]', formData.value.image);
 
       if (formData.value.name.trim()) {
@@ -427,8 +437,8 @@ const saveSubcategory = async () => {
     addModal.value?.hide();
 
     // Recarregar a lista
-    const collectionId = route.params.id || formData.value.collection_art_id;
-    await fetchSubcategories(Number(collectionId));
+    const categoryId = route.params.id || formData.value.parent_id;
+    await fetchSubcategories(Number(categoryId));
   } catch (error) {
     const errorMessage =
       error.response?.data?.message ||
@@ -449,9 +459,9 @@ onMounted(async () => {
   // Carregar categorias ao abrir a página
   await fetchCollections();
 
-  const collectionId = route.params.id;
-  if (collectionId) {
-    fetchSubcategories(Number(collectionId));
+  const categoryId = route.params.id;
+  if (categoryId) {
+    fetchSubcategories(Number(categoryId));
     document.title = 'Subcategorias';
   } else {
     router.push('/colecao-arts');

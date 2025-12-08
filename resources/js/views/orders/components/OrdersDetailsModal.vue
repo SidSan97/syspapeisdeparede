@@ -897,7 +897,6 @@ async function handleApprove() {
   const result = await window.Swal.fire({
     title: 'Aprovar pedido?',
     text: `Tem certeza que deseja aprovar o pedido "${props.pedido.name}"?`,
-    icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Sim, aprovar',
     cancelButtonText: 'Cancelar',

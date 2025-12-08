@@ -74,8 +74,8 @@
               <strong>
                 <p class="mb-0 text-success">{{ selectedSubcategory?.name ?? '—' }}</p>
               </strong>
-              <small class="text-muted" v-if="selectedSubcategory?.collection_art">
-                Coleção: {{ selectedSubcategory.collection_art.name }}
+              <small class="text-muted" v-if="selectedSubcategory?.parent">
+                Coleção: {{ selectedSubcategory.parent.name }}
               </small>
             </div>
             <button
@@ -245,17 +245,17 @@ const currentLoading = computed(() => {
 const normalizeCollectionOption = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
-  subcategories: item.subcategories ?? [],
+  children: item.children ?? [],
 });
 
 const normalizeSubcategory = (item = {}) => ({
   id: Number(item.id ?? 0),
   name: (item.name ?? '').toString(),
-  collection_art_id: Number(item.collection_art_id ?? 0),
+  parent_id: Number(item.parent_id ?? 0),
   images_count: Number(item.images_count ?? 0),
-  collection_art: item.collection_art ? {
-    id: Number(item.collection_art.id ?? 0),
-    name: (item.collection_art.name ?? '').toString(),
+  parent: item.parent ? {
+    id: Number(item.parent.id ?? 0),
+    name: (item.parent.name ?? '').toString(),
   } : null,
 });
 
@@ -288,17 +288,19 @@ const resolveImageUrl = (url, pathName) => {
 const fetchCollections = async () => {
   loadingCollections.value = true;
   try {
-    const { data } = await axios.get('v1/collection-arts', {
-      params: { per_page: 100 },
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { tree: true, per_page: 100 },
     });
     const payload = data?.data ?? data ?? {};
-    const items = payload.items ?? payload ?? [];
-    collections.value = Array.isArray(items) ? items.map(normalizeCollectionOption) : [];
+    const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+    // Filtrar apenas categorias raiz
+    const rootCategories = items.filter(item => !item.parent_id);
+    collections.value = Array.isArray(rootCategories) ? rootCategories.map(normalizeCollectionOption) : [];
 
     // Inicializar subcategorias
     collections.value.forEach((collection) => {
-      if (collection.subcategories && Array.isArray(collection.subcategories)) {
-        collectionSubcategories[collection.id] = collection.subcategories.map(normalizeSubcategory);
+      if (collection.children && Array.isArray(collection.children)) {
+        collectionSubcategories[collection.id] = collection.children.map(normalizeSubcategory);
       }
     });
 
@@ -324,32 +326,32 @@ const fetchCollections = async () => {
   }
 };
 
-const fetchSubcategoryImages = async (subcategoryId) => {
-  if (!subcategoryId || isLoadingImages[subcategoryId]) {
+const fetchSubcategoryImages = async (categoryId) => {
+  if (!categoryId || isLoadingImages[categoryId]) {
     return;
   }
 
-  isLoadingImages[subcategoryId] = true;
+  isLoadingImages[categoryId] = true;
   try {
-    const { data } = await axios.get(`v1/collection-art-subcategories/${subcategoryId}`);
+    const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
     const payload = data?.data ?? data ?? {};
     const images = Array.isArray(payload.images) ? payload.images : [];
-    collectionImages[subcategoryId] = images.map((image) => ({
+    collectionImages[categoryId] = images.map((image) => ({
       id: Number(image.id ?? 0),
       name: image.name ?? '',
       path_name: image.path_name ?? image.pathName ?? '',
       url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
     }));
   } catch (error) {
-    collectionImages[subcategoryId] = [];
+    collectionImages[categoryId] = [];
     window.Swal.fire({
       title: 'Erro!',
-      text: 'Não foi possível carregar as imagens desta subcategoria.',
+      text: 'Não foi possível carregar as imagens desta categoria.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
   } finally {
-    isLoadingImages[subcategoryId] = false;
+    isLoadingImages[categoryId] = false;
   }
 };
 
@@ -364,21 +366,19 @@ const toggleCollection = async (collectionId) => {
   }
 };
 
-const fetchSubcategories = async (collectionId) => {
-  if (loadingSubcategories[collectionId]) {
+const fetchSubcategories = async (categoryId) => {
+  if (loadingSubcategories[categoryId]) {
     return;
   }
 
-  loadingSubcategories[collectionId] = true;
+  loadingSubcategories[categoryId] = true;
   try {
-    const { data } = await axios.get('v1/collection-art-subcategories', {
-      params: { collection_art_id: collectionId },
-    });
+    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
 
-    const payload = data?.data ?? data ?? {};
+    const payload = data?.data ?? data ?? [];
     const items = Array.isArray(payload) ? payload : [];
 
-    collectionSubcategories[collectionId] = items.map(normalizeSubcategory);
+    collectionSubcategories[categoryId] = items.map(normalizeSubcategory);
   } catch (error) {
     window.Swal.fire({
       title: 'Erro!',
@@ -386,9 +386,9 @@ const fetchSubcategories = async (collectionId) => {
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
-    collectionSubcategories[collectionId] = [];
+    collectionSubcategories[categoryId] = [];
   } finally {
-    loadingSubcategories[collectionId] = false;
+    loadingSubcategories[categoryId] = false;
   }
 };
 
@@ -461,7 +461,7 @@ const handleUpload = async () => {
 
   try {
     const formData = new FormData();
-    formData.append('collection_arts_id', selectedSubcategoryId.value);
+    formData.append('collection_category_id', selectedSubcategoryId.value);
 
     selectedFiles.value.forEach((fileItem, index) => {
       formData.append('images[]', fileItem.file);

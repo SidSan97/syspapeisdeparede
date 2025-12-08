@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\CollectionArtSubcategoryResource;
+use App\Http\Resources\CollectionCategoryResource;
 
 class CollectionImageResource extends JsonResource
 {
@@ -16,11 +16,11 @@ class CollectionImageResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'collection_arts_id' => $this->collection_arts_id,
+            'collection_category_id' => $this->collection_category_id,
             'name' => $this->name,
             'path_name' => $this->path_name,
             'url' => $this->getUrl(),
-            'subcategory' => new CollectionArtSubcategoryResource($this->whenLoaded('subcategory')),
+            'category' => new CollectionCategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
