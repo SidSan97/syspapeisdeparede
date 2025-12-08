@@ -1,74 +1,59 @@
 <template>
   <section class="content">
-    <div class="container py-4">
-      <header class="mb-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <button
-            type="button"
-            class="btn btn-subtle"
-            @click="goBack"
-          >
-            <i class="fa fa-arrow-left me-2"></i>
-            Voltar
-          </button>
-        </div>
-        <h1 class="h3 mb-2 text-primary fw-semibold">Meus Favoritos</h1>
-        <p class="text-muted mb-0">
-          Imagens que você favoritou
-        </p>
-      </header>
+    <Page title="Meus Favoritos" back-to="/colecao-arts">
+        <div class="container py-4">
+            <div v-if="loading" class="text-center text-muted py-5">
+                Carregando imagens...
+            </div>
+            <div v-else-if="!images.length" class="text-center text-muted py-5">
+                Nenhuma imagem favoritada ainda.
+            </div>
+            <div v-else class="image-gallery">
+                <figure
+                v-for="image in images"
+                :key="image.id"
+                class="image-gallery__item"
+                >
+                <div class="image-gallery__image-wrapper">
+                    <img
+                    :src="image.url"
+                    :alt="image.name || image.path_name"
+                    :title="image.name || image.path_name"
+                    loading="lazy"
+                    @error="handleImageError($event)"
+                    @click="openModal(image)"
+                    />
+                    <button
+                    type="button"
+                    class="image-gallery__favorite-btn is-favorited"
+                    @click.stop="toggleFavorite(image)"
+                    title="Remover dos favoritos"
+                    >
+                    <i class="fa fa-heart"></i>
+                    </button>
+                </div>
+                <figcaption v-if="image.name" class="image-gallery__caption">
+                    {{ image.name }}
+                </figcaption>
+                </figure>
+            </div>
 
-      <div v-if="loading" class="text-center text-muted py-5">
-        Carregando imagens...
-      </div>
-      <div v-else-if="!images.length" class="text-center text-muted py-5">
-        Nenhuma imagem favoritada ainda.
-      </div>
-      <div v-else class="image-gallery">
-        <figure
-          v-for="image in images"
-          :key="image.id"
-          class="image-gallery__item"
-        >
-          <div class="image-gallery__image-wrapper">
-            <img
-              :src="image.url"
-              :alt="image.name || image.path_name"
-              :title="image.name || image.path_name"
-              loading="lazy"
-              @error="handleImageError($event)"
-              @click="openModal(image)"
-            />
-            <button
-              type="button"
-              class="image-gallery__favorite-btn is-favorited"
-              @click.stop="toggleFavorite(image)"
-              title="Remover dos favoritos"
-            >
-              <i class="fa fa-heart"></i>
-            </button>
-          </div>
-          <figcaption v-if="image.name" class="image-gallery__caption">
-            {{ image.name }}
-          </figcaption>
-        </figure>
-      </div>
-
-      <Teleport to="body">
-        <div v-if="modalImage" class="image-modal" @click.self="closeModal">
-          <div class="image-modal__content">
-            <button type="button" class="image-modal__close" @click="closeModal">
-              <i class="fa fa-times"></i>
-            </button>
-            <img
-              :src="modalImage.url"
-              :alt="modalImage.name || modalImage.path_name"
-              @error="handleImageError($event)"
-            />
-          </div>
+            <Teleport to="body">
+                <div v-if="modalImage" class="image-modal" @click.self="closeModal">
+                <div class="image-modal__content">
+                    <button type="button" class="image-modal__close" @click="closeModal">
+                    <i class="fa fa-times"></i>
+                    </button>
+                    <img
+                    :src="modalImage.url"
+                    :alt="modalImage.name || modalImage.path_name"
+                    @error="handleImageError($event)"
+                    />
+                </div>
+                </div>
+            </Teleport>
         </div>
-      </Teleport>
-    </div>
+    </Page>
   </section>
 </template>
 
@@ -76,6 +61,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
 
 const DEFAULT_COVER =
@@ -170,10 +156,6 @@ const toggleFavorite = async (image) => {
       confirmButtonText: 'Entendi!',
     });
   }
-};
-
-const goBack = () => {
-  router.push('/colecao-arts');
 };
 
 onMounted(() => {

@@ -321,12 +321,12 @@
                 </div>
 
                 <!-- Imagens de Coleção -->
-                <div v-if="card.budget" class="layout-modal-section">
+                <div v-if="card.wall && card.wall.collection_model" class="layout-modal-section">
                   <h3 class="layout-modal-section-title">
                     <i class="fa fa-cube"></i> Modelos selecionados
                   </h3>
-                  <div v-if="getCollectionModels(card.budget).length > 0">
-                    {{ getCollectionModels(card.budget).map(model => model.name).join(', ') }}
+                  <div v-if="card.wall.collection_model.name">
+                    {{ card.wall.collection_model.name }}
                   </div>
                   <div v-else class="layout-modal-info text-muted">
                     Nenhum modelo selecionado

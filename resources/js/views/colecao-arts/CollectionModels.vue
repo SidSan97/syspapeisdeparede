@@ -9,13 +9,13 @@
             Adicionar
           </button>
           <button
-            class="btn btn-subtle"
+            class="btn btn-secondary"
             type="button"
             @click="goToFavorites"
           >
             Meus favoritos
           </button>
-          <div class="dropdown">
+          <div class="dropdown" v-if="isAdmin">
             <button
               class="btn btn-subtle"
               type="button"
@@ -201,10 +201,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref, useTemplateRef } from 'vue';
+import { onMounted, ref, useTemplateRef, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 // Alerts agora usam window.Swal.fire diretamente
+import { useAuthStore } from '@/stores/auth';
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
@@ -227,7 +228,8 @@ const formData = ref({
   subcategory_id: '',
 });
 const selectedFileName = ref('');
-
+const auth = useAuthStore();
+const isAdmin = computed(() => auth.isAdmin());
 const normalizeCollection = (item = {}) => {
   let totalImages = 0;
 
@@ -273,8 +275,8 @@ const fetchCollections = async () => {
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
 
     // Normalizar as coleções (apenas categorias raiz)
-    collections.value = Array.isArray(items) 
-      ? items.filter(item => !item.parent_id).map(normalizeCollection) 
+    collections.value = Array.isArray(items)
+      ? items.filter(item => !item.parent_id).map(normalizeCollection)
       : [];
   } catch (error) {
     collections.value = [];

@@ -1,214 +1,210 @@
 <template>
   <section class="content">
-    <div class="container py-4">
-      <!-- Header -->
-      <header class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 fw-semibold">{{ collectionName || 'Coleção' }}</h1>
-        <div class="d-flex gap-2">
-          <button class="btn btn-primary" type="button" @click="openAddModal">
-            Adicionar
-          </button>
-          <button class="btn btn-subtle" type="button"  @click="goToFavorites">
-            Meus favoritos
-          </button>
-          <div class="dropdown">
-            <button
-              class="btn btn-subtle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <i class="fa fa-ellipsis-v"></i>
+    <Page title="Subcategorias" back-to="/colecao-arts">
+        <template #actions>
+            <button class="btn btn-primary" type="button" @click="openAddModal">
+                Adicionar
             </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#">Opção 1</a></li>
-              <li><a class="dropdown-item" href="#">Opção 2</a></li>
-            </ul>
-          </div>
-        </div>
-      </header>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center text-muted py-5">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Carregando...</span>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else-if="!subcategories.length" class="text-center text-muted py-5">
-        <p class="mb-0">Nenhuma subcategoria cadastrada nesta coleção.</p>
-      </div>
-
-      <!-- Subcategories Grid -->
-      <div v-else class="row g-3">
-        <div
-          v-for="subcategory in subcategories"
-          :key="subcategory.id"
-          class="col-12 col-sm-6 col-md-4 col-lg-3"
-        >
-          <div
-            class="card border-0 shadow-sm h-100 subcategory-card"
-            style="cursor: pointer;"
-            @click="viewSubcategoryImages(subcategory)"
-          >
-            <div class="position-relative" style="padding-top: 66.67%; overflow: hidden;">
-              <div
-                class="position-absolute top-0 start-0 w-100 h-100"
-                :style="getSubcategoryBackground(subcategory)"
-                style="background-size: cover; background-position: center; background-repeat: no-repeat;"
-              ></div>
-              <div
-                class="position-absolute bottom-0 start-0 w-100 text-white p-3"
-                style="background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%);"
-              >
-                <h5 class="mb-0 fw-semibold">{{ subcategory.name }}</h5>
-              </div>
+            <button class="btn btn-secondary" type="button"  @click="goToFavorites">
+                Meus favoritos
+            </button>
+            <div class="dropdown" v-if="isAdmin">
+                <button class="btn btn-subtle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#">Opção 1</a></li>
+                    <li><a class="dropdown-item" href="#">Opção 2</a></li>
+                </ul>
             </div>
-          </div>
+        </template>
+        <div class="container py-4">
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center text-muted py-5">
+            <div class="spinner-border" role="status">
+            <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="!subcategories.length" class="text-center text-muted py-5">
+            <p class="mb-0">Nenhuma subcategoria cadastrada nesta coleção.</p>
+        </div>
+
+        <!-- Subcategories Grid -->
+        <div v-else class="row g-3">
+            <div
+            v-for="subcategory in subcategories"
+            :key="subcategory.id"
+            class="col-12 col-sm-6 col-md-4 col-lg-3"
+            >
+            <div
+                class="card border-0 shadow-sm h-100 subcategory-card"
+                style="cursor: pointer;"
+                @click="viewSubcategoryImages(subcategory)"
+            >
+                <div class="position-relative" style="padding-top: 66.67%; overflow: hidden;">
+                <div
+                    class="position-absolute top-0 start-0 w-100 h-100"
+                    :style="getSubcategoryBackground(subcategory)"
+                    style="background-size: cover; background-position: center; background-repeat: no-repeat;"
+                ></div>
+                <div
+                    class="position-absolute bottom-0 start-0 w-100 text-white p-3"
+                    style="background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%);"
+                >
+                    <h5 class="mb-0 fw-semibold">{{ subcategory.name }}</h5>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Modal Adicionar Subcategoria -->
+        <div
+        class="modal fade"
+        id="add-subcategory-modal"
+        tabindex="-1"
+        aria-labelledby="add-subcategory-modal-label"
+        aria-hidden="true"
+        ref="addModalRef"
+        >
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="add-subcategory-modal-label">Adicionar item</h5>
+                <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <form @submit.prevent="saveSubcategory">
+                <!-- Nome -->
+                <div class="mb-3">
+                    <label for="subcategory-name" class="form-label">Nome</label>
+                    <input
+                    type="text"
+                    class="form-control"
+                    id="subcategory-name"
+                    v-model="formData.name"
+                    placeholder="Digite o nome"
+                    required
+                    />
+                </div>
+
+                <!-- Imagem -->
+                <div class="mb-3">
+                    <label for="subcategory-image" class="form-label">Imagem</label>
+                    <div class="d-flex align-items-center gap-2">
+                    <input
+                        type="file"
+                        class="form-control d-none"
+                        id="subcategory-image"
+                        accept="image/*"
+                        @change="handleImageChange"
+                        ref="fileInputRef"
+                    />
+                    <label
+                        for="subcategory-image"
+                        class="btn btn-outline-secondary mb-0"
+                        style="cursor: pointer;"
+                    >
+                        Escolher Arquivo
+                    </label>
+                    <span class="text-muted">{{ selectedFileName || 'Nenhum arquivo escolhido' }}</span>
+                    </div>
+                </div>
+
+                <!-- Categoria -->
+                <div class="mb-3">
+                    <label for="subcategory-category" class="form-label">Categoria</label>
+                    <select
+                    class="form-select"
+                    id="subcategory-category"
+                    v-model="formData.parent_id"
+                    @change="fetchSubcategoriesForCollection(formData.parent_id)"
+                    required
+                    >
+                    <option value="">Selecionar categoria</option>
+                    <option
+                        v-for="collection in collections"
+                        :key="collection.id"
+                        :value="collection.id"
+                    >
+                        {{ collection.name }}
+                    </option>
+                    </select>
+                </div>
+
+                <!-- Subcategoria -->
+                <div class="mb-3">
+                    <label for="subcategory-subcategory" class="form-label">Subcategoria</label>
+                    <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Carregando...</span>
+                    </div>
+                    <select
+                    v-else
+                    class="form-select"
+                    id="subcategory-subcategory"
+                    v-model="formData.parent_subcategory_id"
+                    >
+                    <option value="">Selecionar categoria</option>
+                    <option
+                        v-for="subcategory in availableSubcategories"
+                        :key="subcategory.id"
+                        :value="subcategory.id"
+                    >
+                        {{ subcategory.name }}
+                    </option>
+                    </select>
+                </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+                >
+                Cancelar
+                </button>
+                <button
+                type="button"
+                class="btn btn-primary"
+                @click="saveSubcategory"
+                :disabled="saving"
+                >
+                {{ saving ? 'Salvando...' : 'Salvar' }}
+                </button>
+            </div>
+            </div>
         </div>
       </div>
-    </div>
-
-    <!-- Modal Adicionar Subcategoria -->
-    <div
-      class="modal fade"
-      id="add-subcategory-modal"
-      tabindex="-1"
-      aria-labelledby="add-subcategory-modal-label"
-      aria-hidden="true"
-      ref="addModalRef"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="add-subcategory-modal-label">Adicionar item</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="saveSubcategory">
-              <!-- Nome -->
-              <div class="mb-3">
-                <label for="subcategory-name" class="form-label">Nome</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="subcategory-name"
-                  v-model="formData.name"
-                  placeholder="Digite o nome"
-                  required
-                />
-              </div>
-
-              <!-- Imagem -->
-              <div class="mb-3">
-                <label for="subcategory-image" class="form-label">Imagem</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input
-                    type="file"
-                    class="form-control d-none"
-                    id="subcategory-image"
-                    accept="image/*"
-                    @change="handleImageChange"
-                    ref="fileInputRef"
-                  />
-                  <label
-                    for="subcategory-image"
-                    class="btn btn-outline-secondary mb-0"
-                    style="cursor: pointer;"
-                  >
-                    Escolher Arquivo
-                  </label>
-                  <span class="text-muted">{{ selectedFileName || 'Nenhum arquivo escolhido' }}</span>
-                </div>
-              </div>
-
-              <!-- Categoria -->
-              <div class="mb-3">
-                <label for="subcategory-category" class="form-label">Categoria</label>
-                <select
-                  class="form-select"
-                  id="subcategory-category"
-                  v-model="formData.parent_id"
-                  @change="fetchSubcategoriesForCollection(formData.parent_id)"
-                  required
-                >
-                  <option value="">Selecionar categoria</option>
-                  <option
-                    v-for="collection in collections"
-                    :key="collection.id"
-                    :value="collection.id"
-                  >
-                    {{ collection.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Subcategoria -->
-              <div class="mb-3">
-                <label for="subcategory-subcategory" class="form-label">Subcategoria</label>
-                <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
-                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <span>Carregando...</span>
-                </div>
-                <select
-                  v-else
-                  class="form-select"
-                  id="subcategory-subcategory"
-                  v-model="formData.parent_subcategory_id"
-                >
-                  <option value="">Selecionar categoria</option>
-                  <option
-                    v-for="subcategory in availableSubcategories"
-                    :key="subcategory.id"
-                    :value="subcategory.id"
-                  >
-                    {{ subcategory.name }}
-                  </option>
-                </select>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="saveSubcategory"
-              :disabled="saving"
-            >
-              {{ saving ? 'Salvando...' : 'Salvar' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Page>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref, useTemplateRef } from 'vue';
+import { onMounted, ref, useTemplateRef, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
+import { useAuthStore } from '@/stores/auth';
 
 const DEFAULT_COVER =
   'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
 
 const route = useRoute();
 const router = useRouter();
-
+const auth = useAuthStore();
+const isAdmin = computed(() => auth.isAdmin());
 const loading = ref(true);
 const subcategories = ref([]);
 const collectionName = ref('');
