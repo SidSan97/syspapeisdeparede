@@ -65,9 +65,12 @@
               <input
                 id="dateFrom"
                 v-model="dateFrom"
-                type="date"
+                v-mask="'##/##/####'"
+                type="text"
                 class="form-control"
+                placeholder="DD/MM/AAAA"
                 :disabled="loading"
+                maxlength="10"
               />
             </div>
 
@@ -76,9 +79,12 @@
               <input
                 id="dateTo"
                 v-model="dateTo"
-                type="date"
+                v-mask="'##/##/####'"
+                type="text"
                 class="form-control"
+                placeholder="DD/MM/AAAA"
                 :disabled="loading"
+                maxlength="10"
               />
             </div>
 
@@ -100,7 +106,7 @@
             <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
               <button
                 type="button"
-                class="btn btn-outline-secondary btn-lg w-100"
+                class="btn btn-outline-default"
                 @click="clearFilters"
                 :disabled="loading"
               >
@@ -266,6 +272,7 @@ import BudgetOrderModal from '@/components/budget/BudgetOrderModal.vue';
 import GeneratePdfModal from '@/components/budget/GeneratePdfModal.vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
 
 const auth = useAuthStore();
 const budgets = ref([]);
@@ -313,18 +320,6 @@ function formatDeliveryTime(days) {
   return `${days} ${days === 1 ? 'dia' : 'dias'}`;
 }
 
-function formatDate(value) {
-  if (!value) {
-    return '—';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat('pt-BR').format(date);
-}
 
 function normalizeBudget(budget) {
   if (!budget) {
@@ -415,20 +410,24 @@ const filteredBudgets = computed(() => {
         } else {
           const budgetDateOnly = new Date(budgetDate.getFullYear(), budgetDate.getMonth(), budgetDate.getDate());
 
-          if (dateFrom.value) {
-            const fromDate = new Date(dateFrom.value);
-            fromDate.setHours(0, 0, 0, 0);
-            if (budgetDateOnly < fromDate) {
-              matchesPeriod = false;
+          if (dateFrom.value && dateFrom.value.length === 10) {
+            const fromDate = parseDateFromMask(dateFrom.value);
+            if (fromDate && !Number.isNaN(fromDate.getTime())) {
+              fromDate.setHours(0, 0, 0, 0);
+              if (budgetDateOnly < fromDate) {
+                matchesPeriod = false;
+              }
             }
           }
 
-          if (dateTo.value && matchesPeriod) {
-            const toDate = new Date(dateTo.value);
-            toDate.setHours(23, 59, 59, 999);
-            const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
-            if (budgetDateOnly > toDateOnly) {
-              matchesPeriod = false;
+          if (dateTo.value && dateTo.value.length === 10 && matchesPeriod) {
+            const toDate = parseDateFromMask(dateTo.value);
+            if (toDate && !Number.isNaN(toDate.getTime())) {
+              toDate.setHours(23, 59, 59, 999);
+              const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+              if (budgetDateOnly > toDateOnly) {
+                matchesPeriod = false;
+              }
             }
           }
         }

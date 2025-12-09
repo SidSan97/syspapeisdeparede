@@ -4,7 +4,7 @@
         <div class="border-0 shadow-sm">
           <form class="g-3 align-items-center mb-4" role="search">
             <label for="search-query" class="sr-only">Pesquisar pedido</label>
-  
+
             <div class="d-flex">
               <div class="me-3">
                   <div class="input-group input-group-prefix">
@@ -15,7 +15,7 @@
                       </span>
                   </div>
               </div>
-  
+
             <div class="">
               <div class="dropdown">
                 <button
@@ -26,7 +26,7 @@
                 >
                   {{ currentStatusLabel }}
                 </button>
-  
+
                 <ul class="dropdown-menu">
                   <li>
                     <button
@@ -37,7 +37,7 @@
                       Todos
                     </button>
                   </li>
-  
+
                   <li v-for="option in statusOptions" :key="option.value">
                     <button
                         class="dropdown-item"
@@ -52,30 +52,36 @@
               </div>
             </div>
             </div>
-  
+
             <div v-if="isAdmin" class="row buttons-filters mt-2">
               <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
                 <label for="dateFrom" class="form-label small mb-1">Data Inicial</label>
                 <input
                   id="dateFrom"
                   v-model="dateFrom"
-                  type="date"
+                  v-mask="'##/##/####'"
+                  type="text"
                   class="form-control"
+                  placeholder="DD/MM/AAAA"
                   :disabled="loading"
+                  maxlength="10"
                 />
               </div>
-  
+
               <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
                 <label for="dateTo" class="form-label small mb-1">Data Final</label>
                 <input
                   id="dateTo"
                   v-model="dateTo"
-                  type="date"
+                  v-mask="'##/##/####'"
+                  type="text"
                   class="form-control"
+                  placeholder="DD/MM/AAAA"
                   :disabled="loading"
+                  maxlength="10"
                 />
               </div>
-  
+
               <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
                 <label for="userFilter" class="form-label small mb-1">Revendedor</label>
                 <select
@@ -90,11 +96,11 @@
                   </option>
                 </select>
               </div>
-  
+
               <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
                 <button
                   type="button"
-                  class="btn btn-outline-secondary btn-lg w-100"
+                  class="btn btn-outline-default"
                   @click="clearFilters"
                   :disabled="loading"
                 >
@@ -104,12 +110,12 @@
               </div>
               </div>
           </form>
-  
+
           <div class="card-body p-0 mt-4">
             <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
               Carregando pedidos...
             </div>
-  
+
             <EmptyState
               v-else-if="filteredOrders.length === 0"
               heading="Nenhum pedido encontrado"
@@ -156,7 +162,7 @@
       </Page>
     </section>
   </template>
-  
+
 <script setup>
   import { computed, onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
@@ -165,7 +171,8 @@
   import EmptyState from '@/components/empty-state/EmptyState.vue';
   import axios from 'axios';
   import { useAuthStore } from '@/stores/auth';
-  
+  import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
+
   const auth = useAuthStore();
   const orders = ref([]);
   const loading = ref(true);
@@ -176,45 +183,33 @@
   const selectedUserId = ref(null);
   const users = ref([]);
   const loadingUsers = ref(false);
-  
+
   const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
   const router = useRouter();
-  
+
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });
-  
+
   function formatCurrency(value) {
     if (value === null || value === undefined) {
       return currencyFormatter.format(0);
     }
-  
+
     const numericValue = Number(value);
     return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
   }
-  
+
   function formatDeliveryTime(days) {
     if (!days) {
       return 'Não informado';
     }
-  
+
     return `${days} ${days === 1 ? 'dia' : 'dias'}`;
   }
-  
-  function formatDate(value) {
-    if (!value) {
-      return '—';
-    }
-  
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-  
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-  }
-  
+
+
   function normalizeOrder(order) {
     if (!order) {
       return {
@@ -235,7 +230,7 @@
         collectionReferringModel: null,
       };
     }
-  
+
     const totalAmount = order.total_amount ?? order.totalAmount ?? 0;
     const totalAmountInstallments = order.total_amount_installments ?? order.totalAmountInstallments ?? 0;
     const deliveryTime = order.delivery_time ?? order.deliveryTime ?? null;
@@ -249,7 +244,7 @@
         : [];
     const collectionRef = order.collection_referring_model ?? order.collectionReferringModel ?? null;
     const rooms = Array.isArray(order.rooms) ? order.rooms : [];
-  
+
     return {
       ...order,
       name: order.name ?? '',
@@ -268,7 +263,7 @@
       collectionReferringModel: collectionRef,
     };
   }
-  
+
   const statusOptions = [
     { label: 'Em aberto', value: 'em aberto' },
     { label: 'Aprovado', value: 'aprovado' },
@@ -276,21 +271,21 @@
     { label: 'Pendente de Revisão', value: 'pendente de revisão' },
     { label: 'Cancelado', value: 'cancelado' },
   ];
-  
+
   const filteredOrders = computed(() => {
     const query = searchQuery.value.trim().toLowerCase();
     const status = statusFilter.value;
-  
+
     return orders.value.filter((order) => {
       // Filtro de busca
       const matchesQuery = !query
         || order.name?.toLowerCase().includes(query)
         || String(order.id).includes(query);
-  
+
       // Filtro de status
       const normalizedStatus = (order.status || '').toString().toLowerCase();
       const matchesStatus = status === 'all' || normalizedStatus === status;
-  
+
       // Filtro de período (apenas para admin)
       let matchesPeriod = true;
       if (isAdmin.value && (dateFrom.value || dateTo.value)) {
@@ -303,59 +298,63 @@
             matchesPeriod = false;
           } else {
             const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
-  
-            if (dateFrom.value) {
-              const fromDate = new Date(dateFrom.value);
-              fromDate.setHours(0, 0, 0, 0);
-              if (orderDateOnly < fromDate) {
-                matchesPeriod = false;
+
+            if (dateFrom.value && dateFrom.value.length === 10) {
+              const fromDate = parseDateFromMask(dateFrom.value);
+              if (fromDate && !Number.isNaN(fromDate.getTime())) {
+                fromDate.setHours(0, 0, 0, 0);
+                if (orderDateOnly < fromDate) {
+                  matchesPeriod = false;
+                }
               }
             }
-  
-            if (dateTo.value && matchesPeriod) {
-              const toDate = new Date(dateTo.value);
-              toDate.setHours(23, 59, 59, 999);
-              const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
-              if (orderDateOnly > toDateOnly) {
-                matchesPeriod = false;
+
+            if (dateTo.value && dateTo.value.length === 10 && matchesPeriod) {
+              const toDate = parseDateFromMask(dateTo.value);
+              if (toDate && !Number.isNaN(toDate.getTime())) {
+                toDate.setHours(23, 59, 59, 999);
+                const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+                if (orderDateOnly > toDateOnly) {
+                  matchesPeriod = false;
+                }
               }
             }
           }
         }
       }
-  
+
       // Filtro de revendedor (apenas para admin)
       let matchesUser = true;
       if (isAdmin.value && selectedUserId.value !== null) {
         const orderUserId = order.user_id || order.userId || order.user?.id;
         matchesUser = Number(orderUserId) === Number(selectedUserId.value);
       }
-  
+
       return matchesQuery && matchesStatus && matchesPeriod && matchesUser;
     });
   });
-  
+
   const currentStatusLabel = computed(() => {
     if (statusFilter.value === 'all') {
       return 'Situação';
     }
-  
+
     const match = statusOptions.find((option) => option.value === statusFilter.value);
     return match ? match.label : 'Situação';
   });
-  
+
   async function fetchOrders() {
     try {
       loading.value = true;
-  
+
       const { data } = await axios.get('v1/orders');
-  
+
       const payload = Array.isArray(data?.data)
         ? data.data.map(normalizeOrder)
         : Array.isArray(data?.data?.data)
           ? data.data.data.map(normalizeOrder)
           : [];
-  
+
       orders.value = payload;
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
@@ -364,7 +363,7 @@
       loading.value = false;
     }
   }
-  
+
   function formatStatusLabel(status) {
     if (!status) {
       return '—';
@@ -376,7 +375,7 @@
     }
     return status;
   }
-  
+
   function getStatusVariant(status) {
     const normalized = (status || '').toString().toLowerCase();
     if (normalized.includes('cancel')) {
@@ -387,24 +386,24 @@
     }
     return 'info';
   }
-  
+
   function setStatusFilter(value) {
     statusFilter.value = value;
   }
-  
+
   function viewOrder(order) {
     router.push({ name: 'ShowOrderDetails', params: { id: order.id } });
   }
-  
+
   async function fetchUsers() {
     if (!isAdmin.value) {
       return;
     }
-  
+
     try {
       loadingUsers.value = true;
       const response = await axios.get('v1/users/search');
-  
+
       if (response.data?.success && response.data?.data) {
         // Se a resposta estiver paginada, pegar o array de dados
         if (response.data.data.data && Array.isArray(response.data.data.data)) {
@@ -422,13 +421,13 @@
       loadingUsers.value = false;
     }
   }
-  
+
   function clearFilters() {
     dateFrom.value = '';
     dateTo.value = '';
     selectedUserId.value = null;
   }
-  
+
   onMounted(() => {
     fetchOrders();
     if (isAdmin.value) {
@@ -437,27 +436,27 @@
     document.title = 'Pedidos';
   });
 </script>
-  
+
 <style scoped>
   .search-input .form-control,
   .search-input .input-group-text {
     border-radius: 0.375rem;
     padding-block: 0.85rem;
   }
-  
+
   .search-input .input-group-text {
     border-right: none;
   }
-  
+
   .search-input .form-control {
     border-left: none;
   }
-  
+
   .search-input .form-control:focus {
     border-color: var(--bs-secondary);
     box-shadow: none;
   }
-  
+
   .status-dot {
     width: 8px;
     height: 8px;
@@ -465,21 +464,20 @@
     display: inline-block;
     flex-shrink: 0;
   }
-  
+
   .status-dot-success {
     background-color: var(--bs-success);
   }
-  
+
   .status-dot-danger {
     background-color: var(--bs-danger);
   }
-  
+
   .status-dot-info {
     background-color: var(--bs-info);
   }
-  
+
   .input-group-text, .buttons-filters button, input {
       height: 36px !important;
   }
 </style>
-  
