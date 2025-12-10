@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Frenet\CalculateShippingRequest;
 use App\Services\FrenetService;
-use Illuminate\Http\Request;
 
 class FrenetController extends Controller
 {
@@ -14,8 +14,8 @@ class FrenetController extends Controller
         $this->frenetService = $frenetService;
     }
 
-    public function calculateShipping(Request $request)
+    public function calculateShipping(CalculateShippingRequest $request)
     {
-        return $this->frenetService->shippingData($request->all());
+        return $this->frenetService->shippingData($request->validated());
     }
 }

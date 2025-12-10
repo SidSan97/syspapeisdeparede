@@ -11,7 +11,7 @@ class FrenetService
 {
     public function shippingData(array $item)
     {
-        $apiKey = env('FRENET_API_KEY');
+        $apiKey = env('FRENET_TOKEN');
 
         if (!$apiKey) {
             return response()->json([
@@ -29,9 +29,25 @@ class FrenetService
             ],
         ]);
 
+        $body = [
+            "SellerCEP" => env('FRENET_CEP_REMETENTE'),
+            "RecipientCEP" => $item['cep'],
+            "RecipientCountry" => "BR",
+            "ShippingItemArray" => [
+              [
+                "Weight" => $item['productData']['peso_bruto'],
+                "Length" => $item['productData']['comprimentoEmbalagem'],
+                "Height" => $item['productData']['alturaEmbalagem'],
+                "Quantity" => 1,
+                "isFragile" => false,
+                "Width" => $item['productData']['larguraEmbalagem']
+              ]
+            ],
+        ];
+
         try {
             $response = $client->post('/shipping/quote', [
-                'json' => $item,
+                'json' => $body,
             ]);
 
             return response()->json([

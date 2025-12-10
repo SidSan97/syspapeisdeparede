@@ -1056,30 +1056,38 @@ function formatCEP(event) {
     budget.cep = value;
 }
 
-function calculateFreight() {
+async function calculateFreight() {
     calculatingFreight.value = true;
 
-    // Simulação de cálculo de frete
-    setTimeout(() => {
-        budget.carriers = [
-            {
-                name: 'Transportadora A',
-                price: 45.90,
-                deliveryTime: 5
-            },
-            {
-                name: 'Transportadora B',
-                price: 38.50,
-                deliveryTime: 7
-            },
-            {
-                name: 'Transportadora C',
-                price: 52.00,
-                deliveryTime: 3
-            }
-        ];
+    try {
+        const { data } = await axios.post('v1/frenet/calculate-shipping', {
+            cep: budget.cep,
+            productData: tinyErpProducts.value
+        });
+
+        // Mapear os dados da resposta para o formato esperado
+        if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
+            budget.carriers = data.data.ShippingSevicesArray
+                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
+                .map(service => ({
+                    name: `${service.Carrier} - ${service.ServiceDescription}`,
+                    price: parseFloat(service.ShippingPrice) || 0,
+                    deliveryTime: parseInt(service.DeliveryTime) || 0
+                }));
+        } else {
+            budget.carriers = [];
+        }
+
         calculatingFreight.value = false;
-    }, 1000);
+    } catch (error) {
+        console.error('Erro ao calcular frete:', error);
+        window.Swal.fire({
+            title: 'Erro ao calcular frete!',
+            text: 'Não foi possível calcular o frete. Tente novamente mais tarde.',
+            confirmButtonText: 'Entendi!',
+        });
+        calculatingFreight.value = false;
+    }
 }
 
 function calculateDeliveryTime(budget) {
@@ -1175,7 +1183,6 @@ async function searchTinyErpProducts() {
 
         const { data } = await axios.get('v1/tiny-erp/all');
         tinyErpProducts.value = data;
-        console.log(tinyErpProducts.value);
 
         PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
         PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
