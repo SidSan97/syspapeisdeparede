@@ -36,22 +36,22 @@ class TinyErpService
             if (!empty($gtin)) {
                 $params['gtin'] = $gtin;
             }
-            
+
             // Remove valores nulos e vazios antes de construir a query string
             $params = array_filter($params, function($value) {
                 return $value !== null && $value !== '';
             });
-            
+
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/produtos.pesquisa.php?' . $queryString;
 
             $response = $this->client->get($url);
-            
+
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
             return $data['retorno'];
-            
+
         } catch (\Exception $e) {
             Log::error('Erro inesperado ao buscar produtos: ' . $e->getMessage());
             return response()->json([
@@ -73,12 +73,12 @@ class TinyErpService
             $params = array_filter($params, function($value) {
                 return $value !== null && $value !== '';
             });
-            
+
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/produto.obter.php?' . $queryString;
 
             $response = $this->client->get($url);
-            
+
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
@@ -104,12 +104,12 @@ class TinyErpService
             $params = array_filter($params, function($value) {
                 return $value !== null && $value !== '';
             });
-            
+
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/listas.precos.pesquisa.php?' . $queryString;
 
             $response = $this->client->get($url);
-            
+
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
@@ -136,12 +136,12 @@ class TinyErpService
             $params = array_filter($params, function($value) {
                 return $value !== null && $value !== '';
             });
-            
+
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/listas.precos.excecoes.php?' . $queryString;
 
             $response = $this->client->get($url);
-            
+
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 

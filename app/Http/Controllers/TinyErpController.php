@@ -15,10 +15,10 @@ class TinyErpController extends Controller
         $this->tinyErpService = $tinyErpService;
     }
 
-    public function all()
+    public function all(): array
     {
         $products = $this->tinyErpService->searchProducts();
-        
+
         if($products['status'] == "Erro") {
             return $products;
         }
@@ -32,12 +32,16 @@ class TinyErpController extends Controller
         $pricePaymentId = intval($listPrices['registros'][0]['registro']['id']);
         $priceInstallmentId = intval($listPrices['registros'][1]['registro']['id']);
 
-        $listPriceExceptions = $this->tinyErpService->getListPriceExceptions($pricePaymentId);
-        $listPriceExceptionsInstallment = $this->tinyErpService->getListPriceExceptions($priceInstallmentId);
+        $listPriceExceptionsInstallment = $this->tinyErpService->getListPriceExceptions($pricePaymentId);
+        $listPriceExceptions = $this->tinyErpService->getListPriceExceptions($priceInstallmentId);
 
         $productId = intval($products['produtos'][0]['produto']['id']);
 
         $product = $this->tinyErpService->getProduct($productId);
+
+        if($product['status'] == "Erro") {
+            return $product;
+        }
 
         $data = [
             'products' => $products,
@@ -48,7 +52,6 @@ class TinyErpController extends Controller
             'priceInstallmentExceptions' => $listPriceExceptionsInstallment,
         ];
 
-        $a = new TinyErpProductResource($data);
-        dd($a);
+        return TinyErpProductResource::makeTinyErpData($data);
     }
 }

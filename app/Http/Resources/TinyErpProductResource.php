@@ -7,19 +7,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class TinyErpProductResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(Request $request): array
+    public static function makeTinyErpData(array $data)
     {
         $result = [];
 
         // De $data['products'] - extrair id e nome de cada produto
-        if (isset($this->resource['products']['produtos']) && is_array($this->resource['products']['produtos'])) {
+        if (isset($data['products']['produtos']) && is_array($data['products']['produtos'])) {
             $result['products'] = [];
-            foreach ($this->resource['products']['produtos'] as $item) {
+            foreach ($data['products']['produtos'] as $item) {
                 if (isset($item['produto'])) {
                     $produto = $item['produto'];
                     $result['products'][] = [
@@ -31,8 +26,8 @@ class TinyErpProductResource extends JsonResource
         }
 
         // De $data['product'] - extrair peso_liquido, peso_bruto e dimensões da embalagem
-        if (isset($this->resource['product']['produto'])) {
-            $product = $this->resource['product']['produto'];
+        if (isset($data['product']['produto'])) {
+            $product = $data['product']['produto'];
             $result['product'] = [
                 'peso_liquido' => isset($product['peso_liquido']) ? (float) $product['peso_liquido'] : null,
                 'peso_bruto' => isset($product['peso_bruto']) ? (float) $product['peso_bruto'] : null,
@@ -45,8 +40,8 @@ class TinyErpProductResource extends JsonResource
 
         // De $data['pricePaymentExceptions'] - extrair preco_promocional
         $result['pricePaymentExceptions'] = [];
-        if (isset($this->resource['pricePaymentExceptions']['registros']) && is_array($this->resource['pricePaymentExceptions']['registros'])) {
-            foreach ($this->resource['pricePaymentExceptions']['registros'] as $item) {
+        if (isset($data['pricePaymentExceptions']['registros']) && is_array($data['pricePaymentExceptions']['registros'])) {
+            foreach ($data['pricePaymentExceptions']['registros'] as $item) {
                 if (isset($item['registro'])) {
                     $registro = $item['registro'];
                     $result['pricePaymentExceptions'][] = [
@@ -58,8 +53,8 @@ class TinyErpProductResource extends JsonResource
 
         // De $data['priceInstallmentExceptions'] - extrair preco_promocional
         $result['priceInstallmentExceptions'] = [];
-        if (isset($this->resource['priceInstallmentExceptions']['registros']) && is_array($this->resource['priceInstallmentExceptions']['registros'])) {
-            foreach ($this->resource['priceInstallmentExceptions']['registros'] as $item) {
+        if (isset($data['priceInstallmentExceptions']['registros']) && is_array($data['priceInstallmentExceptions']['registros'])) {
+            foreach ($data['priceInstallmentExceptions']['registros'] as $item) {
                 if (isset($item['registro'])) {
                     $registro = $item['registro'];
                     $result['priceInstallmentExceptions'][] = [
@@ -69,8 +64,18 @@ class TinyErpProductResource extends JsonResource
             }
         }
 
-        dd($result);
-        return $result;
+        return [
+            'produto_id' => $result['products'][0]['id'],
+            'produto_nome' => $result['products'][0]['nome'],
+            'peso_liquido' => $result['product']['peso_liquido'],
+            'peso_bruto' => $result['product']['peso_bruto'],
+            'alturaEmbalagem' => $result['product']['alturaEmbalagem'],
+            'comprimentoEmbalagem' => $result['product']['comprimentoEmbalagem'],
+            'larguraEmbalagem' => $result['product']['larguraEmbalagem'],
+            'diametroEmbalagem' => $result['product']['diametroEmbalagem'],
+            'precoPromocionalPrazo' => $result['pricePaymentExceptions'][0]['preco_promocional'],
+            'precoPromocionalVista' => $result['priceInstallmentExceptions'][0]['preco_promocional'],
+        ];
     }
 }
 

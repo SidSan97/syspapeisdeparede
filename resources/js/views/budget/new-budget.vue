@@ -7,7 +7,13 @@
                 </button>
             </template>
 
-        <div class="container py-4">
+        <div v-if="loading" class="card">
+            <div class="card-body p-4 text-center text-muted">
+                Carregando produtos...
+            </div>
+        </div>
+
+        <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
                     <!-- Seção: Informações Básicas -->
@@ -498,8 +504,10 @@ const saving = ref(false);
 const enableDropshipping = ref(false);
 const dropshippingFormRef = ref(null);
 const tinyErpProducts = ref([]);
+const loading = ref(false);
+const PRECO_VISTA = ref(0);
+const PRECO_PRAZO = ref(0);
 
-const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const canEnableDropshipping = computed(() => {
   const user = auth.user;
   return user?.user_type_id === USER_TYPES.ADMIN || user?.is_dropshipping === 1 || user?.is_dropshipping === true;
@@ -755,9 +763,6 @@ const totalArea = computed(() => {
     return area;
 });
 
-const PRECO_VISTA = 41.90;
-const PRECO_PRAZO = 47.90;
-
 // Calcular custo dos modelos
 const totalModelsCost = computed(() => {
     let total = 0;
@@ -784,12 +789,12 @@ const freightCost = computed(() => {
 
 // Total à vista: metros × precoVista + modelos + frete
 const totalBudgetVista = computed(() => {
-    return (totalArea.value * PRECO_VISTA) + totalModelsCost.value + freightCost.value;
+    return (totalArea.value * PRECO_VISTA.value) + totalModelsCost.value + freightCost.value;
 });
 
 // Total a prazo: metros × precoPrazo + modelos + frete
 const totalBudgetPrazo = computed(() => {
-    return (totalArea.value * PRECO_PRAZO) + totalModelsCost.value + freightCost.value;
+    return (totalArea.value * PRECO_PRAZO.value) + totalModelsCost.value + freightCost.value;
 });
 
 // Total baseado na forma de pagamento selecionada
@@ -1157,25 +1162,38 @@ function saveBudget() {
                 text: message ?? 'Tente novamente mais tarde.',
                 confirmButtonText: 'Entendi!',
             });
-            
+
         })
         .finally(() => {
             saving.value = false;
         });
 }
 
-async function searchProducts() {
+async function searchTinyErpProducts() {
     try {
+        loading.value = true;
+
         const { data } = await axios.get('v1/tiny-erp/all');
-        tinyErpProducts.value = data.data;
+        tinyErpProducts.value = data;
+        console.log(tinyErpProducts.value);
+
+        PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
+        PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
     } catch (error) {
         console.error('Erro ao buscar produtos:', error);
+        window.Swal.fire({
+            title: 'Erro ao buscar produtos!',
+            text: 'Não foi possível buscar os produtos do Tiny ERP. Tente novamente mais tarde.',
+            confirmButtonText: 'Entendi!',
+        });
         tinyErpProducts.value = [];
+    } finally {
+        loading.value = false;
     }
 }
 
 onMounted(() => {
-    searchProducts();
+    searchTinyErpProducts();
 });
 </script>
 
@@ -1228,4 +1246,5 @@ onMounted(() => {
         box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
     }
 }
+
 </style>
