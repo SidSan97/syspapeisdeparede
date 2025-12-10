@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
@@ -120,7 +121,7 @@ class OrderController extends Controller
         }
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateOrderRequest $request, int $id): JsonResponse
     {
         try {
             $order = $this->repository->find($id);
@@ -132,32 +133,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'user_id' => 'sometimes|nullable|exists:users,id',
-                'tenant_id' => 'sometimes|nullable|exists:users,id',
-                'primary_budget_room_id' => 'sometimes|nullable|exists:budget_rooms,id',
-                'total_area' => 'sometimes|nullable|numeric|min:0',
-                'total_amount' => 'sometimes|nullable|numeric|min:0',
-                'total_amount_installments' => 'sometimes|nullable|numeric|min:0',
-                'delivery_time' => 'sometimes|nullable|integer|min:0',
-                'payment_method' => 'sometimes|nullable|string',
-                'installment_limit' => 'sometimes|nullable|integer|min:1',
-                'installments' => 'sometimes|nullable|integer|min:1',
-                'cep' => 'sometimes|nullable|string|max:9',
-                'selected_carrier_name' => 'sometimes|nullable|string',
-                'selected_carrier_price' => 'sometimes|nullable|numeric|min:0',
-                'selected_carrier_delivery_time' => 'sometimes|nullable|integer|min:0',
-                'carriers_snapshot' => 'sometimes|nullable|array',
-                'status' => 'sometimes|nullable|string|max:50',
-                'payment_file' => 'sometimes|nullable|string',
-                'comment_referring_model' => 'sometimes|nullable|string|max:500',
-                'link_referring_model' => 'sometimes|nullable|string|max:150',
-                'files_referring_model' => 'sometimes|nullable|array',
-                'collection_referring_model' => 'sometimes|nullable|string',
-                'dropshipping_budget' => 'sometimes|nullable|boolean',
-            ]);
-
+            $validated = $request->validated();
             $order = $this->repository->update($order, $validated);
             $transformed = new OrderResource($order);
 
@@ -166,16 +142,11 @@ class OrderController extends Controller
                 'data' => $transformed->toArray(request()),
                 'message' => 'Pedido atualizado com sucesso',
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro de validação',
-                'data' => $e->errors(),
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar pedido',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

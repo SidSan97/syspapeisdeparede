@@ -1352,14 +1352,23 @@ function updateBudget() {
     saving.value = true;
 
     const payload = JSON.parse(JSON.stringify(budget));
+
+    // Processar selectedCarrier e carriers_snapshot
     if (
         payload.selectedCarrier !== null &&
         Array.isArray(payload.carriers) &&
         payload.carriers[payload.selectedCarrier]
     ) {
-        payload.selectedCarrier = payload.carriers[payload.selectedCarrier];
+        const selectedCarrierObj = payload.carriers[payload.selectedCarrier];
+        payload.selectedCarrier = selectedCarrierObj;
+        // Salvar snapshot dos carriers antes de deletar
+        payload.carriers_snapshot = payload.carriers;
     } else {
         payload.selectedCarrier = null;
+        // Manter carriers_snapshot se existir
+        if (!payload.carriers_snapshot && Array.isArray(payload.carriers) && payload.carriers.length > 0) {
+            payload.carriers_snapshot = payload.carriers;
+        }
     }
 
     delete payload.carriers;
