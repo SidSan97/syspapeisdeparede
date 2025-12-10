@@ -18,6 +18,7 @@ use App\Http\Controllers\API\V1\RoleController;
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\FrenetController;
 use App\Http\Controllers\GeneratePaymentController;
+use App\Http\Controllers\TinyErpController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -156,4 +157,7 @@ Route::prefix('v1')->group(function () {
 
     //Frenet
     Route::post('frenet/calculate-shipping', [FrenetController::class, 'calculateShipping'])->middleware('auth:api');
+
+    //Tiny ERP
+    Route::get('tiny-erp/all', [TinyErpController::class, 'all'])->middleware('auth:api');
 });

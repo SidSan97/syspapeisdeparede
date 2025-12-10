@@ -497,6 +497,7 @@ const calculatingFreight = ref(false);
 const saving = ref(false);
 const enableDropshipping = ref(false);
 const dropshippingFormRef = ref(null);
+const tinyErpProducts = ref([]);
 
 const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const canEnableDropshipping = computed(() => {
@@ -1162,6 +1163,20 @@ function saveBudget() {
             saving.value = false;
         });
 }
+
+async function searchProducts() {
+    try {
+        const { data } = await axios.get('v1/tiny-erp/all');
+        tinyErpProducts.value = data.data;
+    } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+        tinyErpProducts.value = [];
+    }
+}
+
+onMounted(() => {
+    searchProducts();
+});
 </script>
 
 <style lang="scss" scoped>
