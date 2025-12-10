@@ -369,7 +369,8 @@
                                             @click="calculateFreight"
                                             :disabled="!budget.cep || calculatingFreight"
                                         >
-                                             Calcular Frete
+                                            <span v-if="calculatingFreight" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            {{ calculatingFreight ? 'Calculando...' : 'Calcular Frete' }}
                                         </button>
                                     </div>
                                 </div>
@@ -513,7 +514,12 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
-const calculatingFreight = ref(false);
+const tinyErpProducts = ref([]);
+const loading = ref(false);
+
+const PRECO_VISTA = ref(0);
+const PRECO_PRAZO = ref(0);
+
 const saving = ref(false);
 const budgetId = ref(null);
 const orderId = ref(null);
@@ -537,9 +543,7 @@ const STRIP_HEIGHT_OPTIONS = [
     5.1, 5.2, 5.3, 5.4, 5.5, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8,
     6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
 ];
-
-const PRECO_VISTA = 41.90;
-const PRECO_PRAZO = 47.90;
+const calculatingFreight = ref(false);
 
 const createDefaultContinuation = () => ({
                         direction: '',
@@ -655,6 +659,28 @@ const budget = reactive({
 const canEnableDropshipping = computed(() => {
     return auth.user?.user_type_id === USER_TYPES.ADMIN || auth.user?.is_dropshipping === 1;
 });
+
+async function searchTinyErpProducts() {
+    try {
+        loading.value = true;
+
+        const { data } = await axios.get('v1/tiny-erp/all');
+        tinyErpProducts.value = data;
+
+        PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
+        PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
+    } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+        window.Swal.fire({
+            title: 'Erro ao buscar produtos!',
+            text: 'Não foi possível buscar os produtos do Tiny ERP. Tente novamente mais tarde.',
+            confirmButtonText: 'Entendi!',
+        });
+        tinyErpProducts.value = [];
+    } finally {
+        loading.value = false;
+    }
+}
 
 async function fetchCollectionModels() {
     modelsLoading.value = true;
@@ -834,105 +860,6 @@ function normalizeOrderFromAPI(orderData) {
     };
 }
 
-// Normalizar dados do orçamento da API
-function normalizeBudgetFromAPI(budgetData) {
-    const rooms = [];
-
-    if (budgetData.rooms && Array.isArray(budgetData.rooms)) {
-        budgetData.rooms.forEach((room) => {
-            const walls = [];
-
-            if (room.walls && Array.isArray(room.walls)) {
-                room.walls.forEach((wall) => {
-                    const wallData = {
-                        name: wall.name || '',
-                        width: wall.width ? Number(wall.width) : null,
-                        height: wall.height ? Number(wall.height) : null,
-                        model: (wall.collection_model_id || wall.collection_model?.id) ? Number(wall.collection_model_id || wall.collection_model?.id) : null,
-                        continueSameArt: false,
-                        continuations: []
-                    };
-
-                    // Processar continuações se existirem
-                    if (wall.continue_same_art || (wall.continuations && Array.isArray(wall.continuations) && wall.continuations.length > 0)) {
-                        wallData.continueSameArt = Boolean(wall.continue_same_art);
-                        if (wall.continuations && Array.isArray(wall.continuations)) {
-                            wallData.continuations = wall.continuations.map(cont => ({
-                                direction: cont.direction || '',
-                                width: cont.width ? Number(cont.width) : null,
-                                height: cont.height ? Number(cont.height) : null,
-                                sameArt: false
-                            }));
-                        }
-                    }
-
-                    walls.push(wallData);
-                });
-            }
-
-            rooms.push({
-                name: room.name || '',
-                walls: walls.length > 0 ? walls : [createDefaultWall()]
-            });
-        });
-    }
-
-    // Encontrar transportadora selecionada e recriar lista se necessário
-    let carriers = Array.isArray(budgetData.carriers_snapshot)
-        ? budgetData.carriers_snapshot
-        : [];
-
-    let selectedCarrierIndex = null;
-
-    // Se há frete selecionado mas não há lista de transportadoras, recriar a lista
-    if (budgetData.selected_carrier_name && budgetData.selected_carrier_price !== null && budgetData.selected_carrier_price !== undefined) {
-        if (carriers.length === 0) {
-            // Recriar lista de transportadoras com base no frete selecionado
-            carriers = [
-                {
-                    name: budgetData.selected_carrier_name,
-                    price: Number(budgetData.selected_carrier_price) || 0,
-                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
-                }
-            ];
-            selectedCarrierIndex = 0;
-        } else {
-            // Buscar o índice da transportadora selecionada
-            selectedCarrierIndex = carriers.findIndex(c => c.name === budgetData.selected_carrier_name);
-            if (selectedCarrierIndex < 0) {
-                // Se não encontrou, adicionar a transportadora selecionada à lista
-                carriers.push({
-                    name: budgetData.selected_carrier_name,
-                    price: Number(budgetData.selected_carrier_price) || 0,
-                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
-                });
-                selectedCarrierIndex = carriers.length - 1;
-            }
-        }
-    }
-
-    const normalizedPaymentMethod = budgetData.payment_method === 'installment'
-        ? 'credit_card'
-        : budgetData.payment_method || '';
-
-    return {
-        id: budgetData.id,
-        name: budgetData.name || '',
-        status: budgetData.status || '',
-        rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
-        cep: budgetData.cep || '',
-        carriers: carriers,
-        selectedCarrier: selectedCarrierIndex,
-        paymentMethod: normalizedPaymentMethod,
-        installmentLimit: budgetData.installment_limit || 12,
-        installments: budgetData.installments || 1,
-        total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
-        total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0,
-        dropshipping_budget: budgetData.dropshipping_budget || 0,
-        dropshipping_data: budgetData.dropshipping_data || null
-    };
-}
-
 // Carregar pedido
 async function loadOrder() {
     const id = route.params.id;
@@ -995,6 +922,7 @@ async function loadOrder() {
 onMounted(() => {
     fetchCollectionModels();
     loadOrder();
+    searchTinyErpProducts();
 });
 
 watch(
@@ -1061,12 +989,12 @@ const freightCost = computed(() => {
 
 // Calcular total à vista dinamicamente
 const calculatedTotalBudgetVista = computed(() => {
-    return (totalArea.value * PRECO_VISTA) + totalModelsCost.value + freightCost.value;
+    return (totalArea.value * PRECO_VISTA.value) + totalModelsCost.value + freightCost.value;
 });
 
 // Calcular total a prazo dinamicamente
 const calculatedTotalBudgetPrazo = computed(() => {
-    return (totalArea.value * PRECO_PRAZO) + totalModelsCost.value + freightCost.value;
+    return (totalArea.value * PRECO_PRAZO.value) + totalModelsCost.value + freightCost.value;
 });
 
 // Total à vista: usar valor do banco se não houver mudanças, senão calcular dinamicamente
@@ -1337,30 +1265,48 @@ function formatCEP(event) {
     budget.cep = value;
 }
 
-function calculateFreight() {
+async function calculateFreight() {
+    if (!budget.cep) {
+        return;
+    }
     calculatingFreight.value = true;
 
-    // Simulação de cálculo de frete
-    setTimeout(() => {
-        budget.carriers = [
-            {
-                name: 'Transportadora A',
-                price: 45.90,
-                deliveryTime: 5
-            },
-            {
-                name: 'Transportadora B',
-                price: 38.50,
-                deliveryTime: 7
-            },
-            {
-                name: 'Transportadora C',
-                price: 52.00,
-                deliveryTime: 3
+    try {
+        const { data } = await axios.post('v1/frenet/calculate-shipping', {
+            cep: budget.cep,
+            productData: tinyErpProducts.value
+        });
+
+        // Mapear os dados da resposta para o formato esperado
+        if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
+            budget.carriers = data.data.ShippingSevicesArray
+                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
+                .map(service => ({
+                    name: `${service.Carrier} - ${service.ServiceDescription}`,
+                    price: parseFloat(service.ShippingPrice) || 0,
+                    deliveryTime: parseInt(service.DeliveryTime) || 0
+                }));
+
+            // Resetar a seleção se não houver carriers ou se o índice selecionado não existir mais
+            if (budget.carriers.length === 0) {
+                budget.selectedCarrier = null;
+            } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
+                budget.selectedCarrier = null;
             }
-        ];
+        } else {
+            budget.carriers = [];
+            budget.selectedCarrier = null;
+        }
+
         calculatingFreight.value = false;
-    }, 1000);
+    } catch (error) {
+        console.error('Erro ao calcular frete:', error);
+        window.Swal.fire({
+            title: 'Erro ao calcular frete!',
+            text: 'Não foi possível calcular o frete. Tente novamente mais tarde.',
+            confirmButtonText: 'Entendi!',
+        });
+    }
 }
 
 function calculateDeliveryTime(budget) {
