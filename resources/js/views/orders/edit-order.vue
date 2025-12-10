@@ -6,7 +6,13 @@
                     {{ saving ? 'Salvando...' : 'Salvar Pedido' }}
                 </button>
             </template>
-        <div class="container py-4">
+        <div v-if="loading" class="text-center text-muted py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+
+        <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
                     <!-- Seção: Informações Básicas -->

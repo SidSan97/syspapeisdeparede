@@ -7,9 +7,9 @@
                 </button>
             </template>
 
-        <div v-if="loading" class="card">
-            <div class="card-body p-4 text-center text-muted">
-                Carregando produtos...
+        <div v-if="loading" class="text-center text-muted py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Carregando...</span>
             </div>
         </div>
 
