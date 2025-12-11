@@ -132,4 +132,29 @@ class OrderBudgetRepository {
 
         return $orderBudget->fresh();
     }
+
+    public function getReadyForExpedition()
+    {
+        return $this->orderBudget::where('production_percentage', 100)
+            ->with('order')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($orderBudget) {
+                return [
+                    'id' => $orderBudget->id,
+                    'order_id' => $orderBudget->order_id,
+                    'description' => $orderBudget->description,
+                    'production_percentage' => $orderBudget->production_percentage,
+                    'production_date' => $orderBudget->production_date,
+                    'created_at' => $orderBudget->created_at,
+                    'order' => $orderBudget->order ? [
+                        'id' => $orderBudget->order->id,
+                        'name' => $orderBudget->order->name,
+                        'total_amount' => $orderBudget->order->total_amount,
+                        'status' => $orderBudget->order->status,
+                        'created_at' => $orderBudget->order->created_at,
+                    ] : null,
+                ];
+            });
+    }
 }

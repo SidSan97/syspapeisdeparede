@@ -101,6 +101,11 @@ const routes = [
                 name: 'InternalOrders',
                 component: () => import('../views/internalOrders/internal-orders.vue'),
             },
+            {
+                path: '/expedicao',
+                name: 'Expedition',
+                component: () => import('../views/expedition/expedition.vue'),
+            },
             ...settings,
         ]
     },

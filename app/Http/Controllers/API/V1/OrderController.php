@@ -8,6 +8,7 @@ use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,10 +21,12 @@ class OrderController extends Controller
     protected $layoutService;
     protected $generatePaymentService;
     protected $orderBudget;
+    protected $orderBudgetRepository;
 
     public function __construct(OrderRepository $repository,
         LayoutService $layoutService,
         GeneratePaymentService $generatePaymentService,
+        OrderBudgetRepository $orderBudgetRepository,
         OrderBudget $orderBudget
     )
     {
@@ -32,6 +35,7 @@ class OrderController extends Controller
         $this->layoutService = $layoutService;
         $this->generatePaymentService = $generatePaymentService;
         $this->orderBudget = $orderBudget;
+        $this->orderBudgetRepository = $orderBudgetRepository;
     }
 
     public function index(): JsonResponse
@@ -304,6 +308,25 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao cancelar pedido',
+            ], 500);
+        }
+    }
+
+    public function expedition(): JsonResponse
+    {
+        try {
+            $orderBudgets = $this->orderBudgetRepository->getReadyForExpedition();
+
+            return response()->json([
+                'success' => true,
+                'data' => $orderBudgets,
+                'message' => 'Lista de expedições recuperada com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar expedições',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
