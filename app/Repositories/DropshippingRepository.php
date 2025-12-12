@@ -71,4 +71,14 @@ class DropshippingRepository
 
         return $dropshippingData->fresh();
     }
+
+    public function findDropshippingByOrderId(int $orderId): DropshippingData
+    {
+        $dropshippingData = $this->dropshippingData->where('order_id', $orderId)->first();
+        if (!$dropshippingData) {
+            throw new \Exception('Dados de dropshipping não encontrado');
+        }
+
+        return $dropshippingData;
+    }
 }

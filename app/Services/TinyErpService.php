@@ -155,4 +155,55 @@ class TinyErpService
             ], 500);
         }
     }
+
+    /**
+     * Retorna o código da transportadora baseado no nome da origem
+     * 
+     * @param string $origem Nome da origem/transportadora
+     * @return string|null Código da transportadora ou null se não encontrado
+     * @reference link: https://tiny.com.br/api-docs/api2-pedidos-incluir
+     */
+    public function getShippingCodeByOrigin(string $origem): ?string
+    {
+        $origem = trim($origem);
+        
+        // Extrair apenas o nome antes do hífen (ex: "Correios - PAC" -> "Correios")
+        if (strpos($origem, ' - ') !== false) {
+            $origem = trim(explode(' - ', $origem)[0]);
+        }
+        
+        $origemToCode = [
+            'Correios' => 'C',
+            'Transportadora' => 'T',
+            'Mercado Envios' => 'M',
+            'Correios E-fulfillment' => 'E',
+            'B2W Entrega' => 'B',
+            'Customizada' => 'X',
+            'Conectalá Etiquetas' => 'D',
+            'Jadlog' => 'J',
+            'Sem Frete' => 'S',
+            'Total Express' => 'TOTALEXPRESS',
+            'Gateway logistico' => 'GATEWAY',
+            'Magalu Entregas' => 'MAGALU_ENTREGAS',
+            'Magalu Fulfillment' => 'MAGALU_FULFILLMENT',
+            'Shopee Envios' => 'SHOPEE_ENVIOS',
+            'Netshoes Entregas' => 'NS_ENTREGAS',
+            'Via Varejo Envvias' => 'VIAVAREJO_ENVVIAS',
+            'AliExpress Envios' => 'ALI_ENVIOS',
+            'Madeira Envios' => 'MADEIRA_ENVIOS',
+            'Loggi' => 'LOGGI',
+            'Amazon DBA' => 'AMAZON_DBA',
+            'Magalu Entregas por Netshoes' => 'NS_MAGALU_ENTREGAS',
+            'Olist' => 'OLIST',
+        ];
+
+        // Buscar o código correspondente (case-insensitive)
+        foreach ($origemToCode as $nomeOrigem => $codigo) {
+            if (strcasecmp($origem, $nomeOrigem) === 0) {
+                return $codigo;
+            }
+        }
+
+        return null;
+    }
 }

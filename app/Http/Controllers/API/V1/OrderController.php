@@ -14,6 +14,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
+use App\Repositories\DropshippingRepository;
+use App\Services\TinyErpService;
 
 class OrderController extends Controller
 {
@@ -22,12 +24,16 @@ class OrderController extends Controller
     protected $generatePaymentService;
     protected $orderBudget;
     protected $orderBudgetRepository;
+    protected $dropshippingRepository;
+    protected $tinyErpService;
 
     public function __construct(OrderRepository $repository,
         LayoutService $layoutService,
         GeneratePaymentService $generatePaymentService,
         OrderBudgetRepository $orderBudgetRepository,
-        OrderBudget $orderBudget
+        OrderBudget $orderBudget,
+        DropshippingRepository $dropshippingRepository,
+        TinyErpService $tinyErpService
     )
     {
         $this->middleware('auth:api');
@@ -36,6 +42,8 @@ class OrderController extends Controller
         $this->generatePaymentService = $generatePaymentService;
         $this->orderBudget = $orderBudget;
         $this->orderBudgetRepository = $orderBudgetRepository;
+        $this->dropshippingRepository = $dropshippingRepository;
+        $this->tinyErpService = $tinyErpService;
     }
 
     public function index(): JsonResponse
@@ -208,7 +216,11 @@ class OrderController extends Controller
 
         try {
             $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            $budgetPaymentData = BudgetResource::getBudgetPaymentData($order->toArray());
+            //$budgetPaymentData = BudgetResource::getBudgetPaymentData($order->toArray());
+            if($order->dropshipping_budget) {
+                $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+                dd($dropshippingBudget);
+            }
 
             $order->update(['status' => 'Aprovado']);
             $order->update(['paid' => 1]);
