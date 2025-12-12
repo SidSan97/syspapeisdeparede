@@ -10,7 +10,6 @@ use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\Order;
-use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
@@ -23,12 +22,11 @@ use App\Services\LayoutService;
 use App\Support\DocumentValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\TinyErpService;
 
 class BudgetController extends Controller
 {
@@ -40,6 +38,7 @@ class BudgetController extends Controller
     protected $orderRepository;
     protected $requestLayoutArtRepository;
     protected $dropshippingRepository;
+    protected $tinyErpService;
 
     public function __construct(
         BudgetRepository $repository,
@@ -49,7 +48,8 @@ class BudgetController extends Controller
         OrderBudgetRepository $orderBudgetRepository,
         OrderRepository $orderRepository,
         RequestLayoutArtRepository $requestLayoutArtRepository,
-        DropshippingRepository $dropshippingRepository
+        DropshippingRepository $dropshippingRepository,
+        TinyErpService $tinyErpService
     ) {
         $this->repository = $repository;
         $this->generatePdfService = $generatePdfService;
@@ -59,6 +59,7 @@ class BudgetController extends Controller
         $this->orderRepository = $orderRepository;
         $this->requestLayoutArtRepository = $requestLayoutArtRepository;
         $this->dropshippingRepository = $dropshippingRepository;
+        $this->tinyErpService = $tinyErpService;
     }
 
     public function index(): JsonResponse
@@ -772,7 +773,6 @@ class BudgetController extends Controller
     public function registerPayment(RegisterPaymentRequest $request): JsonResponse
     {
         try {
-            // Validar se o usuário tem permissão de admin
             $user = Auth::user();
             if (!$user || !$user->isAdmin()) {
                 return response()->json([
@@ -784,6 +784,22 @@ class BudgetController extends Controller
             $data = $request->validated();
             $order = Order::findOrFail($data['order_id']);
             $file = $request->file('payment_file');
+
+            if($order->dropshipping_budget) {
+                $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+                $accountPayable = $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
+                $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
+
+                if($orderTiny['status'] == "Erro") {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Houve um erro ao cadastrar o produto no ERP. Tente novamente mais tarde!',
+                        'error' => $orderTiny['registros']['registro']['erros']
+                    ], 403);
+                }
+
+                $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
+            }
 
             $orderUpdated = $this->repository->registerPayment($order, $file);
             $transformed = (new BudgetResource($orderUpdated))->toArray(request());
