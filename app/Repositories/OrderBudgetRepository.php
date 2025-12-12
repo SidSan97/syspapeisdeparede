@@ -157,4 +157,13 @@ class OrderBudgetRepository {
                 ];
             });
     }
+
+    public function updateTinyErpOrderId(int $orderId, string $tinyErpOrderId)
+    {
+        $this->orderBudget::where('order_id', $orderId)->update([
+            'tinyErp_order_id' => $tinyErpOrderId,
+        ]);
+
+        return $this->orderBudget->fresh();
+    }
 }

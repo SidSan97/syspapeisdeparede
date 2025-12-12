@@ -216,14 +216,23 @@ class OrderController extends Controller
 
         try {
             $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            //$budgetPaymentData = BudgetResource::getBudgetPaymentData($order->toArray());
             if($order->dropshipping_budget) {
                 $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
-                dd($dropshippingBudget);
+                $accountPayable = $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
+                $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
+
+                if($orderTiny['status'] == "Erro") {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Houve um erro ao cadastrar o produto no ERP. Tente novamente mais tarde!',
+                        'error' => $orderTiny['registros']['registro']['erros']
+                    ], 403);
+                }
+
+                $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
             }
 
-            $order->update(['status' => 'Aprovado']);
-            $order->update(['paid' => 1]);
+            $order->update(['status' => 'Aprovado', 'paid' => 1]);
 
             // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
             $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();

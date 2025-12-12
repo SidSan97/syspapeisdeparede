@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Carbon\Carbon;
 
 class TinyErpService
 {
@@ -156,9 +157,158 @@ class TinyErpService
         }
     }
 
+    public function sendOrder(array $order, array  $dropshipping)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'pedido' => $this->makeOrder($order, $dropshipping),
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/pedido.incluir.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar pedido: ' . $e->getMessage());
+        }
+        catch (RequestException $e) {
+            Log::error('Erro ao enviar pedido: ' . $e->getMessage());
+        }
+        catch (GuzzleException $e) {
+            Log::error('Erro ao enviar pedido: ' . $e->getMessage());
+        }
+    }
+
+    public function sendAccountPayable(array $order, array $dropshipping)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'conta' => $this->makeAccountPayable($order, $dropshipping),
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/conta.pagar.incluir.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar conta a pagar: ' . $e->getMessage());
+        }
+        catch (RequestException $e) {
+            Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
+        }
+        catch (GuzzleException $e) {
+            Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
+        }
+    }
+
+    public function makeOrder(array $order, array  $dropshipping): string
+    {
+        $dataPedido = Carbon::parse($order['created_at']);
+        $dataPrevista = $dataPedido->copy()->addDays($order['delivery_time']);
+
+        $orderData = [
+            'pedido' => [
+               'data_pedido' => $dataPedido->format('d/m/Y'),
+               'data_prevista' => $dataPrevista->format('d/m/Y'),
+               'cliente' => [
+                    'nome' => $dropshipping['name'],
+                    'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
+                    'email' => $dropshipping['email'],
+                    'cpf_cnpj' => $dropshipping['cpf_cnpj'],
+                    'ie' => $dropshipping['IE'] ?? '',
+                    'rg' => $dropshipping['rg'] ?? '',
+                    'endereco' => $dropshipping['public_space'],
+                    'numero' => $dropshipping['number'] ?? '',
+                    'complemento' => $dropshipping['complement'] ?? '',
+                    'bairro' => $dropshipping['neighborhood'],
+                    'cep' => $dropshipping['cep'],
+                    'cidade' => $dropshipping['city'],
+                    'uf' => $dropshipping['uf'],
+                    'fone' => $dropshipping['phone'] ?? '',
+               ],
+               'itens' => [
+                    [
+                        'item' => [
+                            'codigo' => $order['id'],
+                            'descricao' => $order['comment_referring_model'],
+                            'unidade' => 'UN',
+                            'quantidade' => 1,
+                            'valor_unitario' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+                        ]
+                    ]
+                ],
+                'nome_transportador' => trim(explode(' - ', $order['selected_carrier_name'])[0]),
+                'forma_pagamento' => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
+                'frete_por_conta' => 'D',
+                'valor_frete' => $order['selected_carrier_price'],
+                'numero_ordem_compra' => '',
+                'ecommerce' => 'Papel de parede',
+                'situacao' => 'aprovado',
+                'obs' => trim(explode(' - ', $order['selected_carrier_name'])[1]),
+                'forma_envio' => $this->getShippingCodeByOrigin($order['selected_carrier_name']),
+                'intermediador' => [
+                    'nome' => 'Papel de parede',
+                    'cnpj' => '13.023.181/0001-13',
+                ]
+            ],
+        ];
+
+        return json_encode($orderData);
+    }
+
+    public function makeAccountPayable(array $order, array $dropshipping)
+    {
+        $currentDate = Carbon::now()->format('d/m/Y');
+        $conta = [
+            'conta' => [
+                'cliente' => [
+                    'nome' => $dropshipping['name'],
+                    'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
+                    'email' => $dropshipping['email'],
+                    'cpf_cnpj' => $dropshipping['cpf_cnpj'],
+                    'ie' => $dropshipping['IE'] ?? '',
+                    'rg' => $dropshipping['rg'] ?? '',
+                    'endereco' => $dropshipping['public_space'],
+                    'numero' => $dropshipping['number'] ?? '',
+                    'complemento' => $dropshipping['complement'] ?? '',
+                    'bairro' => $dropshipping['neighborhood'],
+                    'cep' => $dropshipping['cep'],
+                    'cidade' => $dropshipping['city'],
+                    'uf' => $dropshipping['uf'],
+                    'fone' => $dropshipping['phone'] ?? '',
+                ],
+                "data" => $currentDate,
+                "vencimento" => Carbon::parse($currentDate)->addDays(10)->format('d/m/Y'),
+                "valor" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+                "nro_documento" => "",
+                "categoria" => "",
+                "ocorrencia" => $order['payment_method'] === 'pix' ? 'U' : 'P',
+                "numero_parcelas" => $order['payment_method'] === 'pix' ? 0 : $order['installments'],
+            ],
+        ];
+
+        return json_encode($conta);
+    }
+
     /**
      * Retorna o código da transportadora baseado no nome da origem
-     * 
+     *
      * @param string $origem Nome da origem/transportadora
      * @return string|null Código da transportadora ou null se não encontrado
      * @reference link: https://tiny.com.br/api-docs/api2-pedidos-incluir
@@ -166,12 +316,12 @@ class TinyErpService
     public function getShippingCodeByOrigin(string $origem): ?string
     {
         $origem = trim($origem);
-        
+
         // Extrair apenas o nome antes do hífen (ex: "Correios - PAC" -> "Correios")
         if (strpos($origem, ' - ') !== false) {
             $origem = trim(explode(' - ', $origem)[0]);
         }
-        
+
         $origemToCode = [
             'Correios' => 'C',
             'Transportadora' => 'T',

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->date('production_date')->nullable();
             $table->decimal('production_percentage', 5, 1)->default(0);
             $table->string('status', 50);
+            $table->string('tinyErp_order_id')->nullable();
             $table->timestamps();
 
             $table->foreign('budget_wall_id', 'order_budgets_budget_wall_id_fk')
