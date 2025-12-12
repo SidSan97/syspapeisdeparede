@@ -145,7 +145,7 @@ const handleLogout = () => {
     // Criar formulário de logout
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = LaravelApp.assetUrl + '/logout';
+    form.action = '/logout';
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (csrfToken) {
