@@ -9,6 +9,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth';
 
+import '../css/brand.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import router from '@/router'
