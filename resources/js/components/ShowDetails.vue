@@ -266,7 +266,7 @@
                                         >
                                             <h2 class="accordion-header">
                                                 <button
-                                                    class="accordion-button"
+                                                    class="accordion-button p-2"
                                                     :class="{ collapsed: artIndex !== 0 }"
                                                     type="button"
                                                     data-bs-toggle="collapse"
@@ -288,7 +288,7 @@
                                                 data-bs-parent="#requestArtsAccordion"
                                             >
                                                 <div class="accordion-body">
-                                                    <div v-if="art.wall_info" class="mb-3 p-2 rounded border bg-light">
+                                                    <div v-if="art.wall_info" class="mb-3 p-2 rounded border">
                                                         <div class="row g-2">
                                                             <div class="col-md-6">
                                                                 <div class="text-muted small">Ambiente</div>
@@ -312,7 +312,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="mb-3 p-2 border rounded bg-light">
+                                                    <div class="mb-3 p-2 border rounded">
                                                         <div class="row g-2">
                                                             <div v-if="art.dealer_name" class="col-md-6">
                                                                 <div class="text-muted small">
@@ -338,7 +338,7 @@
                                                     </div>
                                                     <div v-if="art.comment" class="mb-3">
                                                         <div class="text-muted small mb-1">Comentário</div>
-                                                        <div class="p-2 rounded border bg-light">{{ art.comment }}</div>
+                                                        <div class="p-2 rounded border">{{ art.comment }}</div>
                                                     </div>
                                                     <div v-if="art.image_url" class="mb-3">
                                                         <div class="text-muted small mb-2">Imagem da Arte</div>
@@ -743,27 +743,27 @@ async function fetchRequestLayoutArts() {
     try {
         loadingRequestArts.value = true;
 
-        // Para pedidos, usar o ID do pedido como budget_id
-        // Para orçamentos, usar o ID do orçamento como budget_id
-        const budgetId = isOrder.value
-            ? (data.value.budget_id || data.value.id)
-            : data.value.id;
+        let params = {};
 
-        // order_budget_id é opcional e geralmente não está disponível diretamente
-        const orderBudgetId = data.value.order_budget_id || null;
-
-        if (!budgetId) {
-            requestLayoutArts.value = [];
-            return;
-        }
-
-        const params = {
-            budget_id: budgetId,
-            dealer_id: auth.user.id,
-        };
-
-        if (orderBudgetId) {
-            params.order_budget_id = orderBudgetId;
+        if (isOrder.value) {
+            const orderId = data.value.id;
+            if (!orderId) {
+                requestLayoutArts.value = [];
+                return;
+            }
+            params = {
+                order_id: orderId,
+            };
+        } else {
+            const budgetId = data.value.id;
+            if (!budgetId) {
+                requestLayoutArts.value = [];
+                return;
+            }
+            params = {
+                budget_id: budgetId,
+                dealer_id: auth.user.id,
+            };
         }
 
         const response = await axios.get('v1/budgets/request-layout-arts', { params });
@@ -772,11 +772,12 @@ async function fetchRequestLayoutArts() {
         if (responseData?.success && Array.isArray(responseData.data)) {
             requestLayoutArts.value = responseData.data.map((art) => ({
                 id: art.id,
-                budget_id: art.budget_id || budgetId,
-                order_budget_id: art.order_budget_id || orderBudgetId,
+                budget_id: art.budget_id || null,
+                order_budget_id: art.order_budget_id || null,
                 dealer_id: art.dealer_id || auth.user.id,
                 designer_id: art.designer_id || auth.user.id,
                 comment: art.comment || null,
+                path_file: art.path_file || null,
                 image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
                 created_at: art.created_at || art.createdAt || null,
                 designer_name: art.designer?.name || art.designer_name || null,

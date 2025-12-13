@@ -10,6 +10,7 @@ use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\Order;
+use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Services\TinyErpService;
+use App\Support\UserType;
 
 class BudgetController extends Controller
 {
@@ -680,9 +682,20 @@ class BudgetController extends Controller
     public function getRequestLayoutArts(Request $request): JsonResponse
     {
         try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuário não autenticado',
+                ], 401);
+            }
+
+            // Validar se order_id ou budget_id foi fornecido
             $validator = Validator::make($request->all(), [
-                'budget_id' => ['required', 'integer', 'exists:budgets,id'],
-                'dealer_id' => ['required', 'integer', 'exists:users,id'],
+                'order_id' => ['nullable', 'integer', 'exists:orders,id'],
+                'budget_id' => ['nullable', 'integer', 'exists:budgets,id'],
+                'dealer_id' => ['nullable', 'integer', 'exists:users,id'],
                 'order_budget_id' => ['nullable', 'integer', 'exists:order_budgets,id'],
             ]);
 
@@ -694,13 +707,62 @@ class BudgetController extends Controller
                 ], 422);
             }
 
+            $orderId = $request->input('order_id');
             $budgetId = $request->input('budget_id');
             $orderBudgetId = $request->input('order_budget_id'); // Opcional
             $dealerId = $request->input('dealer_id');
 
-            // Buscar request_layouts_art - se order_budget_id for fornecido, filtrar por ele também
-            $query = RequestLayoutArt::where('budget_id', $budgetId)
-                ->where('dealer_id', $dealerId);
+            $isAdmin = $user->isAdmin();
+            $isDesigner = $user->isDesigner();
+            $isReseller = $user->isReseller();
+
+            // Se order_id foi fornecido, buscar através do relacionamento com order_budgets
+            if ($orderId) {
+                $query = RequestLayoutArt::whereHas('orderBudget', function ($q) use ($orderId) {
+                    $q->where('order_id', $orderId);
+                });
+
+                // Aplicar filtros por tipo de usuário quando order_id é fornecido
+                if (!$isAdmin) {
+                    if ($isDesigner) {
+                        // Designer vê apenas suas próprias artes
+                        $query->where('designer_id', $user->id);
+                    } elseif ($isReseller) {
+                        // Revendedor vê apenas artes dos seus orçamentos
+                        $query->where('dealer_id', $user->id);
+                    }
+                }
+            } else {
+                if (!$budgetId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'budget_id ou order_id é obrigatório',
+                    ], 422);
+                }
+
+                $query = RequestLayoutArt::where('budget_id', $budgetId);
+
+                // Se não for admin, aplicar filtro por tipo de usuário
+                if (!$isAdmin) {
+                    if ($isDesigner) {
+                        // Designer vê apenas suas próprias artes
+                        $query->where('designer_id', $user->id);
+                    } elseif ($isReseller) {
+                        // Revendedor vê apenas artes dos seus orçamentos
+                        $query->where('dealer_id', $user->id);
+                    } else {
+                        // Outros tipos de usuário: aplicar filtro por dealer_id se fornecido
+                        if ($dealerId) {
+                            $query->where('dealer_id', $dealerId);
+                        }
+                    }
+                } else {
+                    // Admin: se dealer_id foi fornecido, usar como filtro opcional
+                    if ($dealerId) {
+                        $query->where('dealer_id', $dealerId);
+                    }
+                }
+            }
 
             if ($orderBudgetId) {
                 $query->where('order_budget_id', $orderBudgetId);
@@ -773,6 +835,7 @@ class BudgetController extends Controller
     public function registerPayment(RegisterPaymentRequest $request): JsonResponse
     {
         try {
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             if (!$user || !$user->isAdmin()) {
                 return response()->json([

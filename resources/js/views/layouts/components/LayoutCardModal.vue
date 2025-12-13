@@ -435,7 +435,7 @@
                 </div>
 
                 <!-- Carregar Arte -->
-                <div v-if="card.budget" class="layout-modal-section">
+                <div v-if="canLoadArt" class="layout-modal-section">
                   <div class="form-check mb-3">
                     <input
                       class="form-check-input"
@@ -475,6 +475,115 @@
                       <i v-else class="fa fa-upload me-2"></i>
                       {{ uploadingArt ? 'Enviando...' : 'Enviar Arte' }}
                     </button>
+                  </div>
+                </div>
+
+                <!-- Solicitações de Artes -->
+                <div class="layout-modal-section p-1">
+                  <h3 class="layout-modal-section-title">
+                    <i class="fa fa-paint-brush"></i> Solicitações de Artes
+                  </h3>
+                  <div v-if="loadingRequestArts" class="layout-modal-info text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Carregando solicitações de artes...
+                  </div>
+                  <div v-else-if="requestLayoutArts.length === 0" class="layout-modal-info text-muted">
+                    Nenhuma solicitação de arte encontrada para este card.
+                  </div>
+                  <div v-else class="accordion" id="requestArtsAccordionBottom">
+                    <div
+                      v-for="(art, artIndex) in requestLayoutArts"
+                      :key="art.id || artIndex"
+                      class="accordion-item mb-3"
+                    >
+                      <h2 class="accordion-header">
+                        <button
+                          class="accordion-button p-2 me-1"
+                          :class="{ collapsed: artIndex !== 0 }"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          :data-bs-target="`#art-bottom-${artIndex}`"
+                          :aria-expanded="artIndex === 0"
+                          :aria-controls="`art-bottom-${artIndex}`"
+                        >
+                          <i class="fa fa-image me-2"></i>
+                          Arte #{{ art.id }}
+                          <span v-if="art.wall_name" class="badge bg-info ms-2">
+                            {{ art.wall_name }}
+                          </span>
+                        </button>
+                      </h2>
+                      <div
+                        :id="`art-bottom-${artIndex}`"
+                        class="accordion-collapse collapse"
+                        :class="{ show: artIndex === 0 }"
+                        data-bs-parent="#requestArtsAccordionBottom"
+                      >
+                        <div class="accordion-body">
+                          <div class="layout-modal-art-item-content">
+                            <div class="layout-modal-art-header">
+                              <div class="layout-modal-art-date">
+                                {{ formatDate(art.created_at) }}
+                              </div>
+                            </div>
+
+                            <div v-if="art.wall_info" class="layout-modal-art-wall-info">
+                              <div class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Ambiente:</span>
+                                <span class="layout-modal-art-info-value">{{ art.wall_info.room_name || 'N/A' }}</span>
+                              </div>
+                              <div class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Parede:</span>
+                                <span class="layout-modal-art-info-value">{{ art.wall_info.wall_name || 'N/A' }}</span>
+                              </div>
+                              <div v-if="art.wall_info.width || art.wall_info.height" class="layout-modal-art-info-row">
+                                <span class="layout-modal-art-info-label">Dimensões:</span>
+                                <span class="layout-modal-art-info-value">
+                                  {{ formatNumber(art.wall_info.width) }}m x {{ formatNumber(art.wall_info.height) }}m
+                                  <span v-if="art.wall_info.total_area"> ({{ formatNumber(art.wall_info.total_area) }} m²)</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div v-if="art.dealer_name || art.designer_name" class="layout-modal-art-authors">
+                              <div v-if="art.dealer_name" class="layout-modal-art-author">
+                                <i class="fa fa-user-tie me-1"></i>
+                                <span class="layout-modal-art-author-label">Revendedor:</span>
+                                <span class="layout-modal-art-author-name">{{ art.dealer_name }}</span>
+                              </div>
+                              <div v-if="art.designer_name" class="layout-modal-art-author">
+                                <i class="fa fa-user me-1"></i>
+                                <span class="layout-modal-art-author-label">Designer:</span>
+                                <span class="layout-modal-art-author-name">{{ art.designer_name }}</span>
+                              </div>
+                            </div>
+
+                            <div v-if="art.comment" class="layout-modal-art-comment">
+                              <div class="layout-modal-art-comment-label">Comentário:</div>
+                              <div class="layout-modal-art-comment-text">{{ art.comment }}</div>
+                            </div>
+
+                            <div v-if="art.image_url" class="layout-modal-art-image">
+                              <img
+                                :src="art.image_url"
+                                :alt="`Arte ${art.id}`"
+                                class="layout-modal-art-image-preview"
+                                @error="handleImageError"
+                              />
+                              <a
+                                :href="art.image_url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="layout-modal-art-image-link"
+                              >
+                                <i class="fa fa-external-link me-1"></i>
+                                Abrir em nova aba
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -964,6 +1073,11 @@
     return auth.user?.user_type_id === USER_TYPES.ADMIN;
   });
 
+  const canLoadArt = computed(() => {
+    const userTypeId = auth.user?.user_type_id;
+    return userTypeId === USER_TYPES.DESIGNER || userTypeId === USER_TYPES.ADMIN || userTypeId === USER_TYPES.PRODUCTION;
+  });
+
   const filteredMembers = computed(() => {
     // Filtrar membros que já estão no card
     const cardMemberIds = props.card?.members?.map(m => m.id) || [];
@@ -1015,11 +1129,6 @@
     } finally {
       loadingMembers.value = false;
     }
-  }
-
-  function searchMembers() {
-    // A busca é feita via computed filteredMembers
-    // Mas podemos adicionar debounce aqui se necessário
   }
 
   async function addMember(member) {
@@ -1237,7 +1346,7 @@
     if (!name) {
       return '#5e6c84';
     }
-    // Cores vibrantes para avatares
+
     const colors = [
       '#00b8d9', // Cyan
       '#00a86b', // Teal
@@ -1250,7 +1359,7 @@
       '#6554c0', // Violet
       '#00c7e6', // Light Cyan
     ];
-    // Gerar um índice baseado no nome para consistência
+
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -1368,7 +1477,7 @@
   }
 
   async function uploadArt() {
-    if (!selectedArtFile.value || !props.card?.id || !props.card?.budget?.user_id || !props.card?.budget?.id || !auth.user?.id) {
+    if (!selectedArtFile.value || !props.card?.id || !props.card?.order?.user_id || !props.card?.order?.id || !auth.user?.id) {
       return;
     }
 
@@ -1378,9 +1487,9 @@
       const formData = new FormData();
       formData.append('art_file', selectedArtFile.value);
       formData.append('order_budget_id', props.card.id);
-      formData.append('dealer_id', props.card.budget.user_id);
+      formData.append('dealer_id', props.card.order.user_id);
       formData.append('designer_id', auth.user.id);
-      formData.append('budget_id', props.card.budget.id);
+      formData.append('budget_id', props.card.order.id);
       formData.append('comment', artComment.value);
       const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
         headers: {
@@ -1392,8 +1501,8 @@
         // Atualizar o card localmente
         if (props.card) {
           props.card.status = 'Pendente de Revisão';
-          if (props.card.budget) {
-            props.card.budget.status = 'Pendente de Revisão';
+          if (props.card.order) {
+            props.card.order.status = 'Pendente de Revisão';
           }
         }
 
@@ -1445,7 +1554,7 @@
   }
 
   async function fetchRequestLayoutArts() {
-    if (!props.card?.id || !props.card?.budget?.id || !auth.user?.id) {
+    if (!props.card?.id || !auth.user?.id) {
       requestLayoutArts.value = [];
       loadingRequestArts.value = false;
       return;
@@ -1454,14 +1563,26 @@
     try {
       loadingRequestArts.value = true;
 
-      const budgetId = props.card.budget.id;
       const orderBudgetId = props.card.id;
 
+      const orderId = props.card.order_id
+        || props.card.order?.id
+        || (props.card.order && typeof props.card.order === 'object' ? props.card.order.id : null);
+
       const params = {
-        budget_id: budgetId,
         order_budget_id: orderBudgetId,
-        dealer_id: auth.user.id,
       };
+
+      if (orderId) {
+        params.order_id = orderId;
+      }
+
+      console.log('Buscando artes com params:', params);
+      console.log('Card structure:', {
+        id: props.card.id,
+        order_id: props.card.order_id,
+        order: props.card.order
+      });
 
       const response = await axios.get('v1/budgets/request-layout-arts', {
         params,
@@ -1469,10 +1590,13 @@
 
       const data = response?.data || response;
 
+      console.log('Resposta da API:', data);
+
       if (data?.success && Array.isArray(data.data)) {
         requestLayoutArts.value = data.data.map((art) => ({
           id: art.id,
           comment: art.comment || null,
+          path_file: art.path_file || null,
           image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
           created_at: art.created_at || art.createdAt || null,
           designer_name: art.designer?.name || art.designer_name || null,
@@ -1485,6 +1609,7 @@
       }
     } catch (error) {
       console.error('Erro ao buscar solicitações de artes:', error);
+      console.error('Erro completo:', error.response?.data || error.message);
       requestLayoutArts.value = [];
     } finally {
       loadingRequestArts.value = false;

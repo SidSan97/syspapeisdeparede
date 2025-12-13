@@ -347,6 +347,134 @@
                                 </div>
                         </div>
                     </div>
+
+                    <!-- Solicitação de Artes -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-transparent">
+                            <h5 class="mb-0 fw-semibold">
+                                <i class="fa fa-paint-brush me-2"></i>
+                                Solicitação de Artes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="loadingRequestArts" class="text-center text-muted py-3">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Carregando solicitações de artes...
+                            </div>
+                            <div v-else-if="requestLayoutArts.length === 0" class="text-center text-muted py-3">
+                                Nenhuma solicitação de arte encontrada.
+                            </div>
+                            <div v-else class="accordion" id="requestArtsAccordion">
+                                <div
+                                    v-for="(art, artIndex) in requestLayoutArts"
+                                    :key="art.id || artIndex"
+                                    class="accordion-item mb-3"
+                                >
+                                    <h2 class="accordion-header">
+                                        <button
+                                            class="accordion-button p-2"
+                                            :class="{ collapsed: artIndex !== 0 }"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            :data-bs-target="`#art-${artIndex}`"
+                                            :aria-expanded="artIndex === 0"
+                                            :aria-controls="`art-${artIndex}`"
+                                        >
+                                            <i class="fa fa-image me-2"></i>
+                                            Arte #{{ art.id }}
+                                            <span v-if="art.wall_name" class="badge bg-info ms-2">
+                                                {{ art.wall_name }}
+                                            </span>
+                                        </button>
+                                    </h2>
+                                    <div
+                                        :id="`art-${artIndex}`"
+                                        class="accordion-collapse collapse"
+                                        :class="{ show: artIndex === 0 }"
+                                        data-bs-parent="#requestArtsAccordion"
+                                    >
+                                        <div class="accordion-body">
+                                            <div v-if="art.wall_info" class="mb-3 p-2 rounded border">
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <div class="text-muted small">Ambiente</div>
+                                                        <div class="fw-semibold">{{ art.wall_info.room_name || 'N/A' }}</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="text-muted small">Parede</div>
+                                                        <div class="fw-semibold">{{ art.wall_info.wall_name || 'N/A' }}</div>
+                                                    </div>
+                                                    <div v-if="art.wall_info.width" class="col-md-4">
+                                                        <div class="text-muted small">Largura</div>
+                                                        <div class="fw-semibold">{{ formatNumber(art.wall_info.width) }} m</div>
+                                                    </div>
+                                                    <div v-if="art.wall_info.height" class="col-md-4">
+                                                        <div class="text-muted small">Altura</div>
+                                                        <div class="fw-semibold">{{ formatNumber(art.wall_info.height) }} m</div>
+                                                    </div>
+                                                    <div v-if="art.wall_info.total_area" class="col-md-4">
+                                                        <div class="text-muted small">Área</div>
+                                                        <div class="fw-semibold">{{ formatNumber(art.wall_info.total_area) }} m²</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3 p-2 border rounded">
+                                                <div class="row g-2">
+                                                    <div v-if="art.dealer_name" class="col-md-6">
+                                                        <div class="text-muted small">
+                                                            <i class="fa fa-user-tie me-1"></i>
+                                                            Revendedor
+                                                        </div>
+                                                        <div class="fw-semibold">{{ art.dealer_name }}</div>
+                                                    </div>
+                                                    <div v-if="art.designer_name" class="col-md-6">
+                                                        <div class="text-muted small">
+                                                            <i class="fa fa-user me-1"></i>
+                                                            Designer
+                                                        </div>
+                                                        <div class="fw-semibold">{{ art.designer_name }}</div>
+                                                    </div>
+                                                    <div v-if="art.created_at" class="col-12">
+                                                        <div class="text-muted small">
+                                                            <i class="fa fa-calendar me-1"></i>
+                                                            Enviado em: {{ formatDate(art.created_at) }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div v-if="art.comment" class="mb-3">
+                                                <div class="text-muted small mb-1">Comentário</div>
+                                                <div class="p-2 rounded border">{{ art.comment }}</div>
+                                            </div>
+                                            <div v-if="art.image_url" class="mb-3">
+                                                <div class="text-muted small mb-2">Imagem da Arte</div>
+                                                <div class="d-flex justify-content-center">
+                                                    <img
+                                                        :src="art.image_url"
+                                                        :alt="`Arte ${art.id}`"
+                                                        class="img-thumbnail"
+                                                        style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                                                        @error="handleImageError"
+                                                    />
+                                                </div>
+                                                <div class="mt-2 text-center">
+                                                    <a
+                                                        :href="art.image_url"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="btn btn-sm btn-outline-primary"
+                                                    >
+                                                        <i class="fa fa-external-link me-1"></i>
+                                                        Abrir em nova aba
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sidebar: Frete e Pagamento -->
@@ -551,6 +679,10 @@ const STRIP_HEIGHT_OPTIONS = [
 ];
 const calculatingFreight = ref(false);
 
+// Solicitações de arte
+const requestLayoutArts = ref([]);
+const loadingRequestArts = ref(false);
+
 const createDefaultContinuation = () => ({
                         direction: '',
                         width: null,
@@ -661,7 +793,6 @@ const budget = reactive({
     dropshipping_data: null
 });
 
-// Computed para verificar se pode habilitar dropshipping
 const canEnableDropshipping = computed(() => {
     return auth.user?.user_type_id === USER_TYPES.ADMIN || auth.user?.is_dropshipping === 1;
 });
@@ -705,7 +836,6 @@ async function fetchCollectionModels() {
 
         productModels.value = normalized;
 
-    // Initialize or clamp carousel indices
     normalized.forEach((model) => {
         if (typeof modelSlides[model.id] !== 'number' || Number.isNaN(modelSlides[model.id])) {
             modelSlides[model.id] = 0;
@@ -749,7 +879,6 @@ const productModelsMap = computed(() => {
 
 const getModelById = (id) => productModelsMap.value.get(id);
 
-// Detectar mudanças
 const hasChanges = computed(() => {
     if (!originalBudget.value) return false;
 
@@ -810,7 +939,6 @@ function normalizeOrderFromAPI(orderData) {
         });
     }
 
-    // Encontrar transportadora selecionada e recriar lista se necessário
     let carriers = Array.isArray(orderData.carriers_snapshot)
         ? orderData.carriers_snapshot
         : [];
@@ -866,7 +994,6 @@ function normalizeOrderFromAPI(orderData) {
     };
 }
 
-// Carregar pedido
 async function loadOrder() {
     const id = route.params.id;
     if (!id) {
@@ -886,7 +1013,6 @@ async function loadOrder() {
     loadingBudget.value = true;
 
     try {
-        // Buscar pedido diretamente pelo ID
         const { data } = await axios.get(`v1/orders/${orderId.value}`);
 
         if (!data?.success || !data?.data) {
@@ -910,6 +1036,8 @@ async function loadOrder() {
 
         originalBudget.value = JSON.parse(JSON.stringify(normalized));
 
+        await fetchRequestLayoutArts();
+
     } catch (error) {
         console.error('Erro ao carregar pedido:', error);
         window.Swal.fire({
@@ -922,6 +1050,88 @@ async function loadOrder() {
     } finally {
         loadingOrder.value = false;
         loadingBudget.value = false;
+    }
+}
+
+function resolveImageUrl(path) {
+    if (!path) {
+        return '';
+    }
+    if (/^https?:\/\//i.test(path)) {
+        return path;
+    }
+    const baseUrl = window.location.origin.replace(/\/$/, '');
+    return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
+}
+
+function handleImageError(event) {
+    event.target.style.display = 'none';
+}
+
+function formatNumber(value) {
+    if (value === null || value === undefined) {
+        return '-';
+    }
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
+}
+
+function formatDate(value) {
+    if (!value) {
+        return '-';
+    }
+    try {
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return typeof value === 'string' ? value : '-';
+        }
+        return date.toLocaleString('pt-BR');
+    } catch (error) {
+        return typeof value === 'string' ? value : '-';
+    }
+}
+
+async function fetchRequestLayoutArts() {
+    if (!orderId.value || !auth.user?.id) {
+        requestLayoutArts.value = [];
+        loadingRequestArts.value = false;
+        return;
+    }
+
+    try {
+        loadingRequestArts.value = true;
+
+        const params = {
+            order_id: orderId.value,
+        };
+
+        const response = await axios.get('v1/budgets/request-layout-arts', { params });
+        const responseData = response?.data || response;
+
+        if (responseData?.success && Array.isArray(responseData.data)) {
+            requestLayoutArts.value = responseData.data.map((art) => ({
+                id: art.id,
+                budget_id: art.budget_id || null,
+                order_budget_id: art.order_budget_id || null,
+                dealer_id: art.dealer_id || auth.user.id,
+                designer_id: art.designer_id || auth.user.id,
+                comment: art.comment || null,
+                path_file: art.path_file || null,
+                image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+                created_at: art.created_at || art.createdAt || null,
+                designer_name: art.designer?.name || art.designer_name || null,
+                dealer_name: art.dealer?.name || art.dealer_name || null,
+                wall_info: art.wall_info || null,
+                wall_name: art.wall_info?.wall_name || null,
+            }));
+        } else {
+            requestLayoutArts.value = [];
+        }
+    } catch (error) {
+        console.error('Erro ao buscar solicitações de artes:', error);
+        requestLayoutArts.value = [];
+    } finally {
+        loadingRequestArts.value = false;
     }
 }
 

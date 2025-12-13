@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('budget_id');
             $table->unsignedBigInteger('order_budget_id');
             $table->string('path_file', 255);
+            $table->text('comment', 500)->nullable();
             $table->timestamps();
 
             $table->foreign('dealer_id')
@@ -52,6 +53,7 @@ return new class extends Migration
             $table->dropForeign(['designer_id']);
             $table->dropForeign(['budget_id']);
             $table->dropForeign(['order_budget_id']);
+            $table->dropColumn('comment');
         });
 
         Schema::dropIfExists('request_layouts_art');
