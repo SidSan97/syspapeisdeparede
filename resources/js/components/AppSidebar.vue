@@ -13,10 +13,10 @@
         </RouterLink>
       </div>
 
-      <hr class="bd-sidebar-divider">
+      <hr v-if="!isDesigner" class="bd-sidebar-divider">
 
       <!-- Grupo 2: Orçamentos e Pedidos -->
-      <div class="bd-sidebar-group">
+      <div v-if="!isDesigner" class="bd-sidebar-group">
         <RouterLink
           to="/budget/new-budget"
           class="bd-sidebar-item"
@@ -54,10 +54,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isProductionUser || isDesigner" class="bd-sidebar-divider">
 
       <!-- Grupo 3: Layouts -->
-      <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
+      <div v-if="isAdmin || isProductionUser || isDesigner" class="bd-sidebar-group">
         <RouterLink
           to="/layouts"
           class="bd-sidebar-item"
@@ -90,10 +90,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isTenant && !isProductionUser" class="bd-sidebar-divider">
+      <hr v-if="!isTenant && !isProductionUser && !isDesigner" class="bd-sidebar-divider">
 
       <!-- Grupo 5: Expedição -->
-      <div v-if="!isTenant && !isProductionUser" class="bd-sidebar-group">
+      <div v-if="!isTenant && !isProductionUser && !isDesigner" class="bd-sidebar-group">
         <RouterLink
           to="/expedicao"
           class="bd-sidebar-item"
@@ -150,6 +150,7 @@ const route = useRoute();
 const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const isTenant = computed(() => auth.user?.user_type_id === USER_TYPES.RESELLER);
 const isProductionUser = computed(() => auth.user?.user_type_id === USER_TYPES.PRODUCTION);
+const isDesigner = computed(() => auth.user?.user_type_id === USER_TYPES.DESIGNER);
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
@@ -197,7 +198,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .bd-sidebar {
   position: fixed;
-  top: 56px; 
+  top: 56px;
   left: 0;
   height: calc(100vh - 56px);
   width: 250px;

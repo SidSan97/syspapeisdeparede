@@ -1721,18 +1721,15 @@
 
   .layout-modal-activity-author {
     font-weight: 600;
-    color: var(--bs-body-color);
     font-size: 0.8125rem;
   }
 
   .layout-modal-activity-date {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-activity-content {
     font-size: 0.8125rem;
-    color: var(--bs-body-color);
     line-height: 1.4;
 
     :deep(a) {
@@ -1902,7 +1899,6 @@
 
   .layout-modal-comment-counter {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-comment-input-actions {
@@ -1997,7 +1993,6 @@
 
   .layout-modal-comment-date {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-comment-text {

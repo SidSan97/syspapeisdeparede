@@ -101,13 +101,40 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
+    // Verificar acesso para usuários do tipo design (designer)
+    // Designers só podem acessar dashboard, profile e layouts
+    if (userTypeId === USER_TYPES.DESIGNER) {
+        let isAllowed = false;
+
+        if (to.path === '/dashboard' || to.path === '/') {
+            isAllowed = true;
+        } else if (to.path === '/profile') {
+            isAllowed = true;
+        } else if (to.path.startsWith('/layouts')) {
+            isAllowed = true;
+        }
+
+        if (!isAllowed) {
+            // Redirecionar para dashboard se tentar acessar rota não permitida
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
     // Verificar acesso para usuários de produção
     const productionRoutes = ['/layouts', '/products', '/pedidos-producao'];
     const isProductionRoute = productionRoutes.some(route => to.path.startsWith(route));
 
     if (isProductionRoute) {
-        if (userTypeId !== USER_TYPES.PRODUCTION) {
-            // Redirecionar para dashboard se não for usuário de produção
+        // Permitir acesso a /layouts para DESIGNER também
+        if (to.path.startsWith('/layouts')) {
+            if (userTypeId !== USER_TYPES.PRODUCTION && userTypeId !== USER_TYPES.DESIGNER) {
+                // Redirecionar para dashboard se não for usuário de produção ou designer
+                next({ path: '/dashboard' });
+                return;
+            }
+        } else if (userTypeId !== USER_TYPES.PRODUCTION) {
+            // Para outras rotas de produção, apenas usuários de produção podem acessar
             next({ path: '/dashboard' });
             return;
         }
