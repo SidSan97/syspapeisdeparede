@@ -7,7 +7,9 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class OrderRepository
 {
@@ -148,6 +150,27 @@ class OrderRepository
 
     public function createFromBudget(Budget $budget, array $additionalData = []): Order
     {
+        $filesReferringModel = $additionalData['files_referring_model'] ?? $budget->files_referring_model;
+        
+        if (!empty($filesReferringModel) && is_array($filesReferringModel)) {
+            $processedFiles = [];
+            $existingFiles = is_array($budget->files_referring_model) ? $budget->files_referring_model : [];
+            
+            foreach ($filesReferringModel as $file) {
+                if ($file instanceof UploadedFile) {
+                    $processedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                } elseif (is_string($file)) {
+                    $processedFiles[] = $file;
+                }
+            }
+            
+            // Mesclar com arquivos existentes do budget
+            $filesReferringModel = array_values(array_filter(array_unique(array_merge($existingFiles, $processedFiles))));
+        } elseif (empty($filesReferringModel)) {
+            // Se não houver arquivos novos, usar os do budget
+            $filesReferringModel = $budget->files_referring_model;
+        }
+
         $orderData = [
             'user_id' => $budget->user_id,
             'tenant_id' => $budget->tenant_id,
@@ -169,7 +192,7 @@ class OrderRepository
             'payment_file' => $budget->payment_file,
             'comment_referring_model' => $additionalData['comment_referring_model'] ?? $budget->comment_referring_model,
             'link_referring_model' => $additionalData['link_referring_model'] ?? $budget->link_referring_model,
-            'files_referring_model' => $additionalData['files_referring_model'] ?? $budget->files_referring_model,
+            'files_referring_model' => $filesReferringModel,
             'collection_referring_model' => $additionalData['collection_referring_model'] ?? $budget->collection_referring_model,
             'dropshipping_budget' => $budget->dropshipping_budget,
         ];

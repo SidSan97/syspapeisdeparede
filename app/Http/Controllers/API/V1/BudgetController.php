@@ -303,7 +303,7 @@ class BudgetController extends Controller
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
                 $orderBudgets[] = \App\Models\OrderBudget::create([
-                    'order_id' => $order->id, // ID do Order recém-criado
+                    'order_id' => $order->id,
                     'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
