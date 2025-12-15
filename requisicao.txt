@@ -1,0 +1,68 @@
+ESTRUTURA DE BANCO DE DADOS – INTERAÇÃO ENTRE RESELLER E DESIGNER
+
+VISÃO GERAL Este documento descreve uma estrutura de banco de dados
+relacional para permitir interação entre dois tipos de usuários (seller
+e designer) dentro de um card. O fluxo contempla comentários, anexos,
+pedidos de alteração, aprovações e rejeições, mantendo histórico
+completo das ações.
+
+------------------------------------------------------------------------
+
+TABELA: orders_interactions Armazena todas as ações realizadas dentro do
+pedido
+
+Campos: - id (BIGINT, PK) - order_id (BIGINT, FK order.id) - user_id
+(BIGINT, FK users.id) - type (ENUM: comment, approval, rejection,
+request_change) - message (TEXT, opcional) - created_at (TIMESTAMP)
+
+Função: - Registrar comentários - Solicitação de alteração - Aprovação
+do reseller - Rejeição com justificativa
+
+------------------------------------------------------------------------
+
+TABELA: order_attachments Armazena arquivos enviados dentro das
+interações.
+
+Campos: - id (BIGINT, PK) - interaction_id (BIGINT, FK
+order_interactions.id) - file_path (VARCHAR) - file_name (VARCHAR) -
+mime_type (VARCHAR) - created_at (TIMESTAMP)
+
+Regra: - Anexos sempre vinculados a uma interação, nunca diretamente ao
+pedido
+
+------------------------------------------------------------------------
+
+FLUXO DE FUNCIONAMENTO
+
+1)  Designer solicita alteração
+
+-   Cria um registro em order_interactions com type = request_change
+-   Pode conter mensagem e anexos
+
+2)  reseller analisa
+
+-   Aprova: cria interação type = approval
+-   Rejeita: cria interação type = rejection com comentário e/ou anexo
+
+3)  Atualização de status
+
+-   order.status é atualizado conforme a última decisão do seller
+
+------------------------------------------------------------------------
+
+VANTAGENS DA ESTRUTURA
+
+-   Histórico completo de ações
+-   Auditoria clara (quem fez, quando e o quê)
+-   Flexível para novas interações
+-   Facilita criação de timeline/conversa
+-   Boa escalabilidade para evoluções futuras
+
+------------------------------------------------------------------------
+
+EVOLUÇÕES FUTURAS POSSÍVEIS
+
+-   Log separado de mudanças de status
+-   Múltiplos usuários por card
+-   Sistema de notificações
+-   Versionamento de anexos
