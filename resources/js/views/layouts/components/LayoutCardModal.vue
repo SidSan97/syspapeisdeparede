@@ -1531,7 +1531,7 @@
       formData.append('order_budget_id', props.card.id);
       formData.append('dealer_id', props.card.order.user_id);
       formData.append('designer_id', auth.user.id);
-      formData.append('budget_id', props.card.order.id);
+      formData.append('order_id', props.card.order.id);
       formData.append('comment', artComment.value);
       const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
         headers: {

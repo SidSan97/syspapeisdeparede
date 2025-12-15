@@ -33,9 +33,9 @@ return new class extends Migration
                 ->constrained('budgets')
                 ->onDelete('cascade');
             $table->foreignId('order_id')
+                ->nullable()
                 ->constrained('orders')
-                ->onDelete('cascade')
-                ->nullable();
+                ->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -11,27 +11,30 @@ use Illuminate\Support\Facades\DB;
 class RequestLayoutArtRepository
 {
     public function uploadArt(
-        UploadedFile $file,
+        ?UploadedFile $file,
         int $orderBudgetId,
         int $dealerId,
         int $designerId,
-        int $budgetId,
+        int $orderId,
         string $comment = null
     ): array {
-        return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $budgetId, $comment) {
+        return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $orderId, $comment) {
             $interaction = RequestLayoutArtInteraction::firstOrCreate(
                 ['card_id' => $orderBudgetId],
                 ['card_id' => $orderBudgetId]
             );
 
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('request_layouts_art', $filename, 'public');
+            $path = '';
+            if ($file) {
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('request_layouts_art', $filename, 'public');
+            }
 
             $requestLayoutArt = RequestLayoutArt::create([
                 'dealer_id' => $dealerId,
                 'designer_id' => $designerId,
                 'path_file' => $path,
-                'budget_id' => $budgetId,
+                'order_id' => $orderId,
                 'order_budget_id' => $orderBudgetId,
                 'interactions_card_id' => $interaction->id,
                 'comment' => $comment,
@@ -53,7 +56,7 @@ class RequestLayoutArtRepository
             return [
                 'id' => $requestLayoutArt->id,
                 'path_file' => $path,
-                'url' => asset('storage/' . $path),
+                'url' => $path ? asset('storage/' . $path) : null,
                 'interaction_id' => $interaction->id,
             ];
         });

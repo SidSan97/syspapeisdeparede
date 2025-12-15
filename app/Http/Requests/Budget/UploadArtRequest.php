@@ -22,11 +22,12 @@ class UploadArtRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'art_file' => ['required', 'image', 'max:10240'], // 10MB max
+            'comment' => ['required', 'string', 'max:500'],
+            'art_file' => ['nullable', 'image', 'max:10240'], // 10MB max
             'order_budget_id' => ['required', 'integer', 'exists:order_budgets,id'],
             'dealer_id' => ['required', 'integer', 'exists:users,id'],
             'designer_id' => ['required', 'integer', 'exists:users,id'],
-            'budget_id' => ['required', 'integer', 'exists:orders,id'],
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
         ];
     }
 
@@ -38,7 +39,7 @@ class UploadArtRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'art_file.required' => 'O arquivo da arte é obrigatório.',
+            'comment.required' => 'O comentário é obrigatório.',
             'art_file.image' => 'O arquivo deve ser uma imagem.',
             'art_file.max' => 'O arquivo não pode ser maior que 10MB.',
             'order_budget_id.required' => 'O ID do orçamento do pedido é obrigatório.',
@@ -47,8 +48,8 @@ class UploadArtRequest extends FormRequest
             'dealer_id.exists' => 'O revendedor selecionado não existe.',
             'designer_id.required' => 'O ID do designer é obrigatório.',
             'designer_id.exists' => 'O designer selecionado não existe.',
-            'budget_id.required' => 'O ID do orçamento é obrigatório.',
-            'budget_id.exists' => 'O orçamento selecionado não existe.',
+            'order_id.required' => 'O ID do pedido é obrigatório.',
+            'order_id.exists' => 'O pedido selecionado não existe.',
         ];
     }
 }

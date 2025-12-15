@@ -657,7 +657,7 @@ class BudgetController extends Controller
                 $request->order_budget_id,
                 $request->dealer_id,
                 $request->designer_id,
-                $request->budget_id,
+                $request->order_id,
                 $request->comment ?? null,
             );
 

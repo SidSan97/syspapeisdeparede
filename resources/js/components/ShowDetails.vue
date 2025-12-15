@@ -398,7 +398,7 @@
                                                         <form @submit.prevent="handleRespondToInteraction(interaction)">
                                                             <div class="mb-3">
                                                                 <label :for="'art-file-' + interaction.id" class="form-label">
-                                                                    Imagem da Arte <span class="text-danger">*</span>
+                                                                    Imagem da Arte (opcional)
                                                                 </label>
                                                                 <input
                                                                     :id="'art-file-' + interaction.id"
@@ -426,7 +426,7 @@
                                                             </div>
                                                             <div class="mb-3">
                                                                 <label :for="'art-comment-' + interaction.id" class="form-label">
-                                                                    Comentário (opcional)
+                                                                    Comentário <span class="text-danger">*</span>
                                                                 </label>
                                                                 <textarea
                                                                     :id="'art-comment-' + interaction.id"
@@ -441,7 +441,7 @@
                                                                 <button
                                                                     type="submit"
                                                                     class="btn btn-primary"
-                                                                    :disabled="!artFiles[interaction.id] || uploadingArt[interaction.id]"
+                                                                    :disabled="!artComments[interaction.id] || !artComments[interaction.id].trim() || uploadingArt[interaction.id]"
                                                                 >
                                                                     <span
                                                                         v-if="uploadingArt[interaction.id]"
@@ -647,8 +647,8 @@ const isDropshippingEnabled = computed(() => {
 });
 
 const isReseller = computed(() => {
-    return auth.user?.user_type_id === USER_TYPES.RESELLER 
-        || auth.hasRole('reseller') 
+    return auth.user?.user_type_id === USER_TYPES.RESELLER
+        || auth.hasRole('reseller')
         || auth.hasRole('revendedor')
         || auth.roles?.some(role => typeof role === 'string' && role.toLowerCase().includes('revendedor'));
 });
@@ -1025,11 +1025,12 @@ async function handleRespondToInteraction(interaction) {
 
     const interactionId = interaction.id;
     const artFile = artFiles.value[interactionId];
+    const comment = (artComments.value[interactionId] || '').trim();
 
-    if (!artFile) {
+    if (!comment) {
         window.Swal.fire({
             title: 'Atenção',
-            text: 'Por favor, selecione uma imagem para enviar.',
+            text: 'Por favor, insira um comentário para enviar a resposta.',
             icon: 'warning',
             showCloseButton: true,
             confirmButtonText: 'OK',
@@ -1040,24 +1041,23 @@ async function handleRespondToInteraction(interaction) {
     uploadingArt.value[interactionId] = true;
 
     try {
-        let budgetId = data.value.id;
-        
+        let orderId = data.value.id;
+
         if (isOrder.value) {
-            budgetId = data.value.id;
+            orderId = data.value.id;
         } else {
-            budgetId = data.value.order_id || data.value.id;
+            orderId = data.value.order_id || data.value.id;
         }
 
         const formData = new FormData();
-        formData.append('art_file', artFile);
+        if (artFile) {
+            formData.append('art_file', artFile);
+        }
         formData.append('order_budget_id', interaction.card_id);
         formData.append('dealer_id', auth.user.id);
         formData.append('designer_id', auth.user.id);
-        formData.append('budget_id', budgetId);
-        
-        if (artComments.value[interactionId]) {
-            formData.append('comment', artComments.value[interactionId]);
-        }
+        formData.append('order_id', orderId);
+        formData.append('comment', comment);
 
         const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
             headers: {
