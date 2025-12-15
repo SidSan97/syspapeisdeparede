@@ -27,7 +27,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('dealer_id')->comment('id do revendedor que criou o orçamento');
             $table->unsignedBigInteger('designer_id')->comment('id do designer que carregou a arte');
-            $table->unsignedBigInteger('budget_id');
+            $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('order_budget_id');
             $table->unsignedBigInteger('interactions_card_id');
             $table->string('path_file', 255);
@@ -44,9 +44,9 @@ return new class extends Migration
                 ->on('users')
                 ->onDelete('cascade');
 
-            $table->foreign('budget_id')
+            $table->foreign('order_id')
                 ->references('id')
-                ->on('budgets')
+                ->on('orders')
                 ->onDelete('cascade');
 
             $table->foreign('order_budget_id')
@@ -70,7 +70,7 @@ return new class extends Migration
         Schema::table('request_layouts_art', function (Blueprint $table) {
             $table->dropForeign(['dealer_id']);
             $table->dropForeign(['designer_id']);
-            $table->dropForeign(['budget_id']);
+            $table->dropForeign(['order_id']);
             $table->dropForeign(['order_budget_id']);
             $table->dropForeign(['interactions_card_id']);
             $table->dropColumn('comment');

@@ -16,7 +16,7 @@ class RequestLayoutArt extends Model
     protected $fillable = [
         'dealer_id',
         'designer_id',
-        'budget_id',
+        'order_id',
         'order_budget_id',
         'tenant_id',
         'interactions_card_id',
@@ -27,7 +27,7 @@ class RequestLayoutArt extends Model
     protected $casts = [
         'dealer_id' => 'integer',
         'designer_id' => 'integer',
-        'budget_id' => 'integer',
+        'order_id' => 'integer',
         'order_budget_id' => 'integer',
         'interactions_card_id' => 'integer',
         'path_file' => 'string',
@@ -51,11 +51,11 @@ class RequestLayoutArt extends Model
     }
 
     /**
-     * Get the budget that owns the request.
+     * Get the order that owns the request.
      */
-    public function budget(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(Budget::class, 'budget_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     /**

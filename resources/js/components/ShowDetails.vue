@@ -246,7 +246,6 @@
                             <div class="card mb-4">
                                 <div class="card-header bg-transparent">
                                     <h5 class="mb-0 fw-semibold">
-                                        <i class="fa fa-paint-brush me-2"></i>
                                         Solicitação de Artes
                                     </h5>
                                 </div>
