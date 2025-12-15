@@ -9,6 +9,7 @@ use App\Models\LayoutCardHistory;
 use App\Models\MyFavoriteCollectionImage;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
+use App\Models\RequestLayoutArtInteraction;
 use App\Observers\TenantObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -40,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         BudgetWall::observe(TenantObserver::class);
         OrderBudget::observe(TenantObserver::class);
         RequestLayoutArt::observe(TenantObserver::class);
+        RequestLayoutArtInteraction::observe(TenantObserver::class);
         MyFavoriteCollectionImage::observe(TenantObserver::class);
         LayoutCardHistory::observe(TenantObserver::class);
     }

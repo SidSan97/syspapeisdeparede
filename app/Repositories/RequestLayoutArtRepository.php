@@ -4,21 +4,12 @@ namespace App\Repositories;
 
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
+use App\Models\RequestLayoutArtInteraction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class RequestLayoutArtRepository
 {
-    /**
-     * Upload art file and create request layout art record.
-     *
-     * @param UploadedFile $file
-     * @param int $orderBudgetId
-     * @param int $dealerId
-     * @param int $designerId
-     * @param int $budgetId
-     * @return array
-     */
     public function uploadArt(
         UploadedFile $file,
         int $orderBudgetId,
@@ -28,24 +19,26 @@ class RequestLayoutArtRepository
         string $comment = null
     ): array {
         return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $budgetId, $comment) {
-            // Upload do arquivo
+            $interaction = RequestLayoutArtInteraction::firstOrCreate(
+                ['card_id' => $orderBudgetId],
+                ['card_id' => $orderBudgetId]
+            );
+
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('request_layouts_art', $filename, 'public');
 
-            // Salvar na tabela request_layouts_art
             $requestLayoutArt = RequestLayoutArt::create([
                 'dealer_id' => $dealerId,
                 'designer_id' => $designerId,
                 'path_file' => $path,
                 'budget_id' => $budgetId,
                 'order_budget_id' => $orderBudgetId,
+                'interactions_card_id' => $interaction->id,
                 'comment' => $comment,
             ]);
 
-            // Buscar o pedido
             $orderBudget = OrderBudget::findOrFail($orderBudgetId);
 
-            // Atualizar status do pedido
             $orderBudget->update([
                 'status' => 'Pendente de Revisão',
             ]);
@@ -61,6 +54,7 @@ class RequestLayoutArtRepository
                 'id' => $requestLayoutArt->id,
                 'path_file' => $path,
                 'url' => asset('storage/' . $path),
+                'interaction_id' => $interaction->id,
             ];
         });
     }

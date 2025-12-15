@@ -134,14 +134,14 @@ class TenantObserver
                     return $model->orderBudget->budget->tenant_id;
                 }
             }
-            // Otherwise, try to get from card_id
+
             if ($model->card_id) {
                 $orderBudget = OrderBudget::find($model->card_id);
                 if ($orderBudget) {
                     if ($orderBudget->tenant_id) {
                         return $orderBudget->tenant_id;
                     }
-                    // Try through budget
+
                     if ($orderBudget->budget_id) {
                         $budget = Budget::find($orderBudget->budget_id);
                         if ($budget && $budget->tenant_id) {
@@ -152,7 +152,26 @@ class TenantObserver
             }
         }
 
+        if ($model instanceof \App\Models\RequestLayoutArtInteraction) {
+            if ($model->relationLoaded('card') && $model->card && $model->card->tenant_id) {
+                return $model->card->tenant_id;
+            }
+
+            if ($model->card_id) {
+                $orderBudget = OrderBudget::find($model->card_id);
+                if ($orderBudget && $orderBudget->tenant_id) {
+                    return $orderBudget->tenant_id;
+                }
+            }
+        }
+
         if ($model instanceof \App\Models\RequestLayoutArt) {
+            if ($model->relationLoaded('interaction') && $model->interaction && $model->interaction->card_id) {
+                $orderBudget = OrderBudget::find($model->interaction->card_id);
+                if ($orderBudget && $orderBudget->tenant_id) {
+                    return $orderBudget->tenant_id;
+                }
+            }
             // Try to get from budget or orderBudget relationships
             if ($model->relationLoaded('budget') && $model->budget && $model->budget->tenant_id) {
                 return $model->budget->tenant_id;

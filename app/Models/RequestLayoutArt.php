@@ -19,6 +19,7 @@ class RequestLayoutArt extends Model
         'budget_id',
         'order_budget_id',
         'tenant_id',
+        'interactions_card_id',
         'comment',
         'path_file',
     ];
@@ -28,6 +29,7 @@ class RequestLayoutArt extends Model
         'designer_id' => 'integer',
         'budget_id' => 'integer',
         'order_budget_id' => 'integer',
+        'interactions_card_id' => 'integer',
         'path_file' => 'string',
         'comment' => 'string',
     ];
@@ -62,6 +64,14 @@ class RequestLayoutArt extends Model
     public function orderBudget(): BelongsTo
     {
         return $this->belongsTo(OrderBudget::class, 'order_budget_id');
+    }
+
+    /**
+     * Get the interaction that owns this request layout art.
+     */
+    public function interaction(): BelongsTo
+    {
+        return $this->belongsTo(RequestLayoutArtInteraction::class, 'interactions_card_id');
     }
 }
 

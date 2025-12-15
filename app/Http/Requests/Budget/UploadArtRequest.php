@@ -26,7 +26,7 @@ class UploadArtRequest extends FormRequest
             'order_budget_id' => ['required', 'integer', 'exists:order_budgets,id'],
             'dealer_id' => ['required', 'integer', 'exists:users,id'],
             'designer_id' => ['required', 'integer', 'exists:users,id'],
-            'budget_id' => ['required', 'integer', 'exists:budgets,id'],
+            'budget_id' => ['required', 'integer', 'exists:orders,id'],
         ];
     }
 

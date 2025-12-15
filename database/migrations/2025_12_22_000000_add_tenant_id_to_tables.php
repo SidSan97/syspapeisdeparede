@@ -29,25 +29,26 @@ return new class extends Migration
             $table->index('tenant_id');
         });
 
-        // Add tenant_id to order_budgets table
         Schema::table('order_budgets', function (Blueprint $table) {
             $table->foreignId('tenant_id')->nullable()->after('order_id')->constrained('users')->onDelete('cascade');
             $table->index('tenant_id');
         });
 
-        // Add tenant_id to request_layouts_art table
+        Schema::table('request_layouts_art_interactions', function (Blueprint $table) {
+            $table->foreignId('tenant_id')->nullable()->after('card_id')->constrained('users')->onDelete('cascade');
+            $table->index('tenant_id');
+        });
+
         Schema::table('request_layouts_art', function (Blueprint $table) {
             $table->foreignId('tenant_id')->nullable()->after('order_budget_id')->constrained('users')->onDelete('cascade');
             $table->index('tenant_id');
         });
 
-        // Add tenant_id to my_favorites_collection_images table
         Schema::table('my_favorites_collection_images', function (Blueprint $table) {
             $table->foreignId('tenant_id')->nullable()->after('user_id')->constrained('users')->onDelete('cascade');
             $table->index('tenant_id');
         });
 
-        // Add tenant_id to layout_card_history table
         Schema::table('layout_card_history', function (Blueprint $table) {
             $table->foreignId('tenant_id')->nullable()->after('card_id')->constrained('users')->onDelete('cascade');
             $table->index('tenant_id');
@@ -72,6 +73,12 @@ return new class extends Migration
         });
 
         Schema::table('request_layouts_art', function (Blueprint $table) {
+            $table->dropForeign(['tenant_id']);
+            $table->dropIndex(['tenant_id']);
+            $table->dropColumn('tenant_id');
+        });
+
+        Schema::table('request_layouts_art_interactions', function (Blueprint $table) {
             $table->dropForeign(['tenant_id']);
             $table->dropIndex(['tenant_id']);
             $table->dropColumn('tenant_id');

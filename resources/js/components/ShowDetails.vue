@@ -260,107 +260,133 @@
                                     </div>
                                     <div v-else class="accordion" id="requestArtsAccordion">
                                         <div
-                                            v-for="(art, artIndex) in requestLayoutArts"
-                                            :key="art.id || artIndex"
+                                            v-for="(interaction, interactionIndex) in requestLayoutArts"
+                                            :key="interaction.id || interactionIndex"
                                             class="accordion-item mb-3"
                                         >
                                             <h2 class="accordion-header">
                                                 <button
                                                     class="accordion-button p-2"
-                                                    :class="{ collapsed: artIndex !== 0 }"
+                                                    :class="{ collapsed: interactionIndex !== 0 }"
                                                     type="button"
                                                     data-bs-toggle="collapse"
-                                                    :data-bs-target="`#art-${artIndex}`"
-                                                    :aria-expanded="artIndex === 0"
-                                                    :aria-controls="`art-${artIndex}`"
+                                                    :data-bs-target="`#interaction-${interactionIndex}`"
+                                                    :aria-expanded="interactionIndex === 0"
+                                                    :aria-controls="`interaction-${interactionIndex}`"
                                                 >
-                                                    <i class="fa fa-image me-2"></i>
-                                                    Arte #{{ art.id }}
-                                                    <span v-if="art.wall_name" class="badge bg-info ms-2">
-                                                        {{ art.wall_name }}
+                                                    <i class="fa fa-comments me-2"></i>
+                                                    Interação #{{ interaction.id }}
+                                                    <span v-if="interaction.wall_info?.wall_name" class="badge bg-info ms-2">
+                                                        {{ interaction.wall_info.wall_name }}
+                                                    </span>
+                                                    <span class="badge bg-secondary ms-2">
+                                                        {{ interaction.arts_count }} arte(s)
                                                     </span>
                                                 </button>
                                             </h2>
                                             <div
-                                                :id="`art-${artIndex}`"
+                                                :id="`interaction-${interactionIndex}`"
                                                 class="accordion-collapse collapse"
-                                                :class="{ show: artIndex === 0 }"
+                                                :class="{ show: interactionIndex === 0 }"
                                                 data-bs-parent="#requestArtsAccordion"
                                             >
                                                 <div class="accordion-body">
-                                                    <div v-if="art.wall_info" class="mb-3 p-2 rounded border">
+                                                    <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
                                                         <div class="row g-2">
                                                             <div class="col-md-6">
                                                                 <div class="text-muted small">Ambiente</div>
-                                                                <div class="fw-semibold">{{ art.wall_info.room_name || 'N/A' }}</div>
+                                                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <div class="text-muted small">Parede</div>
-                                                                <div class="fw-semibold">{{ art.wall_info.wall_name || 'N/A' }}</div>
+                                                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
                                                             </div>
-                                                            <div v-if="art.wall_info.width" class="col-md-4">
+                                                            <div v-if="interaction.wall_info.width" class="col-md-4">
                                                                 <div class="text-muted small">Largura</div>
-                                                                <div class="fw-semibold">{{ formatNumber(art.wall_info.width) }} m</div>
+                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
                                                             </div>
-                                                            <div v-if="art.wall_info.height" class="col-md-4">
+                                                            <div v-if="interaction.wall_info.height" class="col-md-4">
                                                                 <div class="text-muted small">Altura</div>
-                                                                <div class="fw-semibold">{{ formatNumber(art.wall_info.height) }} m</div>
+                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
                                                             </div>
-                                                            <div v-if="art.wall_info.total_area" class="col-md-4">
+                                                            <div v-if="interaction.wall_info.total_area" class="col-md-4">
                                                                 <div class="text-muted small">Área</div>
-                                                                <div class="fw-semibold">{{ formatNumber(art.wall_info.total_area) }} m²</div>
+                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="mb-3 p-2 border rounded">
-                                                        <div class="row g-2">
-                                                            <div v-if="art.dealer_name" class="col-md-6">
-                                                                <div class="text-muted small">
-                                                                    <i class="fa fa-user-tie me-1"></i>
-                                                                    Revendedor
-                                                                </div>
-                                                                <div class="fw-semibold">{{ art.dealer_name }}</div>
-                                                            </div>
-                                                            <div v-if="art.designer_name" class="col-md-6">
-                                                                <div class="text-muted small">
-                                                                    <i class="fa fa-user me-1"></i>
-                                                                    Designer
-                                                                </div>
-                                                                <div class="fw-semibold">{{ art.designer_name }}</div>
-                                                            </div>
-                                                            <div v-if="art.created_at" class="col-12">
-                                                                <div class="text-muted small">
-                                                                    <i class="fa fa-calendar me-1"></i>
-                                                                    Enviado em: {{ formatDate(art.created_at) }}
-                                                                </div>
-                                                            </div>
+                                                    <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
+                                                        <div class="text-muted small">
+                                                            <i class="fa fa-calendar me-1"></i>
+                                                            Interação criada em: {{ formatDate(interaction.created_at) }}
                                                         </div>
                                                     </div>
-                                                    <div v-if="art.comment" class="mb-3">
-                                                        <div class="text-muted small mb-1">Comentário</div>
-                                                        <div class="p-2 rounded border">{{ art.comment }}</div>
-                                                    </div>
-                                                    <div v-if="art.image_url" class="mb-3">
-                                                        <div class="text-muted small mb-2">Imagem da Arte</div>
-                                                        <div class="d-flex justify-content-center">
-                                                            <img
-                                                                :src="art.image_url"
-                                                                :alt="`Arte ${art.id}`"
-                                                                class="img-thumbnail"
-                                                                style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                                                                @error="handleImageError"
-                                                            />
-                                                        </div>
-                                                        <div class="mt-2 text-center">
-                                                            <a
-                                                                :href="art.image_url"
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                class="btn btn-sm btn-outline-primary"
-                                                            >
-                                                                <i class="fa fa-external-link me-1"></i>
-                                                                Abrir em nova aba
-                                                            </a>
+
+                                                    <!-- Lista de Artes da Interação -->
+                                                    <div v-if="interaction.arts && interaction.arts.length > 0" class="mt-3">
+                                                        <h6 class="mb-3">
+                                                            <i class="fa fa-images me-2"></i>
+                                                            Artes ({{ interaction.arts.length }})
+                                                        </h6>
+                                                        <div
+                                                            v-for="(art, artIndex) in interaction.arts"
+                                                            :key="art.id || artIndex"
+                                                            class="card mb-3 border"
+                                                            :class="{ 'border-top': artIndex > 0 }"
+                                                        >
+                                                            <div class="card-body">
+                                                                <div class="mb-3 p-2 border rounded">
+                                                                    <div class="row g-2">
+                                                                        <div v-if="art.dealer_name" class="col-md-6">
+                                                                            <div class="text-muted small">
+                                                                                <i class="fa fa-user-tie me-1"></i>
+                                                                                Revendedor
+                                                                            </div>
+                                                                            <div class="fw-semibold">{{ art.dealer_name }}</div>
+                                                                        </div>
+                                                                        <div v-if="art.designer_name" class="col-md-6">
+                                                                            <div class="text-muted small">
+                                                                                <i class="fa fa-user me-1"></i>
+                                                                                Designer
+                                                                            </div>
+                                                                            <div class="fw-semibold">{{ art.designer_name }}</div>
+                                                                        </div>
+                                                                        <div v-if="art.created_at" class="col-12">
+                                                                            <div class="text-muted small">
+                                                                                <i class="fa fa-calendar me-1"></i>
+                                                                                Enviado em: {{ formatDate(art.created_at) }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div v-if="art.comment" class="mb-3">
+                                                                    <div class="text-muted small mb-1">Comentário</div>
+                                                                    <div class="p-2 rounded border">{{ art.comment }}</div>
+                                                                </div>
+                                                                <div v-if="art.image_url" class="mb-3">
+                                                                    <div class="text-muted small mb-2">Imagem da Arte</div>
+                                                                    <div class="d-flex justify-content-center">
+                                                                        <img
+                                                                            :src="art.image_url"
+                                                                            :alt="`Arte ${art.id}`"
+                                                                            class="img-thumbnail"
+                                                                            style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                                                                            @error="handleImageError"
+                                                                        />
+                                                                    </div>
+                                                                    <div class="mt-2 text-center">
+                                                                        <a
+                                                                            :href="art.image_url"
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            class="btn btn-sm btn-outline-primary"
+                                                                        >
+                                                                            <i class="fa fa-external-link me-1"></i>
+                                                                            Abrir em nova aba
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -770,20 +796,26 @@ async function fetchRequestLayoutArts() {
         const responseData = response?.data || response;
 
         if (responseData?.success && Array.isArray(responseData.data)) {
-            requestLayoutArts.value = responseData.data.map((art) => ({
-                id: art.id,
-                budget_id: art.budget_id || null,
-                order_budget_id: art.order_budget_id || null,
-                dealer_id: art.dealer_id || auth.user.id,
-                designer_id: art.designer_id || auth.user.id,
-                comment: art.comment || null,
-                path_file: art.path_file || null,
-                image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
-                created_at: art.created_at || art.createdAt || null,
-                designer_name: art.designer?.name || art.designer_name || null,
-                dealer_name: art.dealer?.name || art.dealer_name || null,
-                wall_info: art.wall_info || null,
-                wall_name: art.wall_info?.wall_name || null,
+            requestLayoutArts.value = responseData.data.map((interaction) => ({
+                id: interaction.id,
+                card_id: interaction.card_id,
+                created_at: interaction.created_at,
+                wall_info: interaction.wall_info || null,
+                arts: (interaction.arts || []).map((art) => ({
+                    id: art.id,
+                    budget_id: art.budget_id || null,
+                    order_budget_id: art.order_budget_id || null,
+                    interactions_card_id: art.interactions_card_id || null,
+                    dealer_id: art.dealer_id || auth.user.id,
+                    designer_id: art.designer_id || auth.user.id,
+                    comment: art.comment || null,
+                    path_file: art.path_file || null,
+                    image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+                    created_at: art.created_at || null,
+                    designer_name: art.designer?.name || art.designer_name || null,
+                    dealer_name: art.dealer?.name || art.dealer_name || null,
+                })),
+                arts_count: interaction.arts_count || (interaction.arts || []).length,
             }));
         } else {
             requestLayoutArts.value = [];

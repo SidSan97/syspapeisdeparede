@@ -11,12 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('request_layouts_art_interactions', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('card_id')->comment('usuario que criou a requisição');
+            $table->timestamps();
+
+            $table->foreign('card_id', 'card_id_fk')
+                ->references('id')
+                ->on('order_budgets')
+                ->onDelete('restrict')
+                ->onUpdate('restrict');
+        });
+
         Schema::create('request_layouts_art', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('dealer_id')->comment('id do revendedor que criou o orçamento');
             $table->unsignedBigInteger('designer_id')->comment('id do designer que carregou a arte');
             $table->unsignedBigInteger('budget_id');
             $table->unsignedBigInteger('order_budget_id');
+            $table->unsignedBigInteger('interactions_card_id');
             $table->string('path_file', 255);
             $table->text('comment', 500)->nullable();
             $table->timestamps();
@@ -40,6 +53,12 @@ return new class extends Migration
                 ->references('id')
                 ->on('order_budgets')
                 ->onDelete('cascade');
+
+            $table->foreign('interactions_card_id', 'interactions_card_id')
+                ->references('id')
+                ->on('request_layouts_art_interactions')
+                ->onDelete('restrict')
+                ->onUpdate('restrict');
         });
     }
 
@@ -53,10 +72,13 @@ return new class extends Migration
             $table->dropForeign(['designer_id']);
             $table->dropForeign(['budget_id']);
             $table->dropForeign(['order_budget_id']);
+            $table->dropForeign(['interactions_card_id']);
             $table->dropColumn('comment');
+            $table->dropColumn('interactions_card_id');
         });
 
         Schema::dropIfExists('request_layouts_art');
+        Schema::dropIfExists('request_layouts_art_interactions');
     }
 };
 
