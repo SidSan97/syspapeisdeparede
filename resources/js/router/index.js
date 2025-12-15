@@ -31,7 +31,6 @@ router.beforeEach(async (to, from, next) => {
         await auth.fetchUser();
     }
 
-    // Verificar se o usuário está autenticado
     if (!auth.user) {
         next();
         return;
@@ -79,10 +78,11 @@ router.beforeEach(async (to, from, next) => {
         } else if (to.path === '/profile') {
             isAllowed = true;
         } else if (to.path === '/budget' || to.path.startsWith('/budget/')) {
-            // Permitir /budget, /budget/new-budget e /budget/edit/:id
+            // Permitir /budget, /budget/new-budget, /budget/edit/:id e /budget/:id (detalhes)
             if (to.path === '/budget' ||
                 to.path === '/budget/new-budget' ||
-                to.path.startsWith('/budget/edit/')) {
+                to.path.startsWith('/budget/edit/') ||
+                /^\/budget\/\d+$/.test(to.path)) {
                 isAllowed = true;
             }
         } else if (to.path.startsWith('/colecao-arts')) {
@@ -90,8 +90,11 @@ router.beforeEach(async (to, from, next) => {
             if (to.path !== '/colecao-arts/catalogo' && !to.path.startsWith('/colecao-arts/catalogo/')) {
                 isAllowed = true;
             }
-        } else if (to.path === '/pedidos') {
-            isAllowed = true;
+        } else if (to.path === '/pedidos' || to.path.startsWith('/pedidos/')) {
+            // Permitir /pedidos e /pedidos/:id (detalhes do pedido)
+            if (to.path === '/pedidos' || /^\/pedidos\/\d+$/.test(to.path)) {
+                isAllowed = true;
+            }
         }
 
         if (!isAllowed) {

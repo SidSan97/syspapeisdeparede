@@ -389,6 +389,73 @@
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    <!-- Formulário de Resposta do Revendedor -->
+                                                    <div v-if="auth.user && isReseller" class="mt-4 pt-3 border-top">
+                                                        <h6 class="mb-3">
+                                                            <i class="fa fa-reply me-2"></i>
+                                                            Responder Interação
+                                                        </h6>
+                                                        <form @submit.prevent="handleRespondToInteraction(interaction)">
+                                                            <div class="mb-3">
+                                                                <label :for="'art-file-' + interaction.id" class="form-label">
+                                                                    Imagem da Arte <span class="text-danger">*</span>
+                                                                </label>
+                                                                <input
+                                                                    :id="'art-file-' + interaction.id"
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    class="form-control"
+                                                                    @change="handleArtFileChange($event, interaction.id)"
+                                                                    :disabled="uploadingArt[interaction.id]"
+                                                                />
+                                                                <div class="form-text">Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 10MB</div>
+                                                                <div v-if="artFiles[interaction.id]" class="mt-2">
+                                                                    <span class="badge bg-info">
+                                                                        <i class="fa fa-file-image me-1"></i>
+                                                                        {{ artFiles[interaction.id].name }}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        class="btn btn-sm btn-link text-danger p-0 ms-2"
+                                                                        @click="clearArtFile(interaction.id)"
+                                                                        :disabled="uploadingArt[interaction.id]"
+                                                                    >
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label :for="'art-comment-' + interaction.id" class="form-label">
+                                                                    Comentário (opcional)
+                                                                </label>
+                                                                <textarea
+                                                                    :id="'art-comment-' + interaction.id"
+                                                                    v-model="artComments[interaction.id]"
+                                                                    class="form-control"
+                                                                    rows="3"
+                                                                    placeholder="Adicione um comentário sobre a arte..."
+                                                                    :disabled="uploadingArt[interaction.id]"
+                                                                ></textarea>
+                                                            </div>
+                                                            <div class="d-flex justify-content-end">
+                                                                <button
+                                                                    type="submit"
+                                                                    class="btn btn-primary"
+                                                                    :disabled="!artFiles[interaction.id] || uploadingArt[interaction.id]"
+                                                                >
+                                                                    <span
+                                                                        v-if="uploadingArt[interaction.id]"
+                                                                        class="spinner-border spinner-border-sm me-2"
+                                                                        role="status"
+                                                                        aria-hidden="true"
+                                                                    ></span>
+                                                                    <i v-if="!uploadingArt[interaction.id]" class="fa fa-paper-plane me-2"></i>
+                                                                    {{ uploadingArt[interaction.id] ? 'Enviando...' : 'Enviar Resposta' }}
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -542,6 +609,7 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
+import { USER_TYPES } from '@/constants/userTypes';
 
 const router = useRouter();
 const route = useRoute();
@@ -555,6 +623,9 @@ const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const paymentUrl = ref(null);
+const artFiles = ref({});
+const artComments = ref({});
+const uploadingArt = ref({});
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -575,6 +646,13 @@ const backTo = computed(() => {
 
 const isDropshippingEnabled = computed(() => {
     return data.value?.dropshipping_budget === 1;
+});
+
+const isReseller = computed(() => {
+    return auth.user?.user_type_id === USER_TYPES.RESELLER 
+        || auth.hasRole('reseller') 
+        || auth.hasRole('revendedor')
+        || auth.roles?.some(role => typeof role === 'string' && role.toLowerCase().includes('revendedor'));
 });
 
 const hasModelReferences = computed(() => {
@@ -916,6 +994,103 @@ function copyPaymentUrl() {
             showConfirmButton: false,
         });
     });
+}
+
+function handleArtFileChange(event, interactionId) {
+    const file = event.target.files[0];
+    if (file) {
+        artFiles.value[interactionId] = file;
+    }
+}
+
+function clearArtFile(interactionId) {
+    delete artFiles.value[interactionId];
+    const input = document.getElementById(`art-file-${interactionId}`);
+    if (input) {
+        input.value = '';
+    }
+}
+
+async function handleRespondToInteraction(interaction) {
+    if (!interaction || !interaction.card_id || !data.value || !auth.user?.id) {
+        window.Swal.fire({
+            title: 'Erro',
+            text: 'Dados insuficientes para responder a interação.',
+            icon: 'error',
+        });
+        return;
+    }
+
+    const interactionId = interaction.id;
+    const artFile = artFiles.value[interactionId];
+
+    if (!artFile) {
+        window.Swal.fire({
+            title: 'Atenção',
+            text: 'Por favor, selecione uma imagem para enviar.',
+            icon: 'warning',
+        });
+        return;
+    }
+
+    uploadingArt.value[interactionId] = true;
+
+    try {
+        let budgetId = data.value.id;
+        
+        if (isOrder.value) {
+            budgetId = data.value.id;
+        } else {
+            budgetId = data.value.order_id || data.value.id;
+        }
+
+        const formData = new FormData();
+        formData.append('art_file', artFile);
+        formData.append('order_budget_id', interaction.card_id);
+        formData.append('dealer_id', auth.user.id);
+        formData.append('designer_id', auth.user.id);
+        formData.append('budget_id', budgetId);
+        
+        if (artComments.value[interactionId]) {
+            formData.append('comment', artComments.value[interactionId]);
+        }
+
+        const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        if (response.data?.success) {
+            // Limpar formulário
+            clearArtFile(interactionId);
+            artComments.value[interactionId] = '';
+
+            // Recarregar solicitações de artes
+            await fetchRequestLayoutArts();
+
+            await window.Swal.fire({
+                title: 'Sucesso!',
+                text: response.data.message || 'Arte enviada com sucesso.',
+                icon: 'success',
+                confirmButtonText: 'OK',
+            });
+        } else {
+            throw new Error(response.data?.message || 'Erro ao enviar arte');
+        }
+    } catch (error) {
+        console.error('Erro ao responder interação:', error);
+        const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
+
+        await window.Swal.fire({
+            title: 'Erro',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'OK',
+        });
+    } finally {
+        uploadingArt.value[interactionId] = false;
+    }
 }
 
 onMounted(() => {
