@@ -449,7 +449,6 @@
                                                                         role="status"
                                                                         aria-hidden="true"
                                                                     ></span>
-                                                                    <i v-if="!uploadingArt[interaction.id]" class="fa fa-paper-plane me-2"></i>
                                                                     {{ uploadingArt[interaction.id] ? 'Enviando...' : 'Enviar Resposta' }}
                                                                 </button>
                                                             </div>
@@ -828,6 +827,7 @@ async function loadData() {
             title: 'Erro!',
             text: error.message || 'Não foi possível carregar os detalhes',
             icon: 'error',
+            showCloseButton: true,
             confirmButtonText: 'Entendi!',
         });
         router.push(backTo.value);
@@ -913,7 +913,10 @@ async function handleApprove() {
     const result = await window.Swal.fire({
         title: 'Aprovar pedido?',
         text: `Tem certeza que deseja aprovar o pedido "${data.value.name}"?`,
+        icon: 'question',
         showCancelButton: true,
+        showCloseButton: true,
+        reverseButtons: true,
         confirmButtonText: 'Sim, aprovar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
@@ -955,6 +958,8 @@ async function handleApprove() {
         await window.Swal.fire({
             title: 'Pedido aprovado',
             text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
+            icon: 'success',
+            showCloseButton: true,
             confirmButtonText: 'Entendi!',
         });
     } catch (error) {
@@ -964,6 +969,7 @@ async function handleApprove() {
             title: 'Erro',
             text: errorMessage,
             icon: 'error',
+            showCloseButton: true,
             confirmButtonText: 'OK',
         });
     } finally {
@@ -978,19 +984,14 @@ function copyPaymentUrl() {
     }
 
     navigator.clipboard.writeText(paymentUrl.value).then(() => {
-        window.Swal.fire({
+        window.Toast.fire({
+            icon: 'success',
             title: 'Link copiado!',
-            text: 'O link de pagamento foi copiado para a área de transferência.',
-            timer: 2000,
-            showConfirmButton: false,
         });
     }).catch(() => {
-        window.Swal.fire({
-            title: 'Erro',
-            text: 'Não foi possível copiar o link.',
+        window.Toast.fire({
             icon: 'error',
-            timer: 2000,
-            showConfirmButton: false,
+            title: 'Não foi possível copiar o link.',
         });
     });
 }
@@ -1016,6 +1017,8 @@ async function handleRespondToInteraction(interaction) {
             title: 'Erro',
             text: 'Dados insuficientes para responder a interação.',
             icon: 'error',
+            showCloseButton: true,
+            confirmButtonText: 'OK',
         });
         return;
     }
@@ -1028,6 +1031,8 @@ async function handleRespondToInteraction(interaction) {
             title: 'Atenção',
             text: 'Por favor, selecione uma imagem para enviar.',
             icon: 'warning',
+            showCloseButton: true,
+            confirmButtonText: 'OK',
         });
         return;
     }
@@ -1068,11 +1073,9 @@ async function handleRespondToInteraction(interaction) {
             // Recarregar solicitações de artes
             await fetchRequestLayoutArts();
 
-            await window.Swal.fire({
-                title: 'Sucesso!',
-                text: response.data.message || 'Arte enviada com sucesso.',
+            window.Toast.fire({
                 icon: 'success',
-                confirmButtonText: 'OK',
+                title: response.data.message || 'Arte enviada com sucesso.',
             });
         } else {
             throw new Error(response.data?.message || 'Erro ao enviar arte');
@@ -1081,10 +1084,11 @@ async function handleRespondToInteraction(interaction) {
         console.error('Erro ao responder interação:', error);
         const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
 
-        await window.Swal.fire({
+        window.Swal.fire({
             title: 'Erro',
             text: errorMessage,
             icon: 'error',
+            showCloseButton: true,
             confirmButtonText: 'OK',
         });
     } finally {
