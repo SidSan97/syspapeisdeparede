@@ -1,58 +1,60 @@
 <template>
-  <div class="profile-page">
-    <div class="card bd-card border-0 mb-4">
-      <div class="card-body">
-        <h5 class="card-title">Conta</h5>
-        <p class="card-text">Edite suas informações.</p>
+    <div class="container-fluid">
+      <div class="profile-page">
+       <div class="card bd-card border-0 mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Conta</h5>
+            <p class="card-text">Edite suas informações.</p>
 
-        <div class="position-relative d-inline-block avatar-box" data-bs-toggle="modal" data-bs-target="#avatar-modal">
-          <img class="avatar avatar-xl"
-            :src="form.avatar ? $asset('storage/' + form.avatar) : $asset('assets/img/avatar.svg')" />
+            <div class="position-relative d-inline-block avatar-box" data-bs-toggle="modal" data-bs-target="#avatar-modal">
+                <img class="avatar avatar-xl"
+                :src="form.avatar ? $asset('storage/' + form.avatar) : $asset('assets/img/avatar.svg')" />
 
-          <div
-            class="position-absolute bottom-0 top-0 start-0 end-0 bg-dark rounded-circle text-white d-flex justify-content-center align-items-center avatar-mask"
-            @onclick="openAvatarModal">
-            <i class="fas fa-camera fa-lg"></i>
-          </div>
-        </div>
-
-        <form @submit.prevent="updateInfo()">
-          <input type="hidden" v-model="form.position_id">
-
-          <div class="row">
-            <div class="col-lg-5">
-              <div class="mb-3">
-                <label for="name" class="form-label">Nome</label>
-                <div class="col-sm-12">
-                  <input v-model="form.name" class="form-control" id="name" type="text"
-                    :class="{ 'is-invalid': form.errors.has('name') }" required />
-                  <has-error :form="form" field="name"></has-error>
+                <div
+                    class="position-absolute bottom-0 top-0 start-0 end-0 bg-dark rounded-circle text-white d-flex justify-content-center align-items-center avatar-mask"
+                    @onclick="openAvatarModal">
+                    <i class="fas fa-camera fa-lg"></i>
                 </div>
-              </div>
-              <div class="mb-3">
-                <label for="email" class="form-label">E-mail</label>
-                <div class="col-sm-12">
-                  <input v-model="form.email" class="form-control" id="email" type="email"
-                    :class="{ 'is-invalid': form.errors.has('email') }" required />
-                  <has-error :form="form" field="email"></has-error>
-                </div>
-              </div>
-
             </div>
-          </div>
-          <div>
-            <button class="btn btn-primary" type="submit" :disabled="loading || saving">
-              <span v-if="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              <span v-if="!saving"> Salvar as alterações </span>
-              <span v-else> Salvando... </span>
-            </button>
-          </div>
-        </form>
+
+            <form @submit.prevent="updateInfo()">
+                <input type="hidden" v-model="form.position_id">
+
+                <div class="row">
+                    <div class="col-lg-5">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome</label>
+                            <div class="col-sm-12">
+                            <input v-model="form.name" class="form-control" id="name" type="text"
+                                :class="{ 'is-invalid': form.errors.has('name') }" required />
+                            <has-error :form="form" field="name"></has-error>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            <div class="col-sm-12">
+                            <input v-model="form.email" class="form-control" id="email" type="email"
+                                :class="{ 'is-invalid': form.errors.has('email') }" required />
+                            <has-error :form="form" field="email"></has-error>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary" type="submit" :disabled="loading || saving">
+                    <span v-if="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span v-if="!saving"> Salvar as alterações </span>
+                    <span v-else> Salvando... </span>
+                    </button>
+                </div>
+            </form>
+        </div>
       </div>
-    </div>
     <ProfilePasswordCard />
+    </div>
+    <ProfileAvatarModal />
   </div>
-  <ProfileAvatarModal />
 </template>
 
 <script setup>

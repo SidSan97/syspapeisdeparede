@@ -905,21 +905,54 @@ const productModelsMap = computed(() => {
 
 const getModelById = (id) => productModelsMap.value.get(id);
 
+// Função auxiliar para normalizar valores para comparação
+function normalizeForComparison(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number') return value;
+    if (Array.isArray(value)) {
+        return value.map(item => normalizeForComparison(item));
+    }
+    if (typeof value === 'object') {
+        const normalized = {};
+        for (const key in value) {
+            normalized[key] = normalizeForComparison(value[key]);
+        }
+        return normalized;
+    }
+    return value;
+}
+
 const hasChanges = computed(() => {
     if (!originalBudget.value) return false;
 
-    const original = JSON.stringify(originalBudget.value);
-    const current = JSON.stringify({
-        name: budget.name,
-        status: budget.status,
-        rooms: budget.rooms,
-        cep: budget.cep,
-        selectedCarrier: budget.selectedCarrier,
-        paymentMethod: budget.paymentMethod,
-        installments: budget.installments
-    });
+    // Criar objetos com a mesma estrutura para comparação
+    const original = {
+        name: originalBudget.value.name || '',
+        status: originalBudget.value.status || '',
+        rooms: originalBudget.value.rooms || [],
+        cep: originalBudget.value.cep || '',
+        selectedCarrier: originalBudget.value.selectedCarrier,
+        paymentMethod: originalBudget.value.paymentMethod || '',
+        installments: originalBudget.value.installments || 1
+    };
 
-    return original !== current;
+    const current = {
+        name: budget.name || '',
+        status: budget.status || '',
+        rooms: budget.rooms || [],
+        cep: budget.cep || '',
+        selectedCarrier: budget.selectedCarrier,
+        paymentMethod: budget.paymentMethod || '',
+        installments: budget.installments || 1
+    };
+
+    // Normalizar antes de comparar
+    const normalizedOriginal = normalizeForComparison(original);
+    const normalizedCurrent = normalizeForComparison(current);
+
+    // Comparar usando JSON.stringify
+    return JSON.stringify(normalizedOriginal) !== JSON.stringify(normalizedCurrent);
 });
 
 // Normalizar dados do Order da API
@@ -1060,7 +1093,17 @@ async function loadOrder() {
             dropshippingData.value = {};
         }
 
-        originalBudget.value = JSON.parse(JSON.stringify(normalized));
+        // Criar cópia profunda do budget atual (não do normalized) para comparação
+        // Usar a mesma estrutura que será comparada no hasChanges
+        originalBudget.value = JSON.parse(JSON.stringify({
+            name: budget.name || '',
+            status: budget.status || '',
+            rooms: budget.rooms || [],
+            cep: budget.cep || '',
+            selectedCarrier: budget.selectedCarrier,
+            paymentMethod: budget.paymentMethod || '',
+            installments: budget.installments || 1
+        }));
 
         await fetchRequestLayoutArts();
 
@@ -1263,15 +1306,6 @@ const totalBudgetPrazo = computed(() => {
     return budget.total_amount_installments || calculatedTotalBudgetPrazo.value;
 });
 
-// Total baseado na forma de pagamento selecionada
-const totalBudget = computed(() => {
-    if (budget.paymentMethod === 'pix') {
-        return totalBudgetVista.value;
-    } else if (budget.paymentMethod === 'credit_card') {
-        return totalBudgetPrazo.value;
-    }
-    return 0;
-});
 
 // Methods
 function validateBudget() {
