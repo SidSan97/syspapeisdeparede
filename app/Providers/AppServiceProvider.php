@@ -12,7 +12,10 @@ use App\Models\RequestLayoutArt;
 use App\Models\RequestLayoutArtInteraction;
 use App\Observers\TenantObserver;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (Schema::hasTable('settings')) {
+            $settings = Cache::rememberForever('tiny_erp_settings', function () {
+                return DB::table('settings')->pluck('val', 'name')->toArray();
+            });
+    
+            config()->set('app.tiny_erp_settings', $settings);
+        }
+
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super admin') ? true : null;
         });

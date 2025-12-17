@@ -33,7 +33,7 @@ class TinyErpService
                 'formato' => 'json',
             ];
 
-            $gtin = env('TINY_ERP_PRODUCT_GTIN');
+            $gtin = config('app.tiny_erp_settings.gtin');
             if (!empty($gtin)) {
                 $params['gtin'] = $gtin;
             }

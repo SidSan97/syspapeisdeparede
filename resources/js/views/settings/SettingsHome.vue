@@ -66,6 +66,12 @@ const availableItems = [
     to: '/colecao-arts/catalogo',
     icon: 'photo-film',
   },
+  {
+    label: 'Tiny ERP',
+    description: 'Configure produtos associados à plataforma.',
+    to: '/settings/tiny-erp',
+    icon: 'store',
+  },
 ];
 
 const menuItems = computed(() =>

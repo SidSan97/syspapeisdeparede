@@ -15,6 +15,11 @@ export default [
         name: 'SettingsCollections',
         component: () => import('../views/settings/CollectionArts.vue'),
       },
+      {
+        path: 'tiny-erp',
+        name: 'TinyErpSettings',
+        component: () => import('../views/settings/tinyERP/TinyErp.vue'),
+      },
       ...users,
     ],
   },

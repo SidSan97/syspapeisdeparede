@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\TinyErpProductResource;
+use App\Http\Requests\TinyErp\TinyErpSettingsRequest;
 use App\Services\TinyErpService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Setting;
 
 class TinyErpController extends Controller
 {
@@ -65,5 +66,43 @@ class TinyErpController extends Controller
         Cache::put($cacheKey, $response, now()->addHours(24));
 
         return $response;
+    }
+
+    public function loadSettings()
+    {
+        $gtin = Setting::get('tiny_erp_gtin', '');
+        $cep = Setting::get('tiny_erp_cep', '');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'gtin' => $gtin,
+                'cep' => $cep,
+            ],
+            'message' => 'Configurações do Tiny ERP',
+        ], 200);
+
+    }
+
+    public function store(TinyErpSettingsRequest $request)
+    {
+        $cep = $request->input('cep');
+        if ($cep) {
+            $cep = preg_replace('/\D/', '', $cep);
+        }
+
+        Setting::set('tiny_erp_gtin', $request->input('gtin', ''), 'string');
+        Setting::set('tiny_erp_cep', $cep, 'string');
+
+        Cache::forget('tiny_erp_settings');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'gtin' => $request->input('gtin', ''),
+                'cep' => $cep,
+            ],
+            'message' => 'Configurações salvas com sucesso',
+        ], 200);
     }
 }

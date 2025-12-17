@@ -30,7 +30,7 @@ class FrenetService
         ]);
 
         $body = [
-            "SellerCEP" => env('FRENET_CEP_REMETENTE'),
+            "SellerCEP" => config('app.tiny_erp_settings.cep'),
             "RecipientCEP" => $item['cep'],
             "RecipientCountry" => "BR",
             "ShippingItemArray" => [
