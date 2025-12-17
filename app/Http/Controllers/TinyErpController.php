@@ -38,8 +38,8 @@ class TinyErpController extends Controller
             return $listPrices;
         }
 
-        $pricePaymentId = intval($listPrices['registros'][0]['registro']['id']);
-        $priceInstallmentId = intval($listPrices['registros'][1]['registro']['id']);
+        $pricePaymentId = intval($listPrices['registros'][1]['registro']['id']);
+        $priceInstallmentId = intval($listPrices['registros'][0]['registro']['id']);
 
         $listPriceExceptionsInstallment = $this->tinyErpService->getListPriceExceptions($pricePaymentId);
         $listPriceExceptions = $this->tinyErpService->getListPriceExceptions($priceInstallmentId);
@@ -95,6 +95,7 @@ class TinyErpController extends Controller
         Setting::set('tiny_erp_cep', $cep, 'string');
 
         Cache::forget('tiny_erp_settings');
+        Cache::forget('tiny_erp_all_data');
 
         return response()->json([
             'success' => true,

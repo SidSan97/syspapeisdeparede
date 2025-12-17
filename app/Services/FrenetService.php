@@ -21,7 +21,7 @@ class FrenetService
         }
 
         $client = new Client([
-            'base_uri' => 'http://api.frenet.com.br',
+            'base_uri' => env('FRENET_API_URL'),
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
@@ -30,7 +30,7 @@ class FrenetService
         ]);
 
         $body = [
-            "SellerCEP" => config('app.tiny_erp_settings.cep'),
+            "SellerCEP" => config('app.tiny_erp_settings.tiny_erp_cep'),
             "RecipientCEP" => $item['cep'],
             "RecipientCountry" => "BR",
             "ShippingItemArray" => [
