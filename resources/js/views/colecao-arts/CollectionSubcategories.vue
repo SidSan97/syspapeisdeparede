@@ -6,7 +6,7 @@
                 Adicionar
             </button>
 
-            <button class="btn btn-secondary" type="button"  @click="goToFavorites">
+            <button class="btn btn-default" type="button"  @click="goToFavorites">
                 Meus favoritos
             </button>
             <div class="dropdown" v-if="isAdmin">
@@ -14,8 +14,16 @@
                     <i class="fa fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#">Opção 1</a></li>
-                    <li><a class="dropdown-item" href="#">Opção 2</a></li>
+                    <li>
+                        <RouterLink to="/settings/colecoes" class="dropdown-item">
+                            Administração de Coleções
+                        </RouterLink>
+                    </li>
+                    <li>
+                        <RouterLink to="/colecao-arts/catalogo" class="dropdown-item">
+                            Administração de Catálogos
+                        </RouterLink>
+                    </li>
                 </ul>
             </div>
         </template>
@@ -192,7 +200,7 @@
 
 <script setup>
 import { onMounted, ref, useTemplateRef, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
