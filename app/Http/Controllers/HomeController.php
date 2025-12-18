@@ -30,6 +30,7 @@ class HomeController extends Controller
             'appName' => config('app.name'),
             'user' => $user,
             'appUrl' => config('app.url'),
+            'baseUrl' => url(''),
             'roles' => $user ? $user->getRoleNames()->toArray() : [],
             'permissions' => $user ? $user->getAllPermissions()->pluck('name')->toArray() : [],
             'direct_permissions' => $user ? $user->getDirectPermissions()->pluck('name')->toArray() : [],
