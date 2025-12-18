@@ -34,7 +34,7 @@ const toggleSidebar = () => {
 provide('toggleSidebar', toggleSidebar);
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
     main {
         padding-top: 15px;
         margin-left: 250px;

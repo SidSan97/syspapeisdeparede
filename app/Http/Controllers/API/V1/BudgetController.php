@@ -460,10 +460,17 @@ class BudgetController extends Controller
                 'product'
             );
 
+            $order =$this->orderRepository->find($orderBudget->order_id);
+
             if($validated['production_percentage'] == 100) {
                 $sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
-                
+
                 if($sendObject['status'] == 'OK' && $orderBudget->tinyErp_order_id !== null) {
+                    $this->tinyErpService->changeExpedition(
+                        $sendObject['objetos'][0]['objeto']['idExpedicao'],
+                        $order->toArray()
+                    );
+
                     $this->orderBudgetRepository->updateTinyErpOrderExpeditionId(
                         $orderBudgetId,
                         intval($sendObject['objetos'][0]['objeto']['idExpedicao'])

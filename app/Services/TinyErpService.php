@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class TinyErpService
 {
@@ -248,6 +249,38 @@ class TinyErpService
         }
     }
 
+    public function changeExpedition(string $expeditionId, array $orderData)
+    {
+        $tinyErpData = Cache::get('tiny_erp_all_data');
+
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'expedicao' => $this->makeExpeditionData($orderData, $tinyErpData, $expeditionId),
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.alterar.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao alterar expedição: ' . $e->getMessage());
+        }
+        catch (RequestException $e) {
+            Log::error('Erro ao alterar expedição: ' . $e->getMessage());
+        }
+        catch (GuzzleException $e) {
+            Log::error('Erro ao alterar expedição: ' . $e->getMessage());
+        }
+    }
+
     public function makeOrder(array $order, array  $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
@@ -335,6 +368,33 @@ class TinyErpService
         ];
 
         return json_encode($conta);
+    }
+
+    public function makeExpeditionData(array $orderData, array $tinyErpData, string $expeditionId)
+    {
+        $expeditionData = [
+            'expedicao' => [
+                'id' => $expeditionId,
+                'formaEnvio' => $this->getShippingCodeByOrigin($orderData['selected_carrier_name']),
+                'qtdVolumes' => 1,
+                'pesoBruto' => $tinyErpData['peso_bruto'],
+                'possuiValorDeclarado' => 'N',
+                'valorDeclarado' => 0,
+                'possuiAR' => 'N',
+                'embalagem' => [
+                    'tipo' => '2',
+                    'altura' => $tinyErpData['alturaEmbalagem'],
+                    'largura' => $tinyErpData['larguraEmbalagem'],
+                    'comprimento' => $tinyErpData['comprimentoEmbalagem'],
+                    'diametro' => $tinyErpData['diametroEmbalagem'],
+                ],
+                'transportadora' => [
+                    'nome' => trim(explode(' - ', $orderData['selected_carrier_name'])[0]),
+                ],
+            ],
+        ];
+
+        return json_encode($expeditionData);
     }
 
     /**

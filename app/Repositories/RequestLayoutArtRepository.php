@@ -26,8 +26,8 @@ class RequestLayoutArtRepository
 
             $path = '';
             if ($file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('request_layouts_art', $filename, 'public');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('request_layouts_art', $filename, 'public');
             }
 
             $requestLayoutArt = RequestLayoutArt::create([
