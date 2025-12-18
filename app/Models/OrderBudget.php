@@ -24,6 +24,7 @@ class OrderBudget extends Model
         'production_date',
         'production_percentage',
         'tinyErp_order_id',
+        'tinyErp_order_expedition_id',
     ];
 
     protected $casts = [
@@ -35,6 +36,7 @@ class OrderBudget extends Model
         'production_date' => 'date',
         'production_percentage' => 'decimal:1',
         'tinyErp_order_id' => 'string',
+        'tinyErp_order_expedition_id' => 'integer',
     ];
 
     public function order(): BelongsTo

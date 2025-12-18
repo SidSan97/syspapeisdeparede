@@ -101,6 +101,7 @@ class LayoutService
                 'production_column_names_id' => $orderBudget->production_column_names_id,
                 'production_date' => $orderBudget->production_date,
                 'production_percentage' => $orderBudget->production_percentage,
+                'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
                 'description' => $orderBudget->description,
                 'comments' => $comments,
                 'members' => $members,

@@ -133,6 +133,16 @@ class OrderBudgetRepository {
         return $orderBudget->fresh();
     }
 
+    public function updateTinyErpOrderExpeditionId(int $orderBudgetId, int $tinyErpOrderExpeditionId)
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+        $orderBudget->update([
+            'tinyErp_order_expedition_id' => $tinyErpOrderExpeditionId,
+        ]);
+
+        return $orderBudget->fresh();
+    }
+
     public function getReadyForExpedition()
     {
         return $this->orderBudget::where('production_percentage', 100)
@@ -147,6 +157,8 @@ class OrderBudgetRepository {
                     'production_percentage' => $orderBudget->production_percentage,
                     'production_date' => $orderBudget->production_date,
                     'created_at' => $orderBudget->created_at,
+                    'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
+                    'tinyErp_order_expedition_id' => $orderBudget->tinyErp_expedition_id,
                     'order' => $orderBudget->order ? [
                         'id' => $orderBudget->order->id,
                         'name' => $orderBudget->order->name,

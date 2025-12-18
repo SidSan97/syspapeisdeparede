@@ -217,6 +217,37 @@ class TinyErpService
         }
     }
 
+    public function sendOrderToExpedition(string $tinyErp_order_id, string $typeObject)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'idObjetos' => $tinyErp_order_id,
+                'tipoObjetos' => $typeObject,
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.liberar.objetos.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar objeto a expedição: ' . $e->getMessage());
+        }
+        catch (RequestException $e) {
+            Log::error('Erro ao enviar objeto a expedição: ' . $e->getMessage());
+        }
+        catch (GuzzleException $e) {
+            Log::error('Erro ao enviar objeto a expedição: ' . $e->getMessage());
+        }
+    }
+
     public function makeOrder(array $order, array  $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
@@ -246,7 +277,7 @@ class TinyErpService
                     [
                         'item' => [
                             'codigo' => $order['id'],
-                            'descricao' => $order['comment_referring_model'],
+                            'descricao' => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
                             'unidade' => 'UN',
                             'quantidade' => 1,
                             'valor_unitario' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
@@ -274,7 +305,7 @@ class TinyErpService
 
     public function makeAccountPayable(array $order, array $dropshipping)
     {
-        $currentDate = Carbon::now()->format('d/m/Y');
+        $currentDate = Carbon::now();
         $conta = [
             'conta' => [
                 'cliente' => [
@@ -293,8 +324,8 @@ class TinyErpService
                     'uf' => $dropshipping['uf'],
                     'fone' => $dropshipping['phone'] ?? '',
                 ],
-                "data" => $currentDate,
-                "vencimento" => Carbon::parse($currentDate)->addDays(10)->format('d/m/Y'),
+                "data" => $currentDate->format('d/m/Y'),
+                "vencimento" => $currentDate->copy()->addDays(3)->format('d/m/Y'),
                 "valor" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
                 "nro_documento" => "",
                 "categoria" => "",
