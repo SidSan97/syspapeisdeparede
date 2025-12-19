@@ -75,4 +75,12 @@ class OrderBudget extends Model
     {
         return $this->hasMany(LayoutCardHistory::class, 'card_id');
     }
+
+    /**
+     * Get the production reports for this order budget.
+     */
+    public function productionReports()
+    {
+        return $this->hasMany(ProductionReport::class);
+    }
 }

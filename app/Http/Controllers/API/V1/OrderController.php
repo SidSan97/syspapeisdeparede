@@ -292,6 +292,10 @@ class OrderController extends Controller
                 'product'
             );
 
+            // Gerar relatório de produção
+            $productionReportService = app(\App\Services\ProductionReportService::class);
+            $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
+
             $sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
                 
             if($sendObject['status'] == 'OK' && $orderBudget->tinyErp_order_id !== null) {
@@ -337,6 +341,14 @@ class OrderController extends Controller
             );
 
             if($validated['production_percentage'] == 100) {
+                // Gerar relatório de produção quando atinge 100%
+                $productionReportService = app(\App\Services\ProductionReportService::class);
+                $productionReportService->generateProductionPercentageReport(
+                    $orderBudget,
+                    $user,
+                    $validated['production_percentage']
+                );
+
                 $sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
                 
                 if($sendObject['status'] == 'OK' && $orderBudget->tinyErp_order_id !== null) {

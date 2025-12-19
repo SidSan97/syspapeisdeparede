@@ -159,7 +159,7 @@ class OrderBudgetRepository {
                     'production_date' => $orderBudget->production_date,
                     'created_at' => $orderBudget->created_at,
                     'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
-                    'tinyErp_order_expedition_id' => $orderBudget->tinyErp_expedition_id,
+                    'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
                     'order' => $orderBudget->order ? [
                         'id' => $orderBudget->order->id,
                         'name' => $orderBudget->order->name,
