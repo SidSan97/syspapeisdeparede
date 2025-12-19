@@ -23,6 +23,7 @@ return new class extends Migration
             $table->date('production_date')->nullable();
             $table->decimal('production_percentage', 5, 1)->default(0);
             $table->string('status', 50);
+            $table->integer('order_index');
             $table->string('tinyErp_order_id')->nullable();
             $table->integer('tinyErp_order_expedition_id')->nullable();
             $table->timestamps();

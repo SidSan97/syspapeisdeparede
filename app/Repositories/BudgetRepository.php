@@ -46,6 +46,11 @@ class BudgetRepository {
         return $query->get();
     }
 
+    public function getAllById(int $id)
+    {
+        return Budget::with('rooms.walls.collectionModel')->where('id', $id)->get();
+    }
+
     public function create(array $data)
     {
         $rooms = $data['rooms'];

@@ -300,6 +300,7 @@ class BudgetController extends Controller
         // Criar um OrderBudget para cada parede do orçamento usando dados do Order
         $orderBudgets = [];
         $tenantId = $order->tenant_id ?? $budget->tenant_id;
+        $orderIdx = 1;
 
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
@@ -310,6 +311,7 @@ class BudgetController extends Controller
                     'status' => 'Aprovar Layout',
                     'layout_column_names_id' => $firstColumn->id,
                     'description' => $order->comment_referring_model ?? null,
+                    'order_index' => $orderIdx++,
                 ]);
             }
         }
