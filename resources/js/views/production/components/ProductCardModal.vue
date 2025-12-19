@@ -1555,7 +1555,7 @@
     markingAsProduced.value = true;
 
     try {
-      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/mark-as-produced`);
+      const response = await axios.post(`v1/orders/order-budgets/${props.card.id}/mark-as-produced`);
 
       // Atualizar o card localmente
       if (props.card && response.data?.data) {
@@ -1621,7 +1621,7 @@
     isSavingProductionPercentage.value = true;
 
     try {
-      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/production-percentage`, {
+      const response = await axios.put(`v1/orders/order-budgets/${props.card.id}/production-percentage`, {
         production_percentage: percentage,
       });
 

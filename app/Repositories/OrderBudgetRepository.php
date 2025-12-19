@@ -106,6 +106,7 @@ class OrderBudgetRepository {
         $orderBudget->update([
             'production_date' => now()->toDateString(),
             'production_column_names_id' => 2,
+            'production_percentage' => 100,
         ]);
 
         if ($user) {
