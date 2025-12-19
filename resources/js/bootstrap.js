@@ -23,7 +23,9 @@ window.axios.interceptors.response.use(
     },
     function (error) {
         if ([401, 419].includes(error.response.status)) {
-            window.location.href = '/login'
+            // Usar baseUrl do LaravelApp para considerar subdiretórios
+            const baseUrl = window.LaravelApp?.baseUrl || '';
+            window.location.href = `${baseUrl}/login`
         }
 
         return Promise.reject(error)
