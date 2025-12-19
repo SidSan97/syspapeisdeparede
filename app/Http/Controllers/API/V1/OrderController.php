@@ -310,11 +310,13 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Pedido não encontrado',
+                'error' => $e->getMessage(),
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar data de produção: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -354,11 +356,13 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Pedido não encontrado',
+                'error' => $e->getMessage(),
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar porcentagem de produção: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -378,6 +382,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar layouts de produção: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -410,6 +415,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao cancelar pedido',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
