@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\BudgetRoom;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use App\Services\ExpeditionService;
 use App\Services\GeneratePdfService;
 use Illuminate\Support\Facades\Log;
@@ -18,12 +15,14 @@ class ExpeditionController extends Controller
     protected $OrderRepository;
     protected $expeditionService;
     protected $orderBudgetRepository;
+    protected $orderRepository;
     protected $generatePdfService;
 
     public function __construct(
         OrderRepository $OrderRepository,
         ExpeditionService $expeditionService,
         OrderBudgetRepository $orderBudgetRepository,
+        OrderRepository $orderRepository,
         GeneratePdfService $generatePdfService
     )
     {
@@ -31,6 +30,7 @@ class ExpeditionController extends Controller
         $this->OrderRepository = $OrderRepository;
         $this->expeditionService = $expeditionService;
         $this->orderBudgetRepository = $orderBudgetRepository;
+        $this->orderRepository = $orderRepository;
         $this->generatePdfService = $generatePdfService;
     }
 
@@ -44,8 +44,9 @@ class ExpeditionController extends Controller
     {
         try {
             $orderBudgets = $this->orderBudgetRepository->show($orderBudgetId);
+            $order = $this->orderRepository->find($orderBudgets->order_id);
 
-            $label = $this->expeditionService->generateLabelSeparation($orderBudgets);
+            $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 
             return response()->json([
                 'success' => true,

@@ -2,11 +2,15 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Auth;
+
 class ExpeditionService
 {
-    public function generateLabelSeparation(object $orderBudgets): array
+    public function generateLabelSeparation(object $orderBudgets, object $order): array
     {
         $label = [];
+        $label['carrier_name'] = null;
+        $label['packer'] = null;
 
         $maxIndex = $orderBudgets->max('order_index');
         $formattedOrderId = str_pad($orderBudgets->order_id, 5, '0', STR_PAD_LEFT);
@@ -18,6 +22,8 @@ class ExpeditionService
             $label['status'] = "complemento incompleto";
         } else {
             $label['status'] = "complemento completo";
+            $label['carrier_name'] = trim(explode(' - ', $order->selected_carrier_name)[0]);
+            $label['packer'] = Auth::user()->name;
         }
 
         return $label;
