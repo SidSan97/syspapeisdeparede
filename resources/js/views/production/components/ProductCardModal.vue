@@ -308,10 +308,18 @@
                               <span class="layout-modal-continuation-value">{{ formatNumber(continuation.height) }} m</span>
                             </div>
                             <div class="layout-modal-continuation-detail">
-                              <span class="layout-modal-continuation-label">Área:</span>
+                              <span class="layout-modal-continuation-label">Metro:</span>
                               <span class="layout-modal-continuation-value">
-                                {{ formatNumber((Number(continuation.width) || 0) * (Number(continuation.height) || 0)) }} m²
+                                {{ formatNumber(getWallArea(continuation)) }} m
                               </span>
+                            </div>
+                            <div class="layout-modal-continuation-detail">
+                              <span class="layout-modal-continuation-label">Quantidade de Faixas:</span>
+                              <span class="layout-modal-continuation-value">{{ calculateStrips(continuation) }}</span>
+                            </div>
+                            <div class="layout-modal-continuation-detail">
+                              <span class="layout-modal-continuation-label">Tamanho da Faixa:</span>
+                              <span class="layout-modal-continuation-value">{{ formatNumber(calculateStripHeight(continuation)) }} m</span>
                             </div>
                           </div>
                         </div>
@@ -657,6 +665,7 @@
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
+  import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
   import { USER_TYPES } from '@/constants/userTypes';
 
   const props = defineProps({
@@ -2502,7 +2511,6 @@
 
   .layout-modal-continuation-label {
     font-size: 0.75rem;
-    color: var(--bs-secondary);
   }
 
   .layout-modal-continuation-value {

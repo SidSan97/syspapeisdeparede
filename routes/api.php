@@ -6,6 +6,7 @@ use App\Http\Controllers\API\V1\{
     CollectionArtSubcategoryController,
     CollectionImageController,
     CollectionModelController,
+    ExpeditionController,
     LayoutColumnNameController,
     MyFavoriteCollectionImageController,
     OrderController,
@@ -152,6 +153,10 @@ Route::prefix('v1')->group(function () {
     Route::post('production-column-names', [ProductionColumnNameController::class, 'store'])->middleware('auth:api');
     Route::put('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'update'])->middleware('auth:api');
     Route::delete('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'destroy'])->middleware('auth:api');
+
+    //Expedição
+    Route::get('generate-separation-label/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabel'])->middleware('auth:api');
+    Route::get('generate-separation-label-pdf/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabelPdf'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');

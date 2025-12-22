@@ -71,6 +71,30 @@ class GeneratePdfService
         return $pdf->download($filename);
     }
 
+    /**
+     * Gera PDF da etiqueta de separação
+     *
+     * @param  string  $title
+     * @param  string  $status
+     * @return Response
+     */
+    public function generateSeparationLabelPdf(string $title, string $status): Response
+    {
+        $filename = 'etiqueta-separacao.pdf';
+
+        $pdf = Pdf::loadView('pdf.expedition.separation-label', [
+            'title' => $title,
+            'status' => strtoupper($status),
+        ])->setPaper('a4', 'portrait');
+
+        $domPdf = $pdf->getDomPDF();
+        $domPdf->set_option('isHtml5ParserEnabled', true);
+        $domPdf->set_option('isPhpEnabled', true);
+        $domPdf->set_option('defaultFont', 'DejaVu Sans');
+
+        return $pdf->stream($filename);
+    }
+
     protected function formatMoney(float $value): string
     {
         return 'R$ ' . number_format($value, 2, ',', '.');

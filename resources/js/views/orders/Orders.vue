@@ -47,6 +47,7 @@
                       :class="{
                         'bg-warning text-dark': pedido.status === 'Pendente de Revisão',
                         'bg-success': pedido.status === 'Aprovado',
+                        'bg-info': pedido.status === 'Em aberto',
                         'bg-danger': isCancelled(pedido),
                       }"
                     >

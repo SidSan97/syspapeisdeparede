@@ -30,6 +30,11 @@ class OrderRepository
         return $query->get();
     }
 
+    public function getAllById(int $id)
+    {
+        return Order::with('rooms.walls.collectionModel')->where('id', $id)->get();
+    }
+
     public function getLayoutsForApprove()
     {
         return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])

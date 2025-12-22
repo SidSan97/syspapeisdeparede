@@ -77,6 +77,15 @@
                             Ver detalhes
                           </button>
                         </li>
+                        <li>
+                          <button
+                            class="dropdown-item"
+                            type="button"
+                            @click="generateSeparationLabel(expedition)"
+                          >
+                            Gerar etiqueta de separação
+                          </button>
+                        </li>
                       </ul>
                     </div>
                   </td>
@@ -150,6 +159,66 @@ async function fetchExpeditions() {
 function viewDetails(expedition) {
   // TODO: Implementar ação de ver detalhes
   console.log('Ver detalhes da expedição:', expedition);
+}
+
+async function generateSeparationLabel(expedition) {
+    try {
+        loading.value = true;
+        const { data } = await axios.get(`v1/generate-separation-label/${expedition.id}`);
+
+        if (data.success) {
+            const result = await window.Swal.fire({
+                title: 'Etiqueta gerada com sucesso!',
+                text: 'Deseja visualizar a etiqueta agora?',
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'Visualizar etiqueta',
+                cancelButtonText: 'Fechar',
+            });
+
+            if (result.isConfirmed) {
+                viewSeparationLabelPdf(expedition.id);
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao gerar etiqueta de separação:', error);
+        window.Swal.fire({
+            title: 'Erro ao gerar etiqueta de separação!',
+            text: 'Não foi possível gerar a etiqueta de separação. Tente novamente mais tarde.',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function viewSeparationLabelPdf(orderBudgetId) {
+    try {
+        loading.value = true;
+        const response = await axios.get(`v1/generate-separation-label-pdf/${orderBudgetId}`, {
+            responseType: 'blob',
+        });
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+
+        // Limpar a URL após um tempo para liberar memória
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
+    } catch (error) {
+        console.error('Erro ao visualizar PDF da etiqueta:', error);
+        window.Swal.fire({
+            title: 'Erro ao visualizar etiqueta!',
+            text: 'Não foi possível abrir a etiqueta. Tente novamente mais tarde.',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
 }
 
 onMounted(() => {

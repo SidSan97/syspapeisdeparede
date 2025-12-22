@@ -15,6 +15,11 @@ class OrderBudgetRepository {
         $this->historyService = $historyService;
     }
 
+    public function show(int $id)
+    {
+        return $this->orderBudget::findOrFail($id);
+    }
+
     public function editLayoutColumn(int $orderBudgetId, int $columnId, $user = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
@@ -157,6 +162,7 @@ class OrderBudgetRepository {
                     'description' => $orderBudget->description,
                     'production_percentage' => $orderBudget->production_percentage,
                     'production_date' => $orderBudget->production_date,
+                    'order_index' => $orderBudget->order_index,
                     'created_at' => $orderBudget->created_at,
                     'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
                     'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,

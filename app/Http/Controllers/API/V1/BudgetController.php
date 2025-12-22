@@ -9,6 +9,7 @@ use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
+use App\Models\BudgetRoom;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
@@ -265,6 +266,11 @@ class BudgetController extends Controller
             if($budget->dropshipping_budget === 1) {
                 $this->dropshippingRepository->updateOrderId($budget->id, $order->id);
             }
+
+            // Atualizar order_id em todas as rooms do budget
+            $budget->rooms()->update([
+                'order_id' => $order->id,
+            ]);
 
             // Criar OrderBudgets usando o Order criado
             $this->createLayoutOrder($order, $budget);
