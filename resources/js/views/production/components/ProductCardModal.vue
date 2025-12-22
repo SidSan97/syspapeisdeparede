@@ -321,6 +321,10 @@
                               <span class="layout-modal-continuation-label">Tamanho da Faixa:</span>
                               <span class="layout-modal-continuation-value">{{ formatNumber(calculateStripHeight(continuation)) }} m</span>
                             </div>
+                            <div class="layout-modal-continuation-detail">
+                                <span class="layout-modal-continuation-label">Sentido:</span>
+                                <span class="layout-modal-continuation-value">{{ getDirection(continuation) }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -964,6 +968,16 @@
       isSavingDescription.value = false;
     }
   }
+
+    function getDirection(continuation) {
+        if (continuation.direction === 'left-to-right') {
+            return 'Esquerda para direita';
+        } else if (continuation.direction === 'right-to-left') {
+            return 'Direita para esquerda';
+        }
+
+        return '';
+    }
 
   function handleClose() {
     emit('close');

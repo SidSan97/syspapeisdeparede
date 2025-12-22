@@ -164,7 +164,7 @@
 
                                                             <!-- Cálculos da parede -->
                                                             <div v-if="wall.total_area" class="alert alert-success mb-0">
-                                                                <strong>Área:</strong> {{ formatNumber(wall.total_area) }} m²
+                                                                <strong>Metros:</strong> {{ formatNumber(wall.total_area) }} m
                                                             </div>
                                                         </div>
                                                     </div>

@@ -274,6 +274,10 @@
                               <span class="layout-modal-continuation-label">Tamanho da Faixa:</span>
                               <span class="layout-modal-continuation-value">{{ formatNumber(calculateStripHeight(continuation)) }} m</span>
                             </div>
+                            <div class="layout-modal-continuation-detail">
+                                <span class="layout-modal-continuation-label">Sentido:</span>
+                                <span class="layout-modal-continuation-value">{{ getDirection(continuation) }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -947,6 +951,16 @@
     }
     return '';
   }
+
+    function getDirection(continuation) {
+        if (continuation.direction === 'left-to-right') {
+            return 'Esquerda para direita';
+        } else if (continuation.direction === 'right-to-left') {
+            return 'Direita para esquerda';
+        }
+
+        return '';
+    }
 
   function getAttachmentName(file, index = 0) {
     return file?.name || file?.original_name || file?.file_name || `Arquivo ${index + 1}`;
@@ -1670,7 +1684,7 @@
     } finally {
       loadingRequestArts.value = false;
     }
-  }
+}
 
   // Inicializar descrição quando o card mudar
   watch(() => props.card, (newCard) => {
