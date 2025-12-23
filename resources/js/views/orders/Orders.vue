@@ -1,58 +1,160 @@
 <template>
   <section class="content">
     <Page title="Pedidos">
-      <div class="card">
-        <div class="card-body p-0">
-          <div v-if="loading" class="p-4 text-center text-muted">
+      <div class="border-0 shadow-sm">
+        <form class="g-3 align-items-center mb-4" role="search">
+          <label for="search-query" class="sr-only">Pesquisar pedido</label>
+
+          <div class="d-flex">
+            <div class="me-3">
+                <div class="input-group input-group-prefix">
+                    <input id="search-query" type="text" class="form-control"
+                        placeholder="Pesquisar pedido" v-model="searchQuery">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"></i>
+                    </span>
+                </div>
+            </div>
+
+          <div class="">
+            <div class="dropdown">
+              <button
+                class="btn btn-outline-default dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                :value="statusFilter"
+              >
+                {{ currentStatusLabel }}
+              </button>
+
+              <ul class="dropdown-menu">
+                <li>
+                  <button
+                    class="dropdown-item"
+                    type="button"
+                    @click="setStatusFilter('all')"
+                  >
+                    Todos
+                  </button>
+                </li>
+
+                <li v-for="option in statusOptions" :key="option.value">
+                  <button
+                      class="dropdown-item"
+                      type="button"
+                      :class="{ active: statusFilter === option.value }"
+                      @click="setStatusFilter(option.value)"
+                    >
+                      {{ option.label }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+          </div>
+
+          <div v-if="isAdmin" class="row buttons-filters mt-2">
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="dateFrom" class="form-label small mb-1">Data Inicial</label>
+              <input
+                id="dateFrom"
+                v-model="dateFrom"
+                v-mask="'##/##/####'"
+                type="text"
+                class="form-control"
+                placeholder="DD/MM/AAAA"
+                :disabled="loading"
+                maxlength="10"
+              />
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="dateTo" class="form-label small mb-1">Data Final</label>
+              <input
+                id="dateTo"
+                v-model="dateTo"
+                v-mask="'##/##/####'"
+                type="text"
+                class="form-control"
+                placeholder="DD/MM/AAAA"
+                :disabled="loading"
+                maxlength="10"
+              />
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-2 mb-lg-0">
+              <label for="userFilter" class="form-label small mb-1">Revendedor</label>
+              <select
+                id="userFilter"
+                v-model="selectedUserId"
+                class="form-control"
+                :disabled="loading || loadingUsers"
+              >
+                <option :value="null">Todos os revendedores</option>
+                <option v-for="user in users" :key="user.id" :value="user.id">
+                  {{ user.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-lg-3 col-md-6 d-flex align-items-end mb-2 mb-lg-0">
+              <button
+                type="button"
+                class="btn btn-outline-default"
+                @click="clearFilters"
+                :disabled="loading"
+              >
+                <i class="fa fa-times me-2"></i>
+                Limpar Filtros
+              </button>
+            </div>
+            </div>
+        </form>
+
+        <div class="card-body p-0 mt-4">
+          <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
             Carregando pedidos...
           </div>
 
           <EmptyState
-            v-else-if="pedidos.length === 0"
+            v-else-if="filteredPedidos.length === 0"
             heading="Nenhum pedido encontrado"
             icon="box"
             class="p-5"
           >
-            Não há pedidos pendentes de revisão ou aprovados no momento.
+            Ajuste os filtros para encontrar pedidos.
           </EmptyState>
 
           <div v-else class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
+              <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th class="text-end">Valor Total</th>
-                  <th>Prazo de Entrega</th>
-                  <th>Status</th>
-                  <th>Ações</th>
+                  <th scope="col" style="width: 64px;">Número</th>
+                  <th scope="col" style="width: 64px;">Data</th>
+                  <th class="text-nowrap" scope="col">Pedido</th>
+                  <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                  <th class="text-nowrap" scope="col">Situação</th>
+                  <th class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="pedido in pedidos" :key="pedido.id">
-                  <td>
+                <tr v-for="pedido in filteredPedidos" :key="pedido.id">
+                  <td class="fw-semibold">{{ pedido.id }}</td>
+                  <td>{{ formatDate(pedido.created_at || pedido.createdAt) }}</td>
+                  <td style="min-width: 240px;">
                     <button
-                      class="btn btn-link text-start text-primary p-0 text-decoration-none fw-semibold"
+                      class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
                       @click="openDetailsModal(pedido)"
                     >
                       {{ pedido.name }}
                     </button>
                   </td>
-                  <td class="text-end">
+                  <td class="">
                     <span class="fw-semibold">{{ formatCurrency(pedido.total_amount) }}</span>
                   </td>
-                  <td>{{ formatDeliveryTime(pedido.delivery_time) }}</td>
                   <td>
-                    <span
-                      class="badge"
-                      :class="{
-                        'bg-warning text-dark': pedido.status === 'Pendente de Revisão',
-                        'bg-success': pedido.status === 'Aprovado',
-                        'bg-info': pedido.status === 'Em aberto',
-                        'bg-danger': isCancelled(pedido),
-                      }"
-                    >
-                      {{ pedido.status }}
-                    </span>
+                    <span class="status-dot" :class="`status-dot-${getStatusVariant(pedido.status)}`"></span>
+                    {{ formatStatusLabel(pedido.status) }}
                   </td>
                   <td>
                     <div class="dropdown">
@@ -158,11 +260,20 @@ import PedidoDetailsModal from './components/OrdersDetailsModal.vue';
 import OrdersRegisterPayment from './components/OrdersRegisterPayment.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import { USER_TYPES } from '@/constants/userTypes';
+import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
 
 const router = useRouter();
 const auth = useAuthStore();
 const pedidos = ref([]);
-const loading = ref(false);
+const loading = ref(true);
+const searchQuery = ref('');
+const statusFilter = ref('all');
+const dateFrom = ref('');
+const dateTo = ref('');
+const selectedUserId = ref(null);
+const users = ref([]);
+const loadingUsers = ref(false);
 const showDetailsModal = ref(false);
 const selectedPedido = ref(null);
 const showPaymentModal = ref(false);
@@ -172,7 +283,7 @@ const pedidoToCancel = ref(null);
 const cancelling = ref(false);
 const cancelError = ref('');
 
-import { USER_TYPES } from '@/constants/userTypes';
+const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 
 const canRegisterPayment = computed(() => {
   return auth.user?.user_type_id === USER_TYPES.ADMIN;
@@ -199,6 +310,85 @@ function formatDeliveryTime(days) {
 
   return `${days} ${days === 1 ? 'dia' : 'dias'}`;
 }
+
+const statusOptions = [
+  { label: 'Em aberto', value: 'em aberto' },
+  { label: 'Aprovado', value: 'aprovado' },
+  { label: 'Aprovar Layout', value: 'aprovar layout' },
+  { label: 'Pendente de Revisão', value: 'pendente de revisão' },
+  { label: 'Cancelado', value: 'cancelado' },
+];
+
+const filteredPedidos = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  const status = statusFilter.value;
+
+  return pedidos.value.filter((pedido) => {
+    // Filtro de busca
+    const matchesQuery = !query
+      || pedido.name?.toLowerCase().includes(query)
+      || String(pedido.id).includes(query);
+
+    // Filtro de status
+    const normalizedStatus = (pedido.status || '').toString().toLowerCase();
+    const matchesStatus = status === 'all' || normalizedStatus === status;
+
+    // Filtro de período (apenas para admin)
+    let matchesPeriod = true;
+    if (isAdmin.value && (dateFrom.value || dateTo.value)) {
+      const pedidoDateStr = pedido.created_at || pedido.createdAt;
+      if (!pedidoDateStr) {
+        matchesPeriod = false;
+      } else {
+        const pedidoDate = new Date(pedidoDateStr);
+        if (Number.isNaN(pedidoDate.getTime())) {
+          matchesPeriod = false;
+        } else {
+          const pedidoDateOnly = new Date(pedidoDate.getFullYear(), pedidoDate.getMonth(), pedidoDate.getDate());
+
+          if (dateFrom.value && dateFrom.value.length === 10) {
+            const fromDate = parseDateFromMask(dateFrom.value);
+            if (fromDate && !Number.isNaN(fromDate.getTime())) {
+              fromDate.setHours(0, 0, 0, 0);
+              if (pedidoDateOnly < fromDate) {
+                matchesPeriod = false;
+              }
+            }
+          }
+
+          if (dateTo.value && dateTo.value.length === 10 && matchesPeriod) {
+            const toDate = parseDateFromMask(dateTo.value);
+            if (toDate && !Number.isNaN(toDate.getTime())) {
+              toDate.setHours(23, 59, 59, 999);
+              const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+              if (pedidoDateOnly > toDateOnly) {
+                matchesPeriod = false;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Filtro de revendedor (apenas para admin)
+    let matchesUser = true;
+    if (isAdmin.value && selectedUserId.value !== null) {
+      const pedidoUserId = pedido.user_id || pedido.userId || pedido.user?.id;
+      matchesUser = Number(pedidoUserId) === Number(selectedUserId.value);
+    }
+
+    return matchesQuery && matchesStatus && matchesPeriod && matchesUser;
+  });
+});
+
+const currentStatusLabel = computed(() => {
+  if (statusFilter.value === 'all') {
+    return 'Situação';
+  }
+
+  const match = statusOptions.find((option) => option.value === statusFilter.value);
+  return match ? match.label : 'Situação';
+});
 
 function normalizePedido(pedido) {
   if (!pedido) {
@@ -233,6 +423,66 @@ async function fetchPedidos() {
   } finally {
     loading.value = false;
   }
+}
+
+function formatStatusLabel(status) {
+  if (!status) {
+    return '—';
+  }
+  const normalized = status.toString().toLowerCase();
+  const match = statusOptions.find((option) => option.value === normalized);
+  if (match) {
+    return match.label;
+  }
+  return status;
+}
+
+function getStatusVariant(status) {
+  const normalized = (status || '').toString().toLowerCase();
+  if (normalized.includes('cancel')) {
+    return 'danger';
+  }
+  if (normalized.includes('aprov')) {
+    return 'success';
+  }
+  return 'info';
+}
+
+function setStatusFilter(value) {
+  statusFilter.value = value;
+}
+
+async function fetchUsers() {
+  if (!isAdmin.value) {
+    return;
+  }
+
+  try {
+    loadingUsers.value = true;
+    const response = await axios.get('v1/users/search');
+
+    if (response.data?.success && response.data?.data) {
+      // Se a resposta estiver paginada, pegar o array de dados
+      if (response.data.data.data && Array.isArray(response.data.data.data)) {
+        users.value = response.data.data.data;
+      } else if (Array.isArray(response.data.data)) {
+        users.value = response.data.data;
+      } else {
+        users.value = [];
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    users.value = [];
+  } finally {
+    loadingUsers.value = false;
+  }
+}
+
+function clearFilters() {
+  dateFrom.value = '';
+  dateTo.value = '';
+  selectedUserId.value = null;
 }
 
 function openDetailsModal(pedido) {
@@ -322,11 +572,57 @@ async function confirmCancelPedido() {
 
 onMounted(() => {
   fetchPedidos();
+  if (isAdmin.value) {
+    fetchUsers();
+  }
   document.title = 'Pedidos';
 });
 </script>
 
 <style scoped>
+.search-input .form-control,
+.search-input .input-group-text {
+  border-radius: 0.375rem;
+  padding-block: 0.85rem;
+}
+
+.search-input .input-group-text {
+  border-right: none;
+}
+
+.search-input .form-control {
+  border-left: none;
+}
+
+.search-input .form-control:focus {
+  border-color: var(--bs-secondary);
+  box-shadow: none;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-success {
+  background-color: var(--bs-success);
+}
+
+.status-dot-danger {
+  background-color: var(--bs-danger);
+}
+
+.status-dot-info {
+  background-color: var(--bs-info);
+}
+
+.input-group-text, .buttons-filters button, input {
+    height: 36px !important;
+}
+
 .btn-link {
   color: var(--bs-body-color);
 }

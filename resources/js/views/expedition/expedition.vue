@@ -44,7 +44,7 @@
                   <th scope="col" style="width: 64px;">ID</th>
                   <th scope="col" style="width: 64px;">Data</th>
                   <th class="text-nowrap" scope="col">Pedido</th>
-                  <th class="text-nowrap" scope="col" style="width: 120px;">Valor Total</th>
+                  <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
                   <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
                 </tr>
               </thead>
