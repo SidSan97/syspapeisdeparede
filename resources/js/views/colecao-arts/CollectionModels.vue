@@ -27,12 +27,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
                 <RouterLink to="/settings/colecoes" class="dropdown-item">
-                    Administração de Coleções
-                </RouterLink>
-              </li>
-              <li>
-                <RouterLink to="/colecao-arts/catalogo" class="dropdown-item">
-                  Administração de Catálogos
+                    Administração de Categorias
                 </RouterLink>
               </li>
             </ul>
