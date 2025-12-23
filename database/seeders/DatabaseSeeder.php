@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             TypeUserSeeder::class,
             DefaultUserSeeder::class,
-            CollectionArtSeeder::class,
+            CollectionCategoriesSeeder::class,
             CollectionModelSeeder::class,
             LayoutColumnNameSeeder::class,
             ProductionColumnNameSeeder::class,

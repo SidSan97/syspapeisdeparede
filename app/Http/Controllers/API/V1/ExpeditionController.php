@@ -73,7 +73,9 @@ class ExpeditionController extends Controller
     {
         try {
             $orderBudgets = $this->orderBudgetRepository->show($orderBudgetId);
-            $label = $this->expeditionService->generateLabelSeparation($orderBudgets);
+            $order = $this->orderRepository->find($orderBudgets->order_id);
+
+            $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 
             return $this->generatePdfService->generateSeparationLabelPdf(
                 $label['title'],
