@@ -61,12 +61,6 @@ const availableItems = [
     icon: 'layer-group',
   },
   {
-    label: 'Catálogo',
-    description: 'Visualize e gerencie o catálogo de artes disponíveis.',
-    to: '/colecao-arts/catalogo',
-    icon: 'photo-film',
-  },
-  {
     label: 'Tiny ERP',
     description: 'Configure produtos associados à plataforma.',
     to: '/settings/tiny-erp',

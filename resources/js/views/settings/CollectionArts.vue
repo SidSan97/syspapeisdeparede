@@ -1,34 +1,36 @@
 <template>
   <section class="content">
-    <Page title="Coleções" subtitle="Gerencie as coleções disponíveis para os tipos de arte." back-to="/settings">
+    <Page title="Gerenciar Coleções" subtitle="Gerencie coleções, subcategorias e imagens." back-to="/settings">
       <template #actions>
-        <button type="button" class="btn btn-primary" @click="startCreating">
-          Nova coleção
+        <button type="button" class="btn btn-primary" @click="startCreatingCollection">
+          <i class="fa fa-plus me-2"></i> Nova coleção
         </button>
       </template>
 
-      <section v-if="isFormVisible" class="card mb-4 shadow-sm">
+      <!-- Formulário de Coleção -->
+      <div v-if="isCollectionFormVisible" class="card mb-4 shadow-sm">
         <div class="card-body">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">
-              {{ isEditing ? 'Editar coleção' : 'Nova coleção' }}
+              {{ isEditingCollection ? 'Editar coleção' : 'Nova coleção' }}
             </h5>
+            <button type="button" class="btn-close" @click="cancelCollectionForm"></button>
           </div>
 
-          <form @submit.prevent="handleSubmit">
+          <form @submit.prevent="handleCollectionSubmit">
             <div class="row g-3">
-              <div class="col-md-6 col-lg-4">
+              <div class="col-md-6">
                 <label for="collectionName" class="form-label">Nome da coleção</label>
                 <input
                   id="collectionName"
-                  v-model.trim="form.name"
+                  v-model.trim="collectionForm.name"
                   type="text"
                   class="form-control"
                   placeholder="Ex: Linha Clássica"
                   required
                 />
               </div>
-              <div class="col-md-6 col-lg-4">
+              <div class="col-md-6">
                 <label for="collectionImageCover" class="form-label">Imagem de capa</label>
                 <input
                   id="collectionImageCover"
@@ -38,258 +40,389 @@
                   accept="image/*"
                   @change="handleCollectionImageChange"
                 />
-                <small class="text-muted d-block mt-1">Formatos aceitos: JPG, PNG, GIF (máx. 5MB)</small>
+                <small class="text-muted">Formatos: JPG, PNG, GIF (máx. 5MB)</small>
               </div>
-              <div v-if="form.imagePreview || currentCollectionImageUrl" class="col-12">
-                <label class="form-label">Preview da imagem de capa</label>
-                <div class="image-preview-wrapper">
+              <div v-if="collectionForm.imagePreview || currentCollectionImageUrl" class="col-12">
+                <label class="form-label">Preview</label>
+                <div class="position-relative d-inline-block">
                   <img
-                    :src="form.imagePreview || currentCollectionImageUrl"
-                    alt="Preview da imagem de capa"
-                    class="image-preview"
+                    :src="collectionForm.imagePreview || currentCollectionImageUrl"
+                    alt="Preview"
+                    class="img-thumbnail"
+                    style="max-width: 300px; max-height: 300px; object-fit: contain;"
                   />
                   <button
-                    v-if="form.imagePreview || currentCollectionImageUrl"
                     type="button"
-                    class="btn btn-sm btn-danger image-preview-remove"
+                    class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
                     @click="removeCollectionImage"
                   >
-                    <i class="fa fa-times"></i> Remover
+                    <i class="fa fa-times"></i>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="mt-4 d-flex flex-wrap gap-3 align-items-center justify-content-end justify-content-md-start">
-              <button type="submit" class="btn btn-primary" :disabled="isSaving">
-                {{ isEditing ? 'Salvar alterações' : 'Salvar coleção' }}
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" :disabled="isSavingCollection">
+                <span
+                  v-if="isSavingCollection"
+                  class="spinner-border spinner-border-sm me-2"
+                ></span>
+                {{ isEditingCollection ? 'Salvar alterações' : 'Salvar coleção' }}
               </button>
-              <button type="button" class="btn btn-subtle text-danger" @click="cancelForm">
+              <button type="button" class="btn btn-outline-secondary" @click="cancelCollectionForm">
                 Cancelar
               </button>
             </div>
           </form>
         </div>
-      </section>
+      </div>
 
-      <section v-if="isSubcategoryFormVisible" class="card mb-4 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-            <h5 class="mb-0">
-              {{ isEditingSubcategory ? 'Editar subcategoria' : 'Nova subcategoria' }}
-            </h5>
-          </div>
-
-          <form @submit.prevent="handleSubcategorySubmit">
-            <div class="row g-3">
-              <div class="col-md-6 col-lg-4">
-                <label for="subcategoryCollection" class="form-label">Coleção</label>
-                <div class="form-control-plaintext rounded px-3 py-2 border">
-                  <strong>{{ selectedCollectionForSubcategory?.name ?? '—' }}</strong>
-                </div>
-                <small class="text-muted">A subcategoria será adicionada a esta coleção</small>
-              </div>
-              <div class="col-md-6 col-lg-4">
-                <label for="subcategoryName" class="form-label">Nome da subcategoria</label>
-                <input
-                  id="subcategoryName"
-                  v-model.trim="subcategoryForm.name"
-                  type="text"
-                  class="form-control"
-                  placeholder="Ex: Moderno"
-                  maxlength="50"
-                  required
-                />
-              </div>
-              <div class="col-md-6 col-lg-4">
-                <label for="subcategoryImageCover" class="form-label">Imagem de capa</label>
-                <input
-                  id="subcategoryImageCover"
-                  ref="subcategoryImageCoverInput"
-                  type="file"
-                  class="form-control"
-                  accept="image/*"
-                  @change="handleSubcategoryImageChange"
-                />
-                <small class="text-muted d-block mt-1">Formatos aceitos: JPG, PNG, GIF (máx. 5MB)</small>
-              </div>
-              <div v-if="subcategoryForm.imagePreview || currentSubcategoryImageUrl" class="col-12">
-                <label class="form-label">Preview da imagem de capa</label>
-                <div class="image-preview-wrapper">
-                  <img
-                    :src="subcategoryForm.imagePreview || currentSubcategoryImageUrl"
-                    alt="Preview da imagem de capa"
-                    class="image-preview"
-                  />
-                  <button
-                    v-if="subcategoryForm.imagePreview || currentSubcategoryImageUrl"
-                    type="button"
-                    class="btn btn-sm btn-danger image-preview-remove"
-                    @click="removeSubcategoryImage"
-                  >
-                    <i class="fa fa-times"></i> Remover
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4 d-flex flex-wrap gap-3 align-items-center justify-content-end justify-content-md-start">
-              <button type="submit" class="btn btn-primary" :disabled="isSavingSubcategory">
-                {{ isEditingSubcategory ? 'Salvar alterações' : 'Salvar subcategoria' }}
-              </button>
-              <button type="button" class="btn btn-subtle text-danger" @click="cancelSubcategoryForm">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
+      <!-- Lista de Coleções -->
       <div class="card shadow-sm">
         <div class="card-body">
-          <div v-if="isLoading" class="text-center text-muted py-5">
-            Carregando coleções...
+          <div v-if="isLoadingCollections" class="text-center text-muted py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
           </div>
-          <div v-else-if="!hasCollections" class="text-center text-muted py-5">
-            Nenhuma coleção cadastrada ainda.
+
+          <div v-else-if="!collections.length" class="text-center text-muted py-5">
+            <p class="mb-3">Nenhuma coleção cadastrada.</p>
+            <button type="button" class="btn btn-primary" @click="startCreatingCollection">
+              Criar primeira coleção
+            </button>
           </div>
-          <div v-else class="table-responsive">
-            <table class="table align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Nome</th>
-                  <th class="text-end">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="collection in collections" :key="collection.id">
-                  <tr>
-                    <td>
-                      <div class="d-flex align-items-center gap-2">
-                        <span
-                          class="collection-name-clickable"
-                          @click="toggleSubcategories(collection.id)"
-                          :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
-                        >
-                          {{ collection.name }}
-                        </span>
-                        <button
-                          type="button"
-                          class="btn btn-link btn-sm p-0 text-muted"
-                          @click="toggleSubcategories(collection.id)"
-                          :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
-                        >
-                          <i :class="['fa', expandedCollections.has(collection.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td class="text-end">
-                      <div class="dropdown">
-                        <button
-                          class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                          type="button"
-                          :id="`collectionDropdown-${collection.id}`"
-                          data-bs-toggle="dropdown"
-                          aria-expanded="false"
-                        >
-                          Ações
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" :aria-labelledby="`collectionDropdown-${collection.id}`">
-                          <li>
-                            <button
-                              type="button"
-                              class="dropdown-item"
-                              @click="startCreatingSubcategory(collection)"
-                            >
-                              <i class="fa fa-plus me-2"></i> Nova subcategoria
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              type="button"
-                              class="dropdown-item"
-                              @click="editCollection(collection)"
-                            >
-                              <i class="fa fa-edit me-2"></i> Editar
-                            </button>
-                          </li>
-                          <li><hr class="dropdown-divider"></li>
-                          <li>
-                            <button
-                              type="button"
-                              class="dropdown-item text-danger"
-                              :disabled="deletingId === collection.id"
-                              @click="confirmDelete(collection)"
-                            >
-                              <i class="fa fa-trash me-2"></i> Excluir
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="expandedCollections.has(collection.id)">
-                    <td colspan="2" class="p-0">
-                      <div class="subcategories-container">
-                        <div v-if="loadingSubcategories[collection.id]" class="text-center text-muted py-3">
-                          Carregando subcategorias...
-                        </div>
-                        <div v-else-if="!collectionSubcategories[collection.id]?.length" class="text-center text-muted py-3">
-                          Nenhuma subcategoria cadastrada.
-                        </div>
-                        <div v-else class="subcategories-list">
-                          <div
-                            v-for="subcategory in collectionSubcategories[collection.id]"
-                            :key="subcategory.id"
-                            class="subcategory-item"
+
+          <div v-else class="accordion" id="collectionsAccordion">
+            <div
+              v-for="collection in collections"
+              :key="collection.id"
+              class="accordion-item"
+            >
+              <h2 class="accordion-header">
+                <button
+                  class="accordion-button"
+                  :class="{ collapsed: !expandedCollections.has(collection.id) }"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  :data-bs-target="`#collection-${collection.id}`"
+                  @click="toggleCollection(collection.id)"
+                >
+                  <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                    <span class="fw-semibold">{{ collection.name }}</span>
+                    <div class="dropdown" @click.stop>
+                      <button
+                        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                      >
+                        Ações
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <button
+                            class="dropdown-item"
+                            type="button"
+                            @click="startCreatingSubcategory(collection)"
                           >
-                            <div class="d-flex justify-content-between align-items-center">
-                              <div>
-                                <strong>{{ subcategory.name }}</strong>
-                                <small class="text-muted ms-2">{{ formatCount(subcategory.images_count) }}</small>
-                              </div>
-                              <div class="dropdown">
-                                <button
-                                  class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                  type="button"
-                                  :id="`subcategoryDropdown-${subcategory.id}`"
-                                  data-bs-toggle="dropdown"
-                                  aria-expanded="false"
-                                >
-                                  Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end" :aria-labelledby="`subcategoryDropdown-${subcategory.id}`">
-                                  <li>
-                                    <button
-                                      type="button"
-                                      class="dropdown-item"
-                                      @click="editSubcategory(subcategory)"
-                                    >
-                                      <i class="fa fa-edit me-2"></i> Editar
-                                    </button>
-                                  </li>
-                                  <li><hr class="dropdown-divider"></li>
-                                  <li>
-                                    <button
-                                      type="button"
-                                      class="dropdown-item text-danger"
-                                      :disabled="deletingSubcategoryId === subcategory.id"
-                                      @click="confirmDeleteSubcategory(subcategory)"
-                                    >
-                                      <i class="fa fa-trash me-2"></i> Excluir
-                                    </button>
-                                  </li>
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
+                            <i class="fa fa-plus me-2"></i> Nova subcategoria
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            class="dropdown-item"
+                            type="button"
+                            @click="editCollection(collection)"
+                          >
+                            <i class="fa fa-edit me-2"></i> Editar
+                          </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <button
+                            class="dropdown-item text-danger"
+                            type="button"
+                            :disabled="deletingCollectionId === collection.id"
+                            @click="confirmDeleteCollection(collection)"
+                          >
+                            <i class="fa fa-trash me-2"></i> Excluir
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </button>
+              </h2>
+              <div
+                :id="`collection-${collection.id}`"
+                class="accordion-collapse collapse"
+                :class="{ show: expandedCollections.has(collection.id) }"
+                data-bs-parent="#collectionsAccordion"
+              >
+                <div class="accordion-body">
+                  <!-- Subcategorias da Coleção -->
+                  <div v-if="loadingSubcategories[collection.id]" class="text-center text-muted py-3">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                  </div>
+                  <div v-else-if="!collectionSubcategories[collection.id]?.length" class="text-center text-muted py-3">
+                    Nenhuma subcategoria cadastrada.
+                  </div>
+                  <div v-else class="list-group">
+                    <div
+                      v-for="subcategory in collectionSubcategories[collection.id]"
+                      :key="subcategory.id"
+                      class="list-group-item"
+                      :class="{ 'active': selectedSubcategoryId === subcategory.id }"
+                      style="cursor: pointer;"
+                      @click="selectSubcategory(subcategory)"
+                    >
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ subcategory.name }}</h6>
+                          <small class="text-muted">{{ formatCount(subcategory.images_count) }}</small>
                         </div>
+                        <button
+                          class="btn btn-sm btn-outline-danger"
+                          type="button"
+                          :disabled="deletingSubcategoryId === subcategory.id"
+                          @click.stop="confirmDeleteSubcategory(subcategory)"
+                          title="Excluir subcategoria"
+                        >
+                          <i class="fa fa-trash"></i>
+                        </button>
                       </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de Gerenciamento de Subcategoria -->
+      <div v-if="selectedSubcategory || isCreatingNewSubcategory" class="card mt-4 shadow-sm">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-0">
+                {{ isCreatingNewSubcategory ? 'Nova subcategoria' : `Gerenciar: ${selectedSubcategory?.name}` }}
+              </h5>
+              <small v-if="!isCreatingNewSubcategory" class="text-muted">
+                Coleção: {{ getCollectionName(selectedSubcategory?.parent_id) }}
+              </small>
+              <small v-else class="text-muted">
+                Coleção: {{ getCollectionName(subcategoryForm.parent_id) }}
+              </small>
+            </div>
+            <button type="button" class="btn-close" @click="clearSubcategorySelection"></button>
+          </div>
+        </div>
+        <div class="card-body">
+          <ul v-if="!isCreatingNewSubcategory" class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                :class="{ active: activeTab === 'subcategory' }"
+                type="button"
+                @click="activeTab = 'subcategory'"
+              >
+                <i class="fa fa-edit me-2"></i> Editar Subcategoria
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                :class="{ active: activeTab === 'upload' }"
+                type="button"
+                @click="activeTab = 'upload'"
+              >
+                <i class="fa fa-upload me-2"></i> Upload de Imagens
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                :class="{ active: activeTab === 'images' }"
+                type="button"
+                @click="activeTab = 'images'"
+              >
+                <i class="fa fa-images me-2"></i> Imagens ({{ currentImages.length }})
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <!-- Tab: Editar Subcategoria -->
+            <div v-show="activeTab === 'subcategory'" class="tab-pane fade" :class="{ 'show active': activeTab === 'subcategory' }">
+              <form @submit.prevent="handleSubcategorySubmit">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="subcategoryName" class="form-label">Nome da subcategoria</label>
+                    <input
+                      id="subcategoryName"
+                      v-model.trim="subcategoryForm.name"
+                      type="text"
+                      class="form-control"
+                      placeholder="Ex: Moderno"
+                      maxlength="50"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label for="subcategoryImageCover" class="form-label">Imagem de capa</label>
+                    <input
+                      id="subcategoryImageCover"
+                      ref="subcategoryImageCoverInput"
+                      type="file"
+                      class="form-control"
+                      accept="image/*"
+                      @change="handleSubcategoryImageChange"
+                    />
+                    <small class="text-muted">Formatos: JPG, PNG, GIF (máx. 5MB)</small>
+                  </div>
+                  <div v-if="subcategoryForm.imagePreview || currentSubcategoryImageUrl" class="col-12">
+                    <label class="form-label">Preview</label>
+                    <div class="position-relative d-inline-block">
+                      <img
+                        :src="subcategoryForm.imagePreview || currentSubcategoryImageUrl"
+                        alt="Preview"
+                        class="img-thumbnail"
+                        style="max-width: 300px; max-height: 300px; object-fit: contain;"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                        @click="removeSubcategoryImage"
+                      >
+                        <i class="fa fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary" :disabled="isSavingSubcategory">
+                    <span
+                      v-if="isSavingSubcategory"
+                      class="spinner-border spinner-border-sm me-2"
+                    ></span>
+                    Salvar alterações
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" @click="cancelSubcategoryForm">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab: Upload de Imagens -->
+            <div v-show="activeTab === 'upload'" class="tab-pane fade" :class="{ 'show active': activeTab === 'upload' }">
+              <form @submit.prevent="handleUpload">
+                <div class="mb-3">
+                  <label for="catalogFiles" class="form-label">Selecione as imagens</label>
+                  <input
+                    id="catalogFiles"
+                    ref="fileInput"
+                    class="form-control"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    :disabled="isUploading"
+                    @change="handleFileChange"
+                  />
+                  <small class="text-muted">Formatos: JPG, PNG, WEBP (máx. 5MB cada)</small>
+                </div>
+
+                <div v-if="selectedFiles.length" class="mb-4">
+                  <hr>
+                  <h6 class="mb-3">Nome das imagens</h6>
+                  <div class="row g-3">
+                    <div
+                      v-for="fileItem in selectedFiles"
+                      :key="fileItem.id"
+                      class="col-12 col-md-6"
+                    >
+                      <label :for="`imageName_${fileItem.id}`" class="form-label">
+                        Nome para: <small class="text-muted">{{ fileItem.file.name }}</small>
+                      </label>
+                      <input
+                        :id="`imageName_${fileItem.id}`"
+                        v-model.trim="fileItem.name"
+                        type="text"
+                        class="form-control"
+                        placeholder="Digite o nome da imagem"
+                        maxlength="100"
+                        :disabled="isUploading"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    :disabled="isUploading"
+                    @click="resetForm"
+                  >
+                    Limpar
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    :disabled="isUploading || !selectedFiles.length"
+                  >
+                    <span
+                      v-if="isUploading"
+                      class="spinner-border spinner-border-sm me-2"
+                    ></span>
+                    Enviar imagens
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab: Visualizar Imagens -->
+            <div v-show="activeTab === 'images'" class="tab-pane fade" :class="{ 'show active': activeTab === 'images' }">
+              <div v-if="currentLoading" class="text-center text-muted py-4">
+                <div class="spinner-border" role="status"></div>
+              </div>
+              <div v-else-if="!currentImages.length" class="text-center text-muted py-4">
+                Nenhuma imagem cadastrada nesta subcategoria.
+              </div>
+              <div v-else class="row g-3">
+                <div
+                  v-for="image in currentImages"
+                  :key="image.id"
+                  class="col-6 col-md-4 col-lg-3"
+                >
+                  <div class="card">
+                    <div class="position-relative">
+                      <img
+                        :src="image.url"
+                        :alt="image.path_name"
+                        class="card-img-top"
+                        style="height: 200px; object-fit: cover;"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                        :disabled="deletingImageId === image.id"
+                        @click="confirmDeleteImage(image)"
+                        title="Remover imagem"
+                      >
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    </div>
+                    <div class="card-body">
+                      <p class="card-text small text-truncate mb-0">{{ image.name }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -300,21 +433,21 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
-import { swalConfirmation } from '../../../utils/alerts';
-// Alerts agora usam window.Swal.fire diretamente
+import { swalConfirmation, swalSuccess, swalError } from '../../../utils/alerts';
 import Page from '@/components/page/Page.vue';
 
+// Collections
 const collections = ref([]);
-const isLoading = ref(false);
-const isFormVisible = ref(false);
-const isEditing = ref(false);
-const isSaving = ref(false);
-const deletingId = ref(null);
-const editingId = ref(null);
+const isLoadingCollections = ref(false);
+const isCollectionFormVisible = ref(false);
+const isEditingCollection = ref(false);
+const isSavingCollection = ref(false);
+const deletingCollectionId = ref(null);
+const editingCollectionId = ref(null);
 const collectionImageCoverInput = ref(null);
 const currentCollectionImageUrl = ref(null);
 
-// Subcategorias
+// Subcategories
 const collectionSubcategories = reactive({});
 const expandedCollections = ref(new Set());
 const loadingSubcategories = reactive({});
@@ -323,35 +456,57 @@ const isEditingSubcategory = ref(false);
 const isSavingSubcategory = ref(false);
 const deletingSubcategoryId = ref(null);
 const editingSubcategoryId = ref(null);
-const subcategoryFormCollectionId = ref(null);
 const subcategoryImageCoverInput = ref(null);
 const currentSubcategoryImageUrl = ref(null);
+const isCreatingNewSubcategory = ref(false);
 
-const initialState = () => ({
+// Images
+const collectionImages = reactive({});
+const isLoadingImages = reactive({});
+const selectedSubcategoryId = ref(null);
+const activeTab = ref('subcategory');
+const isUploading = ref(false);
+const deletingImageId = ref(null);
+const fileInput = ref(null);
+const selectedFiles = ref([]);
+let fileIdCounter = 0;
+
+// Forms
+const collectionForm = reactive({
   name: '',
   imageFile: null,
   imagePreview: null,
 });
 
-const subcategoryInitialState = () => ({
+const subcategoryForm = reactive({
   name: '',
   parent_id: null,
   imageFile: null,
   imagePreview: null,
 });
 
-const form = reactive(initialState());
-const subcategoryForm = reactive(subcategoryInitialState());
-
-const hasCollections = computed(() => collections.value.length > 0);
-
-const selectedCollectionForSubcategory = computed(() => {
-  if (!subcategoryFormCollectionId.value) {
-    return null;
+// Computed
+const selectedSubcategory = computed(() => {
+  if (!selectedSubcategoryId.value) return null;
+  for (const collection of collections.value) {
+    const subcategories = collectionSubcategories[collection.id] || [];
+    const found = subcategories.find((s) => s.id === selectedSubcategoryId.value);
+    if (found) return found;
   }
-  return collections.value.find((c) => c.id === subcategoryFormCollectionId.value) ?? null;
+  return null;
 });
 
+const currentImages = computed(() => {
+  if (!selectedSubcategoryId.value) return [];
+  return collectionImages[selectedSubcategoryId.value] ?? [];
+});
+
+const currentLoading = computed(() => {
+  if (!selectedSubcategoryId.value) return false;
+  return Boolean(isLoadingImages[selectedSubcategoryId.value]);
+});
+
+// Utility functions
 const buildStorageUrl = (path) => {
   if (!path) return '';
   const baseUrl = window.location.origin.replace(/\/$/, '');
@@ -359,9 +514,7 @@ const buildStorageUrl = (path) => {
 };
 
 const resolveImageUrl = (url, path) => {
-  if (url && /^https?:\/\//i.test(url)) {
-    return url;
-  }
+  if (url && /^https?:\/\//i.test(url)) return url;
   if (url && url.startsWith('/')) {
     const baseUrl = window.location.origin.replace(/\/$/, '');
     return `${baseUrl}${url}`;
@@ -389,8 +542,19 @@ const normalizeSubcategory = (item = {}) => ({
 const sortCollections = (items = []) =>
   [...items].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
 
+const formatCount = (count) => {
+  const total = Number(count ?? 0);
+  return total === 1 ? '1 imagem' : `${total} imagens`;
+};
+
+const getCollectionName = (collectionId) => {
+  const collection = collections.value.find((c) => c.id === collectionId);
+  return collection?.name ?? '—';
+};
+
+// Fetch functions
 const fetchCollections = async () => {
-  isLoading.value = true;
+  isLoadingCollections.value = true;
   try {
     const { data } = await axios.get('v1/collection-categories', {
       params: { tree: true, per_page: 100 },
@@ -398,13 +562,10 @@ const fetchCollections = async () => {
 
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
-
-    // Filtrar apenas categorias raiz (sem parent_id)
     const rootCategories = items.filter(item => !item.parent_id);
     const list = Array.isArray(rootCategories) ? rootCategories.map(normalizeCollection) : [];
     collections.value = sortCollections(list);
 
-    // Inicializar subcategorias
     collections.value.forEach((collection) => {
       if (collection.children && Array.isArray(collection.children)) {
         collectionSubcategories[collection.id] = collection.children.map(normalizeSubcategory);
@@ -413,67 +574,122 @@ const fetchCollections = async () => {
   } catch (error) {
     window.Swal.fire({
       title: 'Erro!',
-      text: 'Não foi possível carregar as coleções. Tente novamente.',
+      text: 'Não foi possível carregar as coleções.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
     collections.value = [];
   } finally {
-    isLoading.value = false;
+    isLoadingCollections.value = false;
   }
 };
 
-const startCreating = () => {
-  editingId.value = null;
-  form.name = '';
-  form.imageFile = null;
-  form.imagePreview = null;
+const fetchSubcategories = async (categoryId) => {
+  if (loadingSubcategories[categoryId]) return;
+  loadingSubcategories[categoryId] = true;
+  try {
+    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const payload = data?.data ?? data ?? [];
+    const items = Array.isArray(payload) ? payload : [];
+    collectionSubcategories[categoryId] = items.map(normalizeSubcategory);
+  } catch (error) {
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as subcategorias.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+    collectionSubcategories[categoryId] = [];
+  } finally {
+    loadingSubcategories[categoryId] = false;
+  }
+};
+
+const fetchSubcategoryImages = async (categoryId) => {
+  if (!categoryId || isLoadingImages[categoryId]) return;
+  isLoadingImages[categoryId] = true;
+  try {
+    const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
+    const payload = data?.data ?? data ?? {};
+    const images = Array.isArray(payload.images) ? payload.images : [];
+    collectionImages[categoryId] = images.map((image) => ({
+      id: Number(image.id ?? 0),
+      name: image.name ?? '',
+      path_name: image.path_name ?? image.pathName ?? '',
+      url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
+    }));
+  } catch (error) {
+    collectionImages[categoryId] = [];
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Não foi possível carregar as imagens.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+  } finally {
+    isLoadingImages[categoryId] = false;
+  }
+};
+
+// Collection functions
+const toggleCollection = async (collectionId) => {
+  if (expandedCollections.value.has(collectionId)) {
+    expandedCollections.value.delete(collectionId);
+  } else {
+    expandedCollections.value.add(collectionId);
+    if (!collectionSubcategories[collectionId]) {
+      await fetchSubcategories(collectionId);
+    }
+  }
+};
+
+const startCreatingCollection = () => {
+  editingCollectionId.value = null;
+  collectionForm.name = '';
+  collectionForm.imageFile = null;
+  collectionForm.imagePreview = null;
   currentCollectionImageUrl.value = null;
   if (collectionImageCoverInput.value) {
     collectionImageCoverInput.value.value = '';
   }
-  isEditing.value = false;
-  isFormVisible.value = true;
+  isEditingCollection.value = false;
+  isCollectionFormVisible.value = true;
 };
 
 const editCollection = (collection) => {
-  if (!collection) {
-    return;
-  }
-
-  isFormVisible.value = true;
-  isEditing.value = true;
-  editingId.value = collection.id;
-  form.name = collection.name;
-  form.imageFile = null;
-  form.imagePreview = null;
+  if (!collection) return;
+  isCollectionFormVisible.value = true;
+  isEditingCollection.value = true;
+  editingCollectionId.value = collection.id;
+  collectionForm.name = collection.name;
+  collectionForm.imageFile = null;
+  collectionForm.imagePreview = null;
   currentCollectionImageUrl.value = collection.image_cover_url || null;
   if (collectionImageCoverInput.value) {
     collectionImageCoverInput.value.value = '';
   }
 };
 
-const cancelForm = () => {
-  form.name = '';
-  form.imageFile = null;
-  form.imagePreview = null;
+const cancelCollectionForm = () => {
+  collectionForm.name = '';
+  collectionForm.imageFile = null;
+  collectionForm.imagePreview = null;
   currentCollectionImageUrl.value = null;
   if (collectionImageCoverInput.value) {
     collectionImageCoverInput.value.value = '';
   }
-  editingId.value = null;
-  isFormVisible.value = false;
+  editingCollectionId.value = null;
+  isCollectionFormVisible.value = false;
 };
 
 const handleCollectionImageChange = (event) => {
   const file = event.target.files?.[0];
   if (!file) {
-    form.imageFile = null;
-    form.imagePreview = null;
+    collectionForm.imageFile = null;
+    collectionForm.imagePreview = null;
     return;
   }
 
-  // Validar tamanho (5MB)
   if (file.size > 5 * 1024 * 1024) {
     window.Swal.fire({
       title: 'Erro!',
@@ -482,12 +698,11 @@ const handleCollectionImageChange = (event) => {
       confirmButtonText: 'Entendi!',
     });
     event.target.value = '';
-    form.imageFile = null;
-    form.imagePreview = null;
+    collectionForm.imageFile = null;
+    collectionForm.imagePreview = null;
     return;
   }
 
-  // Validar tipo
   if (!file.type.startsWith('image/')) {
     window.Swal.fire({
       title: 'Erro!',
@@ -496,37 +711,34 @@ const handleCollectionImageChange = (event) => {
       confirmButtonText: 'Entendi!',
     });
     event.target.value = '';
-    form.imageFile = null;
-    form.imagePreview = null;
+    collectionForm.imageFile = null;
+    collectionForm.imagePreview = null;
     return;
   }
 
-  form.imageFile = file;
+  collectionForm.imageFile = file;
   currentCollectionImageUrl.value = null;
 
-  // Criar preview
   const reader = new FileReader();
   reader.onload = (e) => {
-    form.imagePreview = e.target.result;
+    collectionForm.imagePreview = e.target.result;
   };
   reader.readAsDataURL(file);
 };
 
 const removeCollectionImage = () => {
-  form.imageFile = null;
-  form.imagePreview = null;
+  collectionForm.imageFile = null;
+  collectionForm.imagePreview = null;
   currentCollectionImageUrl.value = null;
   if (collectionImageCoverInput.value) {
     collectionImageCoverInput.value.value = '';
   }
 };
 
-const handleSubmit = async () => {
-  if (isSaving.value) {
-    return;
-  }
+const handleCollectionSubmit = async () => {
+  if (isSavingCollection.value) return;
 
-  const trimmedName = form.name?.trim();
+  const trimmedName = collectionForm.name?.trim();
   if (!trimmedName) {
     window.Swal.fire({
       title: 'Erro!',
@@ -537,31 +749,26 @@ const handleSubmit = async () => {
     return;
   }
 
-  isSaving.value = true;
+  isSavingCollection.value = true;
 
   try {
     const formData = new FormData();
     formData.append('name', trimmedName);
 
-    if (form.imageFile) {
-      formData.append('image_cover', form.imageFile);
+    if (collectionForm.imageFile) {
+      formData.append('image_cover', collectionForm.imageFile);
     }
 
     let response;
-    if (isEditing.value && editingId.value !== null) {
+    if (isEditingCollection.value && editingCollectionId.value !== null) {
       formData.append('_method', 'PUT');
-      response = await axios.post(`v1/collection-categories/${editingId.value}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      response = await axios.post(`v1/collection-categories/${editingCollectionId.value}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     } else {
-      // Nova categoria raiz (sem parent_id)
       formData.append('parent_id', '');
       response = await axios.post('v1/collection-categories', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     }
 
@@ -581,14 +788,14 @@ const handleSubmit = async () => {
     }
 
     window.Swal.fire({
-      title: isEditing.value ? 'Coleção atualizada!' : 'Coleção criada!',
-      text: isEditing.value ? 'Coleção atualizada com sucesso.' : 'Coleção criada com sucesso.',
+      title: isEditingCollection.value ? 'Coleção atualizada!' : 'Coleção criada!',
+      text: isEditingCollection.value ? 'Coleção atualizada com sucesso.' : 'Coleção criada com sucesso.',
+      icon: 'success',
       confirmButtonText: 'Entendi!',
     });
-    cancelForm();
+    cancelCollectionForm();
   } catch (error) {
-    const message =
-      error?.response?.data?.message ?? 'Não foi possível salvar a coleção. Verifique os dados.';
+    const message = error?.response?.data?.message ?? 'Não foi possível salvar a coleção.';
     window.Swal.fire({
       title: 'Erro!',
       text: message,
@@ -596,14 +803,12 @@ const handleSubmit = async () => {
       confirmButtonText: 'Entendi!',
     });
   } finally {
-    isSaving.value = false;
+    isSavingCollection.value = false;
   }
 };
 
-const confirmDelete = async (collection) => {
-  if (!collection?.id || deletingId.value !== null) {
-    return;
-  }
+const confirmDeleteCollection = async (collection) => {
+  if (!collection?.id || deletingCollectionId.value !== null) return;
 
   const result = await swalConfirmation(
     'Excluir coleção?',
@@ -614,84 +819,33 @@ const confirmDelete = async (collection) => {
   );
 
   if (result.isConfirmed) {
-    await destroyCollection(collection);
-  }
-};
-
-const destroyCollection = async (collection) => {
-  if (!collection?.id) {
-    return;
-  }
-
-  deletingId.value = collection.id;
-
-  try {
-    await axios.delete(`v1/collection-categories/${collection.id}`);
-    collections.value = collections.value.filter((item) => item.id !== collection.id);
-    window.Swal.fire({
-      title: 'Coleção excluída!',
-      text: 'Coleção excluída com sucesso.',
-      confirmButtonText: 'Entendi!',
-    });
-
-    if (isFormVisible.value && editingId.value === collection.id) {
-      cancelForm();
-    }
-  } catch (error) {
-    const message =
-      error?.response?.data?.message ?? 'Não foi possível excluir a coleção. Tente novamente.';
-    window.Swal.fire({
-      title: 'Erro!',
-      text: message,
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  } finally {
-    deletingId.value = null;
-  }
-};
-
-// Funções de subcategorias
-const toggleSubcategories = async (collectionId) => {
-  if (expandedCollections.value.has(collectionId)) {
-    expandedCollections.value.delete(collectionId);
-  } else {
-    expandedCollections.value.add(collectionId);
-    if (!collectionSubcategories[collectionId]) {
-      await fetchSubcategories(collectionId);
+    deletingCollectionId.value = collection.id;
+    try {
+      await axios.delete(`v1/collection-categories/${collection.id}`);
+      collections.value = collections.value.filter((item) => item.id !== collection.id);
+      swalSuccess('Coleção excluída com sucesso.', 'Coleção excluída!');
+      if (isCollectionFormVisible.value && editingCollectionId.value === collection.id) {
+        cancelCollectionForm();
+      }
+    } catch (error) {
+      const message = error?.response?.data?.message ?? 'Não foi possível excluir a coleção.';
+      swalError(message);
+    } finally {
+      deletingCollectionId.value = null;
     }
   }
 };
 
-const fetchSubcategories = async (collectionId) => {
-  if (loadingSubcategories[collectionId]) {
-    return;
-  }
+// Subcategory functions
+const startCreatingSubcategory = async (collection) => {
+  if (!collection?.id) return;
 
-  loadingSubcategories[collectionId] = true;
-  try {
-    const { data } = await axios.get(`v1/collection-categories/children/${collectionId}`);
-
-    const payload = data?.data ?? data ?? {};
-    const items = Array.isArray(payload) ? payload : [];
-
-    collectionSubcategories[collectionId] = items.map(normalizeSubcategory);
-  } catch (error) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Não foi possível carregar as subcategorias.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-    collectionSubcategories[collectionId] = [];
-  } finally {
-    loadingSubcategories[collectionId] = false;
-  }
-};
-
-const startCreatingSubcategory = (collection) => {
-  if (!collection?.id) {
-    return;
+  // Expand collection if not expanded
+  if (!expandedCollections.value.has(collection.id)) {
+    expandedCollections.value.add(collection.id);
+    if (!collectionSubcategories[collection.id]) {
+      await fetchSubcategories(collection.id);
+    }
   }
 
   editingSubcategoryId.value = null;
@@ -703,28 +857,38 @@ const startCreatingSubcategory = (collection) => {
   if (subcategoryImageCoverInput.value) {
     subcategoryImageCoverInput.value.value = '';
   }
-  subcategoryFormCollectionId.value = collection.id;
   isEditingSubcategory.value = false;
-  isSubcategoryFormVisible.value = true;
+  isCreatingNewSubcategory.value = true;
+  selectedSubcategoryId.value = null;
+  activeTab.value = 'subcategory';
 };
 
-const editSubcategory = (subcategory) => {
-  if (!subcategory) {
-    return;
-  }
+const selectSubcategory = async (subcategory) => {
+  if (!subcategory?.id) return;
+  selectedSubcategoryId.value = subcategory.id;
+  activeTab.value = 'subcategory';
 
-  isSubcategoryFormVisible.value = true;
-  isEditingSubcategory.value = true;
-  editingSubcategoryId.value = subcategory.id;
+  // Load subcategory data for editing
   subcategoryForm.name = subcategory.name;
   subcategoryForm.parent_id = subcategory.parent_id;
   subcategoryForm.imageFile = null;
   subcategoryForm.imagePreview = null;
   currentSubcategoryImageUrl.value = subcategory.image_cover_url || null;
-  if (subcategoryImageCoverInput.value) {
-    subcategoryImageCoverInput.value.value = '';
-  }
-  subcategoryFormCollectionId.value = subcategory.parent_id;
+  isEditingSubcategory.value = true;
+  editingSubcategoryId.value = subcategory.id;
+
+  await fetchSubcategoryImages(subcategory.id);
+};
+
+const editSubcategory = (subcategory) => {
+  selectSubcategory(subcategory);
+};
+
+const clearSubcategorySelection = () => {
+  selectedSubcategoryId.value = null;
+  isCreatingNewSubcategory.value = false;
+  activeTab.value = 'subcategory';
+  cancelSubcategoryForm();
 };
 
 const cancelSubcategoryForm = () => {
@@ -737,8 +901,8 @@ const cancelSubcategoryForm = () => {
     subcategoryImageCoverInput.value.value = '';
   }
   editingSubcategoryId.value = null;
-  subcategoryFormCollectionId.value = null;
-  isSubcategoryFormVisible.value = false;
+  isEditingSubcategory.value = false;
+  isCreatingNewSubcategory.value = false;
 };
 
 const handleSubcategoryImageChange = (event) => {
@@ -749,7 +913,6 @@ const handleSubcategoryImageChange = (event) => {
     return;
   }
 
-  // Validar tamanho (5MB)
   if (file.size > 5 * 1024 * 1024) {
     window.Swal.fire({
       title: 'Erro!',
@@ -763,7 +926,6 @@ const handleSubcategoryImageChange = (event) => {
     return;
   }
 
-  // Validar tipo
   if (!file.type.startsWith('image/')) {
     window.Swal.fire({
       title: 'Erro!',
@@ -780,7 +942,6 @@ const handleSubcategoryImageChange = (event) => {
   subcategoryForm.imageFile = file;
   currentSubcategoryImageUrl.value = null;
 
-  // Criar preview
   const reader = new FileReader();
   reader.onload = (e) => {
     subcategoryForm.imagePreview = e.target.result;
@@ -798,9 +959,7 @@ const removeSubcategoryImage = () => {
 };
 
 const handleSubcategorySubmit = async () => {
-  if (isSavingSubcategory.value) {
-    return;
-  }
+  if (isSavingSubcategory.value) return;
 
   const trimmedName = subcategoryForm.name?.trim();
   if (!trimmedName) {
@@ -838,15 +997,11 @@ const handleSubcategorySubmit = async () => {
     if (isEditingSubcategory.value && editingSubcategoryId.value !== null) {
       formData.append('_method', 'PUT');
       response = await axios.post(`v1/collection-categories/${editingSubcategoryId.value}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     } else {
       response = await axios.post('v1/collection-categories', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     }
 
@@ -864,15 +1019,24 @@ const handleSubcategorySubmit = async () => {
       collectionSubcategories[collectionId].push(saved);
     }
 
+    // If creating new, select it and load images
+    if (isCreatingNewSubcategory.value) {
+      selectedSubcategoryId.value = saved.id;
+      isCreatingNewSubcategory.value = false;
+      await fetchSubcategoryImages(saved.id);
+    } else if (selectedSubcategoryId.value === saved.id) {
+      // Update selected subcategory if it's the one being edited
+      selectedSubcategoryId.value = saved.id;
+    }
+
     window.Swal.fire({
       title: isEditingSubcategory.value ? 'Subcategoria atualizada!' : 'Subcategoria criada!',
       text: isEditingSubcategory.value ? 'Subcategoria atualizada com sucesso.' : 'Subcategoria criada com sucesso.',
+      icon: 'success',
       confirmButtonText: 'Entendi!',
     });
-    cancelSubcategoryForm();
   } catch (error) {
-    const message =
-      error?.response?.data?.message ?? 'Não foi possível salvar a subcategoria. Verifique os dados.';
+    const message = error?.response?.data?.message ?? 'Não foi possível salvar a subcategoria.';
     window.Swal.fire({
       title: 'Erro!',
       text: message,
@@ -885,9 +1049,7 @@ const handleSubcategorySubmit = async () => {
 };
 
 const confirmDeleteSubcategory = async (subcategory) => {
-  if (!subcategory?.id || deletingSubcategoryId.value !== null) {
-    return;
-  }
+  if (!subcategory?.id || deletingSubcategoryId.value !== null) return;
 
   const result = await swalConfirmation(
     'Excluir subcategoria?',
@@ -898,37 +1060,138 @@ const confirmDeleteSubcategory = async (subcategory) => {
   );
 
   if (result.isConfirmed) {
-    await destroySubcategory(subcategory);
+    deletingSubcategoryId.value = subcategory.id;
+    try {
+      await axios.delete(`v1/collection-categories/${subcategory.id}`);
+      const collectionId = subcategory.parent_id;
+      if (collectionSubcategories[collectionId]) {
+        collectionSubcategories[collectionId] = collectionSubcategories[collectionId].filter(
+          (item) => item.id !== subcategory.id
+        );
+      }
+      if (selectedSubcategoryId.value === subcategory.id) {
+        clearSubcategorySelection();
+      }
+      swalSuccess('Subcategoria excluída com sucesso.', 'Subcategoria excluída!');
+    } catch (error) {
+      const message = error?.response?.data?.message ?? 'Não foi possível excluir a subcategoria.';
+      swalError(message);
+    } finally {
+      deletingSubcategoryId.value = null;
+    }
   }
 };
 
-const destroySubcategory = async (subcategory) => {
-  if (!subcategory?.id) {
+// Image functions
+const handleFileChange = (event) => {
+  const files = event?.target?.files ? Array.from(event.target.files) : [];
+  selectedFiles.value = files.map((file) => {
+    const fileName = file.name;
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExtension = lastDotIndex > 0
+      ? fileName.substring(0, lastDotIndex)
+      : fileName;
+
+    return {
+      id: ++fileIdCounter,
+      file: file,
+      name: nameWithoutExtension || '',
+    };
+  });
+};
+
+const resetForm = () => {
+  selectedFiles.value = [];
+  fileIdCounter = 0;
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
+
+const handleUpload = async () => {
+  if (isUploading.value || currentLoading.value) return;
+
+  if (!selectedSubcategoryId.value) {
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Selecione uma subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
     return;
   }
 
-  deletingSubcategoryId.value = subcategory.id;
-
-  try {
-    await axios.delete(`v1/collection-categories/${subcategory.id}`);
-    const collectionId = subcategory.parent_id;
-    if (collectionSubcategories[collectionId]) {
-      collectionSubcategories[collectionId] = collectionSubcategories[collectionId].filter(
-        (item) => item.id !== subcategory.id
-      );
-    }
+  if (!selectedFiles.value.length) {
     window.Swal.fire({
-      title: 'Subcategoria excluída!',
-      text: 'Subcategoria excluída com sucesso.',
+      title: 'Erro!',
+      text: 'Selecione ao menos uma imagem para enviar.',
+      icon: 'error',
       confirmButtonText: 'Entendi!',
     });
+    return;
+  }
 
-    if (isSubcategoryFormVisible.value && editingSubcategoryId.value === subcategory.id) {
-      cancelSubcategoryForm();
+  const filesWithoutName = selectedFiles.value.filter((item) => !item.name?.trim());
+  if (filesWithoutName.length > 0) {
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, preencha o nome para todas as imagens.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+    return;
+  }
+
+  isUploading.value = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('collection_category_id', selectedSubcategoryId.value);
+
+    selectedFiles.value.forEach((fileItem, index) => {
+      formData.append('images[]', fileItem.file);
+      formData.append(`names[${index}]`, fileItem.name.trim());
+    });
+
+    const response = await axios.post('v1/collection-images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const savedCollections = response?.data?.data ?? [];
+
+    if (
+      Array.isArray(savedCollections) &&
+      savedCollections.length &&
+      savedCollections[0]?.images
+    ) {
+      collectionImages[selectedSubcategoryId.value] = savedCollections[0].images.map((image) => ({
+        id: Number(image.id ?? 0),
+        name: image.name ?? '',
+        path_name: image.path_name ?? image.pathName ?? '',
+        url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
+      }));
+
+      const subcategory = selectedSubcategory.value;
+      if (subcategory) {
+        subcategory.images_count = collectionImages[selectedSubcategoryId.value].length;
+      }
+    } else if (selectedSubcategoryId.value) {
+      await fetchSubcategoryImages(selectedSubcategoryId.value);
     }
+
+    window.Swal.fire({
+      title: 'Imagens adicionadas!',
+      text: 'Imagens adicionadas com sucesso.',
+      icon: 'success',
+      confirmButtonText: 'Entendi!',
+    });
+    resetForm();
+    activeTab.value = 'images';
   } catch (error) {
     const message =
-      error?.response?.data?.message ?? 'Não foi possível excluir a subcategoria. Tente novamente.';
+      error?.response?.data?.message ??
+      error?.response?.data?.errors?.images?.[0] ??
+      'Não foi possível enviar as imagens.';
     window.Swal.fire({
       title: 'Erro!',
       text: message,
@@ -936,95 +1199,53 @@ const destroySubcategory = async (subcategory) => {
       confirmButtonText: 'Entendi!',
     });
   } finally {
-    deletingSubcategoryId.value = null;
+    isUploading.value = false;
   }
 };
 
-const formatCount = (count) => {
-  const total = Number(count ?? 0);
-  return total === 1 ? '1 imagem' : `${total} imagens`;
+const confirmDeleteImage = async (image) => {
+  if (!image?.id || deletingImageId.value !== null) return;
+
+  const result = await swalConfirmation(
+    'Remover imagem?',
+    'Essa ação é <strong>irreversível!</strong>',
+    'warning',
+    'Remover',
+    'Cancelar'
+  );
+
+  if (result.isConfirmed) {
+    deletingImageId.value = image.id;
+    try {
+      await axios.delete(`v1/collection-images/${image.id}`);
+
+      if (selectedSubcategoryId.value) {
+        collectionImages[selectedSubcategoryId.value] = (collectionImages[selectedSubcategoryId.value] ?? []).filter(
+          (item) => item.id !== image.id
+        );
+
+        const subcategory = selectedSubcategory.value;
+        if (subcategory) {
+          subcategory.images_count = collectionImages[selectedSubcategoryId.value].length;
+        }
+      }
+
+      swalSuccess('Imagem removida com sucesso.', 'Imagem removida!');
+    } catch (error) {
+      const message = error?.response?.data?.message ?? 'Não foi possível remover a imagem.';
+      swalError(message);
+    } finally {
+      deletingImageId.value = null;
+    }
+  }
 };
 
 onMounted(() => {
-  document.title = 'Coleções';
+  document.title = 'Gerenciar Coleções';
   fetchCollections();
 });
 </script>
 
 <style scoped>
-.card {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 1rem;
-}
-
-.btn-subtle {
-  background-color: transparent;
-  border: none;
-  color: var(--bs-danger);
-  padding: 0.375rem 0.75rem;
-  transition: color 0.2s ease-in-out, text-decoration 0.2s ease-in-out;
-}
-
-.btn-subtle:hover,
-.btn-subtle:focus {
-  background-color: transparent;
-  color: var(--bs-danger-hover, #bb2d3b);
-  text-decoration: underline;
-}
-
-.subcategories-container {
-  background: var(--bs-secondary-bg);
-  padding: 1rem;
-  border-top: 1px solid var(--bs-border-color);
-}
-
-.subcategories-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.subcategory-item {
-  padding: 0.75rem;
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-}
-
-.collection-name-clickable {
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.2s ease;
-  font-weight: 500;
-}
-
-.collection-name-clickable:hover {
-  color: var(--bs-primary);
-}
-
-.image-preview-wrapper {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-  margin-top: 0.5rem;
-}
-
-.image-preview {
-  max-width: 300px;
-  max-height: 300px;
-  width: auto;
-  height: auto;
-  border-radius: 0.5rem;
-  border: 1px solid var(--bs-border-color);
-  object-fit: contain;
-}
-
-.image-preview-remove {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 10;
-}
-
 </style>
 

@@ -707,8 +707,8 @@
   }
 
   .trello-card-footer {
-    background-color: var(--bs-dark);
-    color: var(--bs-white);
+    background-color: var(--ds-surface-sunken);
+    color: var(--ds-text);
     padding: 0.5rem 0.75rem;
     display: flex;
     align-items: center;
@@ -726,8 +726,8 @@
 
   .trello-card-footer-text {
     font-size: 0.75rem;
-    color: var(--bs-white);
-    font-weight: 400;
+    color: var(--ds-text);
+    font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -745,10 +745,10 @@
     align-items: center;
     gap: 0.375rem;
     font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ds-text);
 
     i {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--ds-text);
       font-size: 0.6875rem;
     }
   }
@@ -760,10 +760,10 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ds-text);
 
     i {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--ds-text);
       font-size: 0.6875rem;
     }
 

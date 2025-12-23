@@ -770,8 +770,8 @@
   }
 
   .production-card-footer {
-    background-color: var(--bs-dark);
-    color: var(--bs-white);
+    background-color: var(--ds-surface-sunken);
+    color: var(--ds-text);
     padding: 0.5rem 0.75rem;
     display: flex;
     align-items: center;
@@ -789,10 +789,10 @@
 
   .production-card-production-date {
     font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--ds-text);
     margin-top: 0.25rem;
     padding-top: 0.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--ds-background-accent-gray-bolder-hovered);
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -800,8 +800,8 @@
 
   .production-card-footer-text {
     font-size: 0.75rem;
-    color: var(--bs-white);
-    font-weight: 400;
+    color: var(--ds-text);
+    font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -819,10 +819,11 @@
     align-items: center;
     gap: 0.375rem;
     font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ds-text);
+    /*color: rgba(255, 255, 255, 0.7);*/
 
     i {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--ds-text);
       font-size: 0.6875rem;
     }
   }
@@ -834,10 +835,10 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ds-text);
 
     i {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--ds-text);
       font-size: 0.6875rem;
     }
 
@@ -864,11 +865,11 @@
     }
 
     &.production-card-timer-normal {
-      color: rgba(255, 255, 255, 0.7);
-      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--ds-text);
+      background-color: var(--ds-background-accent-gray-subtlest-pressed);
 
       i {
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--ds-text);
       }
     }
 

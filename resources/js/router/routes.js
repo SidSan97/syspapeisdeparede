@@ -54,7 +54,7 @@ const routes = [
             {
                 path: '/colecao-arts/catalogo',
                 name: 'CollectionCatalog',
-                component: () => import('../views/colecao-arts/CollectionCatalog.vue'),
+                redirect: { name: 'SettingsCollections' },
             },
             {
                 path: '/colecao-arts/subcategoria/:id',
