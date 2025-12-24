@@ -86,6 +86,33 @@ class BudgetController extends Controller
         }
     }
 
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $budget = Budget::with(['rooms.walls.collectionModel.files', 'dropshippingData'])
+                ->findOrFail($id);
+            
+            $data = (new BudgetResource($budget))->toArray(request());
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Orçamento encontrado',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orçamento não encontrado',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar orçamento',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function pendingReview(): JsonResponse
     {
         try {

@@ -113,6 +113,7 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
     Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
+    Route::get('budgets/{id}', [BudgetController::class, 'show'])->middleware('auth:api');
     Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
     Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');

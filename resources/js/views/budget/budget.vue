@@ -172,7 +172,7 @@
                           </button>
                         </li>
                         <li>
-                          <button class="dropdown-item" type="button" @click="openGeneratePdfModal(budget)">
+                          <button class="dropdown-item" type="button" @click="openPdfPreview(budget)">
                             Gerar PDF
                           </button>
                         </li>
@@ -210,12 +210,6 @@
       @updated="handleOrderUpdated"
     />
 
-    <GeneratePdfModal
-      :visible="showPdfModal"
-      :budget="budgetToGeneratePdf"
-      @close="closeGeneratePdfModal"
-      @success="handlePdfSuccess"
-    />
 
     <Teleport v-if="showCancelModal" to="body">
       <div>
@@ -269,7 +263,6 @@ import { USER_TYPES } from '@/constants/userTypes';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
 import BudgetOrderModal from '@/components/budget/BudgetOrderModal.vue';
-import GeneratePdfModal from '@/components/budget/GeneratePdfModal.vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
@@ -292,8 +285,6 @@ const cancelling = ref(false);
 const cancelError = ref('');
 const showDetailsModal = ref(false);
 const budgetToView = ref(null);
-const showPdfModal = ref(false);
-const budgetToGeneratePdf = ref(null);
 const showOrderModal = ref(false);
 const orderBudget = ref(null);
 const router = useRouter();
@@ -636,19 +627,8 @@ onMounted(() => {
   document.title = 'Orçamentos';
 });
 
-function openGeneratePdfModal(budget) {
-  budgetToGeneratePdf.value = budget;
-  showPdfModal.value = true;
-}
-
-function closeGeneratePdfModal() {
-  budgetToGeneratePdf.value = null;
-  showPdfModal.value = false;
-}
-
-function handlePdfSuccess() {
-  // Recarregar lista de orçamentos após sucesso
-  fetchBudgets();
+function openPdfPreview(budget) {
+  router.push(`/budget/${budget.id}/pdf-preview`);
 }
 
 function openOrderModal(budget) {
@@ -672,9 +652,6 @@ function handleOrderUpdated(updatedBudgetRaw) {
     budgetToView.value = updatedBudget;
   }
 
-  if (budgetToGeneratePdf.value?.id === updatedBudget.id) {
-    budgetToGeneratePdf.value = updatedBudget;
-  }
 
   if (budgetToCancel.value?.id === updatedBudget.id) {
     budgetToCancel.value = updatedBudget;

@@ -37,6 +37,11 @@ const routes = [
                 component: () => import('../components/ShowDetails.vue')
             },
             {
+                path: '/budget/:id/pdf-preview',
+                name: 'BudgetPdfPreview',
+                component: () => import('../views/budget/BudgetPdfPreview.vue')
+            },
+            {
                 path: '/budget',
                 name: 'Budget',
                 component: Budget
