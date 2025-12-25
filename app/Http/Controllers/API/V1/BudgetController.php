@@ -357,18 +357,26 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'id' => ['required', 'integer', 'exists:budgets,id'],
             'percentage' => ['nullable', 'numeric', 'min:0'],
+            'mockup_percentage' => ['nullable', 'numeric', 'min:0'],
             'cash_value' => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
             'installment_value' => ['nullable', 'numeric', 'min:0'],
+            'total_amount_installments' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         try {
-            $budget = Budget::with(['rooms.walls.collectionModel'])->findOrFail($validated['id']);
+            $budget = Budget::with(['rooms.walls.collectionModel', 'dropshippingData'])->findOrFail($validated['id']);
+
+            // Aceitar tanto cash_value quanto total_amount (para compatibilidade)
+            $cashValue = $validated['total_amount'] ?? $validated['cash_value'] ?? null;
+            $installmentValue = $validated['total_amount_installments'] ?? $validated['installment_value'] ?? null;
+            $mockupPercentage = $validated['mockup_percentage'] ?? $validated['percentage'] ?? null;
 
             return $this->generatePdfService->generateBudgetPdf(
                 $budget,
-                $validated['percentage'] ?? null,
-                $validated['cash_value'] ?? null,
-                $validated['installment_value'] ?? null
+                $mockupPercentage,
+                $cashValue,
+                $installmentValue
             );
         } catch (\Exception $e) {
             return response()->json([

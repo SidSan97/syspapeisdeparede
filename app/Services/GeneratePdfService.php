@@ -56,6 +56,7 @@ class GeneratePdfService
             'installment_total_formatted' => $updatedInstallmentTotal !== null
                 ? $this->formatMoney($updatedInstallmentTotal)
                 : null,
+            'mockup_percentage' => $percentageValidated ?? 0,
         ];
 
         $pdf = Pdf::loadView('pdf.budgets.budget', [

@@ -604,18 +604,15 @@ onMounted(() => {
   border-collapse: collapse;
   border: 1px solid #000;
   font-size: 12px;
+  background: #f0f0f0;
+  font-weight: bold;
+  color: #000;
 }
 
 .pdf-info-table td {
   padding: 9px 0 0 5px;
   border: 1px solid #000;
   vertical-align: top;
-}
-
-.pdf-info-label {
-  background: #f0f0f0;
-  font-weight: bold;
-  color: #000;
 }
 
 .pdf-info-value {
