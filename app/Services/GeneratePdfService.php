@@ -75,18 +75,27 @@ class GeneratePdfService
     /**
      * Gera PDF da etiqueta de separação
      *
-     * @param  string  $title
-     * @param  string  $status
+     * @param  array  $label
      * @return Response
      */
-    public function generateSeparationLabelPdf(string $title, string $status): Response
+    public function generateSeparationLabelPdf(array $label): Response
     {
         $filename = 'etiqueta-separacao.pdf';
 
-        $pdf = Pdf::loadView('pdf.expedition.separation-label', [
-            'title' => $title,
-            'status' => strtoupper($status),
-        ])->setPaper('a4', 'portrait');
+        $dataLabel = [
+            'title' => $label['title'],
+            'status' => strtoupper($label['status']),
+        ];
+
+        if(isset($label['carrier_name']) && $label['carrier_name'] !== null) {
+            $dataLabel['carrier_name'] = $label['carrier_name'];
+        }
+
+        if(isset($label['packer']) && $label['packer'] !== null) {
+            $dataLabel['packer'] = $label['packer'];
+        }
+
+        $pdf = Pdf::loadView('pdf.expedition.separation-label', $dataLabel)->setPaper('a4', 'portrait');
 
         $domPdf = $pdf->getDomPDF();
         $domPdf->set_option('isHtml5ParserEnabled', true);

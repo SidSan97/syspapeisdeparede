@@ -77,10 +77,7 @@ class ExpeditionController extends Controller
 
             $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 
-            return $this->generatePdfService->generateSeparationLabelPdf(
-                $label['title'],
-                $label['status']
-            );
+            return $this->generatePdfService->generateSeparationLabelPdf($label);
         } catch (\Exception $e) {
             Log::error('Erro ao gerar PDF da etiqueta de separação: ' . $e->getMessage());
             return response()->json([

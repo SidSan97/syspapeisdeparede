@@ -60,6 +60,18 @@
         .status-bold {
             font-weight: bold;
         }
+
+        .info-line {
+            font-size: 14px;
+            text-align: left;
+            color: #000;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +88,16 @@
                 {{ strtoupper($status) }}
             @endif
         </div>
+        @if(isset($carrier_name) && $carrier_name !== null)
+            <div class="info-line">
+                <span class="info-label">Transportadora:</span> {{ $carrier_name }}
+            </div>
+        @endif
+        @if(isset($packer) && $packer !== null)
+            <div class="info-line">
+                <span class="info-label">Embalador:</span> {{ $packer }}
+            </div>
+        @endif
     </div>
 </body>
 </html>
