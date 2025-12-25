@@ -2,96 +2,233 @@
   <section class="content">
     <Page title="Expedição">
       <div class="border-0 shadow-sm">
-        <form class="g-3 align-items-center mb-4" role="search">
-          <label for="search-query" class="sr-only">Pesquisar expedição</label>
+        <!-- Abas -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'separation' }"
+              @click="activeTab = 'separation'"
+              type="button"
+              role="tab"
+            >
+              Separação
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'expedition' }"
+              @click="activeTab = 'expedition'"
+              type="button"
+              role="tab"
+            >
+              Expedição
+            </button>
+          </li>
+        </ul>
 
-          <div class="d-flex">
-            <div class="me-3">
-              <div class="input-group input-group-prefix">
-                <input
-                  id="search-query"
-                  type="text"
-                  class="form-control"
-                  placeholder="Pesquisar expedição"
-                  v-model="searchQuery"
-                />
-                <span class="input-group-text">
-                  <i class="fa fa-search"></i>
-                </span>
+        <div class="tab-content">
+          <!-- Aba Separação -->
+          <div
+            v-show="activeTab === 'separation'"
+            class="tab-pane"
+            :class="{ active: activeTab === 'separation' }"
+            role="tabpanel"
+          >
+            <form class="g-3 align-items-center mb-4" role="search">
+              <label for="search-query-separation" class="sr-only">Pesquisar separação</label>
+
+              <div class="d-flex">
+                <div class="me-3">
+                  <div class="input-group input-group-prefix">
+                    <input
+                      id="search-query-separation"
+                      type="text"
+                      class="form-control"
+                      placeholder="Pesquisar separação"
+                      v-model="searchQuerySeparation"
+                    />
+                    <span class="input-group-text">
+                      <i class="fa fa-search"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <div class="card-body p-0 mt-4">
+              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
+                Carregando separações...
+              </div>
+
+              <EmptyState
+                v-else-if="filteredSeparations.length === 0"
+                heading="Nenhuma separação encontrada"
+                icon="shipping-fast"
+                class="p-5"
+              >
+                Não há itens prontos para separação no momento.
+              </EmptyState>
+
+              <div v-else class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col" style="width: 64px;">ID</th>
+                      <th scope="col" style="width: 64px;">Data</th>
+                      <th class="text-nowrap" scope="col">Pedido</th>
+                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="expedition in filteredSeparations" :key="expedition.id">
+                      <td class="fw-semibold">{{ expedition.id }}</td>
+                      <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
+                      <td style="min-width: 240px;">
+                        <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
+                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
+                      </td>
+                      <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button
+                            class="btn btn-subtle btn-sm"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                          >
+                            <i class="fa fa-ellipsis-h"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="viewDetails(expedition)"
+                              >
+                                Ver detalhes
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="generateSeparationLabel(expedition)"
+                              >
+                                Gerar etiqueta de separação
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
-        </form>
 
-        <div class="card-body p-0 mt-4">
-          <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-            Carregando expedições...
-          </div>
-
-          <EmptyState
-            v-else-if="filteredExpeditions.length === 0"
-            heading="Nenhuma expedição encontrada"
-            icon="shipping-fast"
-            class="p-5"
+          <!-- Aba Expedição -->
+          <div
+            v-show="activeTab === 'expedition'"
+            class="tab-pane"
+            :class="{ active: activeTab === 'expedition' }"
+            role="tabpanel"
           >
-            Não há itens prontos para expedição no momento.
-          </EmptyState>
+            <form class="g-3 align-items-center mb-4" role="search">
+              <label for="search-query-expedition" class="sr-only">Pesquisar expedição</label>
 
-          <div v-else class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th scope="col" style="width: 64px;">ID</th>
-                  <th scope="col" style="width: 64px;">Data</th>
-                  <th class="text-nowrap" scope="col">Pedido</th>
-                  <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-                  <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="expedition in filteredExpeditions" :key="expedition.id">
-                  <td class="fw-semibold">{{ expedition.id }}</td>
-                  <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
-                  <td style="min-width: 240px;">
-                    <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
-                    <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
-                  </td>
-                  <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
-                  <td>
-                    <div class="dropdown">
-                      <button
-                        class="btn btn-subtle btn-sm"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        <i class="fa fa-ellipsis-h"></i>
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
+              <div class="d-flex">
+                <div class="me-3">
+                  <div class="input-group input-group-prefix">
+                    <input
+                      id="search-query-expedition"
+                      type="text"
+                      class="form-control"
+                      placeholder="Pesquisar expedição"
+                      v-model="searchQueryExpedition"
+                    />
+                    <span class="input-group-text">
+                      <i class="fa fa-search"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <div class="card-body p-0 mt-4">
+              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
+                Carregando expedições...
+              </div>
+
+              <EmptyState
+                v-else-if="filteredExpeditions.length === 0"
+                heading="Nenhuma expedição encontrada"
+                icon="shipping-fast"
+                class="p-5"
+              >
+                Não há itens prontos para expedição no momento.
+              </EmptyState>
+
+              <div v-else class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col" style="width: 64px;">ID</th>
+                      <th scope="col" style="width: 64px;">Data</th>
+                      <th class="text-nowrap" scope="col">Pedido</th>
+                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="expedition in filteredExpeditions" :key="expedition.id">
+                      <td class="fw-semibold">{{ expedition.id }}</td>
+                      <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
+                      <td style="min-width: 240px;">
+                        <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
+                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
+                      </td>
+                      <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
+                      <td>
+                        <div class="dropdown">
                           <button
-                            class="dropdown-item"
+                            class="btn btn-subtle btn-sm"
                             type="button"
-                            @click="viewDetails(expedition)"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
                           >
-                            Ver detalhes
+                            <i class="fa fa-ellipsis-h"></i>
                           </button>
-                        </li>
-                        <li>
-                          <button
-                            class="dropdown-item"
-                            type="button"
-                            @click="generateSeparationLabel(expedition)"
-                          >
-                            Gerar etiqueta de separação
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="viewDetails(expedition)"
+                              >
+                                Ver detalhes
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="generateSeparationLabel(expedition)"
+                              >
+                                Gerar etiqueta de separação
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,7 +245,9 @@ import { formatDate } from '@/utils/dateUtils';
 
 const expeditions = ref([]);
 const loading = ref(true);
-const searchQuery = ref('');
+const activeTab = ref('separation');
+const searchQuerySeparation = ref('');
+const searchQueryExpedition = ref('');
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -124,11 +263,37 @@ function formatCurrency(value) {
   return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
 }
 
-const filteredExpeditions = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-
+const separations = computed(() => {
   return expeditions.value.filter((expedition) => {
-    // Filtro de busca
+    return expedition.order?.ready_to_expedition === 0;
+  });
+});
+
+const expeditionsList = computed(() => {
+  return expeditions.value.filter((expedition) => {
+    return expedition.order?.ready_to_expedition === 1;
+  });
+});
+
+// Filtros de busca
+const filteredSeparations = computed(() => {
+  const query = searchQuerySeparation.value.trim().toLowerCase();
+
+  return separations.value.filter((expedition) => {
+    const matchesQuery =
+      !query ||
+      expedition.order?.name?.toLowerCase().includes(query) ||
+      String(expedition.id).includes(query) ||
+      String(expedition.order_id).includes(query);
+
+    return matchesQuery;
+  });
+});
+
+const filteredExpeditions = computed(() => {
+  const query = searchQueryExpedition.value.trim().toLowerCase();
+
+  return expeditionsList.value.filter((expedition) => {
     const matchesQuery =
       !query ||
       expedition.order?.name?.toLowerCase().includes(query) ||

@@ -121,6 +121,17 @@ class OrderRepository
         return $order->fresh(['user', 'tenant', 'primaryRoom']);
     }
 
+    public function updateReadyToExpedition(int $orderId): Order
+    {
+        $order = Order::findOrFail($orderId);
+
+        $order->update([
+            'ready_to_expedition' => 1,
+        ]);
+
+        return $order->fresh(['user', 'tenant']);
+    }
+
     public function delete(Order $order): bool
     {
         return $order->delete();

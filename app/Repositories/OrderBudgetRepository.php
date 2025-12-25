@@ -171,6 +171,7 @@ class OrderBudgetRepository {
                         'name' => $orderBudget->order->name,
                         'total_amount' => $orderBudget->order->total_amount,
                         'status' => $orderBudget->order->status,
+                        'ready_to_expedition' => $orderBudget->order->ready_to_expedition,
                         'created_at' => $orderBudget->order->created_at,
                     ] : null,
                 ];
