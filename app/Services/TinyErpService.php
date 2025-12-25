@@ -209,12 +209,66 @@ class TinyErpService
         }
         catch (\Exception $e) {
             Log::error('Erro inesperado ao enviar conta a pagar: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao enviar conta a pagar: ' . $e->getMessage(),
+            ], 500);
         }
         catch (RequestException $e) {
             Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar conta a pagar: ' . $e->getMessage(),
+            ], 500);
         }
         catch (GuzzleException $e) {
             Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar conta a pagar: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function sendInvoice(array $order, array $dropshipping)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'nota' => $this->makeInvoiceData($order, $dropshipping),
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/nota.servico.incluir.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar nota fiscal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao enviar nota fiscal: ' . $e->getMessage(),
+            ], 500);
+        }
+        catch (RequestException $e) {
+            Log::error('Erro ao enviar nota fiscal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar nota fiscal: ' . $e->getMessage(),
+            ], 500);
+        }
+        catch (GuzzleException $e) {
+            Log::error('Erro ao enviar nota fiscal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar nota fiscal: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -290,22 +344,7 @@ class TinyErpService
             'pedido' => [
                'data_pedido' => $dataPedido->format('d/m/Y'),
                'data_prevista' => $dataPrevista->format('d/m/Y'),
-               'cliente' => [
-                    'nome' => $dropshipping['name'],
-                    'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
-                    'email' => $dropshipping['email'],
-                    'cpf_cnpj' => $dropshipping['cpf_cnpj'],
-                    'ie' => $dropshipping['IE'] ?? '',
-                    'rg' => $dropshipping['rg'] ?? '',
-                    'endereco' => $dropshipping['public_space'],
-                    'numero' => $dropshipping['number'] ?? '',
-                    'complemento' => $dropshipping['complement'] ?? '',
-                    'bairro' => $dropshipping['neighborhood'],
-                    'cep' => $dropshipping['cep'],
-                    'cidade' => $dropshipping['city'],
-                    'uf' => $dropshipping['uf'],
-                    'fone' => $dropshipping['phone'] ?? '',
-               ],
+               'cliente' => $this->makeClientData($dropshipping),
                'itens' => [
                     [
                         'item' => [
@@ -341,22 +380,7 @@ class TinyErpService
         $currentDate = Carbon::now();
         $conta = [
             'conta' => [
-                'cliente' => [
-                    'nome' => $dropshipping['name'],
-                    'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
-                    'email' => $dropshipping['email'],
-                    'cpf_cnpj' => $dropshipping['cpf_cnpj'],
-                    'ie' => $dropshipping['IE'] ?? '',
-                    'rg' => $dropshipping['rg'] ?? '',
-                    'endereco' => $dropshipping['public_space'],
-                    'numero' => $dropshipping['number'] ?? '',
-                    'complemento' => $dropshipping['complement'] ?? '',
-                    'bairro' => $dropshipping['neighborhood'],
-                    'cep' => $dropshipping['cep'],
-                    'cidade' => $dropshipping['city'],
-                    'uf' => $dropshipping['uf'],
-                    'fone' => $dropshipping['phone'] ?? '',
-                ],
+                'cliente' => $this->makeClientData($dropshipping),
                 "data" => $currentDate->format('d/m/Y'),
                 "vencimento" => $currentDate->copy()->addDays(3)->format('d/m/Y'),
                 "valor" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
@@ -368,6 +392,48 @@ class TinyErpService
         ];
 
         return json_encode($conta);
+    }
+
+    public function makeInvoiceData(array $order, array $dropshipping)
+    {
+        $data = [
+            'nota_servico' => [
+                'data_emissao' => Carbon::now()->format('d/m/Y'),
+                'cliente' => $this->makeClientData($dropshipping),
+            ],
+            'servico' => [
+                'descricao' => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
+                'valor_servico' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+            ],
+            "percentual_ir" => "1.5",
+            "texto_ir" => "IR Isento Cfe. Lei nro. 9430/96 Art.64",
+            "percentual_iss" => "2",
+            "descontar_iss_total" => "N",
+            "forma_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
+            "meio_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
+            "categoria_financeira" => 'Serviço',
+        ];
+
+        // Adiciona parcelas se o método de pagamento não for pix
+        if ($order['payment_method'] !== 'pix' && isset($order['installments']) && isset($order['total_amount_installments'])) {
+            $installments = (int) $order['installments'];
+            $totalAmount = (float) $order['total_amount_installments'];
+            $parcelaValue = $installments > 0 ? $totalAmount / $installments : 0;
+
+            $parcelas = [];
+            for ($i = 1; $i <= $installments; $i++) {
+                $parcelas[] = [
+                    'parcela' => [
+                        'valor' => number_format($parcelaValue, 2, '.', ''),
+                        'obs' => "Obs Parcela {$i}"
+                    ]
+                ];
+            }
+
+            $data['parcelas'] = $parcelas;
+        }
+
+        return $data;
     }
 
     public function makeExpeditionData(array $orderData, array $tinyErpData, string $expeditionId)
@@ -395,6 +461,26 @@ class TinyErpService
         ];
 
         return json_encode($expeditionData);
+    }
+
+    public function makeClientData(array $dropshipping): array
+    {
+        return [
+            'nome' => $dropshipping['name'],
+            'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
+            'email' => $dropshipping['email'],
+            'cpf_cnpj' => $dropshipping['cpf_cnpj'],
+            'ie' => $dropshipping['IE'] ?? '',
+            'rg' => $dropshipping['rg'] ?? '',
+            'endereco' => $dropshipping['public_space'],
+            'numero' => $dropshipping['number'] ?? '',
+            'complemento' => $dropshipping['complement'] ?? '',
+            'bairro' => $dropshipping['neighborhood'],
+            'cep' => $dropshipping['cep'],
+            'cidade' => $dropshipping['city'],
+            'uf' => $dropshipping['uf'],
+            'fone' => $dropshipping['phone'] ?? '',
+        ];
     }
 
     /**

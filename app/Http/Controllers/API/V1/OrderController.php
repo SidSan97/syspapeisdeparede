@@ -296,14 +296,14 @@ class OrderController extends Controller
             $productionReportService = app(\App\Services\ProductionReportService::class);
             $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
 
-            $sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
-                
+            /*$sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
+
             if($sendObject['status'] == 'OK' && $orderBudget->tinyErp_order_id !== null) {
                 $this->orderBudgetRepository->updateTinyErpOrderExpeditionId(
                     $orderBudgetId,
                     intval($sendObject['objetos'][0]['objeto']['idExpedicao'])
                 );
-            }
+            }*/
 
             return response()->json([
                 'success' => true,
@@ -349,14 +349,14 @@ class OrderController extends Controller
                     $validated['production_percentage']
                 );
 
-                $sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
-                
+                /*$sendObject = $this->tinyErpService->sendOrderToExpedition($orderBudget->tinyErp_order_id, 'venda');
+
                 if($sendObject['status'] == 'OK' && $orderBudget->tinyErp_order_id !== null) {
                     $this->orderBudgetRepository->updateTinyErpOrderExpeditionId(
                         $orderBudgetId,
                         intval($sendObject['objetos'][0]['objeto']['idExpedicao'])
                     );
-                }
+                }*/
             }
 
             return response()->json([
