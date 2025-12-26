@@ -75,7 +75,7 @@
                 <table class="table table-hover align-middle mb-0">
                   <thead>
                     <tr>
-                      <th scope="col" style="width: 64px;">ID</th>
+                      <th scope="col" style="width: 64px;">Nº</th>
                       <th scope="col" style="width: 64px;">Data</th>
                       <th class="text-nowrap" scope="col">Pedido</th>
                       <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
@@ -88,7 +88,8 @@
                       <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
                       <td style="min-width: 240px;">
                         <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
-                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
+                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small> -
+                        <small class="text-muted">Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small>
                       </td>
                       <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
                       <td>
@@ -265,13 +266,13 @@ function formatCurrency(value) {
 
 const separations = computed(() => {
   return expeditions.value.filter((expedition) => {
-    return expedition.order?.ready_to_expedition === 0;
+    return expedition?.ready_to_expedition === 0;
   });
 });
 
 const expeditionsList = computed(() => {
   return expeditions.value.filter((expedition) => {
-    return expedition.order?.ready_to_expedition === 1;
+    return expedition?.ready_to_expedition === 1;
   });
 });
 
