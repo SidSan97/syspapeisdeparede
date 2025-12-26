@@ -240,7 +240,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/nota.servico.incluir.php?' . $queryString;
+            $url = $this->apiUrl . '/nota.fiscal.incluir.php?' . $queryString;
 
             $response = $this->client->post($url);
 
@@ -303,9 +303,31 @@ class TinyErpService
         }
     }
 
+    /**
+     * Garante que o cache tiny_erp_all_data esteja inicializado
+     *
+     * @return array
+     */
+    private function ensureTinyErpAllDataCache(): array
+    {
+        $tinyErpAllData = Cache::get('tiny_erp_all_data');
+
+        if (empty($tinyErpAllData)) {
+            $tinyErpAllData = $this->searchProducts();
+            $productId = intval($tinyErpAllData['produtos'][0]['produto']['id']);
+            $product = $this->getProduct($productId);
+
+            if($product['status'] !== "Erro") {
+                Cache::put('tiny_erp_all_data', $tinyErpAllData);
+            }
+        }
+
+        return $tinyErpAllData;
+    }
+
     public function changeExpedition(string $expeditionId, array $orderData)
     {
-        $tinyErpData = Cache::get('tiny_erp_all_data');
+        $tinyErpData = $this->ensureTinyErpAllDataCache();
 
         try {
             $params = [
@@ -397,21 +419,33 @@ class TinyErpService
     public function makeInvoiceData(array $order, array $dropshipping)
     {
         $data = [
-            'nota_servico' => [
+            'nota_fiscal' => [
                 'data_emissao' => Carbon::now()->format('d/m/Y'),
+                "natureza_operacao" => "Venda de Mercadorias",
+                "hora_emissao" => Carbon::now()->format('H:i:s'),
+                "tipo" => "S",
                 'cliente' => $this->makeClientData($dropshipping),
+                "itens" => [
+                    [
+                        "item" => [
+                            "descricao" => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
+                            "valor_unitario" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+                            "gtin_ean" => config('app.tiny_erp_settings.gtin') ?? '',
+                            "quantidade" => 1,
+                            "unidade" => "UN",
+                            "tipo" => "P",
+                            "origem" => "0"
+                        ]
+                    ]
+                ],
+                "frete_por_conta" => "R",
+                "forma_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'multiplas',
+                "id_vendedor" => "",
+                "finalidade" => "3",
+                "obs" => "NF emitida pelo sistema Papel de parede",
+                "ecommerce" => "Sistema de Papel de parede",
+                "numero_pedido_ecommerce" => $order['id'],
             ],
-            'servico' => [
-                'descricao' => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
-                'valor_servico' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
-            ],
-            "percentual_ir" => "1.5",
-            "texto_ir" => "IR Isento Cfe. Lei nro. 9430/96 Art.64",
-            "percentual_iss" => "2",
-            "descontar_iss_total" => "N",
-            "forma_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
-            "meio_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
-            "categoria_financeira" => 'Serviço',
         ];
 
         // Adiciona parcelas se o método de pagamento não for pix
@@ -425,12 +459,13 @@ class TinyErpService
                 $parcelas[] = [
                     'parcela' => [
                         'valor' => number_format($parcelaValue, 2, '.', ''),
-                        'obs' => "Obs Parcela {$i}"
+                        'obs' => "Obs Parcela {$i}",
+                        'forma_pagamento' => 'credito'
                     ]
                 ];
             }
 
-            $data['parcelas'] = $parcelas;
+            $data['nota_fiscal']['parcelas'] = $parcelas;
         }
 
         return $data;

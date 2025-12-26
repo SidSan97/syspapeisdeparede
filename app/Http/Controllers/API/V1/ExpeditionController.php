@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use App\Services\ExpeditionService;
 use App\Services\GeneratePdfService;
 use Illuminate\Support\Facades\Log;
+use App\Services\TinyErpService;
+use App\Repositories\DropshippingRepository;
 
 class ExpeditionController extends Controller
 {
@@ -17,13 +19,17 @@ class ExpeditionController extends Controller
     protected $orderBudgetRepository;
     protected $orderRepository;
     protected $generatePdfService;
+    protected $tinyErpService;
+    protected $dropshippingRepository;
 
     public function __construct(
         OrderRepository $OrderRepository,
         ExpeditionService $expeditionService,
         OrderBudgetRepository $orderBudgetRepository,
         OrderRepository $orderRepository,
-        GeneratePdfService $generatePdfService
+        GeneratePdfService $generatePdfService,
+        TinyErpService $tinyErpService,
+        DropshippingRepository $dropshippingRepository
     )
     {
         $this->middleware('auth:api');
@@ -32,6 +38,8 @@ class ExpeditionController extends Controller
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->orderRepository = $orderRepository;
         $this->generatePdfService = $generatePdfService;
+        $this->tinyErpService = $tinyErpService;
+        $this->dropshippingRepository = $dropshippingRepository;
     }
 
     /**
@@ -45,6 +53,20 @@ class ExpeditionController extends Controller
         try {
             $orderBudgets = $this->orderBudgetRepository->show($orderBudgetId);
             $order = $this->orderRepository->find($orderBudgets->order_id);
+            $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+
+            $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $dropshipping->toArray());
+
+            if($invoiceData['status'] === 'Erro') {
+                $statusCode = $invoiceData['status_processamento'];
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao enviar nota fiscal. Tente novamente mais tarde.',
+                    'error' => $statusCode == 2 ? $invoiceData['registros']['registro']['erros']
+                               : $invoiceData['erros']['erro'],
+                ], 500);
+            }
 
             $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 

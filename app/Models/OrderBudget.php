@@ -26,6 +26,7 @@ class OrderBudget extends Model
         'tinyErp_order_id',
         'tinyErp_order_expedition_id',
         'order_index',
+        'ready_to_expedition',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class OrderBudget extends Model
         'tinyErp_order_id' => 'string',
         'tinyErp_order_expedition_id' => 'integer',
         'order_index' => 'integer',
+        'ready_to_expedition' => 'integer:0,1',
     ];
 
     public function order(): BelongsTo

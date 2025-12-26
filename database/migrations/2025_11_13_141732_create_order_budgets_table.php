@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('production_percentage', 5, 1)->default(0);
             $table->string('status', 50);
             $table->integer('order_index');
+            $table->tinyInteger('ready_to_expedition')->default(0);
             $table->string('tinyErp_order_id')->nullable();
             $table->integer('tinyErp_order_expedition_id')->nullable();
             $table->timestamps();

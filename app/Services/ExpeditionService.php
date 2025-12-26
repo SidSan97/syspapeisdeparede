@@ -3,15 +3,17 @@
 namespace App\Services;
 
 use App\Repositories\OrderRepository;
+use App\Repositories\OrderBudgetRepository;
 use Illuminate\Support\Facades\Auth;
 
 class ExpeditionService
 {
     protected $orderRepository;
-
-    public function __construct(OrderRepository $orderRepository)
+    protected $orderBudgetRepository;
+    public function __construct(OrderRepository $orderRepository, OrderBudgetRepository $orderBudgetRepository)
     {
         $this->orderRepository = $orderRepository;
+        $this->orderBudgetRepository = $orderBudgetRepository;
     }
 
     public function generateLabelSeparation(object $orderBudgets, object $order): array
@@ -31,9 +33,9 @@ class ExpeditionService
         } else {
             $label['status'] = "complemento completo";
             $label['carrier_name'] = trim(explode(' - ', $order->selected_carrier_name)[0]);
-
-            $this->orderRepository->updateReadyToExpedition($order->id);
         }
+
+        $this->orderBudgetRepository->updateReadyToExpedition($orderBudgets->id);
 
         return $label;
     }

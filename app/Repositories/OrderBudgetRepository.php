@@ -149,29 +149,42 @@ class OrderBudgetRepository {
         return $orderBudget->fresh();
     }
 
+    public function updateReadyToExpedition(int $orderBudgetId): OrderBudget
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+
+        $orderBudget->update([
+            'ready_to_expedition' => 1,
+        ]);
+
+        return $orderBudget->fresh(['user', 'tenant']);
+    }
+
     public function getReadyForExpedition()
     {
         return $this->orderBudget::where('production_percentage', 100)
             ->with('order')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'asc')
             ->get()
             ->map(function ($orderBudget) {
                 return [
                     'id' => $orderBudget->id,
                     'order_id' => $orderBudget->order_id,
                     'description' => $orderBudget->description,
+                    'name' => $orderBudget->order->name ?? $orderBudget->description ?? null,
                     'production_percentage' => $orderBudget->production_percentage,
                     'production_date' => $orderBudget->production_date,
                     'order_index' => $orderBudget->order_index,
+                    'total_index' => $orderBudget->max('order_index'),
                     'created_at' => $orderBudget->created_at,
                     'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
                     'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
+                    'ready_to_expedition' => $orderBudget->ready_to_expedition,
                     'order' => $orderBudget->order ? [
                         'id' => $orderBudget->order->id,
                         'name' => $orderBudget->order->name,
                         'total_amount' => $orderBudget->order->total_amount,
                         'status' => $orderBudget->order->status,
-                        'ready_to_expedition' => $orderBudget->order->ready_to_expedition,
                         'created_at' => $orderBudget->order->created_at,
                     ] : null,
                 ];
