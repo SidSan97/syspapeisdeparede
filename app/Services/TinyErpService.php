@@ -210,6 +210,34 @@ class TinyErpService
         }
     }
 
+    public function searchInvoices(): JsonResponse|array
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'situacao' => 6, // 6 = Emitida
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/notas.fiscais.pesquisa.php?' . $queryString;
+
+            $response = $this->client->get($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao buscar notas fiscais: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function sendInvoice(array $order, array $dropshipping)
     {
         try {
@@ -264,6 +292,34 @@ class TinyErpService
             return response()->json([
                 'success' => false,
                 'message' => 'Erro inesperado ao emitir nota fiscal: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function generateDanfe(string $invoiceId)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'id' => $invoiceId,
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/nota.fiscal.obter.link.php?' . $queryString;
+
+            $response = $this->client->get($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao obter link da DANFE: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao obter link da DANFE: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -434,9 +490,13 @@ class TinyErpService
                         ]
                     ]
                 ],
-                "frete_por_conta" => "R",
+                "transportador" => [
+                    "nome" => trim(explode(' - ', $order['selected_carrier_name'])[0])
+                ],
+                "frete_por_conta" => "D",
                 "forma_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'multiplas',
-                "id_vendedor" => "",
+                "forma_envio" => $this->getShippingCodeByOrigin($order['selected_carrier_name']),
+                "valor_frete" => $order['selected_carrier_price'],
                 "finalidade" => "3",
                 "obs" => "NF emitida pelo sistema Papel de parede",
                 "ecommerce" => "Sistema de Papel de parede",

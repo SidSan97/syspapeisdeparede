@@ -157,7 +157,7 @@ class OrderRepository
     {
         return Order::with(['orderBudgets', 'user', 'tenant'])
             ->whereHas('orderBudgets')
-            ->where('nf_sent', 0)
+            //->where('nf_sent', 0)
             ->whereDoesntHave('orderBudgets', function ($query) {
                 $query->where('ready_to_expedition', '!=', 1);
             })
@@ -170,6 +170,7 @@ class OrderRepository
                     'name' => $order->name,
                     'total_amount' => $order->payment_method == 'pix' ? $order->total_amount : $order->total_amount_installments,
                     'status' => $order->status,
+                    'nf_sent' => $order->nf_sent,
                     'created_at' => $order->created_at,
                 ];
             });

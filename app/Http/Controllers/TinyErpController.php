@@ -72,12 +72,14 @@ class TinyErpController extends Controller
     {
         $gtin = Setting::get('tiny_erp_gtin', '');
         $cep = Setting::get('tiny_erp_cep', '');
+        $ncm = Setting::get('tiny_erp_ncm', '');
 
         return response()->json([
             'success' => true,
             'data' => [
                 'gtin' => $gtin,
                 'cep' => $cep,
+                'ncm' => $ncm,
             ],
             'message' => 'Configurações do Tiny ERP',
         ], 200);
@@ -93,6 +95,7 @@ class TinyErpController extends Controller
 
         Setting::set('tiny_erp_gtin', $request->input('gtin', ''), 'string');
         Setting::set('tiny_erp_cep', $cep, 'string');
+        Setting::set('tiny_erp_ncm', $request->input('ncm', ''), 'string');
 
         Cache::forget('tiny_erp_settings');
         Cache::forget('tiny_erp_all_data');
@@ -102,6 +105,7 @@ class TinyErpController extends Controller
             'data' => [
                 'gtin' => $request->input('gtin', ''),
                 'cep' => $cep,
+                'ncm' => $request->input('ncm', ''),
             ],
             'message' => 'Configurações salvas com sucesso',
         ], 200);

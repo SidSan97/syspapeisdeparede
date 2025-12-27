@@ -146,4 +146,25 @@ class ExpeditionController extends Controller
             ], 500);
         }
     }
+
+    public function searchInvoices(): JsonResponse
+    {
+        try {
+            $invoices = $this->tinyErpService->searchInvoices();
+
+            return response()->json([
+                'success' => true,
+                'data' => $invoices,
+                'message' => 'Notas fiscais encontradas com sucesso',
+            ], 200);
+        }
+        catch (\Exception $e) {
+            Log::error('Erro ao buscar notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar notas fiscais',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

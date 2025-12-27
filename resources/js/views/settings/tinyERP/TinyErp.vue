@@ -49,6 +49,28 @@
                 />
                 <has-error :form="form" field="cep"></has-error>
               </div>
+              <div class="col-12 col-md-6">
+                <label for="ncm" class="form-label">
+                  NCM
+                  <i
+                    class="fa fa-question-circle text-muted ms-1"
+                    style="font-size: 0.875rem; cursor: help;"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="NCM do produto no Tiny ERP. Obrigatório para emissão de nota fiscal."
+                  ></i>
+                </label>
+                <input
+                  id="ncm"
+                  v-model.trim="form.ncm"
+                  type="text"
+                  class="form-control"
+                  :class="{ 'is-invalid': form.errors.has('ncm') }"
+                  placeholder="Ex: 4814.20.00"
+                  maxlength="10"
+                />
+                <has-error :form="form" field="ncm"></has-error>
+              </div>
             </div>
 
             <hr class="my-4">
@@ -83,6 +105,7 @@ const form = reactive(
   new Form({
     gtin: '',
     cep: '',
+    ncm: '',
   })
 );
 
@@ -112,11 +135,13 @@ const loadSettings = async () => {
     const { data } = await axios.get('v1/tiny-erp/settings');
     form.gtin = data.data?.gtin || '';
     form.cep = formatCepForDisplay(data.data?.cep || '');
+    form.ncm = data.data?.ncm || '';
   } catch (error) {
     console.error('Erro ao carregar configurações:', error);
 
     form.gtin = '';
     form.cep = '';
+    form.ncm = '';
   } finally {
     isLoading.value = false;
   }
@@ -132,6 +157,10 @@ const handleSubmit = async () => {
 
     if (form.cep) {
       form.cep = form.cep.replace(/\D/g, '');
+    }
+
+    if (form.ncm) {
+      form.ncm = form.ncm.replace(/\D/g, '');
     }
 
     const response = await form.post('v1/tiny-erp/settings');

@@ -558,9 +558,27 @@ async function generateInvoice(invoice) {
     }
 }
 
+async function searchInvoices() {
+    try {
+        loading.value = true;
+        const { data } = await axios.get('v1/search-invoices');
+        
+        // Por enquanto apenas faz a chamada, sem lógica adicional
+        console.log('Dados de search-invoices:', data);
+    } catch (error) {
+        console.error('Erro ao buscar invoices:', error);
+    } finally {
+        loading.value = false;
+    }
+}
+
 watch(activeTab, (newTab) => {
   if (newTab === 'invoice' && invoices.value.length === 0) {
     fetchInvoices();
+  }
+  
+  if (newTab === 'expedition') {
+    searchInvoices();
   }
 });
 

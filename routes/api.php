@@ -160,6 +160,7 @@ Route::prefix('v1')->group(function () {
     Route::get('generate-separation-label/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabel'])->middleware('auth:api');
     Route::get('generate-separation-label-pdf/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabelPdf'])->middleware('auth:api');
     Route::post('generate-invoice/{orderId}', [ExpeditionController::class, 'generateInvoice'])->middleware('auth:api');
+    Route::get('search-invoices', [ExpeditionController::class, 'searchInvoices'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');

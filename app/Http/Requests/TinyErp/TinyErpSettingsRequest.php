@@ -24,6 +24,7 @@ class TinyErpSettingsRequest extends FormRequest
         return [
             'gtin' => ['nullable', 'string', 'max:255'],
             'cep' => ['nullable', 'string', 'max:9', 'regex:/^\d{5}-?\d{3}$/'],
+            'ncm' => ['nullable', 'string', 'max:10'],
         ];
     }
 
@@ -38,6 +39,7 @@ class TinyErpSettingsRequest extends FormRequest
             'gtin.max' => 'O GTIN não pode ter mais de 255 caracteres.',
             'cep.max' => 'O CEP não pode ter mais de 9 caracteres.',
             'cep.regex' => 'O CEP deve estar no formato 00000-000 ou 00000000.',
+            'ncm.max' => 'O NCM não pode ter mais de 10 caracteres.',
         ];
     }
 }
