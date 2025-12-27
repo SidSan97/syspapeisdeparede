@@ -152,8 +152,8 @@
             <form class="g-3 align-items-center mb-4" role="search">
               <label for="search-query-expedition" class="sr-only">Pesquisar expedição</label>
 
-              <div class="d-flex">
-                <div class="me-3">
+              <div class="d-flex flex-wrap gap-3">
+                <div class="flex-grow-1" style="min-width: 200px;">
                   <div class="input-group input-group-prefix">
                     <input
                       id="search-query-expedition"
@@ -167,6 +167,21 @@
                     </span>
                   </div>
                 </div>
+                <div style="min-width: 200px;">
+                  <select
+                    class="form-select"
+                    v-model="selectedCarrier"
+                  >
+                    <option :value="null">Todas as transportadoras</option>
+                    <option
+                      v-for="carrier in carriersList"
+                      :key="carrier"
+                      :value="carrier"
+                    >
+                      {{ carrier }}
+                    </option>
+                  </select>
+                </div>
               </div>
             </form>
 
@@ -177,68 +192,93 @@
 
               <EmptyState
                 v-else-if="filteredExpeditions.length === 0"
-                heading="Nenhuma expedição encontrada"
+                heading="Nenhuma nota fiscal encontrada"
                 icon="shipping-fast"
                 class="p-5"
               >
-                Não há itens prontos para expedição no momento.
+                Não há notas fiscais para expedição no momento.
               </EmptyState>
 
-              <div v-else class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col" style="width: 64px;">ID</th>
-                      <th scope="col" style="width: 64px;">Data</th>
-                      <th class="text-nowrap" scope="col">Pedido</th>
-                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="expedition in filteredExpeditions" :key="expedition.id">
-                      <td class="fw-semibold">{{ expedition.id }}</td>
-                      <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
-                      <td style="min-width: 240px;">
-                        <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
-                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
-                      </td>
-                      <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
-                      <td>
-                        <div class="dropdown">
-                          <button
-                            class="btn btn-subtle btn-sm"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                          >
-                            <i class="fa fa-ellipsis-h"></i>
-                          </button>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="viewDetails(expedition)"
-                              >
-                                Ver detalhes
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="generateSeparationLabel(expedition)"
-                              >
-                                Gerar etiqueta de separação
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div v-else>
+                <!-- Barra de seleção -->
+                <div v-if="selectedCount > 0" class="d-flex align-items-center justify-content-between mb-3 p-3 bg-light rounded">
+                  <div class="d-flex align-items-center">
+                    <span class="fw-semibold me-2">{{ selectedCount }}</span>
+                    <span class="text-muted">selecionados</span>
+                  </div>
+                  <button class="btn btn-primary" @click="expedir">
+                    Expedir
+                  </button>
+                </div>
+
+                <div class="table-responsive">
+                  <h6 class="mt-3">Notas Fiscais</h6>
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="width: 50px;">
+                          <input
+                            ref="selectAllCheckbox"
+                            type="checkbox"
+                            class="form-check-input checkbox-invoice"
+                            :checked="isAllSelected"
+                            @change="toggleSelectAll"
+                          />
+                        </th>
+                        <th class="text-nowrap" scope="col">Nome</th>
+                        <th scope="col" style="width: 120px;">Data de Emissão</th>
+                        <th scope="col" style="width: 100px;">Nº Pedido</th>
+                        <th scope="col" style="width: 100px;">Nº Nota Fiscal</th>
+                        <th class="text-nowrap" scope="col">Transportador</th>
+                        <th class="text-nowrap" scope="col">Valor</th>
+                        <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="invoice in filteredExpeditions" :key="invoice.nota_fiscal?.id">
+                        <td>
+                          <input
+                            type="checkbox"
+                            class="form-check-input checkbox-invoice"
+                            :checked="isInvoiceSelected(invoice.nota_fiscal?.id)"
+                            @change="toggleSelectInvoice(invoice.nota_fiscal?.id)"
+                          />
+                        </td>
+                        <td style="min-width: 240px;">
+                          <div class="fw-semibold">{{ invoice.nota_fiscal?.nome || '—' }}</div>
+                        </td>
+                        <td>{{ invoice.nota_fiscal?.data_emissao || '—' }}</td>
+                        <td class="fw-semibold">#{{ formatInvoiceNumber(invoice.nota_fiscal?.numero_ecommerce) }}</td>
+                        <td class="fw-semibold">{{ invoice.nota_fiscal?.id || '—' }}</td>
+                        <td>{{ invoice.nota_fiscal?.transportador?.nome || '—' }}</td>
+                        <td>{{ formatCurrency(invoice.nota_fiscal?.valor || 0) }}</td>
+                        <td>
+                          <div class="dropdown">
+                            <button
+                              class="btn btn-subtle btn-sm"
+                              type="button"
+                              data-bs-toggle="dropdown"
+                              aria-expanded="false"
+                            >
+                              <i class="fa fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                              <li>
+                                <button
+                                  class="dropdown-item"
+                                  type="button"
+                                  @click="viewInvoiceDetails(invoice)"
+                                >
+                                  Ver detalhes
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -371,19 +411,28 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import axios from 'axios';
 import { formatDate } from '@/utils/dateUtils';
+import { getCarriersList } from '@/constants/carriers';
+
+const router = useRouter();
+const selectAllCheckbox = ref(null);
 
 const expeditions = ref([]);
 const invoices = ref([]);
+const invoicesList = ref([]);
 const loading = ref(true);
 const activeTab = ref('separation');
 const searchQuerySeparation = ref('');
 const searchQueryExpedition = ref('');
 const searchQueryInvoice = ref('');
+const selectedInvoices = ref(new Set());
+const selectedCarrier = ref(null);
+const carriersList = ref(getCarriersList());
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -429,16 +478,81 @@ const filteredSeparations = computed(() => {
 const filteredExpeditions = computed(() => {
   const query = searchQueryExpedition.value.trim().toLowerCase();
 
-  return expeditionsList.value.filter((expedition) => {
+  return invoicesList.value.filter((invoice) => {
+    const notaFiscal = invoice.nota_fiscal;
+    
+    // Filtro por busca
     const matchesQuery =
       !query ||
-      expedition.order?.name?.toLowerCase().includes(query) ||
-      String(expedition.id).includes(query) ||
-      String(expedition.order_id).includes(query);
+      notaFiscal?.nome?.toLowerCase().includes(query) ||
+      notaFiscal?.numero_ecommerce?.toString().includes(query) ||
+      notaFiscal?.transportador?.nome?.toLowerCase().includes(query) ||
+      notaFiscal?.data_emissao?.includes(query);
 
-    return matchesQuery;
+    // Filtro por transportadora
+    const matchesCarrier =
+      !selectedCarrier.value ||
+      notaFiscal?.transportador?.nome === selectedCarrier.value;
+
+    return matchesQuery && matchesCarrier;
   });
 });
+
+const selectedCount = computed(() => selectedInvoices.value.size);
+
+const isAllSelected = computed(() => {
+  if (filteredExpeditions.value.length === 0) return false;
+  return filteredExpeditions.value.every((invoice) => 
+    selectedInvoices.value.has(invoice.nota_fiscal?.id)
+  );
+});
+
+const isIndeterminate = computed(() => {
+  const selected = selectedCount.value;
+  const total = filteredExpeditions.value.length;
+  return selected > 0 && selected < total;
+});
+
+watch([isIndeterminate, isAllSelected], () => {
+  nextTick(() => {
+    if (selectAllCheckbox.value) {
+      selectAllCheckbox.value.indeterminate = isIndeterminate.value;
+    }
+  });
+});
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    // Desmarcar todos
+    filteredExpeditions.value.forEach((invoice) => {
+      selectedInvoices.value.delete(invoice.nota_fiscal?.id);
+    });
+  } else {
+    // Marcar todos
+    filteredExpeditions.value.forEach((invoice) => {
+      if (invoice.nota_fiscal?.id) {
+        selectedInvoices.value.add(invoice.nota_fiscal.id);
+      }
+    });
+  }
+}
+
+function toggleSelectInvoice(invoiceId) {
+  if (selectedInvoices.value.has(invoiceId)) {
+    selectedInvoices.value.delete(invoiceId);
+  } else {
+    selectedInvoices.value.add(invoiceId);
+  }
+}
+
+function isInvoiceSelected(invoiceId) {
+  return selectedInvoices.value.has(invoiceId);
+}
+
+function expedir() {
+  // Por enquanto apenas log
+  console.log('Expedir:', Array.from(selectedInvoices.value));
+}
 
 const filteredInvoices = computed(() => {
   const query = searchQueryInvoice.value.trim().toLowerCase();
@@ -679,12 +793,33 @@ async function searchInvoices() {
         loading.value = true;
         const { data } = await axios.get('v1/search-invoices');
         
-        // Por enquanto apenas faz a chamada, sem lógica adicional
-        console.log('Dados de search-invoices:', data);
+        if (data.success && data.data.notas_fiscais) {
+            invoicesList.value = data.data.notas_fiscais;
+        } else {
+            invoicesList.value = [];
+        }
     } catch (error) {
         console.error('Erro ao buscar invoices:', error);
+        invoicesList.value = [];
     } finally {
         loading.value = false;
+    }
+}
+
+function formatInvoiceNumber(numero) {
+    if (!numero) return '00000';
+    return String(numero).padStart(5, '0');
+}
+
+function viewInvoiceDetails(invoice) {
+    const invoiceId = invoice.nota_fiscal?.id;
+    if (invoiceId) {
+        // Salva os dados no sessionStorage antes de navegar
+        sessionStorage.setItem(`invoice_${invoiceId}`, JSON.stringify(invoice.nota_fiscal));
+        router.push({ 
+            name: 'ShowInvoiceDetails', 
+            params: { id: invoiceId }
+        });
     }
 }
 
@@ -743,6 +878,11 @@ input {
 
 .dot-secondary {
   background-color: #6c757d;
+}
+
+.checkbox-invoice {
+  width: 16px !important;
+  height: 16px !important;
 }
 </style>
 

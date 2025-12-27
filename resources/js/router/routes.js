@@ -111,6 +111,11 @@ const routes = [
                 name: 'Expedition',
                 component: () => import('../views/expedition/expedition.vue'),
             },
+            {
+                path: '/expedicao/nota-fiscal/:id',
+                name: 'ShowInvoiceDetails',
+                component: () => import('../views/expedition/components/showInvoiceDetails.vue'),
+            },
             ...settings,
         ]
     },

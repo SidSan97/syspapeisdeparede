@@ -11,6 +11,7 @@ use App\Services\GeneratePdfService;
 use Illuminate\Support\Facades\Log;
 use App\Services\TinyErpService;
 use App\Repositories\DropshippingRepository;
+use Illuminate\Support\Facades\Cache;
 
 class ExpeditionController extends Controller
 {
@@ -134,6 +135,8 @@ class ExpeditionController extends Controller
             $this->orderRepository->updateNfSent($orderId);
             $this->orderRepository->updateNfId($orderId, $issueInvoice['nota_fiscal']['id']);
 
+            Cache::forget('tiny_erp_invoices');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Nota fiscal gerada com sucesso',
@@ -151,7 +154,20 @@ class ExpeditionController extends Controller
     public function searchInvoices(): JsonResponse
     {
         try {
+            $cacheKey = 'tiny_erp_invoices';
+            $cachedData = Cache::get($cacheKey);
+
+            if ($cachedData !== null) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $cachedData,
+                    'message' => 'Notas fiscais encontradas com sucesso',
+                ], 200);
+            }
+
             $invoices = $this->tinyErpService->searchInvoices();
+
+            Cache::put($cacheKey, $invoices, now()->addHours(24));
 
             return response()->json([
                 'success' => true,
