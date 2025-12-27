@@ -86,7 +86,7 @@ class BudgetController extends Controller
         }
     }
 
-    public function show(int $id): JsonResponse
+    public function show($id): JsonResponse
     {
         try {
             $budget = Budget::with(['rooms.walls.collectionModel.files', 'dropshippingData'])

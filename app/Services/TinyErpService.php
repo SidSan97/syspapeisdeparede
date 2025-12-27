@@ -180,12 +180,6 @@ class TinyErpService
         catch (\Exception $e) {
             Log::error('Erro inesperado ao enviar pedido: ' . $e->getMessage());
         }
-        catch (RequestException $e) {
-            Log::error('Erro ao enviar pedido: ' . $e->getMessage());
-        }
-        catch (GuzzleException $e) {
-            Log::error('Erro ao enviar pedido: ' . $e->getMessage());
-        }
     }
 
     public function sendAccountPayable(array $order, array $dropshipping)
@@ -212,20 +206,6 @@ class TinyErpService
             return response()->json([
                 'success' => false,
                 'message' => 'Erro inesperado ao enviar conta a pagar: ' . $e->getMessage(),
-            ], 500);
-        }
-        catch (RequestException $e) {
-            Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao enviar conta a pagar: ' . $e->getMessage(),
-            ], 500);
-        }
-        catch (GuzzleException $e) {
-            Log::error('Erro ao enviar conta a pagar: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao enviar conta a pagar: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -272,6 +252,36 @@ class TinyErpService
         }
     }
 
+    public function issueInvoice(array $invoiceData)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'id' => $invoiceData['nf_id'],
+                'numero' => $invoiceData['nf_number'],
+                'serie' => $invoiceData['nf_serie'],
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/nota.fiscal.emitir.php?' . $queryString;
+
+            $response = $this->client->get($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao emitir nota fiscal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao emitir nota fiscal: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function sendOrderToExpedition(string $tinyErp_order_id, string $typeObject)
     {
         try {
@@ -294,12 +304,10 @@ class TinyErpService
         }
         catch (\Exception $e) {
             Log::error('Erro inesperado ao enviar objeto a expedição: ' . $e->getMessage());
-        }
-        catch (RequestException $e) {
-            Log::error('Erro ao enviar objeto a expedição: ' . $e->getMessage());
-        }
-        catch (GuzzleException $e) {
-            Log::error('Erro ao enviar objeto a expedição: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao enviar objeto a expedição: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -420,9 +428,10 @@ class TinyErpService
     {
         $data = [
             'nota_fiscal' => [
-                'data_emissao' => Carbon::now()->format('d/m/Y'),
+                //'data_emissao' => Carbon::now()->format('d/m/Y'),
                 "natureza_operacao" => "Venda de Mercadorias",
-                "hora_emissao" => Carbon::now()->format('H:i:s'),
+                //"hora_entrada_saida" => "15:30",
+                //"data_entrada_saida" => Carbon::now()->format('d/m/Y'),
                 "tipo" => "S",
                 'cliente' => $this->makeClientData($dropshipping),
                 "itens" => [
@@ -433,6 +442,7 @@ class TinyErpService
                             "gtin_ean" => config('app.tiny_erp_settings.gtin') ?? '',
                             "quantidade" => 1,
                             "unidade" => "UN",
+                            "ncm" => config('app.tiny_erp_settings.ncm') ?? "4814.20.00",
                             "tipo" => "P",
                             "origem" => "0"
                         ]
@@ -447,26 +457,6 @@ class TinyErpService
                 "numero_pedido_ecommerce" => $order['id'],
             ],
         ];
-
-        // Adiciona parcelas se o método de pagamento não for pix
-        if ($order['payment_method'] !== 'pix' && isset($order['installments']) && isset($order['total_amount_installments'])) {
-            $installments = (int) $order['installments'];
-            $totalAmount = (float) $order['total_amount_installments'];
-            $parcelaValue = $installments > 0 ? $totalAmount / $installments : 0;
-
-            $parcelas = [];
-            for ($i = 1; $i <= $installments; $i++) {
-                $parcelas[] = [
-                    'parcela' => [
-                        'valor' => number_format($parcelaValue, 2, '.', ''),
-                        'obs' => "Obs Parcela {$i}",
-                        'forma_pagamento' => 'credito'
-                    ]
-                ];
-            }
-
-            $data['nota_fiscal']['parcelas'] = $parcelas;
-        }
 
         return $data;
     }

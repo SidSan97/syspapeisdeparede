@@ -64,7 +64,23 @@ class ExpeditionController extends Controller
                     'success' => false,
                     'message' => 'Erro ao enviar nota fiscal. Tente novamente mais tarde.',
                     'error' => $statusCode == 2 ? $invoiceData['registros']['registro']['erros']
-                               : $invoiceData['erros']['erro'],
+                               : $invoiceData['erros'],
+                ], 500);
+            }
+
+            $nfData = [
+                'nf_id' => $invoiceData['registros']['registro']['id'],
+                'nf_number' => $invoiceData['registros']['registro']['numero'],
+                'nf_serie' => $invoiceData['registros']['registro']['serie'],
+            ];
+
+            $issueInvoice = $this->tinyErpService->issueInvoice($nfData);
+
+            if($issueInvoice['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao emitir nota fiscal. Tente novamente mais tarde.',
+                    'error' => $issueInvoice['erros'],
                 ], 500);
             }
 

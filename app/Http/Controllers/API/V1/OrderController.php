@@ -435,17 +435,17 @@ class OrderController extends Controller
     public function expedition(): JsonResponse
     {
         try {
-            $orderBudgets = $this->orderBudgetRepository->getReadyForExpedition();
+            $orderBudgets = $this->orderBudgetRepository->getReadyForPicking();
 
             return response()->json([
                 'success' => true,
                 'data' => $orderBudgets,
-                'message' => 'Lista de expedições recuperada com sucesso',
+                'message' => 'Lista de separações recuperada com sucesso',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao listar expedições',
+                'message' => 'Erro ao listar separações',
                 'error' => $e->getMessage(),
             ], 500);
         }

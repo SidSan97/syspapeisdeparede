@@ -157,10 +157,10 @@ class OrderBudgetRepository {
             'ready_to_expedition' => 1,
         ]);
 
-        return $orderBudget->fresh(['user', 'tenant']);
+        return $orderBudget->fresh();
     }
 
-    public function getReadyForExpedition()
+    public function getReadyForPicking()
     {
         return $this->orderBudget::where('production_percentage', 100)
             ->with('order')
