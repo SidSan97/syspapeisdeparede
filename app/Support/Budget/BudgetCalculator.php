@@ -3,11 +3,12 @@
 namespace App\Support\Budget;
 
 use App\Models\CollectionModel;
+use Illuminate\Support\Facades\Cache;
 
 class BudgetCalculator
 {
-    public const PRICE_VISTA = 41.90;
-    public const PRICE_PRAZO = 47.90;
+    protected static ?array $tinyErpAllData = null;
+
     public const STRIP_WIDTH = 0.6;
 
     public const STRIP_HEIGHT_OPTIONS = [
@@ -18,6 +19,36 @@ class BudgetCalculator
     ];
 
     protected static array $modelCache = [];
+
+    /**
+     * Obtém os dados do Tiny ERP do cache
+     */
+    protected static function getTinyErpAllData(): array
+    {
+        if (self::$tinyErpAllData === null) {
+            self::$tinyErpAllData = Cache::get('tiny_erp_all_data', []);
+        }
+
+        return self::$tinyErpAllData;
+    }
+
+    /**
+     * Obtém o preço à vista do cache
+     */
+    protected static function getPriceVista(): float
+    {
+        $data = self::getTinyErpAllData();
+        return (float) ($data['precoPromocionalVista'] ?? 0);
+    }
+
+    /**
+     * Obtém o preço a prazo do cache
+     */
+    protected static function getPricePrazo(): float
+    {
+        $data = self::getTinyErpAllData();
+        return (float) ($data['precoPromocionalPrazo'] ?? 0);
+    }
 
     protected static function getContinuations(array $wall): array
     {
@@ -153,7 +184,7 @@ class BudgetCalculator
     ): float {
         self::$modelCache = [];
 
-        $subtotal = $totalArea * self::PRICE_VISTA;
+        $subtotal = $totalArea * self::getPriceVista();
         $subtotal += self::calculateModelCost($rooms);
 
         if ($selectedCarrier !== null) {
@@ -173,7 +204,7 @@ class BudgetCalculator
     ): float {
         self::$modelCache = [];
 
-        $subtotal = $totalArea * self::PRICE_PRAZO;
+        $subtotal = $totalArea * self::getPricePrazo();
         $subtotal += self::calculateModelCost($rooms);
 
         if ($selectedCarrier !== null) {
