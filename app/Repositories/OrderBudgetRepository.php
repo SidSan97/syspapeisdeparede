@@ -164,6 +164,7 @@ class OrderBudgetRepository {
     {
         return $this->orderBudget::where('production_percentage', 100)
             ->with('order')
+            ->where('ready_to_expedition', 0)
             ->orderBy('id', 'asc')
             ->get()
             ->map(function ($orderBudget) {

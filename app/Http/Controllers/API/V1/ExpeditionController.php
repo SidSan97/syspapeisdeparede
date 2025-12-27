@@ -53,36 +53,6 @@ class ExpeditionController extends Controller
         try {
             $orderBudgets = $this->orderBudgetRepository->show($orderBudgetId);
             $order = $this->orderRepository->find($orderBudgets->order_id);
-            $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
-
-            $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $dropshipping->toArray());
-
-            if($invoiceData['status'] === 'Erro') {
-                $statusCode = $invoiceData['status_processamento'];
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erro ao enviar nota fiscal. Tente novamente mais tarde.',
-                    'error' => $statusCode == 2 ? $invoiceData['registros']['registro']['erros']
-                               : $invoiceData['erros'],
-                ], 500);
-            }
-
-            $nfData = [
-                'nf_id' => $invoiceData['registros']['registro']['id'],
-                'nf_number' => $invoiceData['registros']['registro']['numero'],
-                'nf_serie' => $invoiceData['registros']['registro']['serie'],
-            ];
-
-            $issueInvoice = $this->tinyErpService->issueInvoice($nfData);
-
-            if($issueInvoice['status'] === 'Erro') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erro ao emitir nota fiscal. Tente novamente mais tarde.',
-                    'error' => $issueInvoice['erros'],
-                ], 500);
-            }
 
             $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 
@@ -121,6 +91,57 @@ class ExpeditionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao gerar PDF da etiqueta de separação',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function generateInvoice(int $orderId): JsonResponse
+    {
+        try {
+            $order = $this->orderRepository->find($orderId);
+            $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+
+            $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $dropshipping->toArray());
+
+            if($invoiceData['status'] === 'Erro') {
+                $statusCode = $invoiceData['status_processamento'];
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao enviar nota fiscal. Tente novamente mais tarde.',
+                    'error' => $statusCode == 2 ? $invoiceData['registros']['registro']['erros']
+                               : $invoiceData['erros'],
+                ], 500);
+            }
+
+            $nfData = [
+                'nf_id' => $invoiceData['registros']['registro']['id'],
+                'nf_number' => $invoiceData['registros']['registro']['numero'],
+                'nf_serie' => $invoiceData['registros']['registro']['serie'],
+            ];
+
+            $issueInvoice = $this->tinyErpService->issueInvoice($nfData);
+
+            if($issueInvoice['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao emitir nota fiscal. Tente novamente mais tarde.',
+                    'error' => $issueInvoice['erros'],
+                ], 500);
+            }
+
+            $this->orderRepository->updateNfSent($orderId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Nota fiscal gerada com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Erro ao gerar nota fiscal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar nota fiscal',
                 'error' => $e->getMessage(),
             ], 500);
         }

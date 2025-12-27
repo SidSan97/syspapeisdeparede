@@ -38,6 +38,7 @@ class Order extends Model
         'collection_referring_model',
         'dropshipping_budget',
         'paid',
+        'nf_sent',
     ];
 
     protected $casts = [
@@ -56,6 +57,7 @@ class Order extends Model
         'collection_referring_model' => 'string',
         'dropshipping_budget' => 'integer',
         'paid' => 'integer:0,1',
+        'nf_sent' => 'integer:0,1',
     ];
 
     /**
@@ -90,6 +92,11 @@ class Order extends Model
     public function dropshippingData(): HasOne
     {
         return $this->hasOne(DropshippingData::class);
+    }
+
+    public function orderBudgets(): HasMany
+    {
+        return $this->hasMany(OrderBudget::class);
     }
 }
 

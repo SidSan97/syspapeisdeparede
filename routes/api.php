@@ -136,6 +136,7 @@ Route::prefix('v1')->group(function () {
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
     Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts'])->middleware('auth:api');
     Route::get('orders/expedition', [OrderController::class, 'expedition'])->middleware('auth:api');
+    Route::get('orders/ready-for-invoice', [OrderController::class, 'readyForInvoice'])->middleware('auth:api');
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
     Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
     Route::post('orders/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
@@ -158,6 +159,7 @@ Route::prefix('v1')->group(function () {
     //Expedição
     Route::get('generate-separation-label/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabel'])->middleware('auth:api');
     Route::get('generate-separation-label-pdf/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabelPdf'])->middleware('auth:api');
+    Route::post('generate-invoice/{orderId}', [ExpeditionController::class, 'generateInvoice'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');

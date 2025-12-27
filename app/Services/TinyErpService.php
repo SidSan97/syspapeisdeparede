@@ -236,20 +236,6 @@ class TinyErpService
                 'message' => 'Erro inesperado ao enviar nota fiscal: ' . $e->getMessage(),
             ], 500);
         }
-        catch (RequestException $e) {
-            Log::error('Erro ao enviar nota fiscal: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao enviar nota fiscal: ' . $e->getMessage(),
-            ], 500);
-        }
-        catch (GuzzleException $e) {
-            Log::error('Erro ao enviar nota fiscal: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao enviar nota fiscal: ' . $e->getMessage(),
-            ], 500);
-        }
     }
 
     public function issueInvoice(array $invoiceData)

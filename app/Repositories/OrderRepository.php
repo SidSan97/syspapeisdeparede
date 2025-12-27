@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -152,6 +153,28 @@ class OrderRepository
         return $query->orderByDesc('created_at')->get();
     }
 
+    public function getReadyForInvoice(): SupportCollection
+    {
+        return Order::with(['orderBudgets', 'user', 'tenant'])
+            ->whereHas('orderBudgets')
+            ->where('nf_sent', 0)
+            ->whereDoesntHave('orderBudgets', function ($query) {
+                $query->where('ready_to_expedition', '!=', 1);
+            })
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'name' => $order->name,
+                    'total_amount' => $order->payment_method == 'pix' ? $order->total_amount : $order->total_amount_installments,
+                    'status' => $order->status,
+                    'created_at' => $order->created_at,
+                ];
+            });
+    }
+
     public function createFromBudget(Budget $budget, array $additionalData = []): Order
     {
         $filesReferringModel = $additionalData['files_referring_model'] ?? $budget->files_referring_model;
@@ -202,6 +225,13 @@ class OrderRepository
         ];
 
         return $this->create($orderData);
+    }
+
+    public function updateNfSent(int $orderId): void
+    {
+        Order::where('id', $orderId)->update([
+            'nf_sent' => 1,
+        ]);
     }
 }
 

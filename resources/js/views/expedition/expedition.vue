@@ -18,6 +18,17 @@
           <li class="nav-item" role="presentation">
             <button
               class="nav-link"
+              :class="{ active: activeTab === 'invoice' }"
+              @click="activeTab = 'invoice'"
+              type="button"
+              role="tab"
+            >
+              Faturar
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
               :class="{ active: activeTab === 'expedition' }"
               @click="activeTab = 'expedition'"
               type="button"
@@ -231,6 +242,107 @@
               </div>
             </div>
           </div>
+
+          <!-- Aba Faturar -->
+          <div
+            v-show="activeTab === 'invoice'"
+            class="tab-pane"
+            :class="{ active: activeTab === 'invoice' }"
+            role="tabpanel"
+          >
+            <form class="g-3 align-items-center mb-4" role="search">
+              <label for="search-query-invoice" class="sr-only">Pesquisar faturar</label>
+
+              <div class="d-flex">
+                <div class="me-3">
+                  <div class="input-group input-group-prefix">
+                    <input
+                      id="search-query-invoice"
+                      type="text"
+                      class="form-control"
+                      placeholder="Pesquisar faturar"
+                      v-model="searchQueryInvoice"
+                    />
+                    <span class="input-group-text">
+                      <i class="fa fa-search"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <div class="card-body p-0 mt-4">
+              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
+                Carregando pedidos para faturar...
+              </div>
+
+              <EmptyState
+                v-else-if="filteredInvoices.length === 0"
+                heading="Nenhum pedido encontrado"
+                icon="shipping-fast"
+                class="p-5"
+              >
+                Não há pedidos prontos para faturar no momento.
+              </EmptyState>
+
+              <div v-else class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col" style="width: 64px;">ID</th>
+                      <th scope="col" style="width: 64px;">Data</th>
+                      <th class="text-nowrap" scope="col">Pedido</th>
+                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="invoice in filteredInvoices" :key="invoice.id">
+                      <td class="fw-semibold">{{ invoice.id }}</td>
+                      <td>{{ formatDate(invoice?.created_at || invoice.created_at) }}</td>
+                      <td style="min-width: 240px;">
+                        <div class="fw-semibold">{{ invoice?.name || '—' }}</div>
+                        <small class="text-muted">Pedido #{{ invoice.order_id }}</small>
+                      </td>
+                      <td>{{ formatCurrency(invoice?.total_amount || 0) }}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button
+                            class="btn btn-subtle btn-sm"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                          >
+                            <i class="fa fa-ellipsis-h"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="viewDetails(invoice)"
+                              >
+                                Ver detalhes
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="generateInvoice(invoice)"
+                              >
+                                Gerar Nota Fiscal
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Page>
@@ -238,17 +350,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import axios from 'axios';
 import { formatDate } from '@/utils/dateUtils';
 
 const expeditions = ref([]);
+const invoices = ref([]);
 const loading = ref(true);
 const activeTab = ref('separation');
 const searchQuerySeparation = ref('');
 const searchQueryExpedition = ref('');
+const searchQueryInvoice = ref('');
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -305,6 +419,20 @@ const filteredExpeditions = computed(() => {
   });
 });
 
+const filteredInvoices = computed(() => {
+  const query = searchQueryInvoice.value.trim().toLowerCase();
+
+  return invoices.value.filter((invoice) => {
+    const matchesQuery =
+      !query ||
+      invoice.order?.name?.toLowerCase().includes(query) ||
+      String(invoice.id).includes(query) ||
+      String(invoice.order_id).includes(query);
+
+    return matchesQuery;
+  });
+});
+
 async function fetchExpeditions() {
   try {
     loading.value = true;
@@ -317,6 +445,23 @@ async function fetchExpeditions() {
   } catch (error) {
     console.error('Erro ao buscar expedições:', error);
     expeditions.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function fetchInvoices() {
+  try {
+    loading.value = true;
+
+    const { data } = await axios.get('v1/orders/ready-for-invoice');
+
+    const payload = Array.isArray(data?.data) ? data.data : [];
+
+    invoices.value = payload;
+  } catch (error) {
+    console.error('Erro ao buscar pedidos para faturar:', error);
+    invoices.value = [];
   } finally {
     loading.value = false;
   }
@@ -386,6 +531,38 @@ async function viewSeparationLabelPdf(orderBudgetId) {
         loading.value = false;
     }
 }
+
+async function generateInvoice(invoice) {
+    try {
+        loading.value = true;
+        const { data } = await axios.post(`v1/generate-invoice/${invoice.order_id}`);
+
+        if (data.success) {
+            window.Swal.fire({
+                title: 'Nota Fiscal gerada com sucesso!',
+                text: data.message || 'A nota fiscal foi gerada com sucesso.',
+                icon: 'success',
+                confirmButtonText: 'Entendi!',
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao gerar nota fiscal:', error);
+        window.Swal.fire({
+            title: 'Erro ao gerar nota fiscal!',
+            text: error.response?.data?.message || 'Não foi possível gerar a nota fiscal. Tente novamente mais tarde.',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'invoice' && invoices.value.length === 0) {
+    fetchInvoices();
+  }
+});
 
 onMounted(() => {
   fetchExpeditions();

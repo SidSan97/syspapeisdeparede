@@ -450,5 +450,24 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    public function readyForInvoice(): JsonResponse
+    {
+        try {
+            $orders = $this->repository->getReadyForInvoice();
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders,
+                'message' => 'Lista de pedidos prontos para faturar recuperada com sucesso',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao listar pedidos prontos para faturar',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
 
