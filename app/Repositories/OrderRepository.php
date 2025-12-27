@@ -171,6 +171,7 @@ class OrderRepository
                     'total_amount' => $order->payment_method == 'pix' ? $order->total_amount : $order->total_amount_installments,
                     'status' => $order->status,
                     'nf_sent' => $order->nf_sent,
+                    'nf_id' => $order->nf_id,
                     'created_at' => $order->created_at,
                 ];
             });
@@ -232,6 +233,13 @@ class OrderRepository
     {
         Order::where('id', $orderId)->update([
             'nf_sent' => 1,
+        ]);
+    }
+
+    public function updateNfId(int $orderId, string $nfId): void
+    {
+        Order::where('id', $orderId)->update([
+            'nf_id' => $nfId,
         ]);
     }
 }

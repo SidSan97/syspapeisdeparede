@@ -39,6 +39,7 @@ class Order extends Model
         'dropshipping_budget',
         'paid',
         'nf_sent',
+        'nf_id',
     ];
 
     protected $casts = [
@@ -58,6 +59,7 @@ class Order extends Model
         'dropshipping_budget' => 'integer',
         'paid' => 'integer:0,1',
         'nf_sent' => 'integer:0,1',
+        'nf_id' => 'string',
     ];
 
     /**

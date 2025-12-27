@@ -293,6 +293,7 @@
                       <th scope="col" style="width: 64px;">Data</th>
                       <th class="text-nowrap" scope="col">Pedido</th>
                       <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                      <th class="text-nowrap" scope="col" style="width: 120px;">Status</th>
                       <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
                     </tr>
                   </thead>
@@ -305,6 +306,17 @@
                         <small class="text-muted">Pedido #{{ invoice.order_id }}</small>
                       </td>
                       <td>{{ formatCurrency(invoice?.total_amount || 0) }}</td>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <span
+                            class="dot me-2"
+                            :class="invoice?.nf_sent === 1 ? 'dot-success' : 'dot-secondary'"
+                          ></span>
+                          <span class="text-muted small">
+                            {{ invoice?.nf_sent === 1 ? 'Faturado' : 'Não faturado' }}
+                          </span>
+                        </div>
+                      </td>
                       <td>
                         <div class="dropdown">
                           <button
@@ -325,13 +337,22 @@
                                 Ver detalhes
                               </button>
                             </li>
-                            <li>
+                            <li v-if="invoice?.nf_sent === 0">
                               <button
                                 class="dropdown-item"
                                 type="button"
                                 @click="generateInvoice(invoice)"
                               >
                                 Gerar Nota Fiscal
+                              </button>
+                            </li>
+                            <li v-if="invoice?.nf_sent === 1">
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="generateDanfe(invoice)"
+                              >
+                                Gerar DANFE
                               </button>
                             </li>
                           </ul>
@@ -544,12 +565,107 @@ async function generateInvoice(invoice) {
                 icon: 'success',
                 confirmButtonText: 'Entendi!',
             });
+            
+            // Recarregar a lista de invoices
+            await fetchInvoices();
         }
     } catch (error) {
         console.error('Erro ao gerar nota fiscal:', error);
         window.Swal.fire({
             title: 'Erro ao gerar nota fiscal!',
             text: error.response?.data?.message || 'Não foi possível gerar a nota fiscal. Tente novamente mais tarde.',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function generateDanfe(invoice) {
+    try {
+        loading.value = true;
+        const { data } = await axios.get(`v1/generate-danfe/${invoice.nf_id}`);
+
+        if (data.success && data.data.link_nfe) {
+            const result = await window.Swal.fire({
+                title: 'DANFE gerado com sucesso!',
+                html: `
+                    <p>Deseja abrir o DANFE agora?</p>
+                    <div class="mt-3">
+                        <div class="input-group">
+                            <input 
+                                type="text" 
+                                id="danfe-link" 
+                                class="form-control" 
+                                value="${data.data.link_nfe}" 
+                                readonly
+                                style="font-size: 0.875rem;"
+                            />
+                            <button 
+                                type="button" 
+                                class="btn btn-outline-secondary" 
+                                id="copy-danfe-link"
+                                title="Copiar link"
+                            >
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                `,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'Abrir DANFE',
+                cancelButtonText: 'Fechar',
+                didOpen: () => {
+                    const copyButton = document.getElementById('copy-danfe-link');
+                    if (copyButton) {
+                        copyButton.addEventListener('click', async () => {
+                            try {
+                                await navigator.clipboard.writeText(data.data.link_nfe);
+                                window.Swal.fire({
+                                    title: 'Link copiado!',
+                                    text: 'O link do DANFE foi copiado para a área de transferência.',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } catch (err) {
+                                // Fallback para navegadores mais antigos
+                                const linkInput = document.getElementById('danfe-link');
+                                if (linkInput) {
+                                    linkInput.select();
+                                    document.execCommand('copy');
+                                    window.Swal.fire({
+                                        title: 'Link copiado!',
+                                        text: 'O link do DANFE foi copiado para a área de transferência.',
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            if (result.isConfirmed) {
+                window.open(data.data.link_nfe, '_blank');
+            }
+        } else {
+            window.Swal.fire({
+                title: 'Erro ao gerar DANFE!',
+                text: 'Não foi possível gerar o DANFE. Tente novamente mais tarde.',
+                icon: 'error',
+                confirmButtonText: 'Entendi!',
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao gerar DANFE:', error);
+        window.Swal.fire({
+            title: 'Erro ao gerar DANFE!',
+            text: error.response?.data?.message || 'Não foi possível gerar o DANFE. Tente novamente mais tarde.',
             icon: 'error',
             confirmButtonText: 'Entendi!',
         });
@@ -611,6 +727,22 @@ onMounted(() => {
 .input-group-text,
 input {
   height: 36px !important;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-success {
+  background-color: #28a745;
+}
+
+.dot-secondary {
+  background-color: #6c757d;
 }
 </style>
 

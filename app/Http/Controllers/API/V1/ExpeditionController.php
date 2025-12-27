@@ -132,6 +132,7 @@ class ExpeditionController extends Controller
             }
 
             $this->orderRepository->updateNfSent($orderId);
+            $this->orderRepository->updateNfId($orderId, $issueInvoice['nota_fiscal']['id']);
 
             return response()->json([
                 'success' => true,
@@ -163,6 +164,35 @@ class ExpeditionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao buscar notas fiscais',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function generateDanfe(string $invoiceId): JsonResponse
+    {
+        try {
+            $danfe = $this->tinyErpService->generateDanfe($invoiceId);
+
+            if($danfe['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao obter link da DANFE. Tente novamente mais tarde.',
+                    'error' => $danfe['erros'],
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $danfe,
+                'message' => 'DANFE gerada com sucesso',
+            ], 200);
+        }
+        catch (\Exception $e) {
+            Log::error('Erro ao gerar DANFE: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar DANFE',
                 'error' => $e->getMessage(),
             ], 500);
         }
