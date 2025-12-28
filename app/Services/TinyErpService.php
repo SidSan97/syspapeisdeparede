@@ -324,14 +324,14 @@ class TinyErpService
         }
     }
 
-    public function sendOrderToExpedition(string $tinyErp_order_id, string $typeObject)
+    public function sendInvoiceToExpedition(string $nfIds, string $typeObjects)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'idObjetos' => $tinyErp_order_id,
-                'tipoObjetos' => $typeObject,
+                'idObjetos' => $nfIds,
+                'tipoObjetos' => $typeObjects,
             ];
 
             $queryString = http_build_query($params);

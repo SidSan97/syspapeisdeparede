@@ -201,7 +201,7 @@
 
               <div v-else>
                 <!-- Barra de seleção -->
-                <div v-if="selectedCount > 0" class="d-flex align-items-center justify-content-between mb-3 p-3 bg-light rounded">
+                <div v-if="selectedCount > 0" class="d-flex align-items-center justify-content-between mb-3 p-3 rounded count-nf-section">
                   <div class="d-flex align-items-center">
                     <span class="fw-semibold me-2">{{ selectedCount }}</span>
                     <span class="text-muted">selecionados</span>
@@ -480,7 +480,7 @@ const filteredExpeditions = computed(() => {
 
   return invoicesList.value.filter((invoice) => {
     const notaFiscal = invoice.nota_fiscal;
-    
+
     // Filtro por busca
     const matchesQuery =
       !query ||
@@ -502,7 +502,7 @@ const selectedCount = computed(() => selectedInvoices.value.size);
 
 const isAllSelected = computed(() => {
   if (filteredExpeditions.value.length === 0) return false;
-  return filteredExpeditions.value.every((invoice) => 
+  return filteredExpeditions.value.every((invoice) =>
     selectedInvoices.value.has(invoice.nota_fiscal?.id)
   );
 });
@@ -549,9 +549,43 @@ function isInvoiceSelected(invoiceId) {
   return selectedInvoices.value.has(invoiceId);
 }
 
-function expedir() {
-  // Por enquanto apenas log
-  console.log('Expedir:', Array.from(selectedInvoices.value));
+async function expedir() {
+  try {
+    loading.value = true;
+
+    // Converter Set para Array com os Nº Nota Fiscal selecionados
+    const invoiceIds = Array.from(selectedInvoices.value);
+
+    // Enviar para o endpoint
+    const { data } = await axios.post('v1/send-invoice-to-expedition', {
+      invoice_ids: invoiceIds
+    });
+
+    if (data.success) {
+      window.Swal.fire({
+        title: 'Notas fiscais enviadas com sucesso!',
+        text: data.message || 'As notas fiscais foram enviadas para expedição.',
+        icon: 'success',
+        confirmButtonText: 'Entendi!',
+      });
+
+      // Limpar seleção
+      selectedInvoices.value.clear();
+
+      // Recarregar a lista de invoices
+      await searchInvoices();
+    }
+  } catch (error) {
+    console.error('Erro ao enviar notas fiscais para expedição:', error);
+    window.Swal.fire({
+      title: 'Erro ao enviar notas fiscais!',
+      text: error.response?.data?.message || 'Não foi possível enviar as notas fiscais para expedição. Tente novamente mais tarde.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 const filteredInvoices = computed(() => {
@@ -679,7 +713,7 @@ async function generateInvoice(invoice) {
                 icon: 'success',
                 confirmButtonText: 'Entendi!',
             });
-            
+
             // Recarregar a lista de invoices
             await fetchInvoices();
         }
@@ -708,17 +742,17 @@ async function generateDanfe(invoice) {
                     <p>Deseja abrir o DANFE agora?</p>
                     <div class="mt-3">
                         <div class="input-group">
-                            <input 
-                                type="text" 
-                                id="danfe-link" 
-                                class="form-control" 
-                                value="${data.data.link_nfe}" 
+                            <input
+                                type="text"
+                                id="danfe-link"
+                                class="form-control"
+                                value="${data.data.link_nfe}"
                                 readonly
                                 style="font-size: 0.875rem;"
                             />
-                            <button 
-                                type="button" 
-                                class="btn btn-outline-secondary" 
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
                                 id="copy-danfe-link"
                                 title="Copiar link"
                             >
@@ -792,7 +826,7 @@ async function searchInvoices() {
     try {
         loading.value = true;
         const { data } = await axios.get('v1/search-invoices');
-        
+
         if (data.success && data.data.notas_fiscais) {
             invoicesList.value = data.data.notas_fiscais;
         } else {
@@ -816,8 +850,8 @@ function viewInvoiceDetails(invoice) {
     if (invoiceId) {
         // Salva os dados no sessionStorage antes de navegar
         sessionStorage.setItem(`invoice_${invoiceId}`, JSON.stringify(invoice.nota_fiscal));
-        router.push({ 
-            name: 'ShowInvoiceDetails', 
+        router.push({
+            name: 'ShowInvoiceDetails',
             params: { id: invoiceId }
         });
     }
@@ -827,7 +861,7 @@ watch(activeTab, (newTab) => {
   if (newTab === 'invoice' && invoices.value.length === 0) {
     fetchInvoices();
   }
-  
+
   if (newTab === 'expedition') {
     searchInvoices();
   }
@@ -883,6 +917,10 @@ input {
 .checkbox-invoice {
   width: 16px !important;
   height: 16px !important;
+}
+
+.count-nf-section {
+  background-color: var(--ds-background-accent-gray-subtlest-hovered);
 }
 </style>
 

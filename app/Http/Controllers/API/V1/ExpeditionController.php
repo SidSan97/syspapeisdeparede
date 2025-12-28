@@ -11,6 +11,7 @@ use App\Services\GeneratePdfService;
 use Illuminate\Support\Facades\Log;
 use App\Services\TinyErpService;
 use App\Repositories\DropshippingRepository;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class ExpeditionController extends Controller
@@ -209,6 +210,47 @@ class ExpeditionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao gerar DANFE',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function sendInvoiceToExpedition(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'invoice_ids' => 'required|array|min:1',
+                'invoice_ids.*' => 'required|integer|min:1',
+            ]);
+
+            $invoiceIds = $validated['invoice_ids'];
+            $invoiceIdsString = implode(',', $invoiceIds);
+
+            $sendExpedition = $this->tinyErpService->sendInvoiceToExpedition($invoiceIdsString, 'notafiscal');
+
+            if($sendExpedition['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao enviar nota fiscal para expedição. Tente novamente mais tarde.',
+                    'error' => $sendExpedition['erros'],
+                ], 500);
+            }
+
+            dd($sendExpedition);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notas fiscais enviadas para expedição com sucesso',
+                'data' => [
+                    'invoice_ids' => $invoiceIdsString,
+                    'total' => count($invoiceIds),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar nota fiscal para expedição: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar notas fiscais para expedição',
                 'error' => $e->getMessage(),
             ], 500);
         }
