@@ -175,4 +175,5 @@ Route::prefix('v1')->group(function () {
     Route::get('tiny-erp/all', [TinyErpController::class, 'all'])->middleware('auth:api');
     Route::get('tiny-erp/settings', [TinyErpController::class, 'loadSettings'])->middleware('auth:api');
     Route::post('tiny-erp/settings', [TinyErpController::class, 'store'])->middleware('auth:api');
+    Route::get('tiny-erp/carriers-types', [TinyErpController::class, 'loadCarriersTypes'])->middleware('auth:api');
 });

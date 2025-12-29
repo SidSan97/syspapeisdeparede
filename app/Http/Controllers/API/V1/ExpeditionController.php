@@ -13,6 +13,7 @@ use App\Services\TinyErpService;
 use App\Repositories\DropshippingRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 class ExpeditionController extends Controller
 {
@@ -225,6 +226,11 @@ class ExpeditionController extends Controller
             ]);
 
             $invoiceIds = $validated['invoice_ids'];
+            $carrier = $validated['carrier'];
+
+            // Validar se todas as notas fiscais têm o mesmo transportador
+            $this->expeditionService->validateSameCarrier($invoiceIds, $carrier);
+
             $invoiceIdsString = implode(',', $invoiceIds);
 
             $sendExpedition = $this->tinyErpService->sendInvoiceToExpedition($invoiceIdsString, 'notafiscal');
@@ -237,7 +243,7 @@ class ExpeditionController extends Controller
                 ], 500);
             }
 
-            $this->tinyErpService->changeExpedition($sendExpedition['objetos']['objeto']['idExpedicao'], $validated['carrier']);
+            $this->tinyErpService->changeExpedition($sendExpedition['objetos']['objeto']['idExpedicao'], $carrier);
 
             $includeGroupingInvoices = $this->tinyErpService->includeGroupingInvoices($sendExpedition['objetos']['objeto']['idExpedicao']);
 
@@ -254,6 +260,12 @@ class ExpeditionController extends Controller
                 'message' => 'Notas fiscais enviadas para expedição com sucesso',
                 'data' => $includeGroupingInvoices,
             ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Erro ao enviar nota fiscal para expedição: ' . $e->getMessage());
             return response()->json([

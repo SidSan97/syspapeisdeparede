@@ -158,6 +158,33 @@ class TinyErpService
         }
     }
 
+    public function getCarriersTypes()
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/formas.envio.pesquisa.php?' . $queryString;
+
+            $response = $this->client->get($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar tipos de transportadores: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao buscar tipos de transportadores: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function sendOrder(array $order, array  $dropshipping)
     {
         try {
@@ -532,6 +559,10 @@ class TinyErpService
                     'comprimento' => $tinyErpData['comprimentoEmbalagem'],
                     'diametro' => $tinyErpData['diametroEmbalagem'],
                 ],
+                'formaFrete' => [
+                    'id' => $this->getCarrierId(trim(explode(' - ', $carrier)[0])),
+                    'descricao' => $carrier
+                ],
                 'transportadora' => [
                     'nome' => trim(explode(' - ', $carrier)[0]),
                 ],
@@ -625,6 +656,19 @@ class TinyErpService
         foreach ($origemToCode as $nomeOrigem => $codigo) {
             if (strcasecmp($origem, $nomeOrigem) === 0) {
                 return $codigo;
+            }
+        }
+
+        return null;
+    }
+
+    public function getCarrierId(string $carrier): ?string
+    {
+        $carriersTypes = Cache::get('tiny_erp_carriers_types');
+
+        foreach ($carriersTypes as $carrierType) {
+            if ($carrierType['descricao'] === $carrier) {
+                return $carrierType['id'];
             }
         }
 

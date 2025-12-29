@@ -523,6 +523,7 @@ watch([isIndeterminate, isAllSelected], () => {
 
 onMounted(() => {
   searchTinyErpProducts();
+  searchTinyErpCarriersTypes();
 });
 
 async function searchTinyErpProducts() {
@@ -537,6 +538,14 @@ async function searchTinyErpProducts() {
         });
     } finally {
         loading.value = false;
+    }
+}
+
+async function searchTinyErpCarriersTypes() {
+    try {
+        const { data } = await axios.get('v1/tiny-erp/carriers-types');
+    } catch (error) {
+        console.error('Erro ao buscar tipos de transportadores:', error);
     }
 }
 
@@ -572,11 +581,57 @@ async function expedir() {
   try {
     loading.value = true;
 
-    // Converter Set para Array com os Nº Nota Fiscal selecionados
     const invoiceIds = Array.from(selectedInvoices.value);
-    const carrier = selectedCarrier.value;
 
-    // Enviar para o endpoint
+    if (invoiceIds.length === 0) {
+      loading.value = false;
+      window.Swal.fire({
+        title: 'Nenhuma nota fiscal selecionada!',
+        text: 'Por favor, selecione pelo menos uma nota fiscal para expedir.',
+        icon: 'warning',
+        confirmButtonText: 'Entendi!',
+      });
+      return;
+    }
+
+    // Verificar se todas as notas fiscais selecionadas têm o mesmo transportador
+    const selectedInvoicesData = filteredExpeditions.value.filter(invoice =>
+      invoiceIds.includes(invoice.nota_fiscal?.id)
+    );
+
+    const transporters = selectedInvoicesData
+      .map(invoice => invoice.nota_fiscal?.transportador?.nome)
+      .filter(transporter => transporter); // Remove valores nulos/undefined
+
+    // Verificar se todas têm transportador
+    if (transporters.length === 0 || transporters.length !== selectedInvoicesData.length) {
+      loading.value = false;
+      window.Swal.fire({
+        title: 'Erro ao validar transportadoras!',
+        text: 'Algumas notas fiscais selecionadas não possuem transportador.',
+        icon: 'error',
+        confirmButtonText: 'Entendi!',
+      });
+      return;
+    }
+
+    // Verificar se todas têm o mesmo transportador
+    const firstTransporter = transporters[0];
+    const allSameTransporter = transporters.every(transporter => transporter === firstTransporter);
+
+    if (!allSameTransporter) {
+      loading.value = false;
+      window.Swal.fire({
+        title: 'Transportadoras diferentes!',
+        text: 'Todas as notas fiscais selecionadas devem ter exatamente o mesmo transportador para serem agrupadas.',
+        icon: 'warning',
+        confirmButtonText: 'Entendi!',
+      });
+      return;
+    }
+
+    const carrier = firstTransporter;
+
     const { data } = await axios.post('v1/send-invoice-to-expedition', {
       invoice_ids: invoiceIds,
       carrier: carrier
@@ -590,10 +645,8 @@ async function expedir() {
         confirmButtonText: 'Entendi!',
       });
 
-      // Limpar seleção
       selectedInvoices.value.clear();
 
-      // Recarregar a lista de invoices
       await searchInvoices();
     }
   } catch (error) {
