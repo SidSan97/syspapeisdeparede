@@ -207,7 +207,7 @@
                     <span class="text-muted">selecionados</span>
                   </div>
                   <button class="btn btn-primary" @click="expedir">
-                    Expedir
+                    Agrupar e expedir
                   </button>
                 </div>
 
@@ -574,10 +574,12 @@ async function expedir() {
 
     // Converter Set para Array com os Nº Nota Fiscal selecionados
     const invoiceIds = Array.from(selectedInvoices.value);
+    const carrier = selectedCarrier.value;
 
     // Enviar para o endpoint
     const { data } = await axios.post('v1/send-invoice-to-expedition', {
-      invoice_ids: invoiceIds
+      invoice_ids: invoiceIds,
+      carrier: carrier
     });
 
     if (data.success) {

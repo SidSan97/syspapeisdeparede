@@ -221,6 +221,7 @@ class ExpeditionController extends Controller
             $validated = $request->validate([
                 'invoice_ids' => 'required|array|min:1',
                 'invoice_ids.*' => 'required|integer|min:1',
+                'carrier' => 'required|string|max:255',
             ]);
 
             $invoiceIds = $validated['invoice_ids'];
@@ -235,6 +236,8 @@ class ExpeditionController extends Controller
                     'error' => $sendExpedition['erros'],
                 ], 500);
             }
+
+            $this->tinyErpService->changeExpedition($sendExpedition['objetos']['objeto']['idExpedicao'], $validated['carrier']);
 
             $includeGroupingInvoices = $this->tinyErpService->includeGroupingInvoices($sendExpedition['objetos']['objeto']['idExpedicao']);
 

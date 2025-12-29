@@ -381,37 +381,15 @@ class TinyErpService
         }
     }
 
-    /**
-     * Garante que o cache tiny_erp_all_data esteja inicializado
-     *
-     * @return array
-     */
-    private function ensureTinyErpAllDataCache(): array
+    public function changeExpedition(string $expeditionId, string $carrier)
     {
-        $tinyErpAllData = Cache::get('tiny_erp_all_data');
-
-        if (empty($tinyErpAllData)) {
-            $tinyErpAllData = $this->searchProducts();
-            $productId = intval($tinyErpAllData['produtos'][0]['produto']['id']);
-            $product = $this->getProduct($productId);
-
-            if($product['status'] !== "Erro") {
-                Cache::put('tiny_erp_all_data', $tinyErpAllData);
-            }
-        }
-
-        return $tinyErpAllData;
-    }
-
-    public function changeExpedition(string $expeditionId, array $orderData)
-    {
-        $tinyErpData = $this->ensureTinyErpAllDataCache();
+        $tinyErpData = Cache::get('tiny_erp_all_data');
 
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'expedicao' => $this->makeExpeditionData($orderData, $tinyErpData, $expeditionId),
+                'expedicao' => $this->makeExpeditionData($carrier, $tinyErpData, $expeditionId),
             ];
 
             $queryString = http_build_query($params);
@@ -536,12 +514,12 @@ class TinyErpService
         return $data;
     }
 
-    public function makeExpeditionData(array $orderData, array $tinyErpData, string $expeditionId)
+    public function makeExpeditionData(string $carrier, array $tinyErpData, string $expeditionId)
     {
         $expeditionData = [
             'expedicao' => [
                 'id' => $expeditionId,
-                'formaEnvio' => $this->getShippingCodeByOrigin($orderData['selected_carrier_name']),
+                'formaEnvio' => $this->getShippingCodeByOrigin($carrier),
                 'qtdVolumes' => 1,
                 'pesoBruto' => $tinyErpData['peso_bruto'],
                 'possuiValorDeclarado' => 'N',
@@ -555,7 +533,7 @@ class TinyErpService
                     'diametro' => $tinyErpData['diametroEmbalagem'],
                 ],
                 'transportadora' => [
-                    'nome' => trim(explode(' - ', $orderData['selected_carrier_name'])[0]),
+                    'nome' => trim(explode(' - ', $carrier)[0]),
                 ],
             ],
         ];

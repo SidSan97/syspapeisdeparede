@@ -1641,6 +1641,27 @@
       return;
     }
 
+    const isFullyProduced = props.card.production_percentage === 100 || Number(props.card.production_percentage) === 100;
+    const isChangingFrom100 = isFullyProduced && percentage !== 100;
+
+    if (isChangingFrom100) {
+      const result = await window.Swal.fire({
+        icon: 'warning',
+        title: 'Alterar porcentagem de produção?',
+        text: 'Este card está 100% produzido. Você realmente deseja alterar a porcentagem de produção?',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, alterar',
+        cancelButtonText: 'Cancelar',
+      });
+
+      if (!result.isConfirmed) {
+        productionPercentageText.value = originalProductionPercentage.value;
+        return;
+      }
+    }
+
     isSavingProductionPercentage.value = true;
 
     try {

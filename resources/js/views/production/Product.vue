@@ -74,7 +74,7 @@
                   v-for="card in getCardsByColumn(column.id)"
                   :key="card.id"
                   class="production-card"
-                  :draggable="true"
+                  :draggable="!(card.production_percentage === 100 || Number(card.production_percentage) === 100)"
                   @dragstart="handleDragStart($event, card)"
                   @click="openCardModal(card)"
                 >
@@ -442,6 +442,23 @@
   }
 
   function handleDragStart(event, card) {
+    const isFullyProduced = card.production_percentage === 100 || Number(card.production_percentage) === 100;
+
+    if (isFullyProduced) {
+      event.preventDefault();
+      if (window.Swal) {
+        window.Swal.fire({
+          icon: 'warning',
+          title: 'Card 100% produzido',
+          text: 'Não é possível mover um card que está 100% produzido.',
+          confirmButtonText: 'Entendi!',
+        });
+      } else {
+        alert('Não é possível mover um card que está 100% produzido.');
+      }
+      return false;
+    }
+
     draggedCard.value = card;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/html', event.target.outerHTML);
@@ -450,6 +467,23 @@
   async function handleDrop(event, columnId) {
     event.preventDefault();
     if (draggedCard.value) {
+      const isFullyProduced = draggedCard.value.production_percentage === 100 || Number(draggedCard.value.production_percentage) === 100;
+
+      if (isFullyProduced) {
+        if (window.Swal) {
+          window.Swal.fire({
+            icon: 'warning',
+            title: 'Card 100% produzido',
+            text: 'Não é possível mover um card que está 100% produzido.',
+            confirmButtonText: 'Entendi!',
+          });
+        } else {
+          alert('Não é possível mover um card que está 100% produzido.');
+        }
+        draggedCard.value = null;
+        return;
+      }
+
       const cardIndex = cards.value.findIndex(c => c.id === draggedCard.value.id);
       if (cardIndex !== -1) {
         const oldColumnId = cards.value[cardIndex].column;
