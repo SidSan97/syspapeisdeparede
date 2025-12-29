@@ -25,6 +25,7 @@ class DropshippingData extends Model
         'city',
         'neighborhood',
         'public_space',
+        'number',
         'complement',
         'dealer_id',
         'budget_id',

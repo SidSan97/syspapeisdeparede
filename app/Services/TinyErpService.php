@@ -353,6 +353,34 @@ class TinyErpService
         }
     }
 
+    public function includeGroupingInvoices(array $invoicesIds)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'idsExpedicao' => $invoicesIds
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.incluir.agrupamento.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao incluir agrupamento de notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao incluir agrupamento de notas fiscais: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Garante que o cache tiny_erp_all_data esteja inicializado
      *
@@ -476,6 +504,7 @@ class TinyErpService
                 //"data_entrada_saida" => Carbon::now()->format('d/m/Y'),
                 "tipo" => "S",
                 'cliente' => $this->makeClientData($dropshipping),
+                'endereco_entrega' => $this->makeAddressData($dropshipping),
                 "itens" => [
                     [
                         "item" => [
@@ -551,6 +580,25 @@ class TinyErpService
             'cidade' => $dropshipping['city'],
             'uf' => $dropshipping['uf'],
             'fone' => $dropshipping['phone'] ?? '',
+            'atualizar_cliente' => 'N'
+        ];
+    }
+
+    public function makeAddressData(array $dropshipping): array
+    {
+        return [
+            'nome_destinatario' => $dropshipping['name'],
+            'tipo_pessoa' => $dropshipping['person_type'] === 'PF' ? 'F' : 'J',
+            'cpf_cnpj' => $dropshipping['cpf_cnpj'],
+            'ie' => $dropshipping['IE'] ?? '',
+            'endereco' => $dropshipping['public_space'],
+            'numero' => $dropshipping['number'] ?? '',
+            'complemento' => $dropshipping['complement'] ?? '',
+            'bairro' => $dropshipping['neighborhood'],
+            'cep' => $dropshipping['cep'],
+            'cidade' => $dropshipping['city'],
+            'uf' => $dropshipping['uf'],
+            'fone' => $dropshipping['phone'] ?? ''
         ];
     }
 

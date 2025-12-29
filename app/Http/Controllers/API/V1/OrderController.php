@@ -16,6 +16,7 @@ use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -147,6 +148,26 @@ class OrderController extends Controller
 
             $validated = $request->validated();
             $order = $this->repository->update($order, $validated);
+
+            if (!empty($validated['dropshipping_data']) && $validated['dropshipping_budget'] === 1) {
+                $existingDropshipping = $order->dropshippingData;
+
+                if ($existingDropshipping) {
+                    $this->dropshippingRepository->update(
+                        $validated['dropshipping_data'],
+                        $existingDropshipping->id
+                    );
+                } else {
+                    $this->dropshippingRepository->create(
+                        $validated['dropshipping_data'],
+                        $order->id,
+                        Auth::id()
+                    );
+                }
+            } elseif (isset($validated['dropshipping_budget']) && $validated['dropshipping_budget'] === 0) {
+                $order->dropshippingData()->delete();
+            }
+
             $transformed = new OrderResource($order);
 
             return response()->json([

@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('city', 255);
             $table->string('neighborhood', 255);
             $table->string('public_space', 255)->nullable();
+            $table->string('number', 20)->default(0);
             $table->string('complement', 255)->nullable();
             $table->foreignId('dealer_id')
                 ->constrained('users')

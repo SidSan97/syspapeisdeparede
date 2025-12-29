@@ -81,6 +81,7 @@ class StoreBudgetRequest extends FormRequest
             'dropshipping_data.city' => ['required_with:dropshipping_data', 'string', 'max:255'],
             'dropshipping_data.neighborhood' => ['required_with:dropshipping_data', 'string', 'max:255'],
             'dropshipping_data.public_space' => ['nullable', 'string', 'max:255'],
+            'dropshipping_data.number' => ['required_with:dropshipping_data', 'string', 'max:20'],
             'dropshipping_data.complement' => ['nullable', 'string', 'max:255'],
         ];
     }

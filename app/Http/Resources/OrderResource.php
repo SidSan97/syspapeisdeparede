@@ -108,6 +108,7 @@ class OrderResource extends JsonResource
                 'city' => $dropshippingData->city,
                 'neighborhood' => $dropshippingData->neighborhood,
                 'public_space' => $dropshippingData->public_space,
+                'number' => $dropshippingData->number,
                 'complement' => $dropshippingData->complement,
                 'dealer_id' => $dropshippingData->dealer_id,
             ];

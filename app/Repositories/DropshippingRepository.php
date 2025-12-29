@@ -30,6 +30,7 @@ class DropshippingRepository
             'city' => $data['city'] ?? '',
             'neighborhood' => $data['neighborhood'] ?? '',
             'public_space' => $data['public_space'] ?? null,
+            'number' => $data['number'] ?? '',
             'complement' => $data['complement'] ?? null,
         ]);
     }
@@ -51,6 +52,7 @@ class DropshippingRepository
             'city' => $data['city'] ?? $dropshippingData->city,
             'neighborhood' => $data['neighborhood'] ?? $dropshippingData->neighborhood,
             'public_space' => $data['public_space'] ?? $dropshippingData->public_space,
+            'number' => $data['number'] ?? $dropshippingData->number,
             'complement' => $data['complement'] ?? $dropshippingData->complement,
         ]);
 

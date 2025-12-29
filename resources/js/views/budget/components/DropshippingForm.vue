@@ -186,6 +186,21 @@
           <div v-if="errors.neighborhood" class="invalid-feedback d-block">{{ errors.neighborhood }}</div>
         </div>
 
+         <!-- Número -->
+         <div class="col-12 col-md-6 mb-3">
+          <label for="dropshipping-number" class="form-label">Número <span class="text-danger">*</span></label>
+          <input
+            v-model="formData.number"
+            type="text"
+            id="dropshipping-number"
+            class="form-control"
+            placeholder="Número"
+            maxlength="20"
+            :class="{ 'is-invalid': errors.number }"
+          />
+          <div v-if="errors.number" class="invalid-feedback d-block">{{ errors.number }}</div>
+        </div>
+
         <!-- Logradouro -->
         <div class="col-12 mb-3">
           <label for="dropshipping-public-space" class="form-label">Logradouro</label>
@@ -246,6 +261,7 @@ const formData = reactive({
   city: '',
   neighborhood: '',
   public_space: '',
+  number: '',
   complement: ''
 })
 
@@ -262,6 +278,7 @@ watch(() => formData, (newValue) => {
 // Observar mudanças no modelValue do pai
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
+    const numberValue = newValue.number != null ? String(newValue.number) : ''
     Object.assign(formData, {
       name: newValue.name || '',
       person_type: newValue.person_type || '',
@@ -275,6 +292,7 @@ watch(() => props.modelValue, (newValue) => {
       city: newValue.city || '',
       neighborhood: newValue.neighborhood || '',
       public_space: newValue.public_space || '',
+      number: numberValue,
       complement: newValue.complement || ''
     })
   }
@@ -584,6 +602,12 @@ function validate() {
 
   if (!formData.neighborhood?.trim()) {
     newErrors.neighborhood = 'O campo bairro é obrigatório'
+    isValid = false
+  }
+
+  const numberValue = formData.number != null ? String(formData.number) : ''
+  if (!numberValue.trim()) {
+    newErrors.number = 'O campo número é obrigatório'
     isValid = false
   }
 

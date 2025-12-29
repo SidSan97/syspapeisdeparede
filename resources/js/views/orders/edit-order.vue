@@ -1087,7 +1087,11 @@ async function loadOrder() {
         // Carregar dados de dropshipping se existirem
         if (normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
             enableDropshipping.value = true;
-            dropshippingData.value = { ...normalized.dropshipping_data };
+            const dropshippingDataCopy = { ...normalized.dropshipping_data };
+            if (dropshippingDataCopy.number != null) {
+                dropshippingDataCopy.number = String(dropshippingDataCopy.number);
+            }
+            dropshippingData.value = dropshippingDataCopy;
         } else {
             enableDropshipping.value = false;
             dropshippingData.value = {};

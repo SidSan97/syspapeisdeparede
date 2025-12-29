@@ -521,6 +521,25 @@ watch([isIndeterminate, isAllSelected], () => {
   });
 });
 
+onMounted(() => {
+  searchTinyErpProducts();
+});
+
+async function searchTinyErpProducts() {
+    try {
+        const { data } = await axios.get('v1/tiny-erp/all');
+    } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+        window.Swal.fire({
+            title: 'Erro ao buscar produtos!',
+            text: 'Não foi possível buscar os produtos do Tiny ERP. Tente novamente mais tarde.',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
 function toggleSelectAll() {
   if (isAllSelected.value) {
     // Desmarcar todos

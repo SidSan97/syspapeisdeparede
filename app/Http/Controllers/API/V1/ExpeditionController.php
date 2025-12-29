@@ -236,15 +236,20 @@ class ExpeditionController extends Controller
                 ], 500);
             }
 
-            dd($sendExpedition);
+            $includeGroupingInvoices = $this->tinyErpService->includeGroupingInvoices($sendExpedition['objetos']['objeto']['idExpedicao']);
+
+            if($includeGroupingInvoices['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao incluir agrupamento de notas fiscais. Tente novamente mais tarde.',
+                    'error' => $includeGroupingInvoices['erros'],
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Notas fiscais enviadas para expedição com sucesso',
-                'data' => [
-                    'invoice_ids' => $invoiceIdsString,
-                    'total' => count($invoiceIds),
-                ],
+                'data' => $includeGroupingInvoices,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Erro ao enviar nota fiscal para expedição: ' . $e->getMessage());

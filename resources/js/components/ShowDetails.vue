@@ -753,8 +753,12 @@ function extractFileName(file) {
 function formatDropshippingAddress() {
     if (!dropshippingData.value) return '-';
     const addr = dropshippingData.value;
-    const parts = [
+    const addressLine = [
         addr.public_space,
+        addr.number ? `Nº ${addr.number}` : null,
+    ].filter(Boolean).join(', ');
+    const parts = [
+        addressLine || null,
         addr.neighborhood,
         addr.city,
         addr.state,

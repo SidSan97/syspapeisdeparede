@@ -207,19 +207,15 @@ class BudgetController extends Controller
                 $budget = \App\Models\Budget::findOrFail($id);
                 $budget = $this->repository->update($budget, $data);
 
-                // Gerenciar dados de dropshipping
                 if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
-                    // Verificar se já existe dropshipping_data para este budget
                     $existingDropshipping = $budget->dropshippingData;
 
                     if ($existingDropshipping) {
-                        // Atualizar dados existentes
                         $this->dropshippingRepository->update(
                             $data['dropshipping_data'],
                             $existingDropshipping->id
                         );
                     } else {
-                        // Criar novos dados
                         $this->dropshippingRepository->create(
                             $data['dropshipping_data'],
                             $budget->id,
@@ -227,7 +223,6 @@ class BudgetController extends Controller
                         );
                     }
                 } elseif (isset($data['dropshipping_budget']) && $data['dropshipping_budget'] === 0) {
-                    // Se dropshipping foi desabilitado, remover dados existentes
                     $budget->dropshippingData()->delete();
                 }
 
