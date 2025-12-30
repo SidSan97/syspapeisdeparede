@@ -440,6 +440,34 @@ class TinyErpService
         }
     }
 
+    public function completeGroupingInvoices(string $groupingId)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'id' => $groupingId,
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.concluir.agrupamento.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao concluir agrupamento de notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao concluir agrupamento de notas fiscais: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function makeOrder(array $order, array  $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
@@ -557,15 +585,15 @@ class TinyErpService
                     'altura' => $tinyErpData['alturaEmbalagem'],
                     'largura' => $tinyErpData['larguraEmbalagem'],
                     'comprimento' => $tinyErpData['comprimentoEmbalagem'],
-                    'diametro' => $tinyErpData['diametroEmbalagem'],
+                    'diametro' => $tinyErpData['diametroEmbalagem']
                 ],
-                'formaFrete' => [
+                /*'formaFrete' => [
                     'id' => $this->getCarrierId(trim(explode(' - ', $carrier)[0])),
                     'descricao' => $carrier
-                ],
+                ],*/
                 'transportadora' => [
-                    'nome' => trim(explode(' - ', $carrier)[0]),
-                ],
+                    'nome' => trim(explode(' - ', $carrier)[0])
+                ]
             ],
         ];
 

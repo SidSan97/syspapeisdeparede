@@ -255,6 +255,16 @@ class ExpeditionController extends Controller
                 ], 500);
             }
 
+            $completeGrouping = $this->tinyErpService->completeGroupingInvoices($includeGroupingInvoices['idAgrupamento']);
+
+            if($completeGrouping['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao concluir agrupamento de notas fiscais. Tente novamente mais tarde.',
+                    'error' => $completeGrouping['erros'],
+                ], 500);
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Notas fiscais enviadas para expedição com sucesso',
