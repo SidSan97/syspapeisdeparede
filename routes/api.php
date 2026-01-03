@@ -111,14 +111,14 @@ Route::prefix('v1')->group(function () {
 
     // Orçamentos
     Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
-    Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
     Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
-    Route::get('budgets/{id}', [BudgetController::class, 'show'])->middleware('auth:api');
     Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
     Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
+    Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
     Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');
     Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
+    Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
     Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
     Route::post('budgets/order-budgets/{orderBudget}/comments', [BudgetController::class, 'addComment'])->middleware('auth:api');
@@ -128,8 +128,8 @@ Route::prefix('v1')->group(function () {
     Route::delete('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
-    Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
-    Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
+    Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
+    Route::get('budgets/{id}', [BudgetController::class, 'show'])->middleware('auth:api');
 
     // Pedidos
     Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');

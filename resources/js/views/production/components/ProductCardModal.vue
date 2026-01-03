@@ -1599,11 +1599,9 @@
       loadingRequestArts.value = true;
 
       const budgetId = props.card.budget.id;
-      const orderBudgetId = props.card.id;
 
       const params = {
         budget_id: budgetId,
-        order_budget_id: orderBudgetId,
         dealer_id: auth.user.id,
       };
 
@@ -1614,16 +1612,24 @@
       const data = response?.data || response;
 
       if (data?.success && Array.isArray(data.data)) {
-        requestLayoutArts.value = data.data.map((art) => ({
-          id: art.id,
-          comment: art.comment || null,
-          image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
-          created_at: art.created_at || art.createdAt || null,
-          designer_name: art.designer?.name || art.designer_name || null,
-          dealer_name: art.dealer?.name || art.dealer_name || null,
-          wall_info: art.wall_info || null,
-          wall_name: art.wall_info?.wall_name || null,
-        }));
+        requestLayoutArts.value = data.data.map((art) => {
+          let imageUrl = art.image_url;
+          if (!imageUrl && art.path_file) {
+            imageUrl = resolveImageUrl(art.path_file);
+          }
+          
+          return {
+            id: art.id,
+            comment: art.comment || null,
+            image_url: imageUrl,
+            path_file: art.path_file || null,
+            created_at: art.created_at || null,
+            designer_name: art.designer?.name || art.designer_name || null,
+            dealer_name: art.dealer?.name || art.dealer_name || null,
+            wall_info: art.wall_info || null,
+            wall_name: art.wall_name || art.wall_info?.wall_name || null,
+          };
+        });
       } else {
         requestLayoutArts.value = [];
       }

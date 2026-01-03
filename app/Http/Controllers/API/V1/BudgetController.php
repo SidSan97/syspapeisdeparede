@@ -14,7 +14,6 @@ use App\Models\BudgetRoom;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
-use App\Models\RequestLayoutArtInteraction;
 use App\Repositories\BudgetRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
@@ -674,60 +673,58 @@ class BudgetController extends Controller
             $validated = $request->validated();
             $orderId = $validated['order_id'] ?? null;
             $budgetId = $validated['budget_id'] ?? null;
-            $orderBudgetId = $validated['order_budget_id'] ?? null;
             $dealerId = $validated['dealer_id'] ?? null;
 
             $isAdmin = $user->isAdmin();
             $isDesigner = $user->isDesigner();
             $isReseller = $user->isReseller();
 
-            // Buscar interações baseado nos filtros
-            $interactionsQuery = RequestLayoutArtInteraction::with(['card.wall.room']);
+            // Buscar diretamente na tabela request_layouts_art
+            $query = RequestLayoutArt::with([
+                'designer:id,name',
+                'dealer:id,name',
+                'orderBudget.wall.room',
+            ]);
 
-            // Se order_id foi fornecido, buscar através do relacionamento com order_budgets
+            // Aplicar filtro por order_id ou budget_id
             if ($orderId) {
-                $interactionsQuery->whereHas('card', function ($q) use ($orderId) {
-                    $q->where('order_id', $orderId);
-                });
-            } elseif ($orderBudgetId) {
-                $interactionsQuery->where('card_id', $orderBudgetId);
+                $query->where('order_id', $orderId);
             } elseif ($budgetId) {
-                // Buscar order_budgets que pertencem a paredes do budget
-                $interactionsQuery->whereHas('card', function ($q) use ($budgetId) {
-                    $q->whereHas('wall', function ($wallQ) use ($budgetId) {
-                        $wallQ->whereHas('room', function ($roomQ) use ($budgetId) {
-                            $roomQ->where('budget_id', $budgetId);
-                        });
-                    });
+                // Buscar através do relacionamento order_budget -> wall -> room -> budget_id
+                $query->whereHas('orderBudget.wall.room', function ($q) use ($budgetId) {
+                    $q->where('budget_id', $budgetId);
                 });
             }
 
-            // Buscar interações
-            $interactions = $interactionsQuery->with(['requestLayoutArts' => function ($q) use ($isAdmin, $isDesigner, $isReseller, $user, $dealerId) {
-                $q->with(['designer:id,name', 'dealer:id,name', 'orderBudget.wall.room'])
-                    ->orderBy('created_at', 'desc');
-
-                // Aplicar filtros por tipo de usuário
-                if (!$isAdmin) {
-                    if ($isDesigner) {
-                        $q->where('designer_id', $user->id);
-                    } elseif ($isReseller) {
-                        $q->where('dealer_id', $user->id);
-                    } elseif ($dealerId) {
-                        $q->where('dealer_id', $dealerId);
-                    }
+            // Aplicar filtros por tipo de usuário
+            if (!$isAdmin) {
+                if ($isDesigner) {
+                    $query->where('designer_id', $user->id);
+                } elseif ($isReseller) {
+                    $query->where('dealer_id', $user->id);
                 } elseif ($dealerId) {
-                    $q->where('dealer_id', $dealerId);
+                    $query->where('dealer_id', $dealerId);
                 }
-            }])->orderBy('created_at', 'desc')->get();
+            } elseif ($dealerId) {
+                $query->where('dealer_id', $dealerId);
+            }
 
-            // Formatar dados agrupados por interação
-            $formattedInteractions = $interactions->map(function ($interaction) {
+            // Buscar e formatar os dados
+            $arts = $query->orderBy('created_at', 'desc')->get();
+
+            $formattedArts = $arts->map(function ($art) {
+                $imageUrl = null;
+                if ($art->path_file) {
+                    // Remover 'storage/' do início se já existir
+                    $path = ltrim($art->path_file, '/');
+                    $path = str_replace('storage/', '', $path);
+                    $imageUrl = asset('storage/' . $path);
+                }
+
+                // Obter informações da parede se disponível
                 $wallInfo = null;
-                $card = $interaction->card;
-
-                if ($card && $card->wall) {
-                    $wall = $card->wall;
+                if ($art->orderBudget && $art->orderBudget->wall) {
+                    $wall = $art->orderBudget->wall;
                     $room = $wall->room;
 
                     $wallInfo = [
@@ -739,55 +736,29 @@ class BudgetController extends Controller
                     ];
                 }
 
-                // Formatar artes da interação
-                $arts = $interaction->requestLayoutArts->map(function ($art) {
-                    $imageUrl = null;
-                    if ($art->path_file) {
-                        $imageUrl = Storage::disk('public')->exists($art->path_file)
-                            ? asset('storage/' . $art->path_file)
-                            : null;
-                    }
-
-                    return [
-                        'id' => $art->id,
-                        'budget_id' => $art->budget_id,
-                        'order_budget_id' => $art->order_budget_id,
-                        'interactions_card_id' => $art->interactions_card_id,
-                        'dealer_id' => $art->dealer_id,
-                        'designer_id' => $art->designer_id,
-                        'comment' => $art->comment,
-                        'path_file' => $art->path_file,
-                        'image_url' => $imageUrl,
-                        'created_at' => $art->created_at?->toIso8601String(),
-                        'designer' => $art->designer ? [
-                            'id' => $art->designer->id,
-                            'name' => $art->designer->name,
-                        ] : null,
-                        'designer_name' => $art->designer?->name,
-                        'dealer' => $art->dealer ? [
-                            'id' => $art->dealer->id,
-                            'name' => $art->dealer->name,
-                        ] : null,
-                        'dealer_name' => $art->dealer?->name,
-                    ];
-                });
-
                 return [
-                    'id' => $interaction->id,
-                    'card_id' => $interaction->card_id,
-                    'created_at' => $interaction->created_at?->toIso8601String(),
-                    'wall_info' => $wallInfo,
-                    'arts' => $arts,
-                    'arts_count' => $arts->count(),
+                    'id' => $art->id,
+                    'order_id' => $art->order_id,
+                    'order_budget_id' => $art->order_budget_id,
+                    'comment' => $art->comment,
+                    'path_file' => $art->path_file,
+                    'image_url' => $imageUrl,
+                    'created_at' => $art->created_at?->toIso8601String(),
+                    'designer' => $art->designer ? [
+                        'id' => $art->designer->id,
+                        'name' => $art->designer->name,
+                    ] : null,
+                    'dealer' => $art->dealer ? [
+                        'id' => $art->dealer->id,
+                        'name' => $art->dealer->name,
+                    ] : null,
+                    'wall_info' => $wallInfo
                 ];
-            })->filter(function ($interaction) {
-                // Filtrar interações que não têm artes (após aplicar filtros)
-                return $interaction['arts_count'] > 0;
-            })->values();
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $formattedInteractions,
+                'data' => $formattedArts->values(),
             ]);
         } catch (\Exception $e) {
             return response()->json([

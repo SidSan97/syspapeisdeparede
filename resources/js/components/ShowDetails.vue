@@ -281,6 +281,9 @@
                                                     <span class="badge bg-secondary ms-2">
                                                         {{ interaction.arts_count }} arte(s)
                                                     </span>
+                                                    <span>
+                                                        
+                                                    </span>
                                                 </button>
                                             </h2>
                                             <div
@@ -292,6 +295,15 @@
                                                 <div class="accordion-body">
                                                     <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
                                                         <div class="row g-2">
+                                                            <div class="col-md-12">
+                                                                <div class="text-muted small">
+                                                                    <h5>Comentário</h5>
+                                                                </div>
+                                                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
+
+                                                                <img :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
+                                                            </div>
+                                                            <hr>
                                                             <div class="col-md-6">
                                                                 <div class="text-muted small">Ambiente</div>
                                                                 <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
@@ -877,27 +889,28 @@ async function fetchRequestLayoutArts() {
         const responseData = response?.data || response;
 
         if (responseData?.success && Array.isArray(responseData.data)) {
-            requestLayoutArts.value = responseData.data.map((interaction) => ({
-                id: interaction.id,
-                card_id: interaction.card_id,
-                created_at: interaction.created_at,
-                wall_info: interaction.wall_info || null,
-                arts: (interaction.arts || []).map((art) => ({
+            requestLayoutArts.value = responseData.data.map((art) => {
+                let imageUrl = art.image_url;
+                if (!imageUrl && art.path_file) {
+                    imageUrl = resolveImageUrl(art.path_file);
+                }
+                
+                return {
                     id: art.id,
-                    budget_id: art.budget_id || null,
+                    order_id: art.order_id || null,
                     order_budget_id: art.order_budget_id || null,
-                    interactions_card_id: art.interactions_card_id || null,
-                    dealer_id: art.dealer_id || auth.user.id,
-                    designer_id: art.designer_id || auth.user.id,
+                    dealer_id: art.dealer_id || null,
+                    designer_id: art.designer_id || null,
                     comment: art.comment || null,
                     path_file: art.path_file || null,
-                    image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+                    image_url: imageUrl,
                     created_at: art.created_at || null,
                     designer_name: art.designer?.name || art.designer_name || null,
                     dealer_name: art.dealer?.name || art.dealer_name || null,
-                })),
-                arts_count: interaction.arts_count || (interaction.arts || []).length,
-            }));
+                    wall_info: art.wall_info || null,
+                    wall_name: art.wall_name || art.wall_info?.wall_name || null,
+                };
+            });
         } else {
             requestLayoutArts.value = [];
         }

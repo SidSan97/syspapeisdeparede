@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Budget;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class GetRequestLayoutArtsRequest extends FormRequest
 {
@@ -27,16 +26,13 @@ class GetRequestLayoutArtsRequest extends FormRequest
                 'nullable',
                 'integer',
                 'exists:orders,id',
+                'required_without:budget_id',
             ],
             'budget_id' => [
                 'nullable',
                 'integer',
                 'exists:budgets,id',
-            ],
-            'order_budget_id' => [
-                'nullable',
-                'integer',
-                'exists:order_budgets,id',
+                'required_without:order_id',
             ],
             'dealer_id' => [
                 'nullable',
@@ -56,7 +52,7 @@ class GetRequestLayoutArtsRequest extends FormRequest
         // Remover valores vazios, null ou strings vazias dos inputs
         $inputs = $this->all();
         
-        foreach (['order_id', 'budget_id', 'order_budget_id', 'dealer_id'] as $field) {
+        foreach (['order_id', 'budget_id', 'dealer_id'] as $field) {
             if (isset($inputs[$field]) && ($inputs[$field] === '' || $inputs[$field] === null || $inputs[$field] === 'null')) {
                 unset($inputs[$field]);
             } elseif (isset($inputs[$field])) {
@@ -69,29 +65,6 @@ class GetRequestLayoutArtsRequest extends FormRequest
     }
 
     /**
-     * Configure the validator instance.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
-     */
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            $orderId = $this->input('order_id');
-            $budgetId = $this->input('budget_id');
-            $orderBudgetId = $this->input('order_budget_id');
-
-            // Garantir que pelo menos um dos campos obrigatórios seja fornecido
-            if (empty($orderId) && empty($budgetId) && empty($orderBudgetId)) {
-                $validator->errors()->add(
-                    'order_id',
-                    'É necessário fornecer pelo menos um dos seguintes campos: order_id, budget_id ou order_budget_id.'
-                );
-            }
-        });
-    }
-
-    /**
      * Get custom messages for validator errors.
      *
      * @return array<string, string>
@@ -101,13 +74,10 @@ class GetRequestLayoutArtsRequest extends FormRequest
         return [
             'order_id.integer' => 'O ID do pedido deve ser um número inteiro.',
             'order_id.exists' => 'O pedido selecionado não existe.',
-            'order_id.required_without_all' => 'É necessário fornecer pelo menos um dos seguintes campos: order_id, budget_id ou order_budget_id.',
+            'order_id.required_without' => 'É necessário fornecer order_id ou budget_id.',
             'budget_id.integer' => 'O ID do orçamento deve ser um número inteiro.',
             'budget_id.exists' => 'O orçamento selecionado não existe.',
-            'budget_id.required_without_all' => 'É necessário fornecer pelo menos um dos seguintes campos: order_id, budget_id ou order_budget_id.',
-            'order_budget_id.integer' => 'O ID do orçamento do pedido deve ser um número inteiro.',
-            'order_budget_id.exists' => 'O orçamento do pedido selecionado não existe.',
-            'order_budget_id.required_without_all' => 'É necessário fornecer pelo menos um dos seguintes campos: order_id, budget_id ou order_budget_id.',
+            'budget_id.required_without' => 'É necessário fornecer order_id ou budget_id.',
             'dealer_id.integer' => 'O ID do revendedor deve ser um número inteiro.',
             'dealer_id.exists' => 'O revendedor selecionado não existe.',
         ];

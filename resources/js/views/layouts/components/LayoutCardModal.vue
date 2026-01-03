@@ -382,21 +382,37 @@
                         data-bs-parent="#requestArtsAccordion"
                       >
                         <div class="accordion-body">
-                          <div v-if="interaction.wall_info" class="layout-modal-art-wall-info mb-3">
-                            <div class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Ambiente:</span>
-                              <span class="layout-modal-art-info-value">{{ interaction.wall_info.room_name || 'N/A' }}</span>
-                            </div>
-                            <div class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Parede:</span>
-                              <span class="layout-modal-art-info-value">{{ interaction.wall_info.wall_name || 'N/A' }}</span>
-                            </div>
-                            <div v-if="interaction.wall_info.width || interaction.wall_info.height" class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Dimensões:</span>
-                              <span class="layout-modal-art-info-value">
-                                {{ formatNumber(interaction.wall_info.width) }}m x {{ formatNumber(interaction.wall_info.height) }}m
-                                <span v-if="interaction.wall_info.total_area"> ({{ formatNumber(interaction.wall_info.total_area) }} m²)</span>
-                              </span>
+                          <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
+                            <div class="row g-2">
+                              <div class="col-md-12">
+                                <div class="text-muted small">
+                                  <h5>Comentário</h5>
+                                </div>
+                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
+
+                                <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
+                              </div>
+                              <hr>
+                              <div class="col-md-6">
+                                <div class="text-muted small">Ambiente</div>
+                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
+                              </div>
+                              <div class="col-md-6">
+                                <div class="text-muted small">Parede</div>
+                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
+                              </div>
+                              <div v-if="interaction.wall_info.width" class="col-md-4">
+                                <div class="text-muted small">Largura</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
+                              </div>
+                              <div v-if="interaction.wall_info.height" class="col-md-4">
+                                <div class="text-muted small">Altura</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
+                              </div>
+                              <div v-if="interaction.wall_info.total_area" class="col-md-4">
+                                <div class="text-muted small">Área</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
+                              </div>
                             </div>
                           </div>
                           <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
@@ -415,49 +431,61 @@
                             <div
                               v-for="(art, artIndex) in interaction.arts"
                               :key="art.id || artIndex"
-                              class="layout-modal-art-item-content mb-3"
-                              :class="{ 'pb-3 border-bottom': artIndex < interaction.arts.length - 1 }"
+                              class="card mb-3 border"
+                              :class="{ 'border-top': artIndex > 0 }"
                             >
-                              <div class="layout-modal-art-header">
-                                <div class="layout-modal-art-date">
-                                  {{ formatDate(art.created_at) }}
+                              <div class="card-body">
+                                <div class="mb-3 p-2 border rounded">
+                                  <div class="row g-2">
+                                    <div v-if="art.dealer_name" class="col-md-6">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-user-tie me-1"></i>
+                                        Revendedor
+                                      </div>
+                                      <div class="fw-semibold">{{ art.dealer_name }}</div>
+                                    </div>
+                                    <div v-if="art.designer_name" class="col-md-6">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-user me-1"></i>
+                                        Designer
+                                      </div>
+                                      <div class="fw-semibold">{{ art.designer_name }}</div>
+                                    </div>
+                                    <div v-if="art.created_at" class="col-12">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-calendar me-1"></i>
+                                        Enviado em: {{ formatDate(art.created_at) }}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-
-                              <div v-if="art.dealer_name || art.designer_name" class="layout-modal-art-authors">
-                                <div v-if="art.dealer_name" class="layout-modal-art-author">
-                                  <i class="fa fa-user-tie me-1"></i>
-                                  <span class="layout-modal-art-author-label">Revendedor:</span>
-                                  <span class="layout-modal-art-author-name">{{ art.dealer_name }}</span>
+                                <div v-if="art.comment" class="mb-3">
+                                  <div class="text-muted small mb-1">Comentário</div>
+                                  <div class="p-2 rounded border">{{ art.comment }}</div>
                                 </div>
-                                <div v-if="art.designer_name" class="layout-modal-art-author">
-                                  <i class="fa fa-user me-1"></i>
-                                  <span class="layout-modal-art-author-label">Designer:</span>
-                                  <span class="layout-modal-art-author-name">{{ art.designer_name }}</span>
+                                <div v-if="art.image_url" class="mb-3">
+                                  <div class="text-muted small mb-2">Imagem da Arte</div>
+                                  <div class="d-flex justify-content-center">
+                                    <img
+                                      :src="art.image_url"
+                                      :alt="`Arte ${art.id}`"
+                                      class="img-thumbnail"
+                                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                                      @error="handleImageError"
+                                    />
+                                  </div>
+                                  <div class="mt-2 text-center">
+                                    <a
+                                      :href="art.image_url"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="btn btn-sm btn-outline-primary"
+                                    >
+                                      <i class="fa fa-external-link me-1"></i>
+                                      Abrir em nova aba
+                                    </a>
+                                  </div>
                                 </div>
-                              </div>
-
-                              <div v-if="art.comment" class="layout-modal-art-comment">
-                                <div class="layout-modal-art-comment-label">Comentário:</div>
-                                <div class="layout-modal-art-comment-text">{{ art.comment }}</div>
-                              </div>
-
-                              <div v-if="art.image_url" class="layout-modal-art-image">
-                                <img
-                                  :src="art.image_url"
-                                  :alt="`Arte ${art.id}`"
-                                  class="layout-modal-art-image-preview"
-                                  @error="handleImageError"
-                                />
-                                <a
-                                  :href="art.image_url"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="layout-modal-art-image-link"
-                                >
-                                  <i class="fa fa-external-link me-1"></i>
-                                  Abrir em nova aba
-                                </a>
                               </div>
                             </div>
                           </div>
@@ -556,21 +584,37 @@
                         data-bs-parent="#requestArtsAccordionBottom"
                       >
                         <div class="accordion-body">
-                          <div v-if="interaction.wall_info" class="layout-modal-art-wall-info mb-3">
-                            <div class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Ambiente:</span>
-                              <span class="layout-modal-art-info-value">{{ interaction.wall_info.room_name || 'N/A' }}</span>
-                            </div>
-                            <div class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Parede:</span>
-                              <span class="layout-modal-art-info-value">{{ interaction.wall_info.wall_name || 'N/A' }}</span>
-                            </div>
-                            <div v-if="interaction.wall_info.width || interaction.wall_info.height" class="layout-modal-art-info-row">
-                              <span class="layout-modal-art-info-label">Dimensões:</span>
-                              <span class="layout-modal-art-info-value">
-                                {{ formatNumber(interaction.wall_info.width) }}m x {{ formatNumber(interaction.wall_info.height) }}m
-                                <span v-if="interaction.wall_info.total_area"> ({{ formatNumber(interaction.wall_info.total_area) }} m²)</span>
-                              </span>
+                          <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
+                            <div class="row g-2">
+                              <div class="col-md-12">
+                                <div class="text-muted small">
+                                  <h5>Comentário</h5>
+                                </div>
+                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
+
+                                <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
+                              </div>
+                              <hr>
+                              <div class="col-md-6">
+                                <div class="text-muted small">Ambiente</div>
+                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
+                              </div>
+                              <div class="col-md-6">
+                                <div class="text-muted small">Parede</div>
+                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
+                              </div>
+                              <div v-if="interaction.wall_info.width" class="col-md-4">
+                                <div class="text-muted small">Largura</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
+                              </div>
+                              <div v-if="interaction.wall_info.height" class="col-md-4">
+                                <div class="text-muted small">Altura</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
+                              </div>
+                              <div v-if="interaction.wall_info.total_area" class="col-md-4">
+                                <div class="text-muted small">Área</div>
+                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
+                              </div>
                             </div>
                           </div>
                           <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
@@ -589,49 +633,61 @@
                             <div
                               v-for="(art, artIndex) in interaction.arts"
                               :key="art.id || artIndex"
-                              class="layout-modal-art-item-content mb-3"
-                              :class="{ 'pb-3 border-bottom': artIndex < interaction.arts.length - 1 }"
+                              class="card mb-3 border"
+                              :class="{ 'border-top': artIndex > 0 }"
                             >
-                              <div class="layout-modal-art-header">
-                                <div class="layout-modal-art-date">
-                                  {{ formatDate(art.created_at) }}
+                              <div class="card-body">
+                                <div class="mb-3 p-2 border rounded">
+                                  <div class="row g-2">
+                                    <div v-if="art.dealer_name" class="col-md-6">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-user-tie me-1"></i>
+                                        Revendedor
+                                      </div>
+                                      <div class="fw-semibold">{{ art.dealer_name }}</div>
+                                    </div>
+                                    <div v-if="art.designer_name" class="col-md-6">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-user me-1"></i>
+                                        Designer
+                                      </div>
+                                      <div class="fw-semibold">{{ art.designer_name }}</div>
+                                    </div>
+                                    <div v-if="art.created_at" class="col-12">
+                                      <div class="text-muted small">
+                                        <i class="fa fa-calendar me-1"></i>
+                                        Enviado em: {{ formatDate(art.created_at) }}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-
-                              <div v-if="art.dealer_name || art.designer_name" class="layout-modal-art-authors">
-                                <div v-if="art.dealer_name" class="layout-modal-art-author">
-                                  <i class="fa fa-user-tie me-1"></i>
-                                  <span class="layout-modal-art-author-label">Revendedor:</span>
-                                  <span class="layout-modal-art-author-name">{{ art.dealer_name }}</span>
+                                <div v-if="art.comment" class="mb-3">
+                                  <div class="text-muted small mb-1">Comentário</div>
+                                  <div class="p-2 rounded border">{{ art.comment }}</div>
                                 </div>
-                                <div v-if="art.designer_name" class="layout-modal-art-author">
-                                  <i class="fa fa-user me-1"></i>
-                                  <span class="layout-modal-art-author-label">Designer:</span>
-                                  <span class="layout-modal-art-author-name">{{ art.designer_name }}</span>
+                                <div v-if="art.image_url" class="mb-3">
+                                  <div class="text-muted small mb-2">Imagem da Arte</div>
+                                  <div class="d-flex justify-content-center">
+                                    <img
+                                      :src="art.image_url"
+                                      :alt="`Arte ${art.id}`"
+                                      class="img-thumbnail"
+                                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                                      @error="handleImageError"
+                                    />
+                                  </div>
+                                  <div class="mt-2 text-center">
+                                    <a
+                                      :href="art.image_url"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="btn btn-sm btn-outline-primary"
+                                    >
+                                      <i class="fa fa-external-link me-1"></i>
+                                      Abrir em nova aba
+                                    </a>
+                                  </div>
                                 </div>
-                              </div>
-
-                              <div v-if="art.comment" class="layout-modal-art-comment">
-                                <div class="layout-modal-art-comment-label">Comentário:</div>
-                                <div class="layout-modal-art-comment-text">{{ art.comment }}</div>
-                              </div>
-
-                              <div v-if="art.image_url" class="layout-modal-art-image">
-                                <img
-                                  :src="art.image_url"
-                                  :alt="`Arte ${art.id}`"
-                                  class="layout-modal-art-image-preview"
-                                  @error="handleImageError"
-                                />
-                                <a
-                                  :href="art.image_url"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="layout-modal-art-image-link"
-                                >
-                                  <i class="fa fa-external-link me-1"></i>
-                                  Abrir em nova aba
-                                </a>
                               </div>
                             </div>
                           </div>
@@ -1658,22 +1714,30 @@
       console.log('Resposta da API:', data);
 
       if (data?.success && Array.isArray(data.data)) {
-        requestLayoutArts.value = data.data.map((interaction) => ({
-          id: interaction.id,
-          card_id: interaction.card_id,
-          created_at: interaction.created_at,
-          wall_info: interaction.wall_info || null,
-          arts: (interaction.arts || []).map((art) => ({
+        requestLayoutArts.value = data.data.map((art) => {
+          let imageUrl = art.image_url;
+          if (!imageUrl && art.path_file) {
+            imageUrl = resolveImageUrl(art.path_file);
+          }
+          
+          return {
             id: art.id,
             comment: art.comment || null,
-            path_file: art.path_file || null,
-            image_url: art.image_url || (art.path_file ? resolveImageUrl(art.path_file) : null),
+            image_url: imageUrl,
             created_at: art.created_at || null,
-            designer_name: art.designer?.name || art.designer_name || null,
-            dealer_name: art.dealer?.name || art.dealer_name || null,
-          })),
-          arts_count: interaction.arts_count || (interaction.arts || []).length,
-        }));
+            wall_info: art.wall_info || null,
+            arts: [{
+              id: art.id,
+              comment: art.comment || null,
+              path_file: art.path_file || null,
+              image_url: imageUrl,
+              created_at: art.created_at || null,
+              designer_name: art.designer?.name || art.designer_name || null,
+              dealer_name: art.dealer?.name || art.dealer_name || null,
+            }],
+            arts_count: 1,
+          };
+        });
       } else {
         requestLayoutArts.value = [];
       }
