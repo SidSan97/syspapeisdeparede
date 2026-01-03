@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
 use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
@@ -657,7 +658,7 @@ class BudgetController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function getRequestLayoutArts(Request $request): JsonResponse
+    public function getRequestLayoutArts(GetRequestLayoutArtsRequest $request): JsonResponse
     {
         try {
             $user = Auth::user();
@@ -669,25 +670,12 @@ class BudgetController extends Controller
                 ], 401);
             }
 
-            $validator = Validator::make($request->all(), [
-                'order_id' => ['nullable', 'integer', 'exists:orders,id'],
-                'budget_id' => ['nullable', 'integer', 'exists:budgets,id'],
-                'dealer_id' => ['nullable', 'integer', 'exists:users,id'],
-                'order_budget_id' => ['nullable', 'integer', 'exists:order_budgets,id'],
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Dados inválidos',
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-
-            $orderId = $request->input('order_id');
-            $budgetId = $request->input('budget_id');
-            $orderBudgetId = $request->input('order_budget_id');
-            $dealerId = $request->input('dealer_id');
+            // Obter valores validados do request
+            $validated = $request->validated();
+            $orderId = $validated['order_id'] ?? null;
+            $budgetId = $validated['budget_id'] ?? null;
+            $orderBudgetId = $validated['order_budget_id'] ?? null;
+            $dealerId = $validated['dealer_id'] ?? null;
 
             $isAdmin = $user->isAdmin();
             $isDesigner = $user->isDesigner();
@@ -712,11 +700,6 @@ class BudgetController extends Controller
                         });
                     });
                 });
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'budget_id, order_id ou order_budget_id é obrigatório',
-                ], 422);
             }
 
             // Buscar interações

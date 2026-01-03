@@ -143,6 +143,8 @@ Route::prefix('v1')->group(function () {
     Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
     Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderController::class, 'markAsProduced'])->middleware('auth:api');
     Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderController::class, 'updateProductionPercentage'])->middleware('auth:api');
+    Route::get('orders/order-budgets/{orderBudget}/production-reports', [OrderController::class, 'getProductionReports'])->middleware('auth:api');
+    Route::get('orders/production-reports/{report}/download-pdf', [OrderController::class, 'downloadProductionReportPdf'])->middleware('auth:api');
 
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');

@@ -493,6 +493,66 @@
                   </div>
                 </div>
 
+                <!-- Relatórios de Produção -->
+                <div v-if="card.id" class="layout-modal-section">
+                  <h3 class="layout-modal-section-title">
+                    <i class="fa fa-file-pdf"></i> Relatórios de Produção
+                  </h3>
+                  <div v-if="loadingProductionReports" class="text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Carregando relatórios...
+                  </div>
+                  <div v-else-if="productionReports.length === 0" class="text-muted">
+                    Nenhum relatório de produção encontrado para este card.
+                  </div>
+                  <div v-else class="d-flex flex-column gap-3">
+                    <div
+                      v-for="report in productionReports"
+                      :key="report.id"
+                      class="card"
+                    >
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                          <div class="flex-grow-1">
+                            <h6 class="card-title mb-2 d-flex align-items-center">
+                              <i class="fa fa-file-pdf me-2"></i>
+                              Relatório #{{ report.id }}
+                            </h6>
+                            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                              <small class="text-muted">
+                                {{ formatDate(report.action_date) }}
+                              </small>
+                              <span class="badge" :class="getReportBadgeClass(report.action_type)">
+                                {{ getReportActionTypeLabel(report.action_type) }}
+                              </span>
+                            </div>
+                            <div v-if="report.user" class="small d-flex align-items-center">
+                              <i class="fa fa-user me-1"></i>
+                              {{ report.user.name }}
+                            </div>
+                          </div>
+                          <div class="flex-shrink-0">
+                            <button
+                              class="btn btn-sm btn-primary"
+                              @click="downloadReportPdf(report.id)"
+                              :disabled="downloadingReportId === report.id"
+                              title="Baixar PDF"
+                            >
+                              <span v-if="downloadingReportId === report.id" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                              <i v-else class="fa fa-download me-2"></i>
+                              {{ downloadingReportId === report.id ? 'Baixando...' : 'Baixar PDF' }}
+                            </button>
+                          </div>
+                        </div>
+                        <div v-if="report.column_name" class="border-top pt-3 small">
+                          <span class="fw-semibold text-muted">Coluna:</span>
+                          <span class="ms-2">{{ report.column_name }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Carregar Arte -->
                 <div v-if="card.budget" class="layout-modal-section">
                   <div class="form-check mb-3">
@@ -718,6 +778,11 @@
   // Solicitações de arte
   const requestLayoutArts = ref([]);
   const loadingRequestArts = ref(false);
+
+  // Relatórios de produção
+  const productionReports = ref([]);
+  const loadingProductionReports = ref(false);
+  const downloadingReportId = ref(null);
 
   // Marcar como produzido
   const markingAsProduced = ref(false);
@@ -1570,6 +1635,89 @@
     }
   }
 
+  async function fetchProductionReports() {
+    if (!props.card?.id) {
+      productionReports.value = [];
+      loadingProductionReports.value = false;
+      return;
+    }
+
+    try {
+      loadingProductionReports.value = true;
+
+      const response = await axios.get(`v1/orders/order-budgets/${props.card.id}/production-reports`);
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        productionReports.value = response.data.data;
+      } else {
+        productionReports.value = [];
+      }
+    } catch (error) {
+      console.error('Erro ao buscar relatórios de produção:', error);
+      productionReports.value = [];
+    } finally {
+      loadingProductionReports.value = false;
+    }
+  }
+
+  function getReportActionTypeLabel(actionType) {
+    const labels = {
+      'mark_as_produced': 'Marcado como Produzido',
+      'production_percentage_100': 'Produção 100%',
+    };
+    return labels[actionType] || actionType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  function getReportBadgeClass(actionType) {
+    const classes = {
+      'mark_as_produced': 'bg-success',
+      'production_percentage_100': 'bg-info',
+    };
+    return classes[actionType] || 'bg-secondary';
+  }
+
+  async function downloadReportPdf(reportId) {
+    if (!reportId || downloadingReportId.value === reportId) {
+      return;
+    }
+
+    downloadingReportId.value = reportId;
+
+    try {
+      const response = await axios.get(`v1/orders/production-reports/${reportId}/download-pdf`, {
+        responseType: 'blob',
+      });
+
+      // Criar URL do blob e fazer download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio-producao-${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      if (window.Toast) {
+        window.Toast.fire({
+          icon: 'success',
+          title: 'PDF baixado com sucesso',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao baixar PDF do relatório:', error);
+      const errorMessage = error.response?.data?.message || 'Erro ao baixar PDF. Tente novamente.';
+
+      if (window.Swal) {
+        window.Swal.fire('Erro!', errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      downloadingReportId.value = null;
+    }
+  }
+
   async function markAsProduced() {
     if (!props.card?.id || markingAsProduced.value) {
       return;
@@ -1704,6 +1852,8 @@
       originalDescription.value = newCard.description || '';
       // Buscar requisições de arte quando o card mudar
       fetchRequestLayoutArts();
+      // Buscar relatórios de produção quando o card mudar
+      fetchProductionReports();
     }
     // Fechar menu de membro quando o card mudar
     showMemberMenu.value = false;
