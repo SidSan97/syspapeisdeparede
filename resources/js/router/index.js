@@ -136,6 +136,11 @@ router.beforeEach(async (to, from, next) => {
                 next({ path: '/dashboard' });
                 return;
             }
+        } else if (to.path.startsWith('/pedidos-producao')) {
+            if (userTypeId !== USER_TYPES.PRODUCTION && userTypeId !== USER_TYPES.COMMERCIAL) {
+                next({ path: '/dashboard' });
+                return;
+            }
         } else if (userTypeId !== USER_TYPES.PRODUCTION) {
             // Para outras rotas de produção, apenas usuários de produção podem acessar
             next({ path: '/dashboard' });
@@ -169,6 +174,28 @@ router.beforeEach(async (to, from, next) => {
 
         if (!isAllowed) {
             // Redirecionar para dashboard se tentar acessar rota não permitida
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
+    if (userTypeId === USER_TYPES.COMMERCIAL) {
+        let isAllowed = false;
+
+        if (to.path === '/dashboard' || to.path === '/') {
+            isAllowed = true;
+        } else if (to.path === '/profile') {
+            isAllowed = true;
+        } else if (to.path === '/pedidos' || to.path.startsWith('/pedidos/')) {
+            // Permitir /pedidos e /pedidos/:id (detalhes do pedido)
+            if (to.path === '/pedidos' || /^\/pedidos\/\d+$/.test(to.path)) {
+                isAllowed = true;
+            }
+        } else if (to.path.startsWith('/pedidos-producao')) {
+            isAllowed = true;
+        }
+
+        if (!isAllowed) {
             next({ path: '/dashboard' });
             return;
         }

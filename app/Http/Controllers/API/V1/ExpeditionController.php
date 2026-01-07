@@ -233,6 +233,7 @@ class ExpeditionController extends Controller
 
             $invoiceIdsString = implode(',', $invoiceIds);
 
+            // Enviar notas fiscais para expedição
             $sendExpedition = $this->tinyErpService->sendInvoiceToExpedition($invoiceIdsString, 'notafiscal');
 
             if($sendExpedition['status'] === 'Erro') {
@@ -243,8 +244,10 @@ class ExpeditionController extends Controller
                 ], 500);
             }
 
+            // Alterar transportador das notas fiscais e add info das embalagens
             $this->tinyErpService->changeExpedition($sendExpedition['objetos']['objeto']['idExpedicao'], $carrier);
 
+            // Incluir agrupamento de notas fiscais
             $includeGroupingInvoices = $this->tinyErpService->includeGroupingInvoices($sendExpedition['objetos']['objeto']['idExpedicao']);
 
             if($includeGroupingInvoices['status'] === 'Erro') {
@@ -255,6 +258,7 @@ class ExpeditionController extends Controller
                 ], 500);
             }
 
+            // Concluir agrupamento de notas fiscais
             $completeGrouping = $this->tinyErpService->completeGroupingInvoices($includeGroupingInvoices['idAgrupamento']);
 
             if($completeGrouping['status'] === 'Erro') {
@@ -264,7 +268,7 @@ class ExpeditionController extends Controller
                     'error' => $completeGrouping['erros'],
                 ], 500);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Notas fiscais enviadas para expedição com sucesso',

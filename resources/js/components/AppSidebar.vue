@@ -13,10 +13,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isDesigner" class="bd-sidebar-divider">
+      <hr v-if="!isDesigner && !isExpeditionUser && !isCommercialUser" class="bd-sidebar-divider">
 
       <!-- Grupo 2: Orçamentos e Pedidos -->
-      <div v-if="!isDesigner" class="bd-sidebar-group">
+      <div v-if="!isDesigner && !isExpeditionUser && !isCommercialUser" class="bd-sidebar-group">
         <RouterLink
           to="/budget/new-budget"
           class="bd-sidebar-item"
@@ -68,7 +68,7 @@
         </RouterLink>
       </div>
 
-      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isProductionUser || isCommercialUser" class="bd-sidebar-divider">
 
       <!-- Grupo 4: Produção -->
       <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
@@ -80,6 +80,9 @@
           <i class="fa fa-folder"></i>
           <span class="bd-sidebar-text">Produção</span>
         </RouterLink>
+      </div>
+
+      <div v-if="isCommercialUser || isAdmin" class="bd-sidebar-group">
         <RouterLink
           to="/pedidos-producao"
           class="bd-sidebar-item"
@@ -90,10 +93,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isTenant && !isProductionUser && !isDesigner" class="bd-sidebar-divider">
+      <hr v-if="isExpeditionUser || (!isTenant && !isProductionUser && !isDesigner && !isCommercialUser)" class="bd-sidebar-divider">
 
       <!-- Grupo 5: Expedição -->
-      <div v-if="!isTenant && !isProductionUser && !isDesigner" class="bd-sidebar-group">
+      <div v-if="isExpeditionUser || (!isTenant && !isProductionUser && !isDesigner && !isCommercialUser)" class="bd-sidebar-group">
         <RouterLink
           to="/expedicao"
           class="bd-sidebar-item"
@@ -151,6 +154,8 @@ const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 const isTenant = computed(() => auth.user?.user_type_id === USER_TYPES.RESELLER);
 const isProductionUser = computed(() => auth.user?.user_type_id === USER_TYPES.PRODUCTION);
 const isDesigner = computed(() => auth.user?.user_type_id === USER_TYPES.DESIGNER);
+const isExpeditionUser = computed(() => auth.user?.user_type_id === USER_TYPES.EXPEDITION);
+const isCommercialUser = computed(() => auth.user?.user_type_id === USER_TYPES.COMMERCIAL);
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

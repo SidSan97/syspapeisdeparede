@@ -185,6 +185,8 @@
   const loadingUsers = ref(false);
 
   const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
+  const isCommercialUser = computed(() => auth.user?.user_type_id === USER_TYPES.COMMERCIAL);
+
   const router = useRouter();
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -396,7 +398,7 @@
   }
 
   async function fetchUsers() {
-    if (!isAdmin.value) {
+    if (!isAdmin.value && !isCommercialUser.value) {
       return;
     }
 
@@ -430,7 +432,7 @@
 
   onMounted(() => {
     fetchOrders();
-    if (isAdmin.value) {
+    if (isAdmin.value || isCommercialUser.value) {
       fetchUsers();
     }
     document.title = 'Pedidos';
