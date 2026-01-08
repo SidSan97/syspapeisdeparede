@@ -165,6 +165,7 @@ Route::prefix('v1')->group(function () {
     Route::get('search-invoices', [ExpeditionController::class, 'searchInvoices'])->middleware('auth:api');
     Route::get('generate-danfe/{nfId}', [ExpeditionController::class, 'generateDanfe'])->middleware('auth:api');
     Route::post('send-invoice-to-expedition', [ExpeditionController::class, 'sendInvoiceToExpedition'])->middleware('auth:api');
+    Route::get('search-groupings/{carrier}', [ExpeditionController::class, 'searchGroupings'])->middleware('auth:api');
 
     //Pagamentos
     Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');

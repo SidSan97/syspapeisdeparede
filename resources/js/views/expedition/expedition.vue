@@ -34,7 +34,18 @@
               type="button"
               role="tab"
             >
-              Expedição
+              Expedir
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'groupings' }"
+              @click="activeTab = 'groupings'"
+              type="button"
+              role="tab"
+            >
+              Agrupamentos
             </button>
           </li>
         </ul>
@@ -150,16 +161,16 @@
             role="tabpanel"
           >
             <form class="g-3 align-items-center mb-4" role="search">
-              <label for="search-query-expedition" class="sr-only">Pesquisar expedição</label>
+              <label for="search-query-expedition" class="sr-only">Pesquisar Notas Fiscais</label>
 
               <div class="d-flex flex-wrap gap-3">
-                <div class="flex-grow-1" style="min-width: 200px;">
+                <div>
                   <div class="input-group input-group-prefix">
                     <input
                       id="search-query-expedition"
                       type="text"
                       class="form-control"
-                      placeholder="Pesquisar expedição"
+                      placeholder="Pesquisar Notas Fiscais"
                       v-model="searchQueryExpedition"
                     />
                     <span class="input-group-text">
@@ -187,7 +198,7 @@
 
             <div class="card-body p-0 mt-4">
               <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-                Carregando expedições...
+                Carregando notas fiscais...
               </div>
 
               <EmptyState
@@ -279,6 +290,110 @@
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aba Agrupamentos -->
+          <div
+            v-show="activeTab === 'groupings'"
+            class="tab-pane"
+            :class="{ active: activeTab === 'groupings' }"
+            role="tabpanel"
+          >
+            <form class="g-3 align-items-center mb-4" role="search">
+              <div class="d-flex">
+                <div style="min-width: 200px;">
+                  <label for="grouping-carrier-select" class="form-label">Transportadora</label>
+                  <select
+                    id="grouping-carrier-select"
+                    class="form-select"
+                    v-model="selectedGroupingCarrier"
+                    @change="searchGroupings"
+                  >
+                    <option :value="null">Selecione uma transportadora</option>
+                    <option
+                      v-for="carrier in carriersList"
+                      :key="carrier"
+                      :value="carrier"
+                    >
+                      {{ carrier }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </form>
+
+            <div class="card-body p-0 mt-4">
+              <div v-if="loadingGroupings" class="p-5 text-center text-muted fw-semibold">
+                Carregando agrupamentos...
+              </div>
+
+              <EmptyState
+                v-else-if="!selectedGroupingCarrier"
+                heading="Selecione uma transportadora"
+                icon="shipping-fast"
+                class="p-5"
+              >
+                Por favor, selecione uma transportadora para visualizar os agrupamentos.
+              </EmptyState>
+
+              <EmptyState
+                v-else-if="groupings.length === 0"
+                heading="Nenhum agrupamento encontrado"
+                icon="shipping-fast"
+                class="p-5"
+              >
+                Não há agrupamentos para a transportadora selecionada no momento.
+              </EmptyState>
+
+              <div v-else class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">ID Agrupamento</th>
+                      <th scope="col">Transportadora</th>
+                      <th scope="col">Quantidade de Notas</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" style="width: 64px;">Opções</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="grouping in groupings" :key="grouping.id">
+                      <td class="fw-semibold">{{ grouping.id || '—' }}</td>
+                      <td>{{ selectedGroupingCarrier }}</td>
+                      <td>{{ grouping.quantidade_notas || 0 }}</td>
+                      <td>
+                        <span class="badge" :class="getGroupingStatusClass(grouping.status)">
+                          {{ grouping.status || '—' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="dropdown">
+                          <button
+                            class="btn btn-subtle btn-sm"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                          >
+                            <i class="fa fa-ellipsis-h"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="viewGroupingDetails(grouping)"
+                              >
+                                Ver detalhes
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -433,6 +548,9 @@ const searchQueryInvoice = ref('');
 const selectedInvoices = ref(new Set());
 const selectedCarrier = ref(null);
 const carriersList = ref(getCarriersList());
+const selectedGroupingCarrier = ref(null);
+const groupings = ref([]);
+const loadingGroupings = ref(false);
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -931,6 +1049,55 @@ function viewInvoiceDetails(invoice) {
     }
 }
 
+async function searchGroupings() {
+  if (!selectedGroupingCarrier.value) {
+    groupings.value = [];
+    return;
+  }
+
+  try {
+    loadingGroupings.value = true;
+    const { data } = await axios.get(`v1/search-groupings/${encodeURIComponent(selectedGroupingCarrier.value)}`);
+
+    if (data.success && data.data) {
+      // Ajustar conforme a estrutura de dados retornada pela API
+      groupings.value = Array.isArray(data.data) ? data.data : (data.data.groupings || []);
+    } else {
+      groupings.value = [];
+    }
+  } catch (error) {
+    console.error('Erro ao buscar agrupamentos:', error);
+    groupings.value = [];
+    window.Swal.fire({
+      title: 'Erro ao buscar agrupamentos!',
+      text: error.response?.data?.message || 'Não foi possível buscar os agrupamentos. Tente novamente mais tarde.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+  } finally {
+    loadingGroupings.value = false;
+  }
+}
+
+function getGroupingStatusClass(status) {
+  if (!status) return 'bg-secondary';
+
+  const statusLower = status.toLowerCase();
+  if (statusLower.includes('concluído') || statusLower.includes('completo')) {
+    return 'bg-success';
+  } else if (statusLower.includes('pendente') || statusLower.includes('processando')) {
+    return 'bg-warning';
+  } else if (statusLower.includes('erro') || statusLower.includes('cancelado')) {
+    return 'bg-danger';
+  }
+  return 'bg-secondary';
+}
+
+function viewGroupingDetails(grouping) {
+  // TODO: Implementar ação de ver detalhes do agrupamento
+  console.log('Ver detalhes do agrupamento:', grouping);
+}
+
 watch(activeTab, (newTab) => {
   if (newTab === 'invoice' && invoices.value.length === 0) {
     fetchInvoices();
@@ -938,6 +1105,13 @@ watch(activeTab, (newTab) => {
 
   if (newTab === 'expedition') {
     searchInvoices();
+  }
+
+  if (newTab === 'groupings') {
+    // Resetar seleção quando a aba for aberta
+    if (!selectedGroupingCarrier.value) {
+      groupings.value = [];
+    }
   }
 });
 

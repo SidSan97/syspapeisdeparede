@@ -265,6 +265,34 @@ class TinyErpService
         }
     }
 
+    public function searchGroupings(string $carrier)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'formaEnvio' => $this->getShippingCodeByOrigin($carrier),
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.pesquisar.agrupamentos.php?' . $queryString;
+
+            $response = $this->client->get($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar agrupamentos de notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao buscar agrupamentos de notas fiscais: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function sendInvoice(array $order, array $dropshipping)
     {
         try {

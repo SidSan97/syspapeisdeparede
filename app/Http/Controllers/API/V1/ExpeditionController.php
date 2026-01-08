@@ -187,6 +187,39 @@ class ExpeditionController extends Controller
         }
     }
 
+    public function searchGroupings(string $carrier): JsonResponse
+    {
+        try {
+            $cachedData = Cache::get('tiny_erp_groupings');
+
+            if ($cachedData !== null) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $cachedData,
+                    'message' => 'Agrupamentos de notas fiscais encontrados com sucesso',
+                ], 200);
+            }
+
+            $groupings = $this->tinyErpService->searchGroupings($carrier);
+
+            Cache::put('tiny_erp_groupings', $groupings, now()->addHours(24));
+
+            return response()->json([
+                'success' => true,
+                'data' => $groupings,
+                'message' => 'Agrupamentos de notas fiscais encontrados com sucesso',
+            ], 200);
+        }
+        catch (\Exception $e) {
+            Log::error('Erro ao buscar agrupamentos de notas fiscais: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar agrupamentos de notas fiscais',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function generateDanfe(string $invoiceId): JsonResponse
     {
         try {
