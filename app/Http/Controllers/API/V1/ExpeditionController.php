@@ -190,19 +190,7 @@ class ExpeditionController extends Controller
     public function searchGroupings(string $carrier): JsonResponse
     {
         try {
-            $cachedData = Cache::get('tiny_erp_groupings');
-
-            if ($cachedData !== null) {
-                return response()->json([
-                    'success' => true,
-                    'data' => $cachedData,
-                    'message' => 'Agrupamentos de notas fiscais encontrados com sucesso',
-                ], 200);
-            }
-
             $groupings = $this->tinyErpService->searchGroupings($carrier);
-
-            Cache::put('tiny_erp_groupings', $groupings, now()->addHours(24));
 
             return response()->json([
                 'success' => true,
@@ -244,6 +232,35 @@ class ExpeditionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao gerar DANFE',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function printCarrierLabels(int|string $groupingId): JsonResponse
+    {
+        try {
+            $label = $this->tinyErpService->printCarrierLabels($groupingId);
+
+            if($label['status'] === 'Erro') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao gerar etiquetas de impressão dos agrupamentos. Tente novamente mais tarde.',
+                    'error' => $label['erros'],
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $label,
+                'message' => 'Etiquetas de impressão dos agrupamentos geradas com sucesso',
+            ], 200);
+        }
+        catch (\Exception $e) {
+            Log::error('Erro ao gerar etiquetas de impressão dos agrupamentos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar etiquetas de impressão dos agrupamentos',
                 'error' => $e->getMessage(),
             ], 500);
         }

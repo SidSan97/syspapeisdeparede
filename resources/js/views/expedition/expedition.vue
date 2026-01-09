@@ -354,6 +354,7 @@
                       <th scope="col">Nº Agrupamento</th>
                       <th scope="col">Transportadora</th>
                       <th scope="col">Quantidade de Notas</th>
+                      <th scope="col">Data</th>
                       <th scope="col" style="width: 64px;">Opções</th>
                     </tr>
                   </thead>
@@ -362,6 +363,7 @@
                       <td class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</td>
                       <td>{{ selectedGroupingCarrier }}</td>
                       <td>{{ grouping.expedicoes.length || 0 }}</td>
+                      <td>{{ formatDate(grouping.data) }}</td>
                       <td>
                         <div class="dropdown">
                           <button
@@ -380,6 +382,15 @@
                                 @click="viewGroupingDetails(grouping)"
                               >
                                 Ver detalhes
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                class="dropdown-item"
+                                type="button"
+                                @click="printCarrierLabels(grouping.idAgrupamento)"
+                              >
+                                Imprimir etiquetas {{ selectedGroupingCarrier }}
                               </button>
                             </li>
                           </ul>
@@ -1000,6 +1011,98 @@ async function generateDanfe(invoice) {
         window.Swal.fire({
             title: 'Erro ao gerar DANFE!',
             text: error.response?.data?.message || 'Não foi possível gerar o DANFE. Tente novamente mais tarde.',
+            icon: 'error',
+            confirmButtonText: 'Entendi!',
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function printCarrierLabels(groupingId) {
+    try {
+        loading.value = true;
+        const { data } = await axios.get(`v1/generate-grouping-print-label/${groupingId}`);
+
+        if (data.success && data.data.links) {
+            const result = await window.Swal.fire({
+                title: 'Etiqueta gerada com sucesso!',
+                html: `
+                    <p>Deseja visualizar a etiqueta agora?</p>
+                    <div class="mt-3">
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                id="label-link"
+                                class="form-control"
+                                value="${data.data.links[0].link}"
+                                readonly
+                                style="font-size: 0.875rem;"
+                            />
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                id="copy-label-link"
+                                title="Copiar link"
+                            >
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                `,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'Visualizar etiqueta',
+                cancelButtonText: 'Fechar',
+                didOpen: () => {
+                    const copyButton = document.getElementById('copy-label-link');
+                    if (copyButton) {
+                        copyButton.addEventListener('click', async () => {
+                            try {
+                                await navigator.clipboard.writeText(data.data.links[0].link);
+                                window.Swal.fire({
+                                    title: 'Link copiado!',
+                                    text: 'O link da etiqueta foi copiado para a área de transferência.',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } catch (err) {
+                                // Fallback para navegadores mais antigos
+                                const linkInput = document.getElementById('label-link');
+                                if (linkInput) {
+                                    linkInput.select();
+                                    document.execCommand('copy');
+                                    window.Swal.fire({
+                                        title: 'Link copiado!',
+                                        text: 'O link da etiqueta foi copiado para a área de transferência.',
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            if (result.isConfirmed) {
+                window.open(data.data.links[0].link, '_blank');
+            }
+        } else {
+            window.Swal.fire({
+                title: 'Erro ao gerar etiqueta!',
+                text: 'Não foi possível gerar a etiqueta. Tente novamente mais tarde.',
+                icon: 'error',
+                confirmButtonText: 'Entendi!',
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao imprimir etiquetas:', error);
+        window.Swal.fire({
+            title: 'Erro ao imprimir etiquetas!',
+            text: error.response?.data?.message || 'Não foi possível imprimir as etiquetas. Tente novamente mais tarde.',
             icon: 'error',
             confirmButtonText: 'Entendi!',
         });

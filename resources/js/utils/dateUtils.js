@@ -38,7 +38,19 @@ export function formatDate(value) {
     return '—';
   }
 
-  const date = new Date(value);
+  let date;
+  
+  // Se for uma string no formato YYYY-MM-DD, parsear manualmente para evitar problemas de fuso horário
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const parts = value.split('T')[0].split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const day = parseInt(parts[2], 10);
+    date = new Date(year, month, day);
+  } else {
+    date = new Date(value);
+  }
+
   if (Number.isNaN(date.getTime())) {
     return value;
   }

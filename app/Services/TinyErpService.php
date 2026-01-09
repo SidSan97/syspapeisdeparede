@@ -496,6 +496,34 @@ class TinyErpService
         }
     }
 
+    public function printCarrierLabels(string|int $groupingId)
+    {
+        try {
+            $params = [
+                'token' => $this->token,
+                'formato' => 'json',
+                'idAgrupamento' => $groupingId,
+            ];
+
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . '/expedicao.obter.etiquetas.impressao.php?' . $queryString;
+
+            $response = $this->client->post($url);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            return $data['retorno'];
+        }
+        catch (\Exception $e) {
+            Log::error('Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function makeOrder(array $order, array  $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
