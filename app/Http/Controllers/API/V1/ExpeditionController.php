@@ -168,12 +168,15 @@ class ExpeditionController extends Controller
             }
 
             $invoices = $this->tinyErpService->searchInvoices();
+            $dropshippings = $this->dropshippingRepository->dropshippingFiltered();
 
-            Cache::put($cacheKey, $invoices, now()->addHours(24));
+            $filteredInvoices = $this->expeditionService->filterInvoices($invoices, $dropshippings->toArray());
+
+            Cache::put($cacheKey, $filteredInvoices, now()->addHours(24));
 
             return response()->json([
                 'success' => true,
-                'data' => $invoices,
+                'data' => $filteredInvoices,
                 'message' => 'Notas fiscais encontradas com sucesso',
             ], 200);
         }

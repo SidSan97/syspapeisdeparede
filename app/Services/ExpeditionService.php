@@ -132,4 +132,57 @@ class ExpeditionService
             }
         }
     }
+
+    public function filterInvoices(array $nfs, array $dropshippings): array
+    {
+        $filteredInvoices = [];
+        
+        $normalizeCpfCnpj = function ($cpfCnpj) {
+            return preg_replace('/[^0-9]/', '', $cpfCnpj ?? '');
+        };
+        
+        $dropshippingsByOrderId = [];
+        foreach ($dropshippings as $dropshipping) {
+            $orderId = (string) $dropshipping['order_id'];
+            if (!isset($dropshippingsByOrderId[$orderId])) {
+                $dropshippingsByOrderId[$orderId] = [];
+            }
+            $dropshippingsByOrderId[$orderId][] = $dropshipping;
+        }
+        
+        // Iterar sobre as notas fiscais
+        if (isset($nfs['notas_fiscais']) && is_array($nfs['notas_fiscais'])) {
+            foreach ($nfs['notas_fiscais'] as $nfItem) {
+                if (!isset($nfItem['nota_fiscal'])) {
+                    continue;
+                }
+                
+                $notaFiscal = $nfItem['nota_fiscal'];
+                $numeroEcommerce = (string) ($notaFiscal['numero_ecommerce'] ?? '');
+                $clienteCpfCnpj = $normalizeCpfCnpj($notaFiscal['cliente']['cpf_cnpj'] ?? '');
+                
+                if (!isset($dropshippingsByOrderId[$numeroEcommerce])) {
+                    continue; // Descarta se não encontrar order_id correspondente
+                }
+                
+                $found = false;
+                foreach ($dropshippingsByOrderId[$numeroEcommerce] as $dropshipping) {
+                    $dropshippingCpfCnpj = $normalizeCpfCnpj($dropshipping['cpf_cnpj'] ?? '');
+                    
+                    if ($clienteCpfCnpj === $dropshippingCpfCnpj && !empty($clienteCpfCnpj)) {
+                        $found = true;
+                        break;
+                    }
+                }
+                
+                if ($found) {
+                    $filteredInvoices[] = $nfItem;
+                }
+            }
+        }
+        
+        return [
+            'notas_fiscais' => $filteredInvoices
+        ];
+    }
 }

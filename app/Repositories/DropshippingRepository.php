@@ -13,6 +13,13 @@ class DropshippingRepository
         $this->dropshippingData = $dropshippingData;
     }
 
+    public function dropshippingFiltered()
+    {
+        return $this->dropshippingData
+            ->select('id', 'order_id', 'cpf_cnpj')
+            ->get();
+    }
+
     public function create(array $data, int $budgetId, int $dealerId)
     {
         return $this->dropshippingData->create([

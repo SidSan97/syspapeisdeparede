@@ -282,7 +282,7 @@
                                 >
                                   Ver detalhes
                                 </button>
-                              </li>
+                              </li>                        
                             </ul>
                           </div>
                         </td>
