@@ -351,23 +351,17 @@
                 <table class="table table-hover align-middle mb-0">
                   <thead>
                     <tr>
-                      <th scope="col">ID Agrupamento</th>
+                      <th scope="col">Nº Agrupamento</th>
                       <th scope="col">Transportadora</th>
                       <th scope="col">Quantidade de Notas</th>
-                      <th scope="col">Status</th>
                       <th scope="col" style="width: 64px;">Opções</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="grouping in groupings" :key="grouping.id">
-                      <td class="fw-semibold">{{ grouping.id || '—' }}</td>
+                      <td class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</td>
                       <td>{{ selectedGroupingCarrier }}</td>
-                      <td>{{ grouping.quantidade_notas || 0 }}</td>
-                      <td>
-                        <span class="badge" :class="getGroupingStatusClass(grouping.status)">
-                          {{ grouping.status || '—' }}
-                        </span>
-                      </td>
+                      <td>{{ grouping.expedicoes.length || 0 }}</td>
                       <td>
                         <div class="dropdown">
                           <button
@@ -1060,8 +1054,8 @@ async function searchGroupings() {
     const { data } = await axios.get(`v1/search-groupings/${encodeURIComponent(selectedGroupingCarrier.value)}`);
 
     if (data.success && data.data) {
-      // Ajustar conforme a estrutura de dados retornada pela API
-      groupings.value = Array.isArray(data.data) ? data.data : (data.data.groupings || []);
+      groupings.value = data.data.agrupamentos || [];
+      console.log(groupings.value);
     } else {
       groupings.value = [];
     }
@@ -1079,23 +1073,16 @@ async function searchGroupings() {
   }
 }
 
-function getGroupingStatusClass(status) {
-  if (!status) return 'bg-secondary';
-
-  const statusLower = status.toLowerCase();
-  if (statusLower.includes('concluído') || statusLower.includes('completo')) {
-    return 'bg-success';
-  } else if (statusLower.includes('pendente') || statusLower.includes('processando')) {
-    return 'bg-warning';
-  } else if (statusLower.includes('erro') || statusLower.includes('cancelado')) {
-    return 'bg-danger';
-  }
-  return 'bg-secondary';
-}
-
 function viewGroupingDetails(grouping) {
-  // TODO: Implementar ação de ver detalhes do agrupamento
-  console.log('Ver detalhes do agrupamento:', grouping);
+  const groupingId = grouping.idAgrupamento;
+  if (groupingId) {
+    // Salva os dados no sessionStorage antes de navegar
+    sessionStorage.setItem(`grouping_${groupingId}`, JSON.stringify(grouping));
+    router.push({
+      name: 'ShowGroupingDetails',
+      params: { id: groupingId }
+    });
+  }
 }
 
 watch(activeTab, (newTab) => {

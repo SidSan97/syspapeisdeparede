@@ -116,6 +116,11 @@ const routes = [
                 name: 'ShowInvoiceDetails',
                 component: () => import('../views/expedition/components/showInvoiceDetails.vue'),
             },
+            {
+                path: '/expedicao/agrupamento/:id',
+                name: 'ShowGroupingDetails',
+                component: () => import('../views/expedition/components/showGroupingDetails.vue'),
+            },
             ...settings,
         ]
     },

@@ -408,7 +408,7 @@ class TinyErpService
         }
     }
 
-    public function includeGroupingInvoices(array $invoicesIds)
+    public function includeGroupingInvoices(int|string $invoicesIds)
     {
         try {
             $params = [
@@ -468,13 +468,13 @@ class TinyErpService
         }
     }
 
-    public function completeGroupingInvoices(string $groupingId)
+    public function completeGroupingInvoices(int|string $groupingId)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'id' => $groupingId,
+                'idAgrupamento' => $groupingId,
             ];
 
             $queryString = http_build_query($params);
