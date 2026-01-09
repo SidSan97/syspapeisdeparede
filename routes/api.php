@@ -163,7 +163,7 @@ Route::prefix('v1')->group(function () {
     Route::get('generate-separation-label-pdf/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabelPdf'])->middleware('auth:api');
     Route::post('generate-invoice/{orderId}', [ExpeditionController::class, 'generateInvoice'])->middleware('auth:api');
     Route::get('search-invoices', [ExpeditionController::class, 'searchInvoices'])->middleware('auth:api');
-    Route::get('generate-danfe/{nfId}', [ExpeditionController::class, 'generateDanfe'])->middleware('auth:api');
+    Route::get('generate-danfe/{id}', [ExpeditionController::class, 'generateDanfe'])->middleware('auth:api');
     Route::post('send-invoice-to-expedition', [ExpeditionController::class, 'sendInvoiceToExpedition'])->middleware('auth:api');
     Route::get('search-groupings/{carrier}', [ExpeditionController::class, 'searchGroupings'])->middleware('auth:api');
     Route::get('generate-grouping-print-label/{groupingId}', [ExpeditionController::class, 'printCarrierLabels'])->middleware('auth:api');

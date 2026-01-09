@@ -208,10 +208,10 @@ class ExpeditionController extends Controller
         }
     }
 
-    public function generateDanfe(string $invoiceId): JsonResponse
+    public function generateDanfe(string $id): JsonResponse
     {
         try {
-            $danfe = $this->tinyErpService->generateDanfe($invoiceId);
+            $danfe = $this->tinyErpService->generateDanfe($id);
 
             if($danfe['status'] === 'Erro') {
                 return response()->json([
@@ -273,6 +273,8 @@ class ExpeditionController extends Controller
                 'invoice_ids' => 'required|array|min:1',
                 'invoice_ids.*' => 'required|integer|min:1',
                 'carrier' => 'required|string|max:255',
+                'order_ids' => 'required|array|min:1',
+                'order_ids.*' => 'required|integer|min:1',
             ]);
 
             $invoiceIds = $validated['invoice_ids'];
@@ -318,6 +320,11 @@ class ExpeditionController extends Controller
                     'message' => 'Erro ao concluir agrupamento de notas fiscais. Tente novamente mais tarde.',
                     'error' => $completeGrouping['erros'],
                 ], 500);
+            }
+
+            // Alterar status dos pedidos
+            foreach($validated['order_ids'] as $orderId) {
+                $this->orderRepository->changeStatusOrder((int)$orderId, 'Enviado');
             }
 
             return response()->json([

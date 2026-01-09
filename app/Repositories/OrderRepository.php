@@ -242,5 +242,12 @@ class OrderRepository
             'nf_id' => $nfId,
         ]);
     }
+
+    public function changeStatusOrder(int $orderId, string $status): void
+    {
+        Order::where('id', $orderId)->update([
+            'status' => $status,
+        ]);
+    }
 }
 

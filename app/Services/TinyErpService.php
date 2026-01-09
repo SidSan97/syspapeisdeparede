@@ -351,13 +351,13 @@ class TinyErpService
         }
     }
 
-    public function generateDanfe(string $invoiceId)
+    public function generateDanfe(string $id)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'id' => $invoiceId,
+                'id' => $id,
             ];
 
             $queryString = http_build_query($params);

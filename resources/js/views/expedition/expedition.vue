@@ -510,7 +510,7 @@
                               <button
                                 class="dropdown-item"
                                 type="button"
-                                @click="generateDanfe(invoice)"
+                                @click="generateDanfe(invoice.nf_id)"
                               >
                                 Gerar DANFE
                               </button>
@@ -538,6 +538,7 @@ import EmptyState from '@/components/empty-state/EmptyState.vue';
 import axios from 'axios';
 import { formatDate } from '@/utils/dateUtils';
 import { getCarriersList } from '@/constants/carriers';
+import { createLinkAlertConfig } from '@/utils/sweetalertHelpers';
 
 const router = useRouter();
 const selectAllCheckbox = ref(null);
@@ -722,9 +723,14 @@ async function expedir() {
       invoiceIds.includes(invoice.nota_fiscal?.id)
     );
 
+    // Obter todos os order_id das notas fiscais selecionadas
+    const orderIds = selectedInvoicesData
+      .map(invoice => invoice.nota_fiscal?.numero_ecommerce)
+      .filter(orderId => orderId);
+
     const transporters = selectedInvoicesData
       .map(invoice => invoice.nota_fiscal?.transportador?.nome)
-      .filter(transporter => transporter); // Remove valores nulos/undefined
+      .filter(transporter => transporter); 
 
     // Verificar se todas têm transportador
     if (transporters.length === 0 || transporters.length !== selectedInvoicesData.length) {
@@ -757,7 +763,8 @@ async function expedir() {
 
     const { data } = await axios.post('v1/send-invoice-to-expedition', {
       invoice_ids: invoiceIds,
-      carrier: carrier
+      carrier: carrier,
+      order_id: orderIds
     });
 
     if (data.success) {
@@ -927,73 +934,23 @@ async function generateInvoice(invoice) {
     }
 }
 
-async function generateDanfe(invoice) {
+async function generateDanfe(id) {
     try {
         loading.value = true;
-        const { data } = await axios.get(`v1/generate-danfe/${invoice.nf_id}`);
+        const { data } = await axios.get(`v1/generate-danfe/${id}`);
 
         if (data.success && data.data.link_nfe) {
-            const result = await window.Swal.fire({
-                title: 'DANFE gerado com sucesso!',
-                html: `
-                    <p>Deseja abrir o DANFE agora?</p>
-                    <div class="mt-3">
-                        <div class="input-group">
-                            <input
-                                type="text"
-                                id="danfe-link"
-                                class="form-control"
-                                value="${data.data.link_nfe}"
-                                readonly
-                                style="font-size: 0.875rem;"
-                            />
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary"
-                                id="copy-danfe-link"
-                                title="Copiar link"
-                            >
-                                <i class="fa fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                `,
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonText: 'Abrir DANFE',
-                cancelButtonText: 'Fechar',
-                didOpen: () => {
-                    const copyButton = document.getElementById('copy-danfe-link');
-                    if (copyButton) {
-                        copyButton.addEventListener('click', async () => {
-                            try {
-                                await navigator.clipboard.writeText(data.data.link_nfe);
-                                window.Swal.fire({
-                                    title: 'Link copiado!',
-                                    text: 'O link do DANFE foi copiado para a área de transferência.',
-                                    icon: 'success',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                            } catch (err) {
-                                // Fallback para navegadores mais antigos
-                                const linkInput = document.getElementById('danfe-link');
-                                if (linkInput) {
-                                    linkInput.select();
-                                    document.execCommand('copy');
-                                    window.Swal.fire({
-                                        title: 'Link copiado!',
-                                        text: 'O link do DANFE foi copiado para a área de transferência.',
-                                        icon: 'success',
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    });
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            const result = await window.Swal.fire(
+                createLinkAlertConfig({
+                    title: 'DANFE gerado com sucesso!',
+                    linkId: 'danfe-link',
+                    linkValue: data.data.link_nfe,
+                    message: 'Deseja abrir o DANFE agora?',
+                    successMessage: 'O link do DANFE foi copiado para a área de transferência.',
+                    confirmButtonText: 'Abrir DANFE',
+                    cancelButtonText: 'Fechar'
+                })
+            );
 
             if (result.isConfirmed) {
                 window.open(data.data.link_nfe, '_blank');
@@ -1025,67 +982,17 @@ async function printCarrierLabels(groupingId) {
         const { data } = await axios.get(`v1/generate-grouping-print-label/${groupingId}`);
 
         if (data.success && data.data.links) {
-            const result = await window.Swal.fire({
-                title: 'Etiqueta gerada com sucesso!',
-                html: `
-                    <p>Deseja visualizar a etiqueta agora?</p>
-                    <div class="mt-3">
-                        <div class="input-group">
-                            <input
-                                type="text"
-                                id="label-link"
-                                class="form-control"
-                                value="${data.data.links[0].link}"
-                                readonly
-                                style="font-size: 0.875rem;"
-                            />
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary"
-                                id="copy-label-link"
-                                title="Copiar link"
-                            >
-                                <i class="fa fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                `,
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonText: 'Visualizar etiqueta',
-                cancelButtonText: 'Fechar',
-                didOpen: () => {
-                    const copyButton = document.getElementById('copy-label-link');
-                    if (copyButton) {
-                        copyButton.addEventListener('click', async () => {
-                            try {
-                                await navigator.clipboard.writeText(data.data.links[0].link);
-                                window.Swal.fire({
-                                    title: 'Link copiado!',
-                                    text: 'O link da etiqueta foi copiado para a área de transferência.',
-                                    icon: 'success',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                            } catch (err) {
-                                // Fallback para navegadores mais antigos
-                                const linkInput = document.getElementById('label-link');
-                                if (linkInput) {
-                                    linkInput.select();
-                                    document.execCommand('copy');
-                                    window.Swal.fire({
-                                        title: 'Link copiado!',
-                                        text: 'O link da etiqueta foi copiado para a área de transferência.',
-                                        icon: 'success',
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    });
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            const result = await window.Swal.fire(
+                createLinkAlertConfig({
+                    title: 'Etiqueta gerada com sucesso!',
+                    linkId: 'label-link',
+                    linkValue: data.data.links[0].link,
+                    message: 'Deseja visualizar a etiqueta agora?',
+                    successMessage: 'O link da etiqueta foi copiado para a área de transferência.',
+                    confirmButtonText: 'Visualizar etiqueta',
+                    cancelButtonText: 'Fechar'
+                })
+            );
 
             if (result.isConfirmed) {
                 window.open(data.data.links[0].link, '_blank');
