@@ -764,7 +764,7 @@ async function expedir() {
     const { data } = await axios.post('v1/send-invoice-to-expedition', {
       invoice_ids: invoiceIds,
       carrier: carrier,
-      order_id: orderIds
+      order_ids: orderIds
     });
 
     if (data.success) {
