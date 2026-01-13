@@ -50,15 +50,33 @@ class OrderController extends Controller
         $this->tinyErpService = $tinyErpService;
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $orders = $this->repository->all();
-            $data = BudgetResource::collection($orders)->toArray(request());
+            $filters = [
+                'search' => $request->input('search'),
+                'status' => $request->input('status', 'all'),
+                'date_from' => $request->input('date_from'),
+                'date_to' => $request->input('date_to'),
+                'user_id' => $request->input('user_id'),
+            ];
+
+            $perPage = $request->input('per_page', 15);
+            $paginatedOrders = $this->repository->paginate($filters, $perPage);
+
+            $data = BudgetResource::collection($paginatedOrders->items())->toArray(request());
 
             return response()->json([
                 'success' => true,
-                'data' => $data,
+                'data' => [
+                    'data' => $data,
+                    'current_page' => $paginatedOrders->currentPage(),
+                    'last_page' => $paginatedOrders->lastPage(),
+                    'per_page' => $paginatedOrders->perPage(),
+                    'total' => $paginatedOrders->total(),
+                    'from' => $paginatedOrders->firstItem(),
+                    'to' => $paginatedOrders->lastItem(),
+                ],
                 'message' => 'Lista de pedidos recuperada com sucesso',
             ], 200);
         } catch (\Exception $e) {

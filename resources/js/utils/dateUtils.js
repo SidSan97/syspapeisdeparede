@@ -29,6 +29,32 @@ export function parseDateFromMask(dateString) {
 }
 
 /**
+ * Converte uma data no formato DD/MM/YYYY para YYYY-MM-DD
+ * @param {string} dateString - String da data no formato DD/MM/YYYY
+ * @returns {string|null} Data no formato YYYY-MM-DD ou null se inválida
+ */
+export function convertDateMaskToIso(dateString) {
+  if (!dateString || dateString.length !== 10) {
+    return null;
+  }
+
+  const parts = dateString.split('/');
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const day = parts[0];
+  const month = parts[1];
+  const year = parts[2];
+
+  if (Number.isNaN(parseInt(day, 10)) || Number.isNaN(parseInt(month, 10)) || Number.isNaN(parseInt(year, 10))) {
+    return null;
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Formata uma data para o formato brasileiro DD/MM/YYYY
  * @param {string|Date} value - Data a ser formatada (string ISO ou objeto Date)
  * @returns {string} Data formatada ou '—' se inválida
@@ -57,4 +83,3 @@ export function formatDate(value) {
 
   return new Intl.DateTimeFormat('pt-BR').format(date);
 }
-

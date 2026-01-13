@@ -31,6 +31,52 @@ class OrderRepository
         return $query->get();
     }
 
+    public function paginate(array $filters = [], int $perPage = 15)
+    {
+        $user = Auth::user();
+
+        $query = Order::with(['user', 'tenant', 'primaryRoom'])
+            ->orderByDesc('created_at');
+
+        // Filtro de permissões
+        if (!$user->isAdmin() && !$user->isCommercial()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                    ->orWhere('tenant_id', $user->id);
+            });
+        }
+
+        // Filtro de busca (nome ou ID)
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('id', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro de status
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $query->where('status', $filters['status']);
+        }
+
+        // Filtro de período (data)
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // Filtro de usuário/revendedor
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        return $query->paginate($perPage);
+    }
+
     public function getAllById(int $id)
     {
         return Order::with('rooms.walls.collectionModel')->where('id', $id)->get();

@@ -117,7 +117,7 @@
           </div>
 
           <EmptyState
-            v-else-if="filteredPedidos.length === 0"
+            v-else-if="pedidos.length === 0"
             heading="Nenhum pedido encontrado"
             icon="box"
             class="p-5"
@@ -138,7 +138,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="pedido in filteredPedidos" :key="pedido.id">
+                <tr v-for="pedido in pedidos" :key="pedido.id">
                   <td class="fw-semibold">{{ pedido.id }}</td>
                   <td>{{ formatDate(pedido.created_at || pedido.createdAt) }}</td>
                   <td style="min-width: 240px;">
@@ -188,6 +188,13 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div v-if="!loading && pedidos.length > 0 && paginationData.last_page > 1" class="p-3">
+            <pagination
+              :data="paginationData"
+              @pagination-change-page="fetchPedidos"
+            />
           </div>
         </div>
       </div>
@@ -252,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Page from '../../components/page/Page.vue';
 import EmptyState from '../../components/empty-state/EmptyState.vue';
@@ -261,7 +268,7 @@ import OrdersRegisterPayment from './components/OrdersRegisterPayment.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { USER_TYPES } from '@/constants/userTypes';
-import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
+import { parseDateFromMask, formatDate, convertDateMaskToIso } from '@/utils/dateUtils';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -282,6 +289,14 @@ const showCancelModal = ref(false);
 const pedidoToCancel = ref(null);
 const cancelling = ref(false);
 const cancelError = ref('');
+const paginationData = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
+});
 
 const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
 
@@ -319,67 +334,6 @@ const statusOptions = [
   { label: 'Cancelado', value: 'cancelado' },
 ];
 
-const filteredPedidos = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  const status = statusFilter.value;
-
-  return pedidos.value.filter((pedido) => {
-    // Filtro de busca
-    const matchesQuery = !query
-      || pedido.name?.toLowerCase().includes(query)
-      || String(pedido.id).includes(query);
-
-    // Filtro de status
-    const normalizedStatus = (pedido.status || '').toString().toLowerCase();
-    const matchesStatus = status === 'all' || normalizedStatus === status;
-
-    // Filtro de período (apenas para admin)
-    let matchesPeriod = true;
-    if (isAdmin.value && (dateFrom.value || dateTo.value)) {
-      const pedidoDateStr = pedido.created_at || pedido.createdAt;
-      if (!pedidoDateStr) {
-        matchesPeriod = false;
-      } else {
-        const pedidoDate = new Date(pedidoDateStr);
-        if (Number.isNaN(pedidoDate.getTime())) {
-          matchesPeriod = false;
-        } else {
-          const pedidoDateOnly = new Date(pedidoDate.getFullYear(), pedidoDate.getMonth(), pedidoDate.getDate());
-
-          if (dateFrom.value && dateFrom.value.length === 10) {
-            const fromDate = parseDateFromMask(dateFrom.value);
-            if (fromDate && !Number.isNaN(fromDate.getTime())) {
-              fromDate.setHours(0, 0, 0, 0);
-              if (pedidoDateOnly < fromDate) {
-                matchesPeriod = false;
-              }
-            }
-          }
-
-          if (dateTo.value && dateTo.value.length === 10 && matchesPeriod) {
-            const toDate = parseDateFromMask(dateTo.value);
-            if (toDate && !Number.isNaN(toDate.getTime())) {
-              toDate.setHours(23, 59, 59, 999);
-              const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
-              if (pedidoDateOnly > toDateOnly) {
-                matchesPeriod = false;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Filtro de revendedor (apenas para admin)
-    let matchesUser = true;
-    if (isAdmin.value && selectedUserId.value !== null) {
-      const pedidoUserId = pedido.user_id || pedido.userId || pedido.user?.id;
-      matchesUser = Number(pedidoUserId) === Number(selectedUserId.value);
-    }
-
-    return matchesQuery && matchesStatus && matchesPeriod && matchesUser;
-  });
-});
 
 const currentStatusLabel = computed(() => {
   if (statusFilter.value === 'all') {
@@ -404,22 +358,79 @@ function normalizePedido(pedido) {
   };
 }
 
-async function fetchPedidos() {
+async function fetchPedidos(page = 1) {
   try {
     loading.value = true;
 
-    const { data } = await axios.get('v1/orders');
+    const params = {
+      page,
+      per_page: 15,
+    };
 
-    const payload = Array.isArray(data?.data)
-      ? data.data.map(normalizePedido)
-      : Array.isArray(data?.data?.data)
-        ? data.data.data.map(normalizePedido)
-        : [];
+    // Adicionar filtros
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim();
+    }
 
-    pedidos.value = payload;
+    if (statusFilter.value !== 'all') {
+      params.status = statusFilter.value;
+    }
+
+    if (dateFrom.value && dateFrom.value.length === 10) {
+      const convertedDate = convertDateMaskToIso(dateFrom.value);
+      if (convertedDate) {
+        params.date_from = convertedDate;
+      }
+    }
+
+    if (dateTo.value && dateTo.value.length === 10) {
+      const convertedDate = convertDateMaskToIso(dateTo.value);
+      if (convertedDate) {
+        params.date_to = convertedDate;
+      }
+    }
+
+    if (selectedUserId.value !== null) {
+      params.user_id = selectedUserId.value;
+    }
+
+    const { data } = await axios.get('v1/orders', { params });
+
+    if (data?.success && data?.data) {
+      const items = Array.isArray(data.data.data) ? data.data.data : [];
+      pedidos.value = items.map(normalizePedido);
+      
+      // Atualizar dados de paginação
+      paginationData.value = {
+        current_page: data.data.current_page || 1,
+        last_page: data.data.last_page || 1,
+        per_page: data.data.per_page || 15,
+        total: data.data.total || 0,
+        from: data.data.from || 0,
+        to: data.data.to || 0,
+      };
+    } else {
+      pedidos.value = [];
+      paginationData.value = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+        from: 0,
+        to: 0,
+      };
+    }
   } catch (error) {
     console.error('Erro ao carregar pedidos:', error);
     pedidos.value = [];
+    paginationData.value = {
+      current_page: 1,
+      last_page: 1,
+      per_page: 15,
+      total: 0,
+      from: 0,
+      to: 0,
+    };
   } finally {
     loading.value = false;
   }
@@ -450,6 +461,7 @@ function getStatusVariant(status) {
 
 function setStatusFilter(value) {
   statusFilter.value = value;
+  fetchPedidos(1); // Resetar para primeira página quando mudar filtro
 }
 
 async function fetchUsers() {
@@ -483,6 +495,7 @@ function clearFilters() {
   dateFrom.value = '';
   dateTo.value = '';
   selectedUserId.value = null;
+  fetchPedidos(1);
 }
 
 function openDetailsModal(pedido) {
@@ -496,8 +509,7 @@ function closeDetailsModal() {
 
 function handleApprove(pedido) {
   closeDetailsModal();
-  // Recarrega a lista para atualizar os status
-  fetchPedidos();
+  fetchPedidos(paginationData.value.current_page);
 }
 
 function openPaymentModal(pedido) {
@@ -511,8 +523,8 @@ function closePaymentModal() {
 }
 
 function handlePaymentSuccess() {
-  // Recarregar lista de pedidos após sucesso
-  fetchPedidos();
+  // Recarregar página atual após sucesso
+  fetchPedidos(paginationData.value.current_page);
 }
 
 function editOrder(order) {
@@ -552,23 +564,51 @@ async function confirmCancelPedido() {
       id: pedidoToCancel.value.id,
     });
 
-    pedidos.value = pedidos.value.map((pedido) =>
-      pedido.id === pedidoToCancel.value.id
-        ? {
-            ...pedido,
-            status: 'cancelado',
-          }
-        : pedido,
-    );
-
     showCancelModal.value = false;
     pedidoToCancel.value = null;
+    
+    // Recarregar página atual
+    fetchPedidos(paginationData.value.current_page);
   } catch (error) {
     cancelError.value = 'Não foi possível cancelar o pedido. Tente novamente.';
   } finally {
     cancelling.value = false;
   }
 }
+
+let searchTimeout = null;
+watch(searchQuery, () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    fetchPedidos(1);
+  }, 500);
+});
+
+let dateFromTimeout = null;
+watch(dateFrom, () => {
+  if (dateFromTimeout) {
+    clearTimeout(dateFromTimeout);
+  }
+  dateFromTimeout = setTimeout(() => {
+    fetchPedidos(1);
+  }, 1500);
+});
+
+let dateToTimeout = null;
+watch(dateTo, () => {
+  if (dateToTimeout) {
+    clearTimeout(dateToTimeout);
+  }
+  dateToTimeout = setTimeout(() => {
+    fetchPedidos(1);
+  }, 1500);
+});
+
+watch(selectedUserId, () => {
+  fetchPedidos(1);
+});
 
 onMounted(() => {
   fetchPedidos();
