@@ -4,6 +4,7 @@ namespace App\Http\Requests\Users;
 
 use App\Rules\MatchOldPassword;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class ChangePasswordRequest extends FormRequest
 {
@@ -24,9 +25,9 @@ class ChangePasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', new MatchOldPassword],
+            'current_password' => ['required', 'current_password'],
             'new_password'     => ['required', 'min:6'],
-            'confirm_password' => ['required', 'same:new_password'],
+            'confirm_password' => ['required', 'same:new_password', Password::defaults()],
         ];
     }
 }
