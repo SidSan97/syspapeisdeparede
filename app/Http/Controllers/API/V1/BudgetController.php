@@ -192,6 +192,7 @@ class BudgetController extends Controller
                     $this->dropshippingRepository->create(
                         $data['dropshipping_data'],
                         $budget->id,
+                        null,
                         Auth::id()
                     );
                 }
@@ -237,6 +238,7 @@ class BudgetController extends Controller
                         $this->dropshippingRepository->create(
                             $data['dropshipping_data'],
                             $budget->id,
+                            null,
                             Auth::id()
                         );
                     }

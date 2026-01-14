@@ -78,11 +78,12 @@ router.beforeEach(async (to, from, next) => {
         } else if (to.path === '/profile') {
             isAllowed = true;
         } else if (to.path === '/budget' || to.path.startsWith('/budget/')) {
-            // Permitir /budget, /budget/new-budget, /budget/edit/:id e /budget/:id (detalhes)
+            // Permitir /budget, /budget/new-budget, /budget/edit/:id, /budget/:id (detalhes) e /budget/:id/pdf-preview
             if (to.path === '/budget' ||
                 to.path === '/budget/new-budget' ||
                 to.path.startsWith('/budget/edit/') ||
-                /^\/budget\/\d+$/.test(to.path)) {
+                /^\/budget\/\d+$/.test(to.path) ||
+                /^\/budget\/\d+\/pdf-preview$/.test(to.path)) {
                 isAllowed = true;
             }
         } else if (to.path.startsWith('/colecao-arts')) {
@@ -91,8 +92,9 @@ router.beforeEach(async (to, from, next) => {
                 isAllowed = true;
             }
         } else if (to.path === '/pedidos' || to.path.startsWith('/pedidos/')) {
-            // Permitir /pedidos e /pedidos/:id (detalhes do pedido)
-            if (to.path === '/pedidos' || /^\/pedidos\/\d+$/.test(to.path)) {
+            if (to.path === '/pedidos' || 
+                /^\/pedidos\/\d+$/.test(to.path) ||
+                /^\/pedidos\/\d+\/edit$/.test(to.path)) {
                 isAllowed = true;
             }
         }

@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class GeneratePaymentService
 {
@@ -47,21 +48,18 @@ class GeneratePaymentService
                 'data' => $body,
             ], $response->getStatusCode());
         } catch (GuzzleException $e) {
-            $errorDetails = $e->getMessage();
-
-            // Tentar obter mais detalhes da resposta se disponível
-            if ($e instanceof RequestException && $e->hasResponse()) {
-                $response = $e->getResponse();
-                $errorBody = json_decode((string) $response->getBody(), true);
-                if ($errorBody) {
-                    $errorDetails = $errorBody;
-                }
-            }
-
+            Log::error('Erro ao gerar link de pagamento: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao gerar link de pagamento.',
-                'error' => $errorDetails,
+                'error' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Erro ao gerar link de pagamento: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar link de pagamento.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

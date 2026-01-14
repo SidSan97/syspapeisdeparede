@@ -42,7 +42,7 @@
                                 </select>
                             </div>
 
-                            <!-- Checkbox Dropshipping (apenas para admin ou is_dropshipping === 1) -->
+                            <!-- Checkbox Dropshipping (para admin, revendedor ou is_dropshipping === 1) -->
                             <div v-if="canEnableDropshipping" class="mb-3">
                                 <div class="form-check">
                                     <input
@@ -820,7 +820,9 @@ const budget = reactive({
 });
 
 const canEnableDropshipping = computed(() => {
-    return auth.user?.user_type_id === USER_TYPES.ADMIN || auth.user?.is_dropshipping === 1;
+    return auth.user?.user_type_id === USER_TYPES.ADMIN || 
+           auth.user?.user_type_id === USER_TYPES.RESELLER || 
+           auth.user?.is_dropshipping === 1;
 });
 
 async function searchTinyErpProducts() {

@@ -20,10 +20,11 @@ class DropshippingRepository
             ->get();
     }
 
-    public function create(array $data, int $budgetId, int $dealerId)
+    public function create(array $data, ?int $budgetId = null, ?int $orderId = null, int $dealerId)
     {
         return $this->dropshippingData->create([
             'budget_id' => $budgetId,
+            'order_id' => $orderId,
             'dealer_id' => $dealerId,
             'name' => $data['name'] ?? '',
             'person_type' => $data['person_type'] ?? '',

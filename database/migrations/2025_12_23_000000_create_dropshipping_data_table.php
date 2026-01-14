@@ -29,10 +29,11 @@ return new class extends Migration
             $table->string('complement', 255)->nullable();
             $table->foreignId('dealer_id')
                 ->constrained('users')
-                ->onDelete('cascade');
+                ->nullOnDelete();
             $table->foreignId('budget_id')
+                ->nullable()
                 ->constrained('budgets')
-                ->onDelete('cascade');
+                ->nullOnDelete();
             $table->foreignId('order_id')
                 ->nullable()
                 ->constrained('orders')

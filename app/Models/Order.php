@@ -37,6 +37,7 @@ class Order extends Model
         'files_referring_model',
         'collection_referring_model',
         'dropshipping_budget',
+        'link_payment',
         'paid',
         'nf_sent',
         'nf_id',
@@ -60,6 +61,7 @@ class Order extends Model
         'paid' => 'integer:0,1',
         'nf_sent' => 'integer:0,1',
         'nf_id' => 'string',
+        'link_payment' => 'string',
     ];
 
     /**

@@ -181,6 +181,7 @@ class OrderController extends Controller
                 } else {
                     $this->dropshippingRepository->create(
                         $validated['dropshipping_data'],
+                        null,
                         $order->id,
                         Auth::id()
                     );
@@ -258,7 +259,7 @@ class OrderController extends Controller
 
         try {
             $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            if($order->dropshipping_budget) {
+            /*if($order->dropshipping_budget) {
                 $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
                 $accountPayable = $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
                 $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
@@ -289,7 +290,7 @@ class OrderController extends Controller
             $this->orderBudget->where('order_id', $order->id)
                 ->update(['status' => 'Liberado para produção']);
 
-            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();
+            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();*/
 
             // Gerar link de pagamento
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
@@ -302,13 +303,14 @@ class OrderController extends Controller
                 $apiResponse = $paymentLinkData['data'] ?? [];
                 $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
             }
+            dd($paymentUrl);
 
             $transformed = (new OrderResource($order->refresh()))->toArray(request());
 
             return response()->json([
                 'success' => true,
                 'data' => $transformed,
-                'order_budgets' => $orderBudgets,
+                //'order_budgets' => $orderBudgets,
                 'payment_link' => [
                     'success' => $paymentLinkData['success'] ?? false,
                     'url' => $paymentUrl,

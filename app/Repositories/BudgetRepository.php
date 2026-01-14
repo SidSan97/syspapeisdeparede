@@ -50,12 +50,15 @@ class BudgetRepository {
     {
         $user = Auth::user();
 
-        $query = Budget::with(['user', 'tenant'])
+        $query = Budget::with(['user', 'tenant', 'primaryRoom'])
             ->orderByDesc('created_at');
 
         // Filtro de permissões
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
+        if (!$user->isAdmin() && !$user->isCommercial()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                    ->orWhere('tenant_id', $user->id);
+            });
         }
 
         // Filtro de busca (nome ou ID)
