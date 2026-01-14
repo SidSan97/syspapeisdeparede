@@ -259,9 +259,9 @@ class OrderController extends Controller
 
         try {
             $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            /*if($order->dropshipping_budget) {
+            if($order->dropshipping_budget) {
                 $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
-                $accountPayable = $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
+                $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
                 $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
 
                 if($orderTiny['status'] == "Erro") {
@@ -290,9 +290,9 @@ class OrderController extends Controller
             $this->orderBudget->where('order_id', $order->id)
                 ->update(['status' => 'Liberado para produção']);
 
-            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();*/
+            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();
 
-            // Gerar link de pagamento
+            /*// Gerar link de pagamento
             $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
             $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
 
@@ -302,20 +302,19 @@ class OrderController extends Controller
                 // A API do Pagar.me retorna a URL em diferentes estruturas possíveis
                 $apiResponse = $paymentLinkData['data'] ?? [];
                 $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
-            }
-            dd($paymentUrl);
+            }*/
 
             $transformed = (new OrderResource($order->refresh()))->toArray(request());
 
             return response()->json([
                 'success' => true,
                 'data' => $transformed,
-                //'order_budgets' => $orderBudgets,
-                'payment_link' => [
+                'order_budgets' => $orderBudgets,
+                /*'payment_link' => [
                     'success' => $paymentLinkData['success'] ?? false,
                     'url' => $paymentUrl,
                     'data' => $paymentLinkData['data'] ?? null,
-                ],
+                ],*/
                 'message' => 'Orçamento aprovado com sucesso',
             ]);
         } catch (\Exception $e) {

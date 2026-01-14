@@ -38,6 +38,7 @@ class Order extends Model
         'collection_referring_model',
         'dropshipping_budget',
         'link_payment',
+        'payment_expiration_date',
         'paid',
         'nf_sent',
         'nf_id',
@@ -62,6 +63,7 @@ class Order extends Model
         'nf_sent' => 'integer:0,1',
         'nf_id' => 'string',
         'link_payment' => 'string',
+        'payment_expiration_date' => 'string',
     ];
 
     /**

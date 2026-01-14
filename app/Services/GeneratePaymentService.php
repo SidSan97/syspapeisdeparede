@@ -96,7 +96,8 @@ class GeneratePaymentService
                 ],
                 "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
             ],
-            "type" => "order"
+            "type" => "order",
+            "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
     }
 
@@ -137,7 +138,7 @@ class GeneratePaymentService
             ],
             "name" => "Papel de parede",
             "type" => "order",
-            "expires_in" => 1440 //24h em minutos
+            "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
     }
 }
