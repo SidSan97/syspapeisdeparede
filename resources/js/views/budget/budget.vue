@@ -123,7 +123,7 @@
           </div>
 
           <EmptyState
-            v-else-if="filteredBudgets.length === 0"
+            v-else-if="budgets.length === 0"
             heading="Nenhum orçamento encontrado"
             icon="file-alt"
             class="p-5"
@@ -143,7 +143,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="budget in filteredBudgets" :key="budget.id">
+                <tr v-for="budget in budgets" :key="budget.id">
                   <td class="fw-semibold">{{ budget.id }}</td>
                   <td>{{ formatDate(budget.created_at || budget.createdAt) }}</td>
                   <td style="min-width: 240px;">
@@ -192,6 +192,13 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div v-if="!loading && budgets.length > 0 && paginationData.last_page > 1" class="p-3">
+            <pagination
+              :data="paginationData"
+              @pagination-change-page="fetchBudgets"
+            />
           </div>
         </div>
       </div>
@@ -265,7 +272,7 @@ import BudgetDetailsModal from '@/components/budget/BudgetDetailsModal.vue';
 import BudgetOrderModal from '@/components/budget/BudgetOrderModal.vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
-import { parseDateFromMask, formatDate } from '@/utils/dateUtils';
+import { parseDateFromMask, formatDate, convertDateMaskToIso } from '@/utils/dateUtils';
 
 const auth = useAuthStore();
 const budgets = ref([]);
@@ -288,6 +295,14 @@ const budgetToView = ref(null);
 const showOrderModal = ref(false);
 const orderBudget = ref(null);
 const router = useRouter();
+const paginationData = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
+});
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -374,67 +389,6 @@ const statusOptions = [
   { label: 'Cancelado', value: 'cancelado' },
 ];
 
-const filteredBudgets = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  const status = statusFilter.value;
-
-  return budgets.value.filter((budget) => {
-    // Filtro de busca
-    const matchesQuery = !query
-      || budget.name?.toLowerCase().includes(query)
-      || String(budget.id).includes(query);
-
-    // Filtro de status
-    const normalizedStatus = (budget.status || '').toString().toLowerCase();
-    const matchesStatus = status === 'all' || normalizedStatus === status;
-
-    // Filtro de período (apenas para admin)
-    let matchesPeriod = true;
-    if (isAdmin.value && (dateFrom.value || dateTo.value)) {
-      const budgetDateStr = budget.created_at || budget.createdAt;
-      if (!budgetDateStr) {
-        matchesPeriod = false;
-      } else {
-        const budgetDate = new Date(budgetDateStr);
-        if (Number.isNaN(budgetDate.getTime())) {
-          matchesPeriod = false;
-        } else {
-          const budgetDateOnly = new Date(budgetDate.getFullYear(), budgetDate.getMonth(), budgetDate.getDate());
-
-          if (dateFrom.value && dateFrom.value.length === 10) {
-            const fromDate = parseDateFromMask(dateFrom.value);
-            if (fromDate && !Number.isNaN(fromDate.getTime())) {
-              fromDate.setHours(0, 0, 0, 0);
-              if (budgetDateOnly < fromDate) {
-                matchesPeriod = false;
-              }
-            }
-          }
-
-          if (dateTo.value && dateTo.value.length === 10 && matchesPeriod) {
-            const toDate = parseDateFromMask(dateTo.value);
-            if (toDate && !Number.isNaN(toDate.getTime())) {
-              toDate.setHours(23, 59, 59, 999);
-              const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
-              if (budgetDateOnly > toDateOnly) {
-                matchesPeriod = false;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Filtro de revendedor (apenas para admin)
-    let matchesUser = true;
-    if (isAdmin.value && selectedUserId.value !== null) {
-      const budgetUserId = budget.user_id || budget.userId || budget.user?.id;
-      matchesUser = Number(budgetUserId) === Number(selectedUserId.value);
-    }
-
-    return matchesQuery && matchesStatus && matchesPeriod && matchesUser;
-  });
-});
 
 const currentStatusLabel = computed(() => {
   if (statusFilter.value === 'all') {
@@ -445,21 +399,79 @@ const currentStatusLabel = computed(() => {
   return match ? match.label : 'Situação';
 });
 
-async function fetchBudgets() {
+async function fetchBudgets(page = 1) {
   try {
     loading.value = true;
 
-    const { data } = await axios.get('v1/budgets');
+    const params = {
+      page,
+      per_page: 15,
+    };
 
-    const payload = Array.isArray(data?.data)
-      ? data.data.map(normalizeBudget)
-      : Array.isArray(data?.data?.data)
-        ? data.data.data.map(normalizeBudget)
-        : [];
+    // Adicionar filtros
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim();
+    }
 
-    budgets.value = payload;
+    if (statusFilter.value !== 'all') {
+      params.status = statusFilter.value;
+    }
+
+    if (dateFrom.value && dateFrom.value.length === 10) {
+      const convertedDate = convertDateMaskToIso(dateFrom.value);
+      if (convertedDate) {
+        params.date_from = convertedDate;
+      }
+    }
+
+    if (dateTo.value && dateTo.value.length === 10) {
+      const convertedDate = convertDateMaskToIso(dateTo.value);
+      if (convertedDate) {
+        params.date_to = convertedDate;
+      }
+    }
+
+    if (selectedUserId.value !== null) {
+      params.user_id = selectedUserId.value;
+    }
+
+    const { data } = await axios.get('v1/budgets', { params });
+
+    if (data?.success && data?.data) {
+      const items = Array.isArray(data.data.data) ? data.data.data : [];
+      budgets.value = items.map(normalizeBudget);
+      
+      // Atualizar dados de paginação
+      paginationData.value = {
+        current_page: data.data.current_page || 1,
+        last_page: data.data.last_page || 1,
+        per_page: data.data.per_page || 15,
+        total: data.data.total || 0,
+        from: data.data.from || 0,
+        to: data.data.to || 0,
+      };
+    } else {
+      budgets.value = [];
+      paginationData.value = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+        from: 0,
+        to: 0,
+      };
+    }
   } catch (error) {
+    console.error('Erro ao carregar orçamentos:', error);
     budgets.value = [];
+    paginationData.value = {
+      current_page: 1,
+      last_page: 1,
+      per_page: 15,
+      total: 0,
+      from: 0,
+      to: 0,
+    };
   } finally {
     loading.value = false;
   }
@@ -495,6 +507,7 @@ function getStatusVariant(status) {
 
 function setStatusFilter(value) {
   statusFilter.value = value;
+  fetchBudgets(1); // Resetar para primeira página quando mudar filtro
 }
 
 function goToCreateBudget() {
@@ -568,17 +581,11 @@ async function confirmCancelBudget() {
       id: budgetToCancel.value.id,
     });
 
-    budgets.value = budgets.value.map((budget) =>
-      budget.id === budgetToCancel.value.id
-        ? {
-            ...budget,
-            status: 'cancelado',
-          }
-        : budget,
-    );
-
     showCancelModal.value = false;
     budgetToCancel.value = null;
+    
+    // Recarregar página atual
+    fetchBudgets(paginationData.value.current_page);
   } catch (error) {
     cancelError.value = 'Não foi possível cancelar o orçamento. Tente novamente.';
   } finally {
@@ -617,7 +624,43 @@ function clearFilters() {
   dateFrom.value = '';
   dateTo.value = '';
   selectedUserId.value = null;
+  fetchBudgets(1);
 }
+
+// Watch para recarregar quando filtros mudarem (com debounce para searchQuery e datas)
+let searchTimeout = null;
+watch(searchQuery, () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    fetchBudgets(1);
+  }, 500);
+});
+
+let dateFromTimeout = null;
+watch(dateFrom, () => {
+  if (dateFromTimeout) {
+    clearTimeout(dateFromTimeout);
+  }
+  dateFromTimeout = setTimeout(() => {
+    fetchBudgets(1);
+  }, 1500);
+});
+
+let dateToTimeout = null;
+watch(dateTo, () => {
+  if (dateToTimeout) {
+    clearTimeout(dateToTimeout);
+  }
+  dateToTimeout = setTimeout(() => {
+    fetchBudgets(1);
+  }, 1500);
+});
+
+watch(selectedUserId, () => {
+  fetchBudgets(1);
+});
 
 onMounted(() => {
   fetchBudgets();
@@ -642,20 +685,8 @@ function handleOrderClose() {
 }
 
 function handleOrderUpdated(updatedBudgetRaw) {
-  const updatedBudget = normalizeBudget(updatedBudgetRaw);
-
-  budgets.value = budgets.value.map((budget) =>
-    budget.id === updatedBudget.id ? updatedBudget : budget,
-  );
-
-  if (budgetToView.value?.id === updatedBudget.id) {
-    budgetToView.value = updatedBudget;
-  }
-
-
-  if (budgetToCancel.value?.id === updatedBudget.id) {
-    budgetToCancel.value = updatedBudget;
-  }
+  // Recarregar página atual após atualização
+  fetchBudgets(paginationData.value.current_page);
 }
 </script>
 
