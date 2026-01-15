@@ -140,6 +140,7 @@ Route::prefix('v1')->group(function () {
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
     Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
     Route::post('orders/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
+    Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generatePaymentLink'])->middleware('auth:api');
     Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
     Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderController::class, 'markAsProduced'])->middleware('auth:api');
     Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderController::class, 'updateProductionPercentage'])->middleware('auth:api');

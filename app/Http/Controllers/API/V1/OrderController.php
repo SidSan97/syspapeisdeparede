@@ -275,7 +275,7 @@ class OrderController extends Controller
                 $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
             }
 
-            $order->update(['status' => 'Aprovado', 'paid' => 1]);
+            $order->update(['status' => 'Aprovado']);
 
             // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
             $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
@@ -321,6 +321,55 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function generatePaymentLink(Request $request, int $id): JsonResponse
+    {
+        try {
+            $order = Order::findOrFail($id);
+
+            // Gerar link de pagamento
+            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
+            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
+
+            if (!($paymentLinkData['success'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao gerar link de pagamento: ' . ($paymentLinkData['message'] ?? 'Erro desconhecido'),
+                ], 500);
+            }
+
+            // Extrair URL e data de expiração
+            $apiResponse = $paymentLinkData['data'] ?? [];
+            $paymentUrl = $apiResponse['url'] ?? null;
+            $expirationDate = $apiResponse['expiration_date'] ?? $apiResponse['expires_at'] ?? null;
+
+            if (!$paymentUrl) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'URL de pagamento não encontrada na resposta',
+                ], 500);
+            }
+
+            // Salvar URL e data de expiração no pedido
+            $order->update([
+                'link_payment' => $paymentUrl,
+                'payment_expiration_date' => $expirationDate,
+            ]);
+
+            $transformed = (new OrderResource($order->refresh()))->toArray(request());
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformed,
+                'message' => 'Link de pagamento gerado com sucesso',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar link de pagamento: ' . $e->getMessage(),
             ], 500);
         }
     }
