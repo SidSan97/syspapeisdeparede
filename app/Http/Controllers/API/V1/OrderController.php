@@ -206,32 +206,6 @@ class OrderController extends Controller
         }
     }
 
-    public function destroy(int $id): JsonResponse
-    {
-        try {
-            $order = $this->repository->find($id);
-
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pedido não encontrado',
-                ], 404);
-            }
-
-            $this->repository->delete($order);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pedido excluído com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao excluir pedido',
-            ], 500);
-        }
-    }
-
     public function getByStatus(Request $request, string $status): JsonResponse
     {
         try {
@@ -247,80 +221,6 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao listar pedidos por status',
-            ], 500);
-        }
-    }
-
-    public function approve(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:orders,id'],
-        ]);
-
-        try {
-            $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            if($order->dropshipping_budget) {
-                $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
-                $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
-                $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
-
-                if($orderTiny['status'] == "Erro") {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Houve um erro ao cadastrar o produto no ERP. Tente novamente mais tarde!',
-                        'error' => $orderTiny['registros']['registro']['erros']
-                    ], 403);
-                }
-
-                $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
-            }
-
-            $order->update(['status' => 'Aprovado']);
-
-            // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
-            $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
-
-            if (!$firstColumn) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.',
-                ], 400);
-            }
-
-            $this->orderBudget->where('order_id', $order->id)
-                ->update(['status' => 'Liberado para produção']);
-
-            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();
-
-            /*// Gerar link de pagamento
-            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
-            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
-
-            // Extrair URL do link de pagamento
-            $paymentUrl = null;
-            if ($paymentLinkData['success'] ?? false) {
-                // A API do Pagar.me retorna a URL em diferentes estruturas possíveis
-                $apiResponse = $paymentLinkData['data'] ?? [];
-                $paymentUrl = $apiResponse['url'] ?? $apiResponse['checkout_url'] ?? $apiResponse['public_url'] ?? null;
-            }*/
-
-            $transformed = (new OrderResource($order->refresh()))->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed,
-                'order_budgets' => $orderBudgets,
-                /*'payment_link' => [
-                    'success' => $paymentLinkData['success'] ?? false,
-                    'url' => $paymentUrl,
-                    'data' => $paymentLinkData['data'] ?? null,
-                ],*/
-                'message' => 'Orçamento aprovado com sucesso',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -374,85 +274,6 @@ class OrderController extends Controller
         }
     }
 
-    public function markAsProduced(Request $request, int $orderBudgetId): JsonResponse
-    {
-        try {
-            $user = $request->user();
-            $orderBudget = $this->orderBudgetRepository->markAsProduced(
-                $orderBudgetId,
-                $user,
-                'product'
-            );
-
-            // Gerar relatório de produção
-            $productionReportService = app(\App\Services\ProductionReportService::class);
-            $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
-
-            return response()->json([
-                'success' => true,
-                'data' => $orderBudget,
-                'message' => 'Data de produção atualizada com sucesso',
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pedido não encontrado',
-                'error' => $e->getMessage(),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar data de produção: ' . $e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function updateProductionPercentage(Request $request, int $orderBudgetId): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'production_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
-            ]);
-
-            $user = $request->user();
-            $orderBudget = $this->orderBudgetRepository->updateProductionPercentage(
-                $orderBudgetId,
-                $validated['production_percentage'],
-                $user,
-                'product'
-            );
-
-            if($validated['production_percentage'] == 100) {
-                // Gerar relatório de produção quando atinge 100%
-                $productionReportService = app(\App\Services\ProductionReportService::class);
-                $productionReportService->generateProductionPercentageReport(
-                    $orderBudget,
-                    $user,
-                    $validated['production_percentage']
-                );
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $orderBudget,
-                'message' => 'Porcentagem de produção atualizada com sucesso',
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pedido não encontrado',
-                'error' => $e->getMessage(),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar porcentagem de produção: ' . $e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function productionLayouts(): JsonResponse
     {
         try {
@@ -501,44 +322,6 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao cancelar pedido',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function expedition(): JsonResponse
-    {
-        try {
-            $orderBudgets = $this->orderBudgetRepository->getReadyForPicking();
-
-            return response()->json([
-                'success' => true,
-                'data' => $orderBudgets,
-                'message' => 'Lista de separações recuperada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar separações',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function readyForInvoice(): JsonResponse
-    {
-        try {
-            $orders = $this->repository->getReadyForInvoice();
-
-            return response()->json([
-                'success' => true,
-                'data' => $orders,
-                'message' => 'Lista de pedidos prontos para faturar recuperada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar pedidos prontos para faturar',
                 'error' => $e->getMessage(),
             ], 500);
         }

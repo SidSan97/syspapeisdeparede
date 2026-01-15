@@ -10,6 +10,9 @@ use App\Http\Controllers\API\V1\{
     LayoutColumnNameController,
     MyFavoriteCollectionImageController,
     OrderController,
+    OrderExpeditionController,
+    OrderProductionController,
+    OrderReportController,
     ProductionColumnNameController,
     ProfileController,
     TypeUserController,
@@ -134,17 +137,17 @@ Route::prefix('v1')->group(function () {
     Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
     Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
     Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts'])->middleware('auth:api');
-    Route::get('orders/expedition', [OrderController::class, 'expedition'])->middleware('auth:api');
-    Route::get('orders/ready-for-invoice', [OrderController::class, 'readyForInvoice'])->middleware('auth:api');
+    Route::get('orders/expedition', [OrderExpeditionController::class, 'expedition'])->middleware('auth:api');
+    Route::get('orders/ready-for-invoice', [OrderExpeditionController::class, 'readyForInvoice'])->middleware('auth:api');
     Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
-    Route::post('orders/approve', [OrderController::class, 'approve'])->middleware('auth:api');
+    Route::post('orders/approve', [OrderProductionController::class, 'approve'])->middleware('auth:api');
     Route::post('orders/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
     Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generatePaymentLink'])->middleware('auth:api');
     Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
-    Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderController::class, 'markAsProduced'])->middleware('auth:api');
-    Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderController::class, 'updateProductionPercentage'])->middleware('auth:api');
-    Route::get('orders/order-budgets/{orderBudget}/production-reports', [OrderController::class, 'getProductionReports'])->middleware('auth:api');
-    Route::get('orders/production-reports/{report}/download-pdf', [OrderController::class, 'downloadProductionReportPdf'])->middleware('auth:api');
+    Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderProductionController::class, 'markAsProduced'])->middleware('auth:api');
+    Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderProductionController::class, 'updateProductionPercentage'])->middleware('auth:api');
+    Route::get('orders/order-budgets/{orderBudget}/production-reports', [OrderReportController::class, 'getProductionReports'])->middleware('auth:api');
+    Route::get('orders/production-reports/{report}/download-pdf', [OrderReportController::class, 'downloadProductionReportPdf'])->middleware('auth:api');
 
     // Layout 'trello'
     Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');
