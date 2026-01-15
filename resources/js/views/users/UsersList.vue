@@ -69,7 +69,7 @@
           </div>
 
           <EmptyState
-            v-else-if="filteredUsers.length === 0"
+            v-else-if="users.length === 0"
             heading="Nenhum usuário encontrado"
             icon="user"
             class="p-5"
@@ -88,8 +88,8 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(user, index) in filteredUsers" :key="user.id">
-                  <td class="fw-semibold">{{ index + 1 }}</td>
+                <tr v-for="(user, index) in users" :key="user.id">
+                  <td class="fw-semibold">{{ (paginationData.current_page - 1) * paginationData.per_page + index + 1 }}</td>
                   <td>
                     <div class="d-flex align-items-center gap-3">
                       <div
@@ -155,10 +155,17 @@
     </Page>
     <NotFound v-else />
   </section>
+
+          <div v-if="!loading && users.length > 0 && paginationData.last_page > 1" class="p-3">
+            <pagination
+              :data="paginationData"
+              @pagination-change-page="fetchUsers"
+            />
+          </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
@@ -167,6 +174,7 @@ import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
 import { swalConfirmation } from '../../../utils/alerts';
 import { USER_TYPES } from '@/constants/userTypes';
+import debounce from 'lodash/debounce'
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -176,28 +184,18 @@ const typeUsers = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const selectedRoleId = ref(null);
-
-const filteredUsers = computed(() => {
-  let filtered = users.value;
-
-  // Filtrar por busca
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.trim().toLowerCase();
-    filtered = filtered.filter(
-      (user) =>
-        user.name?.toLowerCase().includes(query) ||
-        user.email?.toLowerCase().includes(query) ||
-        String(user.id).includes(query)
-    );
-  }
-
-  // Filtrar por papel (user_type_id)
-  if (selectedRoleId.value !== null) {
-    filtered = filtered.filter((user) => user.user_type_id === selectedRoleId.value);
-  }
-
-  return filtered;
+const paginationData = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
 });
+
+const debouncedFetch = debounce(() => {
+  fetchUsers(1);
+}, 500);
 
 const selectedRoleLabel = computed(() => {
   if (selectedRoleId.value === null) {
@@ -230,20 +228,55 @@ const getUserRole = (user) => {
 
 const setRoleFilter = (roleId) => {
   selectedRoleId.value = roleId;
+  fetchUsers(1);
 };
 
-const fetchUsers = async () => {
-
+const fetchUsers = async (page = 1) => {
   if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
 
   loading.value = true;
   try {
-    const { data } = await axios.get('v1/users');
-    const payload = data?.data ?? {};
-    // Laravel paginate retorna { data: [...], current_page, total, etc }
-    const items = payload.data ?? [];
+    const params = {
+      page,
+      per_page: 15,
+    };
 
-    users.value = Array.isArray(items) ? items : [];
+    // Adicionar filtro de busca
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim();
+    }
+
+    // Adicionar filtro de tipo de usuário
+    if (selectedRoleId.value !== null) {
+      params.user_type_id = selectedRoleId.value;
+    }
+
+    const { data } = await axios.get('v1/users', { params });
+
+    if (data?.success && data?.data) {
+      const items = Array.isArray(data.data.data) ? data.data.data : [];
+      users.value = items;
+
+      // Atualizar dados de paginação
+      paginationData.value = {
+        current_page: data.data.current_page || 1,
+        last_page: data.data.last_page || 1,
+        per_page: data.data.per_page || 15,
+        total: data.data.total || 0,
+        from: data.data.from || 0,
+        to: data.data.to || 0,
+      };
+    } else {
+      users.value = [];
+      paginationData.value = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+        from: 0,
+        to: 0,
+      };
+    }
   } catch (error) {
     window.Swal.fire({
       title: 'Erro!',
@@ -252,6 +285,14 @@ const fetchUsers = async () => {
       confirmButtonText: 'Entendi!',
     });
     users.value = [];
+    paginationData.value = {
+      current_page: 1,
+      last_page: 1,
+      per_page: 15,
+      total: 0,
+      from: 0,
+      to: 0,
+    };
   } finally {
     loading.value = false;
   }
@@ -289,7 +330,8 @@ const deleteUser = async (user) => {
 
   try {
     await axios.delete(`v1/users/${user.id}`);
-    users.value = users.value.filter((item) => item.id !== user.id);
+    // Recarregar a página atual após exclusão
+    fetchUsers(paginationData.value.current_page);
     window.Swal.fire({
       title: 'Usuário excluído!',
       text: 'Usuário excluído com sucesso.',
@@ -310,7 +352,11 @@ const deleteUser = async (user) => {
 onMounted(async () => {
   document.title = 'Usuários';
   await fetchTypeUsers();
-  fetchUsers();
+  fetchUsers(1);
+});
+
+watch(searchQuery, () => {
+  debouncedFetch();
 });
 </script>
 

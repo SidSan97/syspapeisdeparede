@@ -20,14 +20,29 @@ class UserController extends BaseController
         $this->user = $user;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $authUser = auth()->user();
+        $query = $this->user->with('userType');
 
-        $users = $this->user->with('userType')->latest()->paginate(100);
+        // Filtro por busca (nome ou email)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro por tipo de usuário (user_type_id)
+        if ($request->filled('user_type_id')) {
+            $query->where('user_type_id', $request->user_type_id);
+        }
+
+        $users = $query->latest()->paginate($request->get('per_page', 15));
 
         return $this->sendResponse($users, 'Lista de usuários');
     }
+   
 
     public function list()
     {
