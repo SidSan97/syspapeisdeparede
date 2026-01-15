@@ -42,236 +42,7 @@
 
                             <ModelReferencesCard :data="data" />
 
-                            <!-- Solicitação de Artes -->
-                            <div class="card mb-4">
-                                <div class="card-header bg-transparent">
-                                    <h5 class="mb-0 fw-semibold">
-                                        Solicitação de Artes
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div v-if="loadingRequestArts" class="text-center text-muted py-3">
-                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        Carregando solicitações de artes...
-                                    </div>
-                                    <div v-else-if="requestLayoutArts.length === 0" class="text-center text-muted py-3">
-                                        Nenhuma solicitação de arte encontrada.
-                                    </div>
-                                    <div v-else class="accordion" id="requestArtsAccordion">
-                                        <div
-                                            v-for="(interaction, interactionIndex) in requestLayoutArts"
-                                            :key="interaction.id || interactionIndex"
-                                            class="accordion-item mb-3"
-                                        >
-                                            <h2 class="accordion-header">
-                                                <button
-                                                    class="accordion-button p-2"
-                                                    :class="{ collapsed: interactionIndex !== 0 }"
-                                                    type="button"
-                                                    data-bs-toggle="collapse"
-                                                    :data-bs-target="`#interaction-${interactionIndex}`"
-                                                    :aria-expanded="interactionIndex === 0"
-                                                    :aria-controls="`interaction-${interactionIndex}`"
-                                                >
-                                                    <i class="fa fa-comments me-2"></i>
-                                                    Interação #{{ interaction.id }}
-                                                    <span v-if="interaction.wall_info?.wall_name" class="badge bg-info ms-2">
-                                                        {{ interaction.wall_info.wall_name }}
-                                                    </span>
-                                                    <span class="badge bg-secondary ms-2">
-                                                        {{ interaction.arts_count }} arte(s)
-                                                    </span>
-                                                    <span>
-                                                        
-                                                    </span>
-                                                </button>
-                                            </h2>
-                                            <div
-                                                :id="`interaction-${interactionIndex}`"
-                                                class="accordion-collapse collapse"
-                                                :class="{ show: interactionIndex === 0 }"
-                                                data-bs-parent="#requestArtsAccordion"
-                                            >
-                                                <div class="accordion-body">
-                                                    <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
-                                                        <div class="row g-2">
-                                                            <div class="col-md-12">
-                                                                <div class="text-muted small">
-                                                                    <h5>Comentário</h5>
-                                                                </div>
-                                                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
-
-                                                                <img :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
-                                                            </div>
-                                                            <hr>
-                                                            <div class="col-md-6">
-                                                                <div class="text-muted small">Ambiente</div>
-                                                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="text-muted small">Parede</div>
-                                                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
-                                                            </div>
-                                                            <div v-if="interaction.wall_info.width" class="col-md-4">
-                                                                <div class="text-muted small">Largura</div>
-                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
-                                                            </div>
-                                                            <div v-if="interaction.wall_info.height" class="col-md-4">
-                                                                <div class="text-muted small">Altura</div>
-                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
-                                                            </div>
-                                                            <div v-if="interaction.wall_info.total_area" class="col-md-4">
-                                                                <div class="text-muted small">Área</div>
-                                                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
-                                                        <div class="text-muted small">
-                                                            <i class="fa fa-calendar me-1"></i>
-                                                            Interação criada em: {{ formatDate(interaction.created_at) }}
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Lista de Artes da Interação -->
-                                                    <div v-if="interaction.arts && interaction.arts.length > 0" class="mt-3">
-                                                        <h6 class="mb-3">
-                                                            <i class="fa fa-images me-2"></i>
-                                                            Artes ({{ interaction.arts.length }})
-                                                        </h6>
-                                                        <div
-                                                            v-for="(art, artIndex) in interaction.arts"
-                                                            :key="art.id || artIndex"
-                                                            class="card mb-3 border"
-                                                            :class="{ 'border-top': artIndex > 0 }"
-                                                        >
-                                                            <div class="card-body">
-                                                                <div class="mb-3 p-2 border rounded">
-                                                                    <div class="row g-2">
-                                                                        <div v-if="art.dealer_name" class="col-md-6">
-                                                                            <div class="text-muted small">
-                                                                                <i class="fa fa-user-tie me-1"></i>
-                                                                                Revendedor
-                                                                            </div>
-                                                                            <div class="fw-semibold">{{ art.dealer_name }}</div>
-                                                                        </div>
-                                                                        <div v-if="art.designer_name" class="col-md-6">
-                                                                            <div class="text-muted small">
-                                                                                <i class="fa fa-user me-1"></i>
-                                                                                Designer
-                                                                            </div>
-                                                                            <div class="fw-semibold">{{ art.designer_name }}</div>
-                                                                        </div>
-                                                                        <div v-if="art.created_at" class="col-12">
-                                                                            <div class="text-muted small">
-                                                                                <i class="fa fa-calendar me-1"></i>
-                                                                                Enviado em: {{ formatDate(art.created_at) }}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div v-if="art.comment" class="mb-3">
-                                                                    <div class="text-muted small mb-1">Comentário</div>
-                                                                    <div class="p-2 rounded border">{{ art.comment }}</div>
-                                                                </div>
-                                                                <div v-if="art.image_url" class="mb-3">
-                                                                    <div class="text-muted small mb-2">Imagem da Arte</div>
-                                                                    <div class="d-flex justify-content-center">
-                                                                        <img
-                                                                            :src="art.image_url"
-                                                                            :alt="`Arte ${art.id}`"
-                                                                            class="img-thumbnail"
-                                                                            style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                                                                            @error="handleImageError"
-                                                                        />
-                                                                    </div>
-                                                                    <div class="mt-2 text-center">
-                                                                        <a
-                                                                            :href="art.image_url"
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            class="btn btn-sm btn-outline-primary"
-                                                                        >
-                                                                            <i class="fa fa-external-link me-1"></i>
-                                                                            Abrir em nova aba
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Formulário de Resposta do Revendedor -->
-                                                    <div v-if="auth.user && isReseller" class="mt-4 pt-3 border-top">
-                                                        <h6 class="mb-3">
-                                                            <i class="fa fa-reply me-2"></i>
-                                                            Responder Interação
-                                                        </h6>
-                                                        <form @submit.prevent="handleRespondToInteraction(interaction)">
-                                                            <div class="mb-3">
-                                                                <label :for="'art-file-' + interaction.id" class="form-label">
-                                                                    Imagem da Arte (opcional)
-                                                                </label>
-                                                                <input
-                                                                    :id="'art-file-' + interaction.id"
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    class="form-control"
-                                                                    @change="handleArtFileChange($event, interaction.id)"
-                                                                    :disabled="uploadingArt[interaction.id]"
-                                                                />
-                                                                <div class="form-text">Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 10MB</div>
-                                                                <div v-if="artFiles[interaction.id]" class="mt-2">
-                                                                    <span class="badge bg-info">
-                                                                        <i class="fa fa-file-image me-1"></i>
-                                                                        {{ artFiles[interaction.id].name }}
-                                                                    </span>
-                                                                    <button
-                                                                        type="button"
-                                                                        class="btn btn-sm btn-link text-danger p-0 ms-2"
-                                                                        @click="clearArtFile(interaction.id)"
-                                                                        :disabled="uploadingArt[interaction.id]"
-                                                                    >
-                                                                        <i class="fa fa-times"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label :for="'art-comment-' + interaction.id" class="form-label">
-                                                                    Comentário <span class="text-danger">*</span>
-                                                                </label>
-                                                                <textarea
-                                                                    :id="'art-comment-' + interaction.id"
-                                                                    v-model="artComments[interaction.id]"
-                                                                    class="form-control"
-                                                                    rows="3"
-                                                                    placeholder="Adicione um comentário sobre a arte..."
-                                                                    :disabled="uploadingArt[interaction.id]"
-                                                                ></textarea>
-                                                            </div>
-                                                            <div class="d-flex justify-content-end">
-                                                                <button
-                                                                    type="submit"
-                                                                    class="btn btn-primary"
-                                                                    :disabled="!artComments[interaction.id] || !artComments[interaction.id].trim() || uploadingArt[interaction.id]"
-                                                                >
-                                                                    <span
-                                                                        v-if="uploadingArt[interaction.id]"
-                                                                        class="spinner-border spinner-border-sm me-2"
-                                                                        role="status"
-                                                                        aria-hidden="true"
-                                                                    ></span>
-                                                                    {{ uploadingArt[interaction.id] ? 'Enviando...' : 'Enviar Resposta' }}
-                                                                </button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <RequestArtsCard :data="data" :is-order="isOrder" />
                         </div>
 
                         <!-- Sidebar: Frete, Pagamento e Resumo -->
@@ -317,6 +88,7 @@ import ShippingCard from '@/components/details/ShippingCard.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
+import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -324,17 +96,12 @@ const auth = useAuthStore();
 
 const loading = ref(false);
 const data = ref(null);
-const requestLayoutArts = ref([]);
-const loadingRequestArts = ref(false);
 const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
-const artFiles = ref({});
-const artComments = ref({});
-const uploadingArt = ref({});
 
-const { formatNumber, formatDate, resolveImageUrl } = useFormatting();
+const { formatNumber, formatDate } = useFormatting();
 
 // Determinar se é orçamento ou pedido baseado na rota
 const isOrder = computed(() => route.path.includes('/pedidos') || route.path.includes('/orders'));
@@ -351,17 +118,6 @@ const backTo = computed(() => {
 const isDropshippingEnabled = computed(() => {
     return data.value?.dropshipping_budget === 1;
 });
-
-const isReseller = computed(() => {
-    return auth.user?.user_type_id === USER_TYPES.RESELLER
-        || auth.hasRole('reseller')
-        || auth.hasRole('revendedor')
-        || auth.roles?.some(role => typeof role === 'string' && role.toLowerCase().includes('revendedor'));
-});
-
-function handleImageError(event) {
-    event.target.style.display = 'none';
-}
 
 // Carregar dados
 async function loadData() {
@@ -407,11 +163,6 @@ async function loadData() {
         // Carregar dados de dropshipping se existirem
         if (responseData.dropshipping_data) {
             dropshippingData.value = responseData.dropshipping_data;
-        }
-
-        // Carregar solicitações de artes
-        if (auth.user?.id) {
-            await fetchRequestLayoutArts();
         }
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
