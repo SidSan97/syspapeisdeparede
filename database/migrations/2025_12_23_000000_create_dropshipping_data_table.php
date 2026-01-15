@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('number', 20)->default(0);
             $table->string('complement', 255)->nullable();
             $table->foreignId('dealer_id')
+                ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
             $table->foreignId('budget_id')
