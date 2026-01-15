@@ -45,9 +45,7 @@ class UserController extends BaseController
 
     public function list()
     {
-        $authUser = auth()->user();
-
-        $users = $this->user->latest()->limit(25)->get();
+        $users = $this->user->with('userType')->get();
 
         return $this->sendResponse($users, 'Lista de usuários');
     }

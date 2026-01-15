@@ -398,7 +398,7 @@ async function fetchPedidos(page = 1) {
     if (data?.success && data?.data) {
       const items = Array.isArray(data.data.data) ? data.data.data : [];
       pedidos.value = items.map(normalizePedido);
-      
+
       // Atualizar dados de paginação
       paginationData.value = {
         current_page: data.data.current_page || 1,
@@ -470,7 +470,7 @@ async function fetchUsers() {
 
   try {
     loadingUsers.value = true;
-    const response = await axios.get('v1/users/search');
+    const response = await axios.get('v1/users/list');
 
     if (response.data?.success && response.data?.data) {
       // Se a resposta estiver paginada, pegar o array de dados
@@ -565,7 +565,7 @@ async function confirmCancelPedido() {
 
     showCancelModal.value = false;
     pedidoToCancel.value = null;
-    
+
     // Recarregar página atual
     fetchPedidos(paginationData.value.current_page);
   } catch (error) {
