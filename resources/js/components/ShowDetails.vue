@@ -31,9 +31,9 @@
                         <div class="col-12 col-lg-8">
                             <BasicInfoCard :data="data" :is-dropshipping-enabled="isDropshippingEnabled" />
 
-                            <DropshippingDataCard 
-                                :is-dropshipping-enabled="isDropshippingEnabled" 
-                                :dropshipping-data="dropshippingData" 
+                            <DropshippingDataCard
+                                :is-dropshipping-enabled="isDropshippingEnabled"
+                                :dropshipping-data="dropshippingData"
                             />
 
                             <RoomsCard :data="data" />
@@ -49,9 +49,9 @@
                         <div class="col-12 col-lg-4">
                             <ShippingCard :data="data" />
 
-                            <PaymentCard 
-                                :data="data" 
-                                :is-order="isOrder" 
+                            <PaymentCard
+                                :data="data"
+                                :is-order="isOrder"
                                 :generating-payment-link="generatingPaymentLink"
                                 @generate-payment-link="generatePaymentLink"
                             />
@@ -74,11 +74,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
 import { USER_TYPES } from '@/constants/userTypes';
 import { useFormatting } from '@/composables/useFormatting';
+import { useOrderService } from '@/services/orderService';
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
 import RoomsCard from '@/components/details/RoomsCard.vue';
@@ -100,8 +100,12 @@ const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
+const artFiles = ref({});
+const artComments = ref({});
+const uploadingArt = ref({});
 
-const { formatNumber, formatDate } = useFormatting();
+const { formatNumber, formatDate, resolveImageUrl } = useFormatting();
+const orderService = useOrderService();
 
 // Determinar se é orçamento ou pedido baseado na rota
 const isOrder = computed(() => route.path.includes('/pedidos') || route.path.includes('/orders'));
@@ -130,22 +134,7 @@ async function loadData() {
     loading.value = true;
 
     try {
-        let responseData = null;
-
-        if (isOrder.value) {
-            // Para pedidos, buscar pelo endpoint específico
-            const { data: response } = await axios.get(`v1/orders/${id}`);
-            responseData = response?.data || response;
-        } else {
-            // Para orçamentos, buscar da lista e encontrar pelo ID
-            const { data: response } = await axios.get('v1/budgets');
-            const budgets = response?.data?.data ?? response?.data ?? [];
-            responseData = budgets.find(b => b.id === Number(id));
-
-            if (!responseData) {
-                throw new Error('Orçamento não encontrado');
-            }
-        }
+        const responseData = await orderService.getDetails(id, isOrder.value);
 
         if (!responseData) {
             throw new Error('Dados não encontrados');
@@ -155,7 +144,7 @@ async function loadData() {
 
         // Verificar se o link de pagamento está expirado e gerar novo se necessário
         if (isOrder.value && responseData.link_payment && responseData.payment_expiration_date) {
-            if (isPaymentLinkExpired(responseData.payment_expiration_date)) {
+            if (orderService.isPaymentLinkExpired(responseData.payment_expiration_date)) {
                 await generatePaymentLink(false);
             }
         }
@@ -181,21 +170,16 @@ async function loadData() {
 
 async function fetchRequestLayoutArts() {
     if (!data.value || !auth.user?.id) {
-        requestLayoutArts.value = [];
-        loadingRequestArts.value = false;
-        return;
+        return [];
     }
 
     try {
-        loadingRequestArts.value = true;
-
         let params = {};
 
         if (isOrder.value) {
             const orderId = data.value.id;
             if (!orderId) {
-                requestLayoutArts.value = [];
-                return;
+                return [];
             }
             params = {
                 order_id: orderId,
@@ -203,8 +187,7 @@ async function fetchRequestLayoutArts() {
         } else {
             const budgetId = data.value.id;
             if (!budgetId) {
-                requestLayoutArts.value = [];
-                return;
+                return [];
             }
             params = {
                 budget_id: budgetId,
@@ -212,40 +195,33 @@ async function fetchRequestLayoutArts() {
             };
         }
 
-        const response = await axios.get('v1/budgets/request-layout-arts', { params });
-        const responseData = response?.data || response;
+        const arts = await orderService.getRequestLayoutArts(params);
 
-        if (responseData?.success && Array.isArray(responseData.data)) {
-            requestLayoutArts.value = responseData.data.map((art) => {
-                let imageUrl = art.image_url;
-                if (!imageUrl && art.path_file) {
-                    imageUrl = resolveImageUrl(art.path_file);
-                }
-                
-                return {
-                    id: art.id,
-                    order_id: art.order_id || null,
-                    order_budget_id: art.order_budget_id || null,
-                    dealer_id: art.dealer_id || null,
-                    designer_id: art.designer_id || null,
-                    comment: art.comment || null,
-                    path_file: art.path_file || null,
-                    image_url: imageUrl,
-                    created_at: art.created_at || null,
-                    designer_name: art.designer?.name || art.designer_name || null,
-                    dealer_name: art.dealer?.name || art.dealer_name || null,
-                    wall_info: art.wall_info || null,
-                    wall_name: art.wall_name || art.wall_info?.wall_name || null,
-                };
-            });
-        } else {
-            requestLayoutArts.value = [];
-        }
+        return arts.map((art) => {
+            let imageUrl = art.image_url;
+            if (!imageUrl && art.path_file) {
+                imageUrl = resolveImageUrl(art.path_file);
+            }
+
+            return {
+                id: art.id,
+                order_id: art.order_id || null,
+                order_budget_id: art.order_budget_id || null,
+                dealer_id: art.dealer_id || null,
+                designer_id: art.designer_id || null,
+                comment: art.comment || null,
+                path_file: art.path_file || null,
+                image_url: imageUrl,
+                created_at: art.created_at || null,
+                designer_name: art.designer?.name || art.designer_name || null,
+                dealer_name: art.dealer?.name || art.dealer_name || null,
+                wall_info: art.wall_info || null,
+                wall_name: art.wall_name || art.wall_info?.wall_name || null,
+            };
+        });
     } catch (error) {
         console.error('Erro ao buscar solicitações de artes:', error);
-        requestLayoutArts.value = [];
-    } finally {
-        loadingRequestArts.value = false;
+        return [];
     }
 }
 
@@ -274,14 +250,7 @@ async function handleApprove() {
     actionType.value = 'approve';
 
     try {
-        const approveResponse = await axios.post('v1/orders/approve', {
-            id: data.value.id,
-        });
-
-        if (!approveResponse.data?.success) {
-            throw new Error(approveResponse.data?.message || 'Erro ao aprovar pedido');
-        }
-
+        await orderService.approveOrder(data.value.id);
         await loadData();
 
         await window.Swal.fire({
@@ -307,21 +276,6 @@ async function handleApprove() {
     }
 }
 
-function isPaymentLinkExpired(expirationDate) {
-    if (!expirationDate) {
-        return false;
-    }
-
-    try {
-        const expiration = new Date(expirationDate);
-        const now = new Date();
-        return expiration < now;
-    } catch (error) {
-        console.error('Erro ao verificar expiração do link:', error);
-        return false;
-    }
-}
-
 async function generatePaymentLink(showSuccessMessage = true) {
     if (!data.value?.id || !isOrder.value) {
         return;
@@ -330,15 +284,11 @@ async function generatePaymentLink(showSuccessMessage = true) {
     generatingPaymentLink.value = true;
 
     try {
-        const { data: response } = await axios.post(`v1/orders/${data.value.id}/generate-payment-link`);
-
-        if (!response?.success) {
-            throw new Error(response?.message || 'Erro ao gerar link de pagamento');
-        }
+        const responseData = await orderService.generatePaymentLink(data.value.id);
 
         // Atualizar dados locais
-        if (response.data) {
-            data.value = response.data;
+        if (responseData) {
+            data.value = responseData;
         }
 
         if (showSuccessMessage) {
@@ -351,7 +301,7 @@ async function generatePaymentLink(showSuccessMessage = true) {
         }
     } catch (error) {
         const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível gerar o link de pagamento.';
-        
+
         if (showSuccessMessage) {
             await window.Swal.fire({
                 title: 'Erro',
@@ -428,27 +378,19 @@ async function handleRespondToInteraction(interaction) {
         formData.append('order_id', orderId);
         formData.append('comment', comment);
 
-        const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+        const response = await orderService.uploadArt(formData);
+
+        // Limpar formulário
+        clearArtFile(interactionId);
+        artComments.value[interactionId] = '';
+
+        // Recarregar solicitações de artes
+        await fetchRequestLayoutArts();
+
+        window.Toast.fire({
+            icon: 'success',
+            title: response.message || 'Arte enviada com sucesso.',
         });
-
-        if (response.data?.success) {
-            // Limpar formulário
-            clearArtFile(interactionId);
-            artComments.value[interactionId] = '';
-
-            // Recarregar solicitações de artes
-            await fetchRequestLayoutArts();
-
-            window.Toast.fire({
-                icon: 'success',
-                title: response.data.message || 'Arte enviada com sucesso.',
-            });
-        } else {
-            throw new Error(response.data?.message || 'Erro ao enviar arte');
-        }
     } catch (error) {
         console.error('Erro ao responder interação:', error);
         const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';

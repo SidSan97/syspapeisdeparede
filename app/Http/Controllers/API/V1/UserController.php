@@ -5,8 +5,6 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Requests\Users\UserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use App\Models\TypeUser;
 
 // use Spatie\Activitylog\Models\Activity;
@@ -44,7 +42,6 @@ class UserController extends BaseController
 
         return $this->sendResponse($users, 'Lista de usuários');
     }
-   
 
     public function list()
     {
@@ -57,39 +54,17 @@ class UserController extends BaseController
 
     public function store(UserRequest $request)
     {
-        $this->authorize('create', User::class);
+        $user = $this->user->create($request->validated());
 
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'is_dropshipping' => 0,
-            'user_type_id' => $request->user_type_id,
-        ];
-
-        $user = $this->user->create($data);
-
-        // Se não veio role mas veio user_type_id, converter para role
-        $role = $request->role;
-        if (empty($role) && !empty($request->user_type_id)) {
-            $role = $this->userType->find((int) $request->user_type_id)->name;
+        if ($request->has('role')) {
+            $user->assignRole($request->role);
         }
 
-        // Atribuir role ao usuário
-        if (!empty($role)) {
-            $user->syncRoles($role);
-            $user->refresh();
+        if ($user->hasRole('reseller')) {
+            $user->update(['is_dropshipping' => $request->is_dropshipping ?? 0]);
         }
 
-        // Determinar is_dropshipping baseado na role
-        if ($role === 'reseller' || $user->hasRole('reseller')) {
-            $user->is_dropshipping = (int) ($request->is_dropshipping ?? 0);
-            $user->save();
-        }
-
-        $this->handleUserPermissions($user, $request->all());
-
-        return $this->sendResponse($user, 'Usuário adicionado com sucesso');
+        return $this->sendResponse($user, 'Usuário criado com sucesso');
     }
 
     public function show($id)
@@ -99,61 +74,16 @@ class UserController extends BaseController
         return $this->sendResponse($user, 'Dados do usuário');
     }
 
-    public function update($id, UserRequest $request)
+    public function update(User $user, UserRequest $request)
     {
-        $user = $this->user->findOrFail($id);
-
-        $this->authorize('update', $user);
-
-        $data = $request->validated();
-
-        // Remover password se estiver vazio
-        if (empty($data['password'])) {
-            unset($data['password']);
-        } else {
-            $data['password'] = Hash::make($data['password']);
-        }
-
-        unset($data['password_confirmation']);
-        $role = $data['role'] ?? null;
-        unset($data['role']);
-
-        if (empty($role) && !empty($data['user_type_id'])) {
-            $role = $this->userType->find((int) $data['user_type_id'])->name;
-        }
-
-        // Atualizar role se necessário
-        if (!empty($role)) {
-            $user->syncRoles($role);
-            $user->refresh();
-        }
-
-        // Determinar is_dropshipping baseado na role (atual ou nova)
-        $isReseller = $role === 'reseller' || $user->hasRole('reseller');
-        
-        if ($isReseller) {
-            // Usar o valor enviado no request, ou do data validado, ou 0 como padrão
-            $data['is_dropshipping'] = (int) ($request->input('is_dropshipping', $data['is_dropshipping'] ?? 0));
-        } else {
-            $data['is_dropshipping'] = 0;
-        }
-
-        $user->update($data);
-
-        $this->handleUserPermissions($user, $request->all());
-
+        $user->update($request->validated());
         return $this->sendResponse($user, 'Dados do usuário atualizados com sucesso');
     }
 
-    public function destroy($id)
+    public function destroy(User $user)
     {
-        $user = $this->user->findOrFail($id);
-
-        $this->authorize('delete', $user);
-
         $user->delete();
-
-        return $this->sendResponse($user, 'Usuário excluído com sucesso');
+        return $this->sendResponse(null, 'Usuário removido.');
     }
 
     protected function handleUserPermissions(User $user, array $data)

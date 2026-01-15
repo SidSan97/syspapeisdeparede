@@ -11,157 +11,151 @@
         </router-link>
       </template>
 
-      <div class="shadow-sm">
-        <div class="border-0 pb-0">
-          <div class="d-flex flex-column gap-3">
-            <div class="row buttons-filters mt-3">
-              <div class="col-lg-4">
-                <div class="input-group input-group-prefix">
-                  <input type="search" class="form-control" placeholder="Pesquisar usuário"
-                   v-model="searchQuery"
-                  >
-                  <span class="input-group-text">
-                    <i class="fa fa-search"></i>
-                  </span>
-                </div>
-              </div>
+      <div class="row g-3 mt-1">
+        <div class="col-lg-4">
+          <div class="input-group input-group-prefix">
+            <input type="search" class="form-control" placeholder="Pesquisar usuário"
+             v-model="searchQuery"
+            >
+            <span class="input-group-text">
+              <i class="fa fa-search"></i>
+            </span>
+          </div>
+        </div>
 
-              <div class="dropdown col-lg-3 mt-2 mt-lg-0">
-                <button
-                    class="btn btn-outline-default d-flex align-items-center gap-2"
+        <div class="col-lg-3">
+          <div class="dropdown">
+            <button
+                class="btn btn-outline-default d-flex align-items-center gap-2"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
+                {{ selectedRoleLabel }}
+                <i class="fa fa-chevron-down small"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li>
+                    <button
+                        class="dropdown-item"
+                        type="button"
+                        :class="{ active: selectedRoleId === null }"
+                        @click="setRoleFilter(null)"
+                    >
+                        Todos os papéis
+                    </button>
+                </li>
+                <li v-for="role in typeUsers" :key="role.id">
+                    <button
+                        class="dropdown-item"
+                        type="button"
+                        :class="{ active: selectedRoleId === role.id }"
+                        @click="setRoleFilter(role.id)"
+                    >
+                        {{ role.name }}
+                    </button>
+                </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="loading" class="p-5 text-center text-muted fw-semibold mt-3">
+        Carregando usuários...
+      </div>
+
+      <EmptyState
+        v-else-if="users.length === 0"
+        heading="Nenhum usuário encontrado"
+        icon="user"
+        class="p-5 mt-3"
+      >
+        Ajuste os filtros ou adicione um novo usuário.
+      </EmptyState>
+
+      <div v-else class="table-responsive mt-3">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Usuário</th>
+              <th scope="col">Papel</th>
+              <th scope="col" class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(user, index) in users" :key="user.id">
+              <td class="fw-semibold">{{ (paginationData.current_page - 1) * paginationData.per_page + index + 1 }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  <div
+                    v-if="!user.avatar"
+                    class="rounded-circle d-flex align-items-center justify-content-center user-avatar"
+                  >
+                    {{ getUserInitial(user.name) }}
+                  </div>
+                  <img
+                    v-else
+                    :src="getAvatarUrl(user.avatar)"
+                    :alt="user.name"
+                    class="rounded-circle user-avatar-img"
+                  />
+                  <div>
+                    <div class="fw-semibold">{{ user.name }}</div>
+                    <div class="text-muted small">{{ user.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="text-capitalize">
+                  {{ getUserRole(user) }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="dropdown">
+                  <button
+                    class="btn btn-sm btn-subtle"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                >
-                    {{ selectedRoleLabel }}
-                    <i class="fa fa-chevron-down small"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  >
+                    <i class="fa fa-ellipsis-v"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li>
-                        <button
-                            class="dropdown-item"
-                            type="button"
-                            :class="{ active: selectedRoleId === null }"
-                            @click="setRoleFilter(null)"
-                        >
-                            Todos os papéis
-                        </button>
-                    </li>
-                    <li v-for="role in typeUsers" :key="role.id">
-                        <button
-                            class="dropdown-item"
-                            type="button"
-                            :class="{ active: selectedRoleId === role.id }"
-                            @click="setRoleFilter(role.id)"
-                        >
-                            {{ role.name }}
-                        </button>
-                    </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card-body p-0">
-          <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-            Carregando usuários...
-          </div>
-
-          <EmptyState
-            v-else-if="users.length === 0"
-            heading="Nenhum usuário encontrado"
-            icon="user"
-            class="p-5"
-          >
-            Ajuste os filtros ou adicione um novo usuário.
-          </EmptyState>
-
-          <div v-else class="table-responsive mt-3">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Usuário</th>
-                  <th scope="col">Papel</th>
-                  <th scope="col" class="text-end">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(user, index) in users" :key="user.id">
-                  <td class="fw-semibold">{{ (paginationData.current_page - 1) * paginationData.per_page + index + 1 }}</td>
-                  <td>
-                    <div class="d-flex align-items-center gap-3">
-                      <div
-                        v-if="!user.avatar"
-                        class="rounded-circle d-flex align-items-center justify-content-center user-avatar"
+                      <router-link
+                        class="dropdown-item"
+                        :to="{ name: 'UsersEdit', params: { id: user.id } }"
                       >
-                        {{ getUserInitial(user.name) }}
-                      </div>
-                      <img
-                        v-else
-                        :src="getAvatarUrl(user.avatar)"
-                        :alt="user.name"
-                        class="rounded-circle user-avatar-img"
-                      />
-                      <div>
-                        <div class="fw-semibold">{{ user.name }}</div>
-                        <div class="text-muted small">{{ user.email }}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="text-capitalize">
-                      {{ getUserRole(user) }}
-                    </span>
-                  </td>
-                  <td class="text-end">
-                    <div class="dropdown">
+                        Editar
+                      </router-link>
+                    </li>
+                    <li>
                       <button
-                        class="btn btn-sm btn-subtle"
+                        class="dropdown-item text-danger"
                         type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
+                        @click="confirmDelete(user)"
                       >
-                        <i class="fa fa-ellipsis-v"></i>
+                        Excluir
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li>
-                          <router-link
-                            class="dropdown-item"
-                            :to="{ name: 'UsersEdit', params: { id: user.id } }"
-                          >
-                            Editar
-                          </router-link>
-                        </li>
-                        <li>
-                          <button
-                            class="dropdown-item text-danger"
-                            type="button"
-                            @click="confirmDelete(user)"
-                          >
-                            Excluir
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="!loading && users.length > 0 && paginationData.last_page > 1" class="mt-3">
+        <pagination
+          :data="paginationData"
+          @pagination-change-page="fetchUsers"
+        />
       </div>
     </Page>
     <NotFound v-else />
   </section>
-
-          <div v-if="!loading && users.length > 0 && paginationData.last_page > 1" class="p-3">
-            <pagination
-              :data="paginationData"
-              @pagination-change-page="fetchUsers"
-            />
-          </div>
 </template>
 
 <script setup>
