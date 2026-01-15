@@ -134,16 +134,16 @@
           <p><strong>Previsão de entrega:</strong> {{ formatDeliveryTime(budget?.delivery_time) }}</p>
           <p class="pdf-total-cash">
             <strong>Total à Vista:</strong> {{ formatCurrency(editableTotalCash) }}
-            <i 
-              class="fa fa-edit pdf-edit-icon" 
+            <i
+              class="fa fa-edit pdf-edit-icon"
               @click="toggleEditCash"
               title="Editar valor"
             ></i>
-            <input 
+            <input
               v-if="editingCash"
-              type="number" 
-              v-model.number="editableTotalCash" 
-              step="0.01" 
+              type="number"
+              v-model.number="editableTotalCash"
+              step="0.01"
               class="pdf-edit-input"
               placeholder="0.00"
               @blur="editingCash = false"
@@ -153,16 +153,16 @@
           </p>
           <p class="pdf-total-installment">
             <strong>Total a Prazo:</strong> {{ formatCurrency(editableTotalInstallment) }}
-            <i 
-              class="fa fa-edit pdf-edit-icon" 
+            <i
+              class="fa fa-edit pdf-edit-icon"
               @click="toggleEditInstallment"
               title="Editar valor"
             ></i>
-            <input 
+            <input
               v-if="editingInstallment"
-              type="number" 
-              v-model.number="editableTotalInstallment" 
-              step="0.01" 
+              type="number"
+              v-model.number="editableTotalInstallment"
+              step="0.01"
               class="pdf-edit-input"
               placeholder="0.00"
               @blur="editingInstallment = false"
@@ -172,10 +172,10 @@
           </p>
           <p class="pdf-mockup-input">
             <strong>Ou insira o valor do mockup (%):</strong>
-            <input 
-              type="number" 
-              v-model.number="mockupPercentage" 
-              step="0.01" 
+            <input
+              type="number"
+              v-model.number="mockupPercentage"
+              step="0.01"
               class="pdf-edit-input"
               placeholder="0.00"
             />
@@ -208,6 +208,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import { downloadFile } from '@/utils/fileDownload';
 
 const route = useRoute();
 const router = useRouter();
@@ -308,7 +309,7 @@ function formatWallDetails(wall) {
   if (wall.width && wall.height) {
     parts.push(`${wall.width}m x ${wall.height}m`);
   }
-  
+
   return parts.length > 0 ? parts.join(' | ') : 'Parede sem detalhes';
 }
 
@@ -415,10 +416,10 @@ function getCarrierName(carrierName) {
 async function loadBudget() {
   loading.value = true;
   error.value = null;
-  
+
   try {
     const { data } = await axios.get(`v1/budgets/${route.params.id}`);
-    
+
     if (data.success && data.data) {
       budget.value = data.data;
     } else {
@@ -475,7 +476,7 @@ function goBack() {
 
 async function generatePdf() {
   if (!budget.value?.id) return;
-  
+
   generatingPdf.value = true;
   try {
     const response = await axios.post(
@@ -491,14 +492,16 @@ async function generatePdf() {
       }
     );
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `orcamento-${budget.value.id}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    // Usar a função utilitária de download
+    downloadFile(response, `orcamento-${budget.value.id}.pdf`);
+
+    // Mostrar mensagem de sucesso
+    if (window.Toast) {
+      window.Toast.fire({
+        icon: 'success',
+        title: 'PDF gerado com sucesso',
+      });
+    }
   } catch (err) {
     console.error('Erro ao gerar PDF:', err);
     window.Toast?.fire({
