@@ -100,16 +100,11 @@ const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
-const artFiles = ref({});
-const artComments = ref({});
-const uploadingArt = ref({});
 
-const { formatNumber, formatDate, resolveImageUrl } = useFormatting();
 const orderService = useOrderService();
 
 // Determinar se é orçamento ou pedido baseado na rota
 const isOrder = computed(() => route.path.includes('/pedidos') || route.path.includes('/orders'));
-const isBudget = computed(() => route.path.includes('/budget') || route.path.includes('/orçamento'));
 
 const pageTitle = computed(() => {
     return isOrder.value ? 'Detalhes do Pedido' : 'Detalhes do Orçamento';
@@ -165,63 +160,6 @@ async function loadData() {
         router.push(backTo.value);
     } finally {
         loading.value = false;
-    }
-}
-
-async function fetchRequestLayoutArts() {
-    if (!data.value || !auth.user?.id) {
-        return [];
-    }
-
-    try {
-        let params = {};
-
-        if (isOrder.value) {
-            const orderId = data.value.id;
-            if (!orderId) {
-                return [];
-            }
-            params = {
-                order_id: orderId,
-            };
-        } else {
-            const budgetId = data.value.id;
-            if (!budgetId) {
-                return [];
-            }
-            params = {
-                budget_id: budgetId,
-                dealer_id: auth.user.id,
-            };
-        }
-
-        const arts = await orderService.getRequestLayoutArts(params);
-
-        return arts.map((art) => {
-            let imageUrl = art.image_url;
-            if (!imageUrl && art.path_file) {
-                imageUrl = resolveImageUrl(art.path_file);
-            }
-
-            return {
-                id: art.id,
-                order_id: art.order_id || null,
-                order_budget_id: art.order_budget_id || null,
-                dealer_id: art.dealer_id || null,
-                designer_id: art.designer_id || null,
-                comment: art.comment || null,
-                path_file: art.path_file || null,
-                image_url: imageUrl,
-                created_at: art.created_at || null,
-                designer_name: art.designer?.name || art.designer_name || null,
-                dealer_name: art.dealer?.name || art.dealer_name || null,
-                wall_info: art.wall_info || null,
-                wall_name: art.wall_name || art.wall_info?.wall_name || null,
-            };
-        });
-    } catch (error) {
-        console.error('Erro ao buscar solicitações de artes:', error);
-        return [];
     }
 }
 
@@ -312,98 +250,6 @@ async function generatePaymentLink(showSuccessMessage = true) {
         }
     } finally {
         generatingPaymentLink.value = false;
-    }
-}
-
-function handleArtFileChange(event, interactionId) {
-    const file = event.target.files[0];
-    if (file) {
-        artFiles.value[interactionId] = file;
-    }
-}
-
-function clearArtFile(interactionId) {
-    delete artFiles.value[interactionId];
-    const input = document.getElementById(`art-file-${interactionId}`);
-    if (input) {
-        input.value = '';
-    }
-}
-
-async function handleRespondToInteraction(interaction) {
-    if (!interaction || !interaction.card_id || !data.value || !auth.user?.id) {
-        window.Swal.fire({
-            title: 'Erro',
-            text: 'Dados insuficientes para responder a interação.',
-            icon: 'error',
-            showCloseButton: true,
-            confirmButtonText: 'OK',
-        });
-        return;
-    }
-
-    const interactionId = interaction.id;
-    const artFile = artFiles.value[interactionId];
-    const comment = (artComments.value[interactionId] || '').trim();
-
-    if (!comment) {
-        window.Swal.fire({
-            title: 'Atenção',
-            text: 'Por favor, insira um comentário para enviar a resposta.',
-            icon: 'warning',
-            showCloseButton: true,
-            confirmButtonText: 'OK',
-        });
-        return;
-    }
-
-    uploadingArt.value[interactionId] = true;
-
-    try {
-        let orderId = data.value.id;
-
-        if (isOrder.value) {
-            orderId = data.value.id;
-        } else {
-            orderId = data.value.order_id || data.value.id;
-        }
-
-        const formData = new FormData();
-        if (artFile) {
-            formData.append('art_file', artFile);
-        }
-        formData.append('order_budget_id', interaction.card_id);
-        formData.append('dealer_id', auth.user.id);
-        formData.append('designer_id', auth.user.id);
-        formData.append('order_id', orderId);
-        formData.append('comment', comment);
-
-        const response = await orderService.uploadArt(formData);
-
-        // Limpar formulário
-        clearArtFile(interactionId);
-        artComments.value[interactionId] = '';
-
-        // Recarregar solicitações de artes
-        await fetchRequestLayoutArts();
-
-        window.Toast.fire({
-            icon: 'success',
-            title: response.message || 'Arte enviada com sucesso.',
-        });
-    } catch (error) {
-        console.error('Erro ao responder interação:', error);
-        const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
-
-        window.Swal.fire({
-            title: 'Erro',
-            text: errorMessage,
-            icon: 'error',
-            showCloseButton: true,
-            confirmButtonText: 'OK',
-        });
-    } finally {
-        uploadingArt.value[interactionId] = false;
     }
 }
 
