@@ -96,7 +96,7 @@
                     class="form-control"
                     :disabled="loading || loadingUsers"
                 >
-                    <option :value="null">Todos os revendedores</option>
+                    <option :value="0">Todos os revendedores</option>
                     <option v-for="user in users" :key="user.id" :value="user.id">
                         {{ user.name }}
                     </option>
