@@ -173,7 +173,6 @@ import EmptyState from '@/components/empty-state/EmptyState.vue';
 import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
 import { swalConfirmation } from '../../../utils/alerts';
-import { USER_TYPES } from '@/constants/userTypes';
 import debounce from 'lodash/debounce'
 
 const router = useRouter();
@@ -232,7 +231,7 @@ const setRoleFilter = (roleId) => {
 };
 
 const fetchUsers = async (page = 1) => {
-  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
+  if (!auth.hasPermission('view users')) return;
 
   loading.value = true;
   try {
@@ -310,7 +309,7 @@ const fetchTypeUsers = async () => {
 
 const confirmDelete = async (user) => {
 
-  if (auth.user?.user_type_id !== USER_TYPES.ADMIN) return;
+  if (!auth.hasPermission('delete users')) return;
 
   const result = await swalConfirmation(
     'Excluir usuário?',

@@ -34,7 +34,6 @@ class UserRequest extends FormRequest
     public function createRules(): array
     {
         return [
-            'role'       => ['nullable', 'string', 'exists:roles,name'],
             'user_type_id' => ['required', 'integer', 'exists:type_users,id'],
             'name'       => ['required', 'string', 'max:191'],
             'email'      => ['required', 'string', 'email', 'max:191', 'unique:users'],
@@ -47,7 +46,6 @@ class UserRequest extends FormRequest
     public function updateRules(): array
     {
         return [
-            'role'       => ['nullable', 'string', 'exists:roles,name'],
             'user_type_id' => ['required', 'integer', 'exists:type_users,id'],
             'name'       => ['required', 'string', 'max:191'],
             'email' => [

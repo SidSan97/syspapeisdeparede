@@ -232,7 +232,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useFormatting } from '@/composables/useFormatting';
 import { useAuthStore } from '@/stores/auth';
-import { USER_TYPES } from '@/constants/userTypes';
 
 const props = defineProps({
     data: {
@@ -255,9 +254,7 @@ const artComments = ref({});
 const uploadingArt = ref({});
 
 const isReseller = computed(() => {
-    return auth.user?.user_type_id === USER_TYPES.RESELLER
-        || auth.hasRole('reseller')
-        || auth.hasRole('revendedor')
+    return auth.hasRole(['reseller'])
         || auth.roles?.some(role => typeof role === 'string' && role.toLowerCase().includes('revendedor'));
 });
 

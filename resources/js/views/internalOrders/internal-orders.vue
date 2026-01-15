@@ -167,7 +167,6 @@
   import { computed, onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import Page from '@/components/page/Page.vue';
-  import { USER_TYPES } from '@/constants/userTypes';
   import EmptyState from '@/components/empty-state/EmptyState.vue';
   import axios from 'axios';
   import { useAuthStore } from '@/stores/auth';
@@ -184,8 +183,8 @@
   const users = ref([]);
   const loadingUsers = ref(false);
 
-  const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
-  const isCommercialUser = computed(() => auth.user?.user_type_id === USER_TYPES.COMMERCIAL);
+  const isAdmin = computed(() => auth.isAdmin());
+  const isCommercialUser = computed(() => auth.hasRole('commercial'));
 
   const router = useRouter();
 

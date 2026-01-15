@@ -7,17 +7,20 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use App\Models\TypeUser;
 
 // use Spatie\Activitylog\Models\Activity;
 
 class UserController extends BaseController
 {
     protected $user;
+    protected $userType;
 
-    public function __construct(User $user)
+    public function __construct(User $user, TypeUser $userType)
     {
         $this->middleware('auth:api');
         $this->user = $user;
+        $this->userType = $userType;
     }
 
     public function index(Request $request)
@@ -33,9 +36,8 @@ class UserController extends BaseController
             });
         }
 
-        // Filtro por tipo de usuário (user_type_id)
-        if ($request->filled('user_type_id')) {
-            $query->where('user_type_id', $request->user_type_id);
+        if ($request->filled('role')) {
+            $query->role($request->role);
         }
 
         $users = $query->latest()->paginate($request->get('per_page', 15));
@@ -53,29 +55,6 @@ class UserController extends BaseController
         return $this->sendResponse($users, 'Lista de usuários');
     }
 
-    public function search(Request $request)
-    {
-        $authUser = auth()->user();
-
-        $users = $this->user->query();
-
-        if ($request->filled('name')) {
-            $users = $users->where('name', 'like', "%{$request->name}%");
-        }
-
-        if ($request->filled('type')) {
-            $users = $users->role($request->type);
-        }
-
-        if ($request->filled('user_type_id')) {
-            $users = $users->where('user_type_id', $request->user_type_id);
-        }
-
-        $users = $users->with('userType')->paginate(100);
-
-        return $this->sendResponse($users, 'Lista de usuários');
-    }
-
     public function store(UserRequest $request)
     {
         $this->authorize('create', User::class);
@@ -84,14 +63,28 @@ class UserController extends BaseController
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'is_dropshipping' => 0,
             'user_type_id' => $request->user_type_id,
-            'is_dropshipping' => (int) $request->user_type_id === \App\Support\UserType::RESELLER ? ((int) ($request->is_dropshipping ?? 0)) : 0,
         ];
 
         $user = $this->user->create($data);
 
-        if (!empty($request->role)) {
-            $user->syncRoles($request->role);
+        // Se não veio role mas veio user_type_id, converter para role
+        $role = $request->role;
+        if (empty($role) && !empty($request->user_type_id)) {
+            $role = $this->userType->find((int) $request->user_type_id)->name;
+        }
+
+        // Atribuir role ao usuário
+        if (!empty($role)) {
+            $user->syncRoles($role);
+            $user->refresh();
+        }
+
+        // Determinar is_dropshipping baseado na role
+        if ($role === 'reseller' || $user->hasRole('reseller')) {
+            $user->is_dropshipping = (int) ($request->is_dropshipping ?? 0);
+            $user->save();
         }
 
         $this->handleUserPermissions($user, $request->all());
@@ -121,24 +114,33 @@ class UserController extends BaseController
             $data['password'] = Hash::make($data['password']);
         }
 
-        // Remover password_confirmation se existir
         unset($data['password_confirmation']);
+        $role = $data['role'] ?? null;
+        unset($data['role']);
 
-        // Garantir que is_dropshipping seja 0 se user_type_id não for reseller
-        if ((int) $data['user_type_id'] !== \App\Support\UserType::RESELLER) {
-            $data['is_dropshipping'] = 0;
+        if (empty($role) && !empty($data['user_type_id'])) {
+            $role = $this->userType->find((int) $data['user_type_id'])->name;
+        }
+
+        // Atualizar role se necessário
+        if (!empty($role)) {
+            $user->syncRoles($role);
+            $user->refresh();
+        }
+
+        // Determinar is_dropshipping baseado na role (atual ou nova)
+        $isReseller = $role === 'reseller' || $user->hasRole('reseller');
+        
+        if ($isReseller) {
+            // Usar o valor enviado no request, ou do data validado, ou 0 como padrão
+            $data['is_dropshipping'] = (int) ($request->input('is_dropshipping', $data['is_dropshipping'] ?? 0));
         } else {
-            // Garantir que is_dropshipping seja sempre definido, mesmo que não venha na requisição
-            $data['is_dropshipping'] = (int) ($request->input('is_dropshipping', 0));
+            $data['is_dropshipping'] = 0;
         }
 
         $user->update($data);
 
-        if (!empty($data['role'])) {
-            $user->syncRoles($data['role']);
-        }
-
-        $this->handleUserPermissions($user, $data);
+        $this->handleUserPermissions($user, $request->all());
 
         return $this->sendResponse($user, 'Dados do usuário atualizados com sucesso');
     }

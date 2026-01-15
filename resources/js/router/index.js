@@ -1,6 +1,5 @@
 import {createWebHistory, createRouter} from "vue-router";
 import { useAuthStore } from '@/stores/auth';
-import { USER_TYPES } from '@/constants/userTypes';
 
 import routes from "./routes";
 
@@ -36,10 +35,8 @@ router.beforeEach(async (to, from, next) => {
         return;
     }
 
-    const userTypeId = auth.user.user_type_id;
-
-    // Usuários do tipo admin têm acesso total ao sistema
-    if (userTypeId === USER_TYPES.ADMIN) {
+    // Usuários admin têm acesso total ao sistema
+    if (auth.isAdmin()) {
         // Permitir acesso a todas as rotas
         next();
         return;
@@ -57,7 +54,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Verificar acesso para tenants (reseller)
-    if (userTypeId === USER_TYPES.RESELLER) {
+    if (auth.hasRole('reseller')) {
         // Rotas permitidas para tenants
         const allowedRoutes = [
             '/dashboard',
@@ -108,7 +105,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Verificar acesso para usuários do tipo design (designer)
     // Designers só podem acessar dashboard, profile e layouts
-    if (userTypeId === USER_TYPES.DESIGNER) {
+    if (auth.hasRole('designer')) {
         let isAllowed = false;
 
         if (to.path === '/dashboard' || to.path === '/') {
@@ -133,17 +130,17 @@ router.beforeEach(async (to, from, next) => {
     if (isProductionRoute) {
         // Permitir acesso a /layouts para DESIGNER também
         if (to.path.startsWith('/layouts')) {
-            if (userTypeId !== USER_TYPES.PRODUCTION && userTypeId !== USER_TYPES.DESIGNER) {
+            if (!auth.hasRole(['production', 'designer'])) {
                 // Redirecionar para dashboard se não for usuário de produção ou designer
                 next({ path: '/dashboard' });
                 return;
             }
         } else if (to.path.startsWith('/pedidos-producao')) {
-            if (userTypeId !== USER_TYPES.PRODUCTION && userTypeId !== USER_TYPES.COMMERCIAL) {
+            if (!auth.hasRole(['production', 'commercial'])) {
                 next({ path: '/dashboard' });
                 return;
             }
-        } else if (userTypeId !== USER_TYPES.PRODUCTION) {
+        } else if (!auth.hasRole('production')) {
             // Para outras rotas de produção, apenas usuários de produção podem acessar
             next({ path: '/dashboard' });
             return;
@@ -151,7 +148,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Se for usuário de produção, só pode acessar rotas de produção e perfil
-    if (userTypeId === 4) {
+    if (auth.hasRole('production')) {
         const allowedRoutes = [
             '/dashboard',
             '/profile',
@@ -181,7 +178,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    if (userTypeId === USER_TYPES.COMMERCIAL) {
+    if (auth.hasRole('commercial')) {
         let isAllowed = false;
 
         if (to.path === '/dashboard' || to.path === '/') {
@@ -198,6 +195,34 @@ router.beforeEach(async (to, from, next) => {
         }
 
         if (!isAllowed) {
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
+    // Verificar acesso para usuários de expedição
+    if (to.path.startsWith('/expedicao')) {
+        if (!auth.hasRole('expedition')) {
+            // Redirecionar para dashboard se não for usuário de expedição
+            next({ path: '/dashboard' });
+            return;
+        }
+    }
+
+    // Se for usuário de expedição, só pode acessar rotas de expedição e perfil
+    if (auth.hasRole('expedition')) {
+        let isAllowed = false;
+
+        if (to.path === '/dashboard' || to.path === '/') {
+            isAllowed = true;
+        } else if (to.path === '/profile') {
+            isAllowed = true;
+        } else if (to.path.startsWith('/expedicao')) {
+            isAllowed = true;
+        }
+
+        if (!isAllowed) {
+            // Redirecionar para dashboard se tentar acessar rota não permitida
             next({ path: '/dashboard' });
             return;
         }

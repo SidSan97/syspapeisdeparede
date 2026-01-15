@@ -30,7 +30,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Services\TinyErpService;
-use App\Support\UserType;
 
 class BudgetController extends Controller
 {

@@ -516,7 +516,6 @@ import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from './components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
-import { USER_TYPES } from '@/constants/userTypes';
 
 const router = useRouter();
 const route = useRoute();
@@ -663,8 +662,7 @@ const budget = reactive({
 
 // Computed para verificar se pode habilitar dropshipping
 const canEnableDropshipping = computed(() => {
-    return auth.user?.user_type_id === USER_TYPES.ADMIN || 
-           auth.user?.user_type_id === USER_TYPES.RESELLER || 
+    return auth.hasRole(['admin', 'reseller']) || 
            auth.user?.is_dropshipping === 1;
 });
 

@@ -86,7 +86,6 @@ Route::prefix('v1')->group(function () {
     // Users
     //----------------------------------
 
-    Route::get('users/search', [UserController::class, 'search']);
     Route::get('users/list', [UserController::class, 'list']);
     Route::get('type-users/list', [TypeUserController::class, 'list']);
 

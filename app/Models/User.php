@@ -106,46 +106,46 @@ class User extends Authenticatable implements Commentator //implements MustVerif
 
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin') || $this->user_type_id === \App\Support\UserType::ADMIN;
+        return $this->hasRole(['admin', 'super admin']);
     }
 
     public function isReseller(): bool
     {
-        return $this->hasRole('reseller') || $this->user_type_id === \App\Support\UserType::RESELLER;
+        return $this->hasRole('reseller');
     }
 
     public function isDesigner(): bool
     {
-        return $this->hasRole('designer') || $this->user_type_id === \App\Support\UserType::DESIGNER;
+        return $this->hasRole('designer');
     }
 
     public function isProduction(): bool
     {
-        return $this->hasRole('production') || $this->user_type_id === \App\Support\UserType::PRODUCTION;
+        return $this->hasRole('production');
     }
 
     public function isCommercial(): bool
     {
-        return $this->hasRole('commercial') || $this->user_type_id === \App\Support\UserType::COMMERCIAL;
+        return $this->hasRole('commercial');
     }
 
     public function isExpedition(): bool
     {
-        return $this->hasRole('expedition') || $this->user_type_id === \App\Support\UserType::EXPEDITION;
+        return $this->hasRole('expedition');
     }
 
     public function isRepresentatives(): bool
     {
-        return $this->hasRole('representatives') || $this->user_type_id === \App\Support\UserType::REPRESENTATIVES;
+        return $this->hasRole('representatives');
     }
 
     public function isArchitects(): bool
     {
-        return $this->hasRole('architects') || $this->user_type_id === \App\Support\UserType::ARCHITECTS;
+        return $this->hasRole('architects');
     }
 
     public function isTenant(): bool
     {
-        return $this->hasRole('reseller') || $this->user_type_id === \App\Support\UserType::RESELLER;
+        return $this->hasRole('reseller');
     }
 }

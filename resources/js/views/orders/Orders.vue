@@ -267,7 +267,6 @@ import PedidoDetailsModal from './components/OrdersDetailsModal.vue';
 import OrdersRegisterPayment from './components/OrdersRegisterPayment.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
-import { USER_TYPES } from '@/constants/userTypes';
 import { parseDateFromMask, formatDate, convertDateMaskToIso } from '@/utils/dateUtils';
 
 const router = useRouter();
@@ -298,10 +297,10 @@ const paginationData = ref({
   to: 0,
 });
 
-const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
+const isAdmin = computed(() => auth.isAdmin());
 
 const canRegisterPayment = computed(() => {
-  return auth.user?.user_type_id === USER_TYPES.ADMIN;
+  return auth.hasPermission('register payments');
 });
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {

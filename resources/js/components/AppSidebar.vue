@@ -93,10 +93,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="isExpeditionUser || (!isTenant && !isProductionUser && !isDesigner && !isCommercialUser)" class="bd-sidebar-divider">
+      <hr v-if="isExpeditionUser || isAdmin" class="bd-sidebar-divider">
 
       <!-- Grupo 5: Expedição -->
-      <div v-if="isExpeditionUser || (!isTenant && !isProductionUser && !isDesigner && !isCommercialUser)" class="bd-sidebar-group">
+      <div v-if="isExpeditionUser || isAdmin" class="bd-sidebar-group">
         <RouterLink
           to="/expedicao"
           class="bd-sidebar-item"
@@ -144,18 +144,17 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { USER_TYPES } from '@/constants/userTypes';
 
 const auth = useAuthStore();
 const isCollapsed = ref(true); // Começar como true para evitar flash
 const route = useRoute();
 
-const isAdmin = computed(() => auth.user?.user_type_id === USER_TYPES.ADMIN);
-const isTenant = computed(() => auth.user?.user_type_id === USER_TYPES.RESELLER);
-const isProductionUser = computed(() => auth.user?.user_type_id === USER_TYPES.PRODUCTION);
-const isDesigner = computed(() => auth.user?.user_type_id === USER_TYPES.DESIGNER);
-const isExpeditionUser = computed(() => auth.user?.user_type_id === USER_TYPES.EXPEDITION);
-const isCommercialUser = computed(() => auth.user?.user_type_id === USER_TYPES.COMMERCIAL);
+const isAdmin = computed(() => auth.isAdmin());
+const isTenant = computed(() => auth.hasRole('reseller'));
+const isProductionUser = computed(() => auth.hasRole('production'));
+const isDesigner = computed(() => auth.hasRole('designer'));
+const isExpeditionUser = computed(() => auth.hasRole('expedition'));
+const isCommercialUser = computed(() => auth.hasRole('commercial'));
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

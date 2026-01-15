@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { USER_TYPES } from '@/constants/userTypes';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -56,13 +55,13 @@ export const useAuthStore = defineStore('auth', {
     },
 
     isAdmin() {
-      return this.user?.user_type_id === USER_TYPES.ADMIN || this.roles.includes('super admin');
+      return this.hasRole(['admin', 'super admin']);
     },
 
     hasPermission(name) {
       if (!name) return false;
 
-      // Verificar se é admin (super admin ou user_type_id === 1)
+      // Admin tem todas as permissões
       if (this.isAdmin()) return true;
 
       if (Array.isArray(name)) {
@@ -75,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
     hasAllPermissions(names) {
       if (!Array.isArray(names)) return this.hasPermission(names);
 
-      // Verificar se é admin (super admin ou user_type_id === 1)
+      // Admin tem todas as permissões
       if (this.isAdmin()) return true;
 
       return names.every(n => this.permissions.includes(n));
