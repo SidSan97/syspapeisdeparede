@@ -50,6 +50,17 @@ class UserController extends BaseController
         return $this->sendResponse($users, 'Lista de usuários');
     }
 
+    /**
+     * COMO OS ADMINS PODEM FAZER OPERAÇÕES DE REVENDEDORES,
+     * ESTARÃO NOS FILTROS
+     */
+    public function listResellers()
+    {
+        $users = $this->user->with('roles')->role(['reseller','admin'])->get();
+
+        return $this->sendResponse($users, 'Lista de revendedores');
+    }
+
     public function store(UserRequest $request)
     {
         $user = $this->user->create($request->validated());

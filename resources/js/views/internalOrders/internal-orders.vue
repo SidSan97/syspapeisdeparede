@@ -129,22 +129,5 @@ function viewOrder(order) {
 </script>
 
 <style scoped>
-  .search-input .form-control,
-  .search-input .input-group-text {
-    border-radius: 0.375rem;
-    padding-block: 0.85rem;
-  }
 
-  .search-input .input-group-text {
-    border-right: none;
-  }
-
-  .search-input .form-control {
-    border-left: none;
-  }
-
-  .search-input .form-control:focus {
-    border-color: var(--bs-secondary);
-    box-shadow: none;
-  }
 </style>

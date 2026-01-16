@@ -85,6 +85,7 @@ Route::prefix('v1')->group(function () {
     Route::post('profile/avatar', [ProfileController::class, 'uploadAvatar']);
 
     Route::get('roles/list', [RoleController::class, 'list']);
+    Route::get('users/list-resellers', [UserController::class, 'listResellers']);
 
     // Users
     //----------------------------------

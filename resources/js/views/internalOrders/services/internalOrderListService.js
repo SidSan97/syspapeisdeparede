@@ -36,7 +36,7 @@ export function useInternalOrderListService() {
 
     async function getUsers() {
         try {
-            const response = await axios.get('v1/users/list');
+            const response = await axios.get('v1/users/list-resellers');
 
             if (response.data?.success && response.data?.data) {
                 // Se a resposta estiver paginada, pegar o array de dados
