@@ -40,7 +40,7 @@ class ListRequest extends FormRequest
             ],
             'date_from' => ['nullable', 'date', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
