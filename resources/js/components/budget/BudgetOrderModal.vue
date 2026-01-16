@@ -238,7 +238,7 @@
               </button>
               <button
                 type="button"
-                class="btn btn-success"
+                class="btn btn-primary"
                 :disabled="orderSubmitting || !orderForm.termsAccepted"
                 @click="submitOrder"
               >
@@ -446,7 +446,7 @@ async function ensureCollectionsLoaded() {
 
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
-    
+
     // Filtrar apenas categorias raiz (sem parent_id)
     const rootCategories = items.filter(item => !item.parent_id);
 

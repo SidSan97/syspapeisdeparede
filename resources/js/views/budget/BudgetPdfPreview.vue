@@ -5,7 +5,7 @@
         <i class="fa fa-arrow-left me-2"></i>
         Voltar
       </button>
-      <button class="btn btn-success" @click="generatePdf" style="background: #000; border-color: #000; color: #fff;">
+      <button class="btn btn-primary" @click="generatePdf" style="background: #000; border-color: #000; color: #fff;">
         <i class="fa fa-file-pdf me-2"></i>
         Gerar PDF
       </button>

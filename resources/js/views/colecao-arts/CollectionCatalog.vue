@@ -80,7 +80,7 @@
             </div>
             <button
               type="button"
-              class="btn btn-outline-secondary btn-sm"
+              class="btn btn-subtle btn-sm"
               :disabled="isUploading || currentLoading"
               @click="clearSelection"
             >

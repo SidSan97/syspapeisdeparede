@@ -15,12 +15,12 @@
                         </div>
                         <div class="modal-body">
                             <p class="mb-3">
-                                Tem certeza que deseja cancelar o pedido
+                                Deseja realmente cancelar o pedido
                                 <strong>{{ pedido?.name }}</strong>?
                             </p>
                             <p class="text-muted small mb-0">
-                                Essa ação não pode ser desfeita. O status do pedido será alterado
-                                para <strong>Cancelado</strong>.
+                                Você poderá editá-lo ou reativá-lo
+                                posteriormente se necessário.
                             </p>
                             <p v-if="error" class="text-danger small mt-3 mb-0">
                                 {{ error }}
@@ -29,7 +29,7 @@
                         <div class="modal-footer">
                             <button
                                 type="button"
-                                class="btn btn-outline-secondary"
+                                class="btn btn-subtle"
                                 :disabled="cancelling"
                                 @click="$emit('close')"
                             >
@@ -37,7 +37,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="btn btn-danger"
+                                class="btn btn-warning"
                                 :disabled="cancelling"
                                 @click="$emit('confirm')"
                             >

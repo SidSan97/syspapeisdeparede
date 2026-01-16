@@ -44,7 +44,7 @@
 
                     <div class="me-3">
                         <button
-                            class="btn btn-success"
+                            class="btn btn-primary"
                             @click="markAsProduced"
                             :disabled="markingAsProduced"
                             v-if="card.production_column_names_id < 2"
@@ -1616,7 +1616,7 @@
           if (!imageUrl && art.path_file) {
             imageUrl = resolveImageUrl(art.path_file);
           }
-          
+
           return {
             id: art.id,
             comment: art.comment || null,

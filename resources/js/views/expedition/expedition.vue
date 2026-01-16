@@ -247,14 +247,14 @@
                     </thead>
                     <tbody>
                       <tr v-for="invoice in filteredExpeditions" :key="invoice.nota_fiscal?.id">
-                        <td>
+                        <th scope="row">
                           <input
                             type="checkbox"
                             class="form-check-input checkbox-invoice"
                             :checked="isInvoiceSelected(invoice.nota_fiscal?.id)"
                             @change="toggleSelectInvoice(invoice.nota_fiscal?.id)"
                           />
-                        </td>
+                        </th>
                         <td style="min-width: 240px;">
                           <div class="fw-semibold">{{ invoice.nota_fiscal?.nome || '—' }}</div>
                         </td>
@@ -282,7 +282,7 @@
                                 >
                                   Ver detalhes
                                 </button>
-                              </li>                        
+                              </li>
                             </ul>
                           </div>
                         </td>
@@ -360,7 +360,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="grouping in groupings" :key="grouping.id">
-                      <td class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</td>
+                      <th scope="row" class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</th>
                       <td>{{ selectedGroupingCarrier }}</td>
                       <td>{{ grouping.expedicoes.length || 0 }}</td>
                       <td>{{ formatDate(grouping.data) }}</td>
@@ -459,7 +459,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="invoice in filteredInvoices" :key="invoice.id">
-                      <td class="fw-semibold">{{ invoice.id }}</td>
+                      <th scope="row">{{ invoice.id }}</th>
                       <td>{{ formatDate(invoice?.created_at || invoice.created_at) }}</td>
                       <td style="min-width: 240px;">
                         <div class="fw-semibold">{{ invoice?.name || '—' }}</div>
@@ -730,7 +730,7 @@ async function expedir() {
 
     const transporters = selectedInvoicesData
       .map(invoice => invoice.nota_fiscal?.transportador?.nome)
-      .filter(transporter => transporter); 
+      .filter(transporter => transporter);
 
     // Verificar se todas têm transportador
     if (transporters.length === 0 || transporters.length !== selectedInvoicesData.length) {

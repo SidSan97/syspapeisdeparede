@@ -137,7 +137,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="order in filteredOrders" :key="order.id">
-                    <th class="row">{{ order.id }}</th>
+                    <th scope="row">{{ order.id }}</th>
                     <td>{{ formatDate(order.created_at || order.createdAt) }}</td>
                     <td style="min-width: 240px;">
                       <button

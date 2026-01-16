@@ -129,10 +129,10 @@ function copyPaymentUrl() {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         if (successful) {
             window.Toast.fire({
                 icon: 'success',
