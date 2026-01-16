@@ -13,7 +13,7 @@
             </thead>
             <tbody>
                 <tr v-for="pedido in pedidos" :key="pedido.id">
-                    <td class="fw-semibold">{{ pedido.id }}</td>
+                    <th scope="row">{{ pedido.id }}</th>
                     <td>{{ formatDate(pedido.created_at || pedido.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button

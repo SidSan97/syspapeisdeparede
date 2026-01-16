@@ -106,7 +106,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="expedition in filteredSeparations" :key="expedition.id">
-                      <td class="fw-semibold">{{ expedition.id }}</td>
+                      <th scope="row">{{ expedition.id }}</th>
                       <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
                       <td style="min-width: 240px;">
                         <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>

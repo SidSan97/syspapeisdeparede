@@ -12,7 +12,7 @@
             </thead>
             <tbody>
                 <tr v-for="budget in budgets" :key="budget.id">
-                    <td class="fw-semibold">{{ budget.id }}</td>
+                    <th scope="row">{{ budget.id }}</th>
                     <td>{{ formatDate(budget.created_at || budget.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button

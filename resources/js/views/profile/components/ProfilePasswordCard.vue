@@ -2,8 +2,6 @@
   <div class="card bd-card border-0 mb-4">
     <div class="card-body">
       <h5 class="card-title">Alterar senha</h5>
-      <p class="card-text">Enviaremos um email de confirmação quando você alterar sua senha,
-        então aguarde esse email após o envio.</p>
 
       <form @submit.prevent="updatePassword()">
         <div class="row">
