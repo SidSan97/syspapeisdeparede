@@ -2,7 +2,6 @@
   <div :aria-busy="loading ? 'true' : 'false'">
     <!-- Skeletons enquanto carrega -->
     <div v-if="loading" aria-hidden="true">
-      <!-- Primeira linha: Nome e Email -->
       <div class="row">
         <div class="col-12 col-lg-6 mb-3">
           <div class="placeholder-glow mb-2">
@@ -22,7 +21,6 @@
         </div>
       </div>
 
-      <!-- Terceira linha: Tipo de Usuário -->
       <div class="row">
         <div class="col-12 mb-3">
           <div class="placeholder-glow mb-2">
@@ -44,9 +42,9 @@
           <input
             v-model="form.name"
             type="text"
+            required
             name="name"
             class="form-control"
-            :class="{ 'is-invalid': form.errors.has('name') }"
             :disabled="loading"
           />
           <has-error :form="form" field="name"></has-error>
@@ -57,8 +55,8 @@
             v-model="form.email"
             type="email"
             name="email"
+            required
             class="form-control"
-            :class="{ 'is-invalid': form.errors.has('email') }"
             :disabled="loading"
           />
           <has-error :form="form" field="email"></has-error>
@@ -74,7 +72,7 @@
             type="password"
             name="password"
             class="form-control"
-            :class="{ 'is-invalid': form.errors.has('password') }"
+            required
             autocomplete="new-password"
             @input="validatePasswordMatch"
             :disabled="loading"
@@ -88,6 +86,7 @@
             type="password"
             name="password_confirmation"
             class="form-control"
+            required
             :class="{ 'is-invalid': form.errors.has('password_confirmation') || passwordMismatch }"
             autocomplete="new-password"
             @input="validatePasswordMatch"
@@ -213,49 +212,6 @@ watch(() => form.user_type_id, (newValue) => {
   }
 })
 
-const validateForm = () => {
-  const errors = []
-
-  if (!form.name || !form.name.trim()) {
-    errors.push('O campo <strong>Nome</strong> é obrigatório.')
-  }
-
-  if (!form.email || !form.email.trim()) {
-    errors.push('O campo <strong>E-mail</strong> é obrigatório.')
-  }
-
-  if (!props.isEdit) {
-    if (!form.password || !form.password.trim()) {
-      errors.push('O campo <strong>Senha</strong> é obrigatório.')
-    }
-
-    if (!form.password_confirmation || !form.password_confirmation.trim()) {
-      errors.push('O campo <strong>Confirmação de Senha</strong> é obrigatório.')
-    }
-
-    if (form.password && form.password_confirmation && form.password !== form.password_confirmation) {
-      errors.push('As <strong>senhas não coincidem</strong>.')
-    }
-  }
-
-  if (!form.user_type_id) {
-    errors.push('O campo <strong>Tipo de Usuário</strong> é obrigatório.')
-  }
-
-  if (errors.length > 0) {
-    const errorMessage = errors.join('<br>')
-    window.Swal.fire({
-      title: 'Campos obrigatórios',
-      html: errorMessage,
-      icon: 'warning',
-      confirmButtonText: 'OK'
-    })
-    return false
-  }
-
-  return true
-}
-
 // Se typeUsers não vier via props, buscar da API
 const typeUsers = ref(props.typeUsers || [])
 
@@ -272,5 +228,5 @@ onMounted(async () => {
   }
 })
 
-defineExpose({ form, validateForm })
+defineExpose({ form })
 </script>
