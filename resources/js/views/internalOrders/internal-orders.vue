@@ -188,28 +188,6 @@
 
   const router = useRouter();
 
-  const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-
-  function formatCurrency(value) {
-    if (value === null || value === undefined) {
-      return currencyFormatter.format(0);
-    }
-
-    const numericValue = Number(value);
-    return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
-  }
-
-  function formatDeliveryTime(days) {
-    if (!days) {
-      return 'Não informado';
-    }
-
-    return `${days} ${days === 1 ? 'dia' : 'dias'}`;
-  }
-
 
   function normalizeOrder(order) {
     if (!order) {
@@ -403,7 +381,7 @@
 
     try {
       loadingUsers.value = true;
-      const response = await axios.get('v1/users/search');
+      const response = await axios.get('v1/users/list');
 
       if (response.data?.success && response.data?.data) {
         // Se a resposta estiver paginada, pegar o array de dados

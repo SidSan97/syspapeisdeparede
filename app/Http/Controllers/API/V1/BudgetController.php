@@ -8,6 +8,7 @@ use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
+use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\BudgetRoom;
@@ -65,18 +66,20 @@ class BudgetController extends Controller
         $this->tinyErpService = $tinyErpService;
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListRequest $request): JsonResponse
     {
         try {
+            $validated = $request->validated();
+
             $filters = [
-                'search' => $request->input('search'),
-                'status' => $request->input('status', 'all'),
-                'date_from' => $request->input('date_from'),
-                'date_to' => $request->input('date_to'),
-                'user_id' => $request->input('user_id'),
+                'search' => $validated['search'] ?? null,
+                'status' => $validated['status'] ?? 'all',
+                'date_from' => $validated['date_from'] ?? null,
+                'date_to' => $validated['date_to'] ?? null,
+                'user_id' => $validated['user_id'] ?? null,
             ];
 
-            $perPage = $request->input('per_page', 15);
+            $perPage = $validated['per_page'] ?? 15;
             $paginatedBudgets = $this->repository->paginate($filters, $perPage);
 
             $data = BudgetResource::collection($paginatedBudgets->items())->toArray(request());

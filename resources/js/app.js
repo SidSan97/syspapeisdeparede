@@ -62,8 +62,8 @@ app.component('app-layout', AppLayout);
 import NotFound from './components/NotFound.vue';
 app.component('not-found', NotFound);
 
-import { Bootstrap5Pagination } from 'laravel-vue-pagination';
-app.component('pagination', Bootstrap5Pagination);
+import PaginationNav from './components/pagination/PaginationNav.vue';
+app.component('pagination', PaginationNav);
 
 import { Form } from "vform";
 import { HasError, AlertError } from "vform/src/components/bootstrap5";
