@@ -40,8 +40,6 @@
 
                             <SelectedModelsCard :data="data" />
 
-                            <ModelReferencesCard :data="data" />
-
                             <RequestArtsCard :data="data" :is-order="isOrder" />
                         </div>
 
