@@ -108,7 +108,7 @@ class BudgetController extends Controller
         try {
             $budget = Budget::with(['rooms.walls.collectionModel.files', 'dropshippingData'])
                 ->findOrFail($id);
-            
+
             $data = (new BudgetResource($budget))->toArray(request());
 
             return response()->json([
@@ -317,6 +317,7 @@ class BudgetController extends Controller
             $this->createLayoutOrder($order, $budget);
 
             $transformed = (new BudgetResource($budget))->toArray(request());
+            $transformed['order_id'] = $order->id;
 
             return response()->json([
                 'success' => true,

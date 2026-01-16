@@ -233,7 +233,7 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" :disabled="orderSubmitting" @click="handleClose">
+              <button type="button" class="btn btn-subtle" :disabled="orderSubmitting" @click="handleClose">
                 Cancelar
               </button>
               <button
@@ -259,6 +259,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 // Swal importado via window.Swal do plugin
 
@@ -274,6 +275,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'updated']);
+
+const router = useRouter();
 
 const orderForm = reactive({
   comment: '',
@@ -905,8 +908,16 @@ async function submitOrder() {
       throw new Error('Resposta inválida do servidor.');
     }
 
+    let orderId = response.data?.data?.order_id;
+
+    if (!orderId) {
+      throw new Error('ID do pedido não encontrado na resposta.');
+    }
+
     emit('updated', response.data.data);
     emit('close');
+
+    router.push({ name: 'ShowOrderDetails', params: { id: orderId } });
 
     window.Swal.fire({
       title: 'Pedido realizado',
