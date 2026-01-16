@@ -282,7 +282,7 @@
                                             class="btn btn-outline-primary"
                                             @click="addWall(roomIndex)"
                                         >
-                                            <i class="fa fa-plus"></i> Adicionar Parede
+                                            <i class="fa fa-plus fa-fw"></i> Adicionar Parede
                                         </button>
                                     </div>
                                 </div>
@@ -292,7 +292,7 @@
                                 class="btn btn-primary"
                                 @click="addRoom"
                             >
-                                <i class="fa fa-plus"></i> Adicionar Ambiente
+                                <i class="fa fa-plus fa-fw"></i> Adicionar Ambiente
                             </button>
                                 </template>
                         </div>
@@ -325,7 +325,7 @@
                                             <div v-else class="row">
                                                 <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
                                                     <div
-                                                        class="card h-100 model-card"
+                                                        class="card h-100 "
                                                         :class="{ 'border-primary': wall.model === model.id }"
                                                         @click="wall.model = model.id"
                                                         style="cursor: pointer;"
@@ -540,8 +540,7 @@
                                     <div class="list-group">
                                         <div
                                             v-for="(carrier, index) in budget.carriers"
-                                            :key="index"
-                                            class="list-group-item"
+                                            :key="index"                                      
                                             :class="{ 'active': budget.selectedCarrier === index }"
                                             @click="budget.selectedCarrier = index"
                                             style="cursor: pointer;"
@@ -1710,122 +1709,7 @@ function updateBudget() {
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 
-.card[style*="cursor: pointer"] {
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &.border-primary {
-        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
-    }
-}
-
-.list-group-item {
-    transition: all 0.2s ease;
-
-    &:hover {
-        background-color: var(--bs-tertiary-bg);
-    }
-
-    &.active {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
-        color: white;
-
-        .text-muted {
-            color: rgba(255, 255, 255, 0.8) !important;
-        }
-
-        .text-primary {
-            color: white !important;
-        }
-    }
-}
-
-.model-card {
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &.border-primary {
-        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
-    }
-}
-
-.model-preview {
-    overflow: hidden;
-    border-radius: 0.5rem;
-
-    img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        display: block;
-    }
-
-    .carousel-control {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.45);
-        color: #fff;
-        border: none;
-        width: 2rem;
-        height: 2rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.2s ease;
-
-        &:hover {
-            background: rgba(0, 0, 0, 0.65);
-        }
-
-        &.prev {
-            left: 0.5rem;
-        }
-
-        &.next {
-            right: 0.5rem;
-        }
-
-        i {
-            font-size: 0.9rem;
-        }
-    }
-
-    .carousel-indicators {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 0.35rem;
-
-        span {
-            width: 0.6rem;
-            height: 0.6rem;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
-
-            &.active {
-                background: rgba(255, 255, 255, 0.95);
-                transform: scale(1.1);
-            }
-        }
-    }
-}
 </style>
 

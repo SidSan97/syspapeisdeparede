@@ -18,7 +18,7 @@
                 <div class="modal-buttons-options position-relative d-flex justify-content-between">
                     <div>
                         <button class="btn btn-primary me-2" @click="toggleMembersMenu">
-                            <i class="fa-solid fa-plus"></i>
+                            <i class="fa-solid fa-plus fa-fw"></i>
                             Adicionar membro
                         </button>
 
@@ -28,7 +28,7 @@
                             @click="joinAsMember"
                             :disabled="joiningAsMember"
                         >
-                            <i class="bi bi-plus-circle"></i>
+                            <i class="bi bi-plus-circle fa-fw"></i>
                             {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
                         </button>
                         <button
@@ -37,7 +37,7 @@
                             @click="leaveAsMember"
                             :disabled="leavingAsMember"
                         >
-                            <i class="bi bi-x-circle"></i>
+                            <i class="bi bi-x-circle fa-fw"></i>
                             {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
                         </button>
                     </div>
@@ -58,11 +58,11 @@
                     <div v-if="showMembersMenu" class="members-menu">
                         <div class="members-menu-header">
                             <button class="members-menu-back" @click="closeMembersMenu">
-                                <i class="fa fa-chevron-left"></i>
+                                <i class="fa fa-chevron-left fa-fw"></i>
                             </button>
                             <h3 class="members-menu-title">Membros</h3>
                             <button class="members-menu-close" @click="closeMembersMenu">
-                                <i class="fa fa-times"></i>
+                                <i class="fa fa-times fa-fw"></i>
                             </button>
                         </div>
 
@@ -97,7 +97,7 @@
                                     </div>
                                     <span class="members-menu-name">{{ member.name }}</span>
                                     <span v-if="addingMember && currentAddingMemberId === member.id" class="members-menu-loading-indicator">
-                                        <i class="fa fa-spinner fa-spin"></i>
+                                        <i class="fa fa-spinner fa-spin fa-fw"></i>
                                     </span>
                                 </div>
                             </div>
@@ -125,7 +125,7 @@
                       {{ getInitials(member.name) }}
                       <div v-if="showMemberMenu && selectedMember?.id === member.id" class="member-menu-popover" @click.stop>
                         <button class="member-menu-remove" @click="removeMember(member)">
-                          <i class="fa fa-times"></i>
+                          <i class="fa fa-times fa-fw"></i>
                           Remover do card
                         </button>
                       </div>
@@ -153,7 +153,7 @@
                       @click="startEditingProductionPercentage"
                       title="Editar porcentagem"
                     >
-                      <i class="fa fa-edit"></i>
+                      <i class="fa fa-edit fa-fw"></i>
                     </button>
                   </div>
                   <div v-else class="layout-modal-production-percentage-edit">
@@ -231,7 +231,7 @@
                     >
                       <div class="layout-modal-attachment-preview">
                         <img v-if="isImageFile(file)" :src="getImageUrl(file)" :alt="getAttachmentName(file, fileIndex)" />
-                        <i v-else class="fa fa-file"></i>
+                        <i v-else class="fa fa-file fa-fw"></i>
                       </div>
                       <div class="layout-modal-attachment-body">
                         <div class="layout-modal-attachment-name">{{ getAttachmentName(file, fileIndex) }}</div>

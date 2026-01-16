@@ -90,7 +90,7 @@
                 <div class="d-flex align-items-center gap-3">
                   <div
                     v-if="!user.avatar"
-                    class="rounded-circle d-flex align-items-center justify-content-center user-avatar"
+                    class="avatar text-bg-primary"
                   >
                     {{ getUserInitial(user.name) }}
                   </div>
@@ -98,7 +98,7 @@
                     v-else
                     :src="getAvatarUrl(user.avatar)"
                     :alt="user.name"
-                    class="rounded-circle user-avatar-img"
+                    class="avatar"
                   />
                   <div>
                     <div class="fw-semibold">{{ user.name }}</div>
@@ -354,76 +354,5 @@ watch(searchQuery, () => {
 </script>
 
 <style scoped>
-.input-group-text {
-  border-radius: 0.375rem 0 0 0.375rem;
-}
 
-.input-group .form-control {
-  border-radius: 0 0.375rem 0.375rem 0;
-}
-
-.input-group .form-control:focus {
-  border-color: var(--bs-secondary);
-  box-shadow: none;
-}
-
-.input-group-lg .input-group-text,
-.input-group-lg .form-control {
-  padding-block: 0.85rem;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  font-weight: 600;
-  font-size: 1rem;
-  background-color: #6f42c1;
-  color: white;
-  flex-shrink: 0;
-}
-
-.user-avatar-img {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.table thead th {
-  border-bottom: 1px solid var(--bs-border-color);
-  font-weight: 600;
-  color: var(--bs-body-color);
-}
-
-.table tbody tr {
-  border-bottom: 1px solid var(--bs-border-color);
-}
-
-.table tbody tr:hover {
-  background-color: var(--bs-secondary-bg);
-}
-
-.dropdown-menu {
-  border: 1px solid var(--bs-border-color);
-  background-color: var(--bs-dropdown-bg);
-}
-
-.dropdown-item {
-  color: var(--bs-dropdown-color);
-  padding: 0.5rem 1rem;
-}
-
-.dropdown-item:hover {
-  background-color: var(--bs-dropdown-link-hover-bg);
-  color: var(--bs-dropdown-link-hover-color);
-}
-
-.dropdown-item.text-danger {
-  color: var(--bs-danger);
-}
-
-.dropdown-item.text-danger:hover {
-  background-color: var(--bs-danger-bg-subtle);
-  color: var(--bs-danger);
-}
 </style>

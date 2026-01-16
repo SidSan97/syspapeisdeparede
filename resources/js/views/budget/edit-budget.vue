@@ -282,7 +282,7 @@
                                             class="btn btn-outline-primary"
                                             @click="addWall(roomIndex)"
                                         >
-                                            <i class="fa fa-plus"></i> Adicionar Parede
+                                            <i class="fa fa-plus fa-fw"></i> Adicionar Parede
                                         </button>
                                     </div>
                                 </div>
@@ -292,7 +292,7 @@
                                 class="btn btn-primary"
                                 @click="addRoom"
                             >
-                                <i class="fa fa-plus"></i> Adicionar Ambiente
+                                <i class="fa fa-plus fa-fw"></i> Adicionar Ambiente
                             </button>
                                 </template>
                         </div>

@@ -102,7 +102,7 @@
                           rel="noopener noreferrer"
                           class="btn btn-primary btn-sm"
                         >
-                          <i class="fa fa-external-link me-2"></i>
+                          <i class="fa fa-external-link fa-fw me-2"></i>
                           Acessar Link de Pagamento
                         </a>
                         <button
@@ -111,7 +111,7 @@
                           @click="copyPaymentUrl"
                           title="Copiar link"
                         >
-                          <i class="fa fa-copy"></i>
+                          <i class="fa fa-copy fa-fw"></i>
                         </button>
                       </div>
                     </div>
@@ -196,7 +196,7 @@
                           :aria-expanded="roomIndex === 0"
                           :aria-controls="`room-${roomIndex}`"
                         >
-                          <i class="fa fa-door-open me-2"></i>
+                          <i class="fa fa-door-open fa-fw me-2"></i>
                           {{ room.name || `Ambiente ${roomIndex + 1}` }}
                         </button>
                       </h2>

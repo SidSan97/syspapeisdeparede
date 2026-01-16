@@ -35,7 +35,7 @@
                         class="btn btn-primary btn-sm"
                         :class="{ 'disabled': isPaymentLinkExpired(data.payment_expiration_date) }"
                     >
-                        <i class="fa fa-external-link me-2"></i>
+                        <i class="fa fa-external-link fa-fw me-2"></i>
                         Acessar Link de Pagamento
                     </a>
                     <button
@@ -45,7 +45,7 @@
                         title="Copiar link"
                         :disabled="isPaymentLinkExpired(data.payment_expiration_date)"
                     >
-                        <i class="fa fa-copy"></i>
+                        <i class="fa fa-copy fa-fw"></i>
                     </button>
                 </div>
                 <div v-if="data.payment_expiration_date" class="text-muted small mt-2">

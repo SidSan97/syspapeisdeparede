@@ -110,7 +110,7 @@
                     @click="clearFilters"
                     :disabled="loading"
                 >
-                    <i class="fa fa-times me-2"></i>
+                    <i class="fa fa-times fa-fw"></i>
                     Limpar Filtros
                 </button>
             </div>
