@@ -6,12 +6,12 @@
           <form @submit.prevent="updateUser()">
             <div class="row">
               <div class="col-lg-12">
-                <UsersForm ref="formRef" :type-users="typeUsers" :is-edit="true"></UsersForm>
+                <UsersForm ref="formRef" :type-users="typeUsers" :is-edit="true" :loading="loading"></UsersForm>
               </div>
             </div>
             <hr>
             <div class="mt-4">
-              <button type="submit" class="btn btn-primary me-2" :disabled="saving">Salvar as alterações</button>
+              <button type="submit" class="btn btn-primary me-2" :disabled="saving || loading">Salvar as alterações</button>
               <router-link :to="{ name: 'UsersList' }" class="btn btn-subtle">Cancelar</router-link>
             </div>
           </form>
@@ -42,30 +42,38 @@ const Toast = window.Toast
 const formRef = ref()
 const typeUsers = ref([])
 const saving = ref(false)
+const loading = ref(true)
 
 async function fetchUser() {
   if (!auth.hasPermission('edit user')) return;
 
   try {
-    saving.value = true
+    loading.value = true
 
     const { data } = await axios.get('v1/users/' + $route.params.id);
 
     const user = data.data
 
-    formRef.value.form.reset()
+    // Aguardar o componente estar disponível
+    if (!formRef.value) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
 
-    // Garantir que is_dropshipping seja número (0 ou 1)
-    const isDropshipping = Number(user.is_dropshipping) || 0
+    if (formRef.value) {
+      formRef.value.form.reset()
 
-    formRef.value.form.fill({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      user_type_id: user.user_type_id,
-      is_dropshipping: isDropshipping,
-      email_verified_at: user.email_verified_at,
-    })
+      // Garantir que is_dropshipping seja número (0 ou 1)
+      const isDropshipping = Number(user.is_dropshipping) || 0
+
+      formRef.value.form.fill({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        user_type_id: user.user_type_id,
+        is_dropshipping: isDropshipping,
+        email_verified_at: user.email_verified_at,
+      })
+    }
   } catch (error) {
     Toast.fire({
       icon: 'error',
@@ -74,11 +82,16 @@ async function fetchUser() {
 
     $router.push({ name: 'UsersList' })
   } finally {
-    saving.value = false
+    loading.value = false
   }
 }
 
 async function updateUser() {
+  // Bloquear submissão enquanto está carregando os dados
+  if (loading.value) {
+    return
+  }
+
   // Validar formulário antes de submeter
   if (!formRef.value.validateForm()) {
     return
