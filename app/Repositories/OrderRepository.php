@@ -86,6 +86,9 @@ class OrderRepository
     {
         return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
             ->whereNotNull('budget_wall_id')
+            ->whereHas('order', function ($query) {
+                $query->where('paid', 0);
+            })
             ->with([
                 'order' => function ($query) {
                     $query->with([

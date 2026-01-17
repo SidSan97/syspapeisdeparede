@@ -81,7 +81,7 @@ async function save() {
   isSaving.value = true;
 
   try {
-    const response = await descriptionService.updateDescription(props.card.id, descriptionText.value, 'layout');
+    const response = await descriptionService.updateDescription(props.card.id, descriptionText.value, 'product');
 
     // Atualizar o card localmente
     if (props.card) {

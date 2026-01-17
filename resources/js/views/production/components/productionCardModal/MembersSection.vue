@@ -233,7 +233,7 @@ async function handleAddMember(member) {
   currentAddingMemberId.value = member.id;
 
   try {
-    const response = await memberService.addMember(props.card.id, member.id, 'layout');
+    const response = await memberService.addMember(props.card.id, member.id, 'product');
 
     // Fechar o menu de membros após adicionar
     closeMembersMenu();
@@ -280,7 +280,7 @@ async function handleJoinAsMember() {
   joiningAsMember.value = true;
 
   try {
-    const response = await memberService.addMember(props.card.id, auth.user.id, 'layout');
+    const response = await memberService.addMember(props.card.id, auth.user.id);
 
     // Adicionar o usuário logado à lista de membros do card
     if (props.card && !props.card.members) {
@@ -387,7 +387,7 @@ async function handleRemoveMember(member) {
   }
 
   try {
-    const response = await memberService.removeMember(props.card.id, member.id, 'layout');
+    const response = await memberService.removeMember(props.card.id, member.id, 'product');
 
     // Remover o membro da lista do card
     if (props.card && Array.isArray(props.card.members)) {

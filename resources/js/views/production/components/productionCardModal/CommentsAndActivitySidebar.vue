@@ -1,0 +1,562 @@
+<template>
+  <aside class="comments-activity-sidebar">
+    <div class="comments-activity-sidebar-header">
+      <h3>Comentários e atividade</h3>
+      <button class="btn btn-primary" type="button" @click="toggleDetails">
+        {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
+      </button>
+    </div>
+
+    <!-- Caixa de texto para escrever comentários -->
+    <div class="mb-3">
+      <div class="d-flex flex-column gap-2">
+        <textarea
+          v-model="newCommentText"
+          class="form-control"
+          maxlength="500"
+          rows="3"
+          placeholder="Escrever um comentário..."
+          @focus="isEditingComment = true"
+        ></textarea>
+        <div v-if="isEditingComment" class="d-flex justify-content-between align-items-center">
+          <span class="text-muted small">{{ newCommentText.length }}/500</span>
+          <div class="comments-activity-input-actions">
+            <button class="btn btn-subtle" @click="cancelNewComment">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
+              {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
+    <div v-if="showDetails">
+      <!-- Lista de comentários -->
+      <div class="d-flex flex-column gap-3 mb-3">
+        <div
+          v-for="comment in comments"
+          :key="comment.id"
+          class="comments-activity-comment-item"
+        >
+          <div v-if="editingCommentId !== comment.id" class="d-flex flex-column gap-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2">
+                <div class="comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
+                  {{ getInitials(comment.user_name) }}
+                </div>
+                <span class="comments-activity-author">{{ comment.user_name }}</span>
+              </div>
+              <span class="comments-activity-date">{{ formatDate(comment.created_at) }}</span>
+            </div>
+            <div class="comments-activity-text">{{ comment.comment }}</div>
+            <div class="comments-activity-actions">
+              <button class="comments-activity-action-btn" @click="startEditComment(comment)">
+                Editar
+              </button>
+              <span class="comments-activity-action-separator">/</span>
+              <button class="comments-activity-action-btn comments-activity-action-delete" @click="deleteComment(comment.id)">
+                Excluir
+              </button>
+            </div>
+          </div>
+          <div v-else class="d-flex flex-column gap-2">
+            <textarea
+              v-model="editingCommentText"
+              class="form-control"
+              maxlength="500"
+              rows="3"
+            ></textarea>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted small">{{ editingCommentText.length }}/500</span>
+              <div class="comments-activity-input-actions">
+                <button class="btn btn-subtle" @click="cancelEditComment">
+                  Cancelar
+                </button>
+                <button class="btn btn-primary" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
+                  {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="comments.length === 0" class="comments-activity-info text-muted">
+          Nenhum comentário ainda.
+        </div>
+      </div>
+
+      <!-- Atividades e Histórico -->
+      <div class="comments-activity-activity">
+        <div v-if="activityItems.length > 0" class="d-flex flex-column gap-3">
+          <div
+            v-for="(activity, activityIndex) in activityItems"
+            :key="activity.id || activityIndex"
+            class="comments-activity-activity-item"
+            :class="{ 'is-history': activity.type === 'history' }"
+          >
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div v-if="activity.type !== 'history'" class="comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                  {{ getInitials(getActivityUser(activity)) }}
+                </div>
+                <div v-else class="comments-activity-icon">
+                  <i class="fa fa-history"></i>
+                </div>
+                <span v-if="activity.type !== 'history'" class="comments-activity-author">{{ getActivityUser(activity) }}</span>
+                <span v-else class="comments-activity-author">Histórico</span>
+              </div>
+              <span class="comments-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
+            </div>
+            <div class="comments-activity-content" v-html="getActivityText(activity)"></div>
+          </div>
+        </div>
+        <div v-else class="comments-activity-info text-muted">
+          Nenhuma atividade registrada.
+        </div>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import { useCommentService } from '@/views/layouts/services/commentService';
+
+const props = defineProps({
+  card: {
+    type: Object,
+    required: true,
+  },
+  showDetails: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['update:showDetails', 'comment-added', 'comment-updated', 'comment-deleted']);
+
+const commentService = useCommentService();
+
+const isEditingComment = ref(false);
+const newCommentText = ref('');
+const isSavingComment = ref(false);
+const editingCommentId = ref(null);
+const editingCommentText = ref('');
+
+const comments = computed(() => {
+  if (!props.card || !Array.isArray(props.card.comments)) {
+    return [];
+  }
+  return props.card.comments;
+});
+
+const activityItems = computed(() => {
+  if (!props.card) {
+    return [];
+  }
+
+  const activities = [];
+
+  // Adicionar histórico do card (filtrar apenas histórico de produção)
+  if (Array.isArray(props.card.history) && props.card.history.length > 0) {
+    props.card.history
+      .filter((historyItem) => historyItem.type_page === 'product')
+      .forEach((historyItem) => {
+        activities.push({
+          id: `history-${historyItem.id}`,
+          type: 'history',
+          description: historyItem.description,
+          created_at: historyItem.created_at,
+          date: historyItem.created_at,
+        });
+      });
+  }
+
+  // Adicionar atividades existentes
+  if (Array.isArray(props.card.activities) && props.card.activities.length > 0) {
+    activities.push(...props.card.activities);
+  }
+
+  // Adicionar comentário do budget se existir
+  if (props.card.budget?.comment_referring_model) {
+    activities.push({
+      id: 'budget-comment',
+      type: 'comment',
+      user_name: props.card.responsible_name || 'Comentário',
+      created_at: props.card.updated_at,
+      date: props.card.updated_at,
+      comment: props.card.budget.comment_referring_model,
+    });
+  }
+
+  // Ordenar por data (mais recente primeiro)
+  return activities.sort((a, b) => {
+    const dateA = new Date(a.created_at || a.date || 0);
+    const dateB = new Date(b.created_at || b.date || 0);
+    return dateB - dateA;
+  });
+});
+
+const activityDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
+function formatDate(date) {
+  if (!date) {
+    return '';
+  }
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date;
+  }
+  return activityDateFormatter.format(parsedDate);
+}
+
+function getActivityUser(activity) {
+  if (!activity) {
+    return 'Anônimo';
+  }
+  return (
+    activity.user_name ||
+    activity.author?.name ||
+    activity.user?.name ||
+    activity.user ||
+    activity.created_by ||
+    'Anônimo'
+  );
+}
+
+function getActivityText(activity) {
+  if (!activity) {
+    return '';
+  }
+  if (typeof activity === 'string') {
+    return activity;
+  }
+  if (activity.type === 'history' && activity.description) {
+    return activity.description;
+  }
+  return activity.text || activity.comment || activity.description || activity.message || '';
+}
+
+function getInitials(name) {
+  if (!name) {
+    return '??';
+  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+function getAvatarColor(name) {
+  if (!name) {
+    return '#5e6c84';
+  }
+
+  const colors = [
+    '#00b8d9', '#00a86b', '#0065ff', '#5243aa', '#ff5630',
+    '#ff8b00', '#36b37e', '#ffab00', '#6554c0', '#00c7e6',
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function toggleDetails() {
+  emit('update:showDetails', !props.showDetails);
+}
+
+function cancelNewComment() {
+  newCommentText.value = '';
+  isEditingComment.value = false;
+}
+
+async function saveNewComment() {
+  if (!props.card?.id || !newCommentText.value.trim()) {
+    return;
+  }
+
+  isSavingComment.value = true;
+
+  try {
+    const response = await commentService.createComment(props.card.id, newCommentText.value);
+
+    // Adicionar o novo comentário à lista
+    if (props.card && Array.isArray(props.card.comments)) {
+      props.card.comments.unshift(response.data);
+    } else if (props.card) {
+      props.card.comments = [response.data];
+    }
+
+    newCommentText.value = '';
+    isEditingComment.value = false;
+
+    if (window.Toast) {
+      window.Toast.fire({
+        icon: 'success',
+        title: response.message || 'Comentário adicionado com sucesso',
+      });
+    }
+
+    emit('comment-added', response.data);
+  } catch (error) {
+    console.error('Erro ao adicionar comentário:', error);
+    const errorMessage = error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
+
+    if (window.Swal) {
+      window.Swal.fire('Erro!', errorMessage, 'error');
+    } else {
+      alert(errorMessage);
+    }
+  } finally {
+    isSavingComment.value = false;
+  }
+}
+
+function startEditComment(comment) {
+  editingCommentId.value = comment.id;
+  editingCommentText.value = comment.comment;
+}
+
+function cancelEditComment() {
+  editingCommentId.value = null;
+  editingCommentText.value = '';
+}
+
+async function saveEditComment(commentId) {
+  if (!props.card?.id || !editingCommentText.value.trim()) {
+    return;
+  }
+
+  isSavingComment.value = true;
+
+  try {
+    const response = await commentService.updateComment(props.card.id, commentId, editingCommentText.value);
+
+    // Atualizar o comentário na lista
+    if (props.card && Array.isArray(props.card.comments)) {
+      const index = props.card.comments.findIndex(c => c.id === commentId);
+      if (index !== -1) {
+        props.card.comments[index] = response.data;
+      }
+    }
+
+    editingCommentId.value = null;
+    editingCommentText.value = '';
+
+    if (window.Toast) {
+      window.Toast.fire({
+        icon: 'success',
+        title: response.message || 'Comentário atualizado com sucesso',
+      });
+    }
+
+    emit('comment-updated', response.data);
+  } catch (error) {
+    console.error('Erro ao atualizar comentário:', error);
+    const errorMessage = error.response?.data?.message || 'Erro ao atualizar comentário. Tente novamente.';
+
+    if (window.Swal) {
+      window.Swal.fire('Erro!', errorMessage, 'error');
+    } else {
+      alert(errorMessage);
+    }
+  } finally {
+    isSavingComment.value = false;
+  }
+}
+
+async function deleteComment(commentId) {
+  if (!props.card?.id) {
+    return;
+  }
+
+  if (window.Swal) {
+    const result = await window.Swal.fire({
+      title: 'Excluir comentário?',
+      text: 'Esta ação não pode ser desfeita.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+  }
+
+  try {
+    await commentService.deleteComment(props.card.id, commentId);
+
+    // Remover o comentário da lista
+    if (props.card && Array.isArray(props.card.comments)) {
+      props.card.comments = props.card.comments.filter(c => c.id !== commentId);
+    }
+
+    if (window.Toast) {
+      window.Toast.fire({
+        icon: 'success',
+        title: 'Comentário excluído com sucesso',
+      });
+    }
+
+    emit('comment-deleted', commentId);
+  } catch (error) {
+    console.error('Erro ao excluir comentário:', error);
+    const errorMessage = error.response?.data?.message || 'Erro ao excluir comentário. Tente novamente.';
+
+    if (window.Swal) {
+      window.Swal.fire('Erro!', errorMessage, 'error');
+    } else {
+      alert(errorMessage);
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.comments-activity-sidebar {
+  background-color: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  position: sticky;
+  top: 1.5rem;
+  max-height: calc(90vh - 200px);
+  overflow-y: auto;
+}
+
+.comments-activity-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    margin: 0;
+  }
+}
+
+.comments-activity-comment-item {
+  padding: 0.75rem;
+  background-color: var(--bs-card-bg);
+  border-radius: 0.375rem;
+  border: 1px solid var(--bs-border-color);
+}
+
+.comments-activity-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bs-white);
+  font-weight: 600;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.comments-activity-author {
+  font-weight: 600;
+  color: var(--bs-body-color);
+  font-size: 0.8125rem;
+}
+
+.comments-activity-date {
+  font-size: 0.75rem;
+}
+
+.comments-activity-text {
+  font-size: 0.8125rem;
+  color: var(--bs-body-color);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.comments-activity-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bs-border-color);
+  min-height: 24px;
+}
+
+.comments-activity-action-separator {
+  color: var(--bs-border-color);
+  font-size: 0.6875rem;
+  padding: 0 0.125rem;
+  user-select: none;
+}
+
+.comments-activity-action-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &.comments-activity-action-delete {
+    color: var(--bs-danger);
+  }
+}
+
+.comments-activity-activity-item {
+  padding: 0.75rem;
+  background-color: var(--bs-card-bg);
+  border-radius: 0.375rem;
+  border: 1px solid var(--bs-border-color);
+
+  &.is-history {
+    border-left: 3px solid var(--bs-success);
+  }
+}
+
+.comments-activity-content {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.comments-activity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-success);
+  color: var(--bs-white);
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.comments-activity-info {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.comments-activity-input-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+</style>
+
