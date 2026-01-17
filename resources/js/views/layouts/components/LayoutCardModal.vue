@@ -35,37 +35,7 @@
 
                 <DescriptionSection :card="card" />
 
-                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="layout-modal-section">
-                  <h3 class="layout-modal-section-title">
-                    <i class="fa fa-paperclip"></i> Anexos
-                  </h3>
-                  <div class="d-flex flex-column gap-3">
-                    <div
-                      v-for="(file, fileIndex) in card.uploaded_files"
-                      :key="fileIndex"
-                      class="layout-modal-attachment"
-                    >
-                      <div class="layout-modal-attachment-preview">
-                        <img v-if="isImageFile(file)" :src="getImageUrl(file)" :alt="getAttachmentName(file, fileIndex)" />
-                        <i v-else class="fa fa-file fa-fw"></i>
-                      </div>
-                      <div class="d-flex flex-column gap-2 flex-grow-1">
-                        <div class="layout-modal-attachment-name">{{ getAttachmentName(file, fileIndex) }}</div>
-                        <div class="layout-modal-attachment-meta">
-                          {{ formatDate(file.created_at) }}
-                        </div>
-                        <a
-                          class="layout-modal-attachment-button"
-                          :href="getImageUrl(file)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Abrir
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <AttachmentsSection :attachments="card.uploaded_files" />
 
                 <div class="layout-modal-section">
                   <h3 class="layout-modal-section-title">
@@ -148,6 +118,7 @@
   import { getCardDisplayName } from '@/utils/cardUtils';
   import CommentsAndActivitySidebar from './layoutCardModal/CommentsAndActivitySidebar.vue';
   import DescriptionSection from './layoutCardModal/DescriptionSection.vue';
+  import AttachmentsSection from './layoutCardModal/AttachmentsSection.vue';
   import LoadArtSection from './layoutCardModal/LoadArtSection.vue';
   import RequestArtsSection from './layoutCardModal/RequestArtsSection.vue';
   import MembersSection from './layoutCardModal/MembersSection.vue';
@@ -177,11 +148,6 @@
     currency: 'BRL',
   });
 
-  const activityDateFormatter = new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-
   const coverImage = computed(() => {
     if (!props.card) {
       return '';
@@ -201,14 +167,6 @@
     return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
   }
 
-  function formatNumber(value) {
-    if (value === null || value === undefined) {
-      return '-';
-    }
-    const numericValue = Number(value);
-    return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
-  }
-
   function getImageUrl(file) {
     if (file.url) {
       return file.url;
@@ -226,10 +184,6 @@
     return '';
   }
 
-  function getAttachmentName(file, index = 0) {
-    return file?.name || file?.original_name || file?.file_name || `Arquivo ${index + 1}`;
-  }
-
   function isImageFile(file) {
     if (!file) {
       return false;
@@ -240,17 +194,6 @@
     }
     const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
     return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
-  }
-
-  function formatDate(date) {
-    if (!date) {
-      return '';
-    }
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return date;
-    }
-    return activityDateFormatter.format(parsedDate);
   }
 
   function handleClose() {
