@@ -698,125 +698,10 @@
                 </div>
               </div>
 
-              <aside class="layout-modal-sidebar">
-                <div class="layout-modal-sidebar-header">
-                  <h3>Comentários e atividade</h3>
-                  <button class="btn btn-primary" type="button" @click="toggleDetails">
-                    {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
-                  </button>
-                </div>
-
-                <!-- Caixa de texto para escrever comentários -->
-                <div class="mb-3">
-                  <div class="d-flex flex-column gap-2">
-                    <textarea
-                      v-model="newCommentText"
-                      class="form-control"
-                      maxlength="500"
-                      rows="3"
-                      placeholder="Escrever um comentário..."
-                      @focus="isEditingComment = true"
-                    ></textarea>
-                    <div v-if="isEditingComment" class="d-flex justify-content-between align-items-center">
-                      <span class="text-muted small">{{ newCommentText.length }}/500</span>
-                      <div class="layout-modal-comment-input-actions">
-                        <button class="btn btn-subtle" @click="cancelNewComment">
-                          Cancelar
-                        </button>
-                        <button class="btn btn-primary" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
-                          {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
-                <div v-if="showDetails">
-                  <!-- Lista de comentários -->
-                  <div class="d-flex flex-column gap-3 mb-3">
-                    <div
-                      v-for="comment in cardComments"
-                      :key="comment.id"
-                      class="layout-modal-comment-item"
-                    >
-                      <div v-if="editingCommentId !== comment.id" class="d-flex flex-column gap-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                          <div class="d-flex align-items-center gap-2">
-                            <div class="layout-modal-comment-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
-                              {{ getInitials(comment.user_name) }}
-                            </div>
-                            <span class="layout-modal-comment-author">{{ comment.user_name }}</span>
-                          </div>
-                          <span class="layout-modal-comment-date">{{ formatDate(comment.created_at) }}</span>
-                        </div>
-                        <div class="layout-modal-comment-text">{{ comment.comment }}</div>
-                        <div class="layout-modal-comment-actions">
-                          <button class="layout-modal-comment-action-btn" @click="startEditComment(comment)">
-                            Editar
-                          </button>
-                          <span class="layout-modal-comment-action-separator">/</span>
-                          <button class="layout-modal-comment-action-btn layout-modal-comment-delete" @click="deleteComment(comment.id)">
-                            Excluir
-                          </button>
-                        </div>
-                      </div>
-                      <div v-else class="d-flex flex-column gap-2">
-                        <textarea
-                          v-model="editingCommentText"
-                          class="form-control"
-                          maxlength="500"
-                          rows="3"
-                        ></textarea>
-                        <div class="d-flex justify-content-between align-items-center">
-                          <span class="text-muted small">{{ editingCommentText.length }}/500</span>
-                          <div class="layout-modal-comment-input-actions">
-                            <button class="btn btn-subtle" @click="cancelEditComment">
-                              Cancelar
-                            </button>
-                            <button class="btn btn-primary" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
-                              {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div v-if="cardComments.length === 0" class="layout-modal-info text-muted">
-                      Nenhum comentário ainda.
-                    </div>
-                  </div>
-
-                  <!-- Atividades e Histórico -->
-                  <div class="layout-modal-activity">
-                    <div v-if="activityItems.length > 0" class="d-flex flex-column gap-3">
-                      <div
-                        v-for="(activity, activityIndex) in activityItems"
-                        :key="activity.id || activityIndex"
-                        class="layout-modal-activity-item"
-                        :class="{ 'is-history': activity.type === 'history' }"
-                      >
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <div class="d-flex align-items-center gap-2">
-                            <div v-if="activity.type !== 'history'" class="layout-modal-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
-                              {{ getInitials(getActivityUser(activity)) }}
-                            </div>
-                            <div v-else class="layout-modal-activity-icon">
-                              <i class="fa fa-history"></i>
-                            </div>
-                            <span v-if="activity.type !== 'history'" class="layout-modal-activity-author">{{ getActivityUser(activity) }}</span>
-                            <span v-else class="layout-modal-activity-author">Histórico</span>
-                          </div>
-                          <span class="layout-modal-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
-                        </div>
-                        <div class="layout-modal-activity-content" v-html="getActivityText(activity)"></div>
-                      </div>
-                    </div>
-                    <div v-else class="layout-modal-info text-muted">
-                      Nenhuma atividade registrada.
-                    </div>
-                  </div>
-                </div>
-              </aside>
+              <CommentsAndActivitySidebar
+                :card="card"
+                v-model:showDetails="showDetails"
+              />
             </div>
           </div>
         </div>
@@ -830,6 +715,7 @@
   import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
   import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+  import CommentsAndActivitySidebar from './layoutCardModal/CommentsAndActivitySidebar.vue';
 
   const props = defineProps({
     card: {
@@ -847,13 +733,6 @@
   const descriptionText = ref('');
   const originalDescription = ref('');
   const isSavingDescription = ref(false);
-
-  // Comentários
-  const isEditingComment = ref(false);
-  const newCommentText = ref('');
-  const isSavingComment = ref(false);
-  const editingCommentId = ref(null);
-  const editingCommentText = ref('');
 
   // Membros
   const showMembersMenu = ref(false);
@@ -897,60 +776,6 @@
     }
     const imageAttachment = props.card.uploaded_files?.find(file => isImageFile(file));
     return imageAttachment ? getImageUrl(imageAttachment) : '';
-  });
-
-  const cardComments = computed(() => {
-    if (!props.card || !Array.isArray(props.card.comments)) {
-      return [];
-    }
-    return props.card.comments;
-  });
-
-  const activityItems = computed(() => {
-    if (!props.card) {
-      return [];
-    }
-
-    const activities = [];
-
-    // Adicionar histórico do card (filtrar apenas histórico de layout)
-    if (Array.isArray(props.card.history) && props.card.history.length > 0) {
-      props.card.history
-        .filter((historyItem) => historyItem.type_page === 'layout')
-        .forEach((historyItem) => {
-          activities.push({
-            id: `history-${historyItem.id}`,
-            type: 'history',
-            description: historyItem.description,
-            created_at: historyItem.created_at,
-            date: historyItem.created_at,
-          });
-        });
-    }
-
-    // Adicionar atividades existentes
-    if (Array.isArray(props.card.activities) && props.card.activities.length > 0) {
-      activities.push(...props.card.activities);
-    }
-
-    // Adicionar comentário do budget se existir
-    if (props.card.budget?.comment_referring_model) {
-      activities.push({
-        id: 'budget-comment',
-        type: 'comment',
-        user_name: props.card.responsible_name || 'Comentário',
-        created_at: props.card.updated_at,
-        date: props.card.updated_at,
-        comment: props.card.budget.comment_referring_model,
-      });
-    }
-
-    // Ordenar por data (mais recente primeiro)
-    return activities.sort((a, b) => {
-      const dateA = new Date(a.created_at || a.date || 0);
-      const dateB = new Date(b.created_at || b.date || 0);
-      return dateB - dateA;
-    });
   });
 
   function formatCurrency(value) {
@@ -1044,37 +869,6 @@
     return activityDateFormatter.format(parsedDate);
   }
 
-  function getActivityUser(activity) {
-    if (!activity) {
-      return 'Anônimo';
-    }
-    return (
-      activity.user_name ||
-      activity.author?.name ||
-      activity.user?.name ||
-      activity.user ||
-      activity.created_by ||
-      'Anônimo'
-    );
-  }
-
-  function getActivityText(activity) {
-    if (!activity) {
-      return '';
-    }
-    if (typeof activity === 'string') {
-      return activity;
-    }
-    // Se for histórico, retornar a descrição (que pode conter HTML)
-    if (activity.type === 'history' && activity.description) {
-      return activity.description;
-    }
-    return activity.text || activity.comment || activity.description || activity.message || '';
-  }
-
-  function toggleDetails() {
-    showDetails.value = !showDetails.value;
-  }
 
   function startEditingDescription() {
     originalDescription.value = props.card?.description || '';
@@ -1131,54 +925,6 @@
 
   function handleClose() {
     emit('close');
-  }
-
-  // Funções de comentários
-  function cancelNewComment() {
-    newCommentText.value = '';
-    isEditingComment.value = false;
-  }
-
-  async function saveNewComment() {
-    if (!props.card?.id || !newCommentText.value.trim()) {
-      return;
-    }
-
-    isSavingComment.value = true;
-
-    try {
-      const response = await axios.post(`v1/budgets/order-budgets/${props.card.id}/comments`, {
-        comment: newCommentText.value.trim(),
-      });
-
-      // Adicionar o novo comentário à lista
-      if (props.card && Array.isArray(props.card.comments)) {
-        props.card.comments.unshift(response.data.data);
-      } else if (props.card) {
-        props.card.comments = [response.data.data];
-      }
-
-      newCommentText.value = '';
-      isEditingComment.value = false;
-
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: response.data.message || 'Comentário adicionado com sucesso',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao adicionar comentário:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
-
-      if (window.Swal) {
-        window.Swal.fire('Erro!', errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    } finally {
-      isSavingComment.value = false;
-    }
   }
 
 
@@ -1484,107 +1230,6 @@
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
     return colors[Math.abs(hash) % colors.length];
-  }
-
-  function startEditComment(comment) {
-    editingCommentId.value = comment.id;
-    editingCommentText.value = comment.comment;
-  }
-
-  function cancelEditComment() {
-    editingCommentId.value = null;
-    editingCommentText.value = '';
-  }
-
-  async function saveEditComment(commentId) {
-    if (!props.card?.id || !editingCommentText.value.trim()) {
-      return;
-    }
-
-    isSavingComment.value = true;
-
-    try {
-      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/comments/${commentId}`, {
-        comment: editingCommentText.value.trim(),
-      });
-
-      // Atualizar o comentário na lista
-      if (props.card && Array.isArray(props.card.comments)) {
-        const index = props.card.comments.findIndex(c => c.id === commentId);
-        if (index !== -1) {
-          props.card.comments[index] = response.data.data;
-        }
-      }
-
-      editingCommentId.value = null;
-      editingCommentText.value = '';
-
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: response.data.message || 'Comentário atualizado com sucesso',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar comentário:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao atualizar comentário. Tente novamente.';
-
-      if (window.Swal) {
-        window.Swal.fire('Erro!', errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    } finally {
-      isSavingComment.value = false;
-    }
-  }
-
-  async function deleteComment(commentId) {
-    if (!props.card?.id) {
-      return;
-    }
-
-    if (window.Swal) {
-      const result = await window.Swal.fire({
-        title: 'Excluir comentário?',
-        text: 'Esta ação não pode ser desfeita.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sim, excluir',
-        cancelButtonText: 'Cancelar',
-      });
-
-      if (!result.isConfirmed) {
-        return;
-      }
-    }
-
-    try {
-      await axios.delete(`v1/budgets/order-budgets/${props.card.id}/comments/${commentId}`);
-
-      // Remover o comentário da lista
-      if (props.card && Array.isArray(props.card.comments)) {
-        props.card.comments = props.card.comments.filter(c => c.id !== commentId);
-      }
-
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: 'Comentário excluído com sucesso',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao excluir comentário:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao excluir comentário. Tente novamente.';
-
-      if (window.Swal) {
-        window.Swal.fire('Erro!', errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    }
   }
 
   // Funções para carregar arte
