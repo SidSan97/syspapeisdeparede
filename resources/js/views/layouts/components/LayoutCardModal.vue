@@ -127,34 +127,7 @@
                   </div>
                 </div>
 
-                <div class="layout-modal-section">
-                  <h3 class="layout-modal-section-title">
-                    <i class="fa fa-align-left"></i> Descrição
-                  </h3>
-                  <div v-if="!isEditingDescription" class="layout-modal-description" :class="{ 'is-empty': !card.description }" @click="startEditingDescription">
-                    {{ card.description || 'Adicione uma descrição mais detalhada...' }}
-                  </div>
-                  <div v-else class="d-flex flex-column gap-3">
-                    <textarea
-                      v-model="descriptionText"
-                      class="form-control"
-                      maxlength="500"
-                      rows="4"
-                      placeholder="Adicione uma descrição mais detalhada..."
-                    ></textarea>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <span class="text-muted small">{{ descriptionText.length }}/500</span>
-                      <div class="d-flex gap-1">
-                        <button class="btn btn-subtle" @click="cancelEditingDescription">
-                          Cancelar
-                        </button>
-                        <button class="btn btn-primary" @click="saveDescription" :disabled="isSavingDescription">
-                          {{ isSavingDescription ? 'Salvando...' : 'Salvar' }}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DescriptionSection :card="card" />
 
                 <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="layout-modal-section">
                   <h3 class="layout-modal-section-title">
@@ -716,6 +689,7 @@
   import { getCardDisplayName } from '@/utils/cardUtils';
   import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
   import CommentsAndActivitySidebar from './layoutCardModal/CommentsAndActivitySidebar.vue';
+  import DescriptionSection from './layoutCardModal/DescriptionSection.vue';
 
   const props = defineProps({
     card: {
@@ -729,10 +703,6 @@
   const auth = useAuthStore();
 
   const showDetails = ref(false);
-  const isEditingDescription = ref(false);
-  const descriptionText = ref('');
-  const originalDescription = ref('');
-  const isSavingDescription = ref(false);
 
   // Membros
   const showMembersMenu = ref(false);
@@ -867,60 +837,6 @@
       return date;
     }
     return activityDateFormatter.format(parsedDate);
-  }
-
-
-  function startEditingDescription() {
-    originalDescription.value = props.card?.description || '';
-    descriptionText.value = originalDescription.value;
-    isEditingDescription.value = true;
-  }
-
-  function cancelEditingDescription() {
-    descriptionText.value = originalDescription.value;
-    isEditingDescription.value = false;
-  }
-
-  async function saveDescription() {
-    if (!props.card?.id) {
-      return;
-    }
-
-    isSavingDescription.value = true;
-
-    try {
-      const response = await axios.put(`v1/budgets/order-budgets/${props.card.id}/description`, {
-        description: descriptionText.value,
-        type_page: 'layout',
-      });
-
-      // Atualizar o card localmente
-      if (props.card) {
-        props.card.description = descriptionText.value;
-      }
-
-      originalDescription.value = descriptionText.value;
-      isEditingDescription.value = false;
-
-      // Mostrar mensagem de sucesso
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: response.data.message || 'Descrição salva com sucesso',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao salvar descrição:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao salvar descrição. Tente novamente.';
-
-      if (window.Swal) {
-        window.Swal.fire('Erro!', errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    } finally {
-      isSavingDescription.value = false;
-    }
   }
 
   function handleClose() {
@@ -1393,11 +1309,9 @@
     }
 }
 
-  // Inicializar descrição quando o card mudar
+  // Inicializar quando o card mudar
   watch(() => props.card, (newCard) => {
     if (newCard) {
-      descriptionText.value = newCard.description || '';
-      originalDescription.value = newCard.description || '';
       // Buscar requisições de arte quando o card mudar
       fetchRequestLayoutArts();
     }
