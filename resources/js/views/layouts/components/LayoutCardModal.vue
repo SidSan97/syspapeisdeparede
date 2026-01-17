@@ -310,365 +310,27 @@
                   </div>
                 </div>
 
-                <!-- Solicitações de Artes -->
-                <div v-if="card.budget" class="layout-modal-section p-1">
-                  <h3 class="layout-modal-section-title">
-                    <i class="fa fa-paint-brush"></i> Solicitações de Artes
-                  </h3>
-                  <div v-if="loadingRequestArts" class="layout-modal-info text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Carregando solicitações de artes...
-                  </div>
-                  <div v-else-if="requestLayoutArts.length === 0" class="layout-modal-info text-muted">
-                    Nenhuma solicitação de arte encontrada para este card.
-                  </div>
-                  <div v-else class="accordion" id="requestArtsAccordion">
-                    <div
-                      v-for="(interaction, interactionIndex) in requestLayoutArts"
-                      :key="interaction.id || interactionIndex"
-                      class="accordion-item mb-3"
-                    >
-                      <h2 class="accordion-header">
-                        <button
-                          class="accordion-button p-3 me-1"
-                          :class="{ collapsed: interactionIndex !== 0 }"
-                          type="button"
-                          data-bs-toggle="collapse"
-                          :data-bs-target="`#interaction-${interactionIndex}`"
-                          :aria-expanded="interactionIndex === 0"
-                          :aria-controls="`interaction-${interactionIndex}`"
-                        >
-                          <i class="fa fa-comments me-2"></i>
-                          Interação #{{ interaction.id }}
-                          <span v-if="interaction.wall_info?.wall_name" class="badge bg-info ms-2">
-                            {{ interaction.wall_info.wall_name }}
-                          </span>
-                          <span class="badge bg-secondary ms-2">
-                            {{ interaction.arts_count }} arte(s)
-                          </span>
-                        </button>
-                      </h2>
-                      <div
-                        :id="`interaction-${interactionIndex}`"
-                        class="accordion-collapse collapse"
-                        :class="{ show: interactionIndex === 0 }"
-                        data-bs-parent="#requestArtsAccordion"
-                      >
-                        <div class="accordion-body">
-                          <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
-                            <div class="row g-2">
-                              <div class="col-md-12">
-                                <div class="text-muted small">
-                                  <h5>Comentário</h5>
-                                </div>
-                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
+                <RequestArtsSection
+                  :show="!!card.budget"
+                  :loading="loadingRequestArts"
+                  :arts="requestLayoutArts"
+                  accordionId="requestArtsAccordion"
+                  prefix=""
+                />
 
-                                <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
-                              </div>
-                              <hr>
-                              <div class="col-md-6">
-                                <div class="text-muted small">Ambiente</div>
-                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
-                              </div>
-                              <div class="col-md-6">
-                                <div class="text-muted small">Parede</div>
-                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
-                              </div>
-                              <div v-if="interaction.wall_info.width" class="col-md-4">
-                                <div class="text-muted small">Largura</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
-                              </div>
-                              <div v-if="interaction.wall_info.height" class="col-md-4">
-                                <div class="text-muted small">Altura</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
-                              </div>
-                              <div v-if="interaction.wall_info.total_area" class="col-md-4">
-                                <div class="text-muted small">Área</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
-                            <div class="text-muted small">
-                              <i class="fa fa-calendar me-1"></i>
-                              Interação criada em: {{ formatDate(interaction.created_at) }}
-                            </div>
-                          </div>
+                <LoadArtSection
+                  :card="card"
+                  :canLoad="canLoadArt"
+                  @art-uploaded="handleArtUploaded"
+                />
 
-                          <!-- Lista de Artes da Interação -->
-                          <div v-if="interaction.arts && interaction.arts.length > 0" class="mt-3">
-                            <h6 class="mb-3">
-                              <i class="fa fa-images me-2"></i>
-                              Artes ({{ interaction.arts.length }})
-                            </h6>
-                            <div
-                              v-for="(art, artIndex) in interaction.arts"
-                              :key="art.id || artIndex"
-                              class="card mb-3 border"
-                              :class="{ 'border-top': artIndex > 0 }"
-                            >
-                              <div class="card-body">
-                                <div class="mb-3 p-2 border rounded">
-                                  <div class="row g-2">
-                                    <div v-if="art.dealer_name" class="col-md-6">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-user-tie me-1"></i>
-                                        Revendedor
-                                      </div>
-                                      <div class="fw-semibold">{{ art.dealer_name }}</div>
-                                    </div>
-                                    <div v-if="art.designer_name" class="col-md-6">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-user me-1"></i>
-                                        Designer
-                                      </div>
-                                      <div class="fw-semibold">{{ art.designer_name }}</div>
-                                    </div>
-                                    <div v-if="art.created_at" class="col-12">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-calendar me-1"></i>
-                                        Enviado em: {{ formatDate(art.created_at) }}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div v-if="art.comment" class="mb-3">
-                                  <div class="text-muted small mb-1">Comentário</div>
-                                  <div class="p-2 rounded border">{{ art.comment }}</div>
-                                </div>
-                                <div v-if="art.image_url" class="mb-3">
-                                  <div class="text-muted small mb-2">Imagem da Arte</div>
-                                  <div class="d-flex justify-content-center">
-                                    <img
-                                      :src="art.image_url"
-                                      :alt="`Arte ${art.id}`"
-                                      class="img-thumbnail"
-                                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                                      @error="handleImageError"
-                                    />
-                                  </div>
-                                  <div class="mt-2 text-center">
-                                    <a
-                                      :href="art.image_url"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      class="btn btn-sm btn-outline-primary"
-                                    >
-                                      <i class="fa fa-external-link me-1"></i>
-                                      Abrir em nova aba
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Carregar Arte -->
-                <div v-if="canLoadArt" class="layout-modal-section">
-                  <div class="form-check mb-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      :id="`load-art-${card.id}`"
-                      v-model="showLoadArtInput"
-                    />
-                    <label class="form-check-label" :for="`load-art-${card.id}`">
-                      Carregar arte
-                    </label>
-                  </div>
-                  <div v-if="showLoadArtInput" class="layout-modal-load-art">
-                    <input
-                      type="file"
-                      :ref="el => artFileInput = el"
-                      accept="image/*"
-                      @change="handleArtFileChange"
-                      class="form-control mb-3"
-                      :disabled="uploadingArt"
-                    />
-                    <textarea
-                     v-if="showLoadArtInput"
-                      v-model="artComment"
-                      class="form-control"
-                      maxlength="500"
-                      rows="3"
-                      placeholder="Escreva um comentário para a arte..."
-                    ></textarea>
-                    <button
-                      v-if="selectedArtFile"
-                      type="button"
-                      class="btn btn-primary btn-sm mt-2"
-                      @click="uploadArt"
-                      :disabled="uploadingArt"
-                    >
-                      <span v-if="uploadingArt" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                      <i v-else class="fa fa-upload me-2"></i>
-                      {{ uploadingArt ? 'Enviando...' : 'Enviar Arte' }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Solicitações de Artes -->
-                <div class="layout-modal-section p-1">
-                  <h3 class="layout-modal-section-title">
-                    <i class="fa fa-paint-brush"></i> Solicitações de Artes
-                  </h3>
-                  <div v-if="loadingRequestArts" class="layout-modal-info text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Carregando solicitações de artes...
-                  </div>
-                  <div v-else-if="requestLayoutArts.length === 0" class="layout-modal-info text-muted">
-                    Nenhuma solicitação de arte encontrada para este card.
-                  </div>
-                  <div v-else class="accordion" id="requestArtsAccordionBottom">
-                    <div
-                      v-for="(interaction, interactionIndex) in requestLayoutArts"
-                      :key="interaction.id || interactionIndex"
-                      class="accordion-item mb-3"
-                    >
-                      <h2 class="accordion-header">
-                        <button
-                          class="accordion-button p-2 me-1"
-                          :class="{ collapsed: interactionIndex !== 0 }"
-                          type="button"
-                          data-bs-toggle="collapse"
-                          :data-bs-target="`#interaction-bottom-${interactionIndex}`"
-                          :aria-expanded="interactionIndex === 0"
-                          :aria-controls="`interaction-bottom-${interactionIndex}`"
-                        >
-                          <i class="fa fa-comments me-2"></i>
-                          Interação #{{ interaction.id }}
-                          <span v-if="interaction.wall_info?.wall_name" class="badge bg-info ms-2">
-                            {{ interaction.wall_info.wall_name }}
-                          </span>
-                          <span class="badge bg-secondary ms-2">
-                            {{ interaction.arts_count }} arte(s)
-                          </span>
-                        </button>
-                      </h2>
-                      <div
-                        :id="`interaction-bottom-${interactionIndex}`"
-                        class="accordion-collapse collapse"
-                        :class="{ show: interactionIndex === 0 }"
-                        data-bs-parent="#requestArtsAccordionBottom"
-                      >
-                        <div class="accordion-body">
-                          <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
-                            <div class="row g-2">
-                              <div class="col-md-12">
-                                <div class="text-muted small">
-                                  <h5>Comentário</h5>
-                                </div>
-                                <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
-
-                                <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
-                              </div>
-                              <hr>
-                              <div class="col-md-6">
-                                <div class="text-muted small">Ambiente</div>
-                                <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
-                              </div>
-                              <div class="col-md-6">
-                                <div class="text-muted small">Parede</div>
-                                <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
-                              </div>
-                              <div v-if="interaction.wall_info.width" class="col-md-4">
-                                <div class="text-muted small">Largura</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
-                              </div>
-                              <div v-if="interaction.wall_info.height" class="col-md-4">
-                                <div class="text-muted small">Altura</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
-                              </div>
-                              <div v-if="interaction.wall_info.total_area" class="col-md-4">
-                                <div class="text-muted small">Área</div>
-                                <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
-                            <div class="text-muted small">
-                              <i class="fa fa-calendar me-1"></i>
-                              Interação criada em: {{ formatDate(interaction.created_at) }}
-                            </div>
-                          </div>
-
-                          <!-- Lista de Artes da Interação -->
-                          <div v-if="interaction.arts && interaction.arts.length > 0" class="mt-3">
-                            <h6 class="mb-3">
-                              <i class="fa fa-images me-2"></i>
-                              Artes ({{ interaction.arts.length }})
-                            </h6>
-                            <div
-                              v-for="(art, artIndex) in interaction.arts"
-                              :key="art.id || artIndex"
-                              class="card mb-3 border"
-                              :class="{ 'border-top': artIndex > 0 }"
-                            >
-                              <div class="card-body">
-                                <div class="mb-3 p-2 border rounded">
-                                  <div class="row g-2">
-                                    <div v-if="art.dealer_name" class="col-md-6">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-user-tie me-1"></i>
-                                        Revendedor
-                                      </div>
-                                      <div class="fw-semibold">{{ art.dealer_name }}</div>
-                                    </div>
-                                    <div v-if="art.designer_name" class="col-md-6">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-user me-1"></i>
-                                        Designer
-                                      </div>
-                                      <div class="fw-semibold">{{ art.designer_name }}</div>
-                                    </div>
-                                    <div v-if="art.created_at" class="col-12">
-                                      <div class="text-muted small">
-                                        <i class="fa fa-calendar me-1"></i>
-                                        Enviado em: {{ formatDate(art.created_at) }}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div v-if="art.comment" class="mb-3">
-                                  <div class="text-muted small mb-1">Comentário</div>
-                                  <div class="p-2 rounded border">{{ art.comment }}</div>
-                                </div>
-                                <div v-if="art.image_url" class="mb-3">
-                                  <div class="text-muted small mb-2">Imagem da Arte</div>
-                                  <div class="d-flex justify-content-center">
-                                    <img
-                                      :src="art.image_url"
-                                      :alt="`Arte ${art.id}`"
-                                      class="img-thumbnail"
-                                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                                      @error="handleImageError"
-                                    />
-                                  </div>
-                                  <div class="mt-2 text-center">
-                                    <a
-                                      :href="art.image_url"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      class="btn btn-sm btn-outline-primary"
-                                    >
-                                      <i class="fa fa-external-link me-1"></i>
-                                      Abrir em nova aba
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <RequestArtsSection
+                  :show="true"
+                  :loading="loadingRequestArts"
+                  :arts="requestLayoutArts"
+                  accordionId="requestArtsAccordionBottom"
+                  prefix="bottom"
+                />
               </div>
 
               <CommentsAndActivitySidebar
@@ -683,13 +345,16 @@
 </template>
 
   <script setup>
-  import { computed, ref, watch } from 'vue';
+  import { computed, ref, watch, toRef } from 'vue';
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
   import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
   import CommentsAndActivitySidebar from './layoutCardModal/CommentsAndActivitySidebar.vue';
   import DescriptionSection from './layoutCardModal/DescriptionSection.vue';
+  import LoadArtSection from './layoutCardModal/LoadArtSection.vue';
+  import RequestArtsSection from './layoutCardModal/RequestArtsSection.vue';
+  import { useRequestLayoutArts } from '@/views/layouts/composables/useRequestLayoutArts';
 
   const props = defineProps({
     card: {
@@ -704,6 +369,9 @@
 
   const showDetails = ref(false);
 
+  const cardRef = toRef(props, 'card');
+  const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } = useRequestLayoutArts(cardRef);
+
   // Membros
   const showMembersMenu = ref(false);
   const availableMembers = ref([]);
@@ -716,16 +384,6 @@
   const showMemberMenu = ref(false);
   const selectedMember = ref(null);
 
-  // Carregar arte
-  const showLoadArtInput = ref(false);
-  const selectedArtFile = ref(null);
-  const artFileInput = ref(null);
-  const uploadingArt = ref(false);
-  const artComment = ref('');
-
-  // Solicitações de arte
-  const requestLayoutArts = ref([]);
-  const loadingRequestArts = ref(false);
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -1148,179 +806,19 @@
     return colors[Math.abs(hash) % colors.length];
   }
 
-  // Funções para carregar arte
-  function handleArtFileChange(event) {
-    const file = event.target.files?.[0];
-    if (file) {
-      selectedArtFile.value = file;
-    }
+  function handleArtUploaded() {
+    // Recarregar lista de artes quando uma arte for enviada
+    fetchRequestLayoutArts();
   }
-
-  async function uploadArt() {
-    if (!selectedArtFile.value || !props.card?.id || !props.card?.order?.user_id || !props.card?.order?.id || !auth.user?.id) {
-      return;
-    }
-
-    uploadingArt.value = true;
-
-    try {
-      const formData = new FormData();
-      formData.append('art_file', selectedArtFile.value);
-      formData.append('order_budget_id', props.card.id);
-      formData.append('dealer_id', props.card.order.user_id);
-      formData.append('designer_id', auth.user.id);
-      formData.append('order_id', props.card.order.id);
-      formData.append('comment', artComment.value);
-      const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data?.success) {
-        // Atualizar o card localmente
-        if (props.card) {
-          props.card.status = 'Pendente de Revisão';
-          if (props.card.order) {
-            props.card.order.status = 'Pendente de Revisão';
-          }
-        }
-
-        // Limpar o formulário
-        selectedArtFile.value = null;
-        showLoadArtInput.value = false;
-        artComment.value = '';
-        if (artFileInput.value) {
-          artFileInput.value.value = '';
-        }
-
-        // Recarregar lista de artes
-        await fetchRequestLayoutArts();
-
-        if (window.Toast) {
-          window.Toast.fire({
-            icon: 'success',
-            title: response.data.message || 'Arte carregada com sucesso',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao carregar arte:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao carregar arte. Tente novamente.';
-
-      if (window.Swal) {
-        window.Swal.fire('Erro!', errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    } finally {
-      uploadingArt.value = false;
-    }
-  }
-
-  function resolveImageUrl(path) {
-    if (!path) {
-      return '';
-    }
-    if (/^https?:\/\//i.test(path)) {
-      return path;
-    }
-    const baseUrl = window.location.origin.replace(/\/$/, '');
-    return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
-  }
-
-  function handleImageError(event) {
-    event.target.style.display = 'none';
-  }
-
-  async function fetchRequestLayoutArts() {
-    if (!props.card?.id || !auth.user?.id) {
-      requestLayoutArts.value = [];
-      loadingRequestArts.value = false;
-      return;
-    }
-
-    try {
-      loadingRequestArts.value = true;
-
-      const orderBudgetId = props.card.id;
-
-      const orderId = props.card.order_id
-        || props.card.order?.id
-        || (props.card.order && typeof props.card.order === 'object' ? props.card.order.id : null);
-
-      const params = {
-        order_budget_id: orderBudgetId,
-      };
-
-      if (orderId) {
-        params.order_id = orderId;
-      }
-
-      console.log('Buscando artes com params:', params);
-      console.log('Card structure:', {
-        id: props.card.id,
-        order_id: props.card.order_id,
-        order: props.card.order
-      });
-
-      const response = await axios.get('v1/budgets/request-layout-arts', {
-        params,
-      });
-
-      const data = response?.data || response;
-
-      console.log('Resposta da API:', data);
-
-      if (data?.success && Array.isArray(data.data)) {
-        requestLayoutArts.value = data.data.map((art) => {
-          let imageUrl = art.image_url;
-          if (!imageUrl && art.path_file) {
-            imageUrl = resolveImageUrl(art.path_file);
-          }
-          
-          return {
-            id: art.id,
-            comment: art.comment || null,
-            image_url: imageUrl,
-            created_at: art.created_at || null,
-            wall_info: art.wall_info || null,
-            arts: [{
-              id: art.id,
-              comment: art.comment || null,
-              path_file: art.path_file || null,
-              image_url: imageUrl,
-              created_at: art.created_at || null,
-              designer_name: art.designer?.name || art.designer_name || null,
-              dealer_name: art.dealer?.name || art.dealer_name || null,
-            }],
-            arts_count: 1,
-          };
-        });
-      } else {
-        requestLayoutArts.value = [];
-      }
-    } catch (error) {
-      console.error('Erro ao buscar solicitações de artes:', error);
-      console.error('Erro completo:', error.response?.data || error.message);
-      requestLayoutArts.value = [];
-    } finally {
-      loadingRequestArts.value = false;
-    }
-}
 
   // Inicializar quando o card mudar
   watch(() => props.card, (newCard) => {
     if (newCard) {
-      // Buscar requisições de arte quando o card mudar
-      fetchRequestLayoutArts();
+      // O fetchRequestLayoutArts é gerenciado pelo composable useRequestLayoutArts
     }
     // Fechar menu de membro quando o card mudar
     showMemberMenu.value = false;
     selectedMember.value = null;
-    // Resetar upload de arte
-    showLoadArtInput.value = false;
-    selectedArtFile.value = null;
   }, { immediate: true });
 
   // Fechar menu de membro ao clicar fora
