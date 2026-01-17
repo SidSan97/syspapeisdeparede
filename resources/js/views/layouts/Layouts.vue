@@ -1,8 +1,8 @@
 <template>
     <section class="content">
         <Page title="Layouts" :full-width="true">
-            <div class="trello-container">
-                <div class="trello-board" ref="boardRef">
+            <div class="board-container">
+                <div class="board" ref="boardRef">
                     <LayoutColumn
                         v-for="column in columns"
                         :key="column.id"
@@ -190,54 +190,15 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.trello-container {
-    padding: 1.25rem;
-    height: calc(100vh - 120px);
-    overflow: hidden;
-    background-color: var(--bs-body-bg);
-}
-
-.trello-board {
-    display: flex;
-    gap: 0.75rem;
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 0.625rem;
-
-    &::-webkit-scrollbar {
-        height: 12px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: var(--bs-border-color);
-        border-radius: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: var(--bs-secondary);
-        border-radius: 6px;
-        opacity: 0.5;
-
-      &:hover {
-        background: var(--bs-secondary);
-        opacity: 0.7;
-      }
-    }
-  }
+@import '@/scss/board-layout.scss';
 
 @media (max-width: 768px) {
-    .trello-container {
-        padding: 0.75rem;
-        height: calc(100vh - 100px);
-    }
-
     .trello-column {
-      flex: 0 0 280px;
+        flex: 0 0 280px;
     }
 
     .trello-column-add {
-      flex: 0 0 280px;
+        flex: 0 0 280px;
     }
-  }
-  </style>
+}
+</style>

@@ -1,8 +1,8 @@
 <template>
     <section class="content">
       <Page title="Produção" :full-width="true">
-        <div class="production-container">
-          <div class="production-board" ref="boardRef">
+        <div class="board-container">
+          <div class="board" ref="boardRef">
                     <ProductionColumn
               v-for="column in columns"
               :key="column.id"
@@ -209,46 +209,5 @@ async function openAddColumnModalHandler() {
   </script>
 
   <style lang="scss" scoped>
-  .production-container {
-    padding: 1.25rem;
-    height: calc(100vh - 120px);
-    overflow: hidden;
-    background-color: var(--bs-body-bg);
-  }
-
-  .production-board {
-    display: flex;
-    gap: 0.75rem;
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 0.625rem;
-
-    &::-webkit-scrollbar {
-      height: 12px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: var(--bs-border-color);
-      border-radius: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: var(--bs-secondary);
-      border-radius: 6px;
-      opacity: 0.5;
-
-      &:hover {
-        background: var(--bs-secondary);
-        opacity: 0.7;
-      }
-    }
-  }
-
-  @media (max-width: 768px) {
-    .production-container {
-      padding: 0.75rem;
-      height: calc(100vh - 100px);
-    }
-  }
+    @import '@/scss/board-layout.scss';
   </style>
