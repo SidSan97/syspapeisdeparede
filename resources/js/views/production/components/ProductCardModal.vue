@@ -2,7 +2,7 @@
     <Teleport v-if="card" to="body">
       <div class="layout-modal-overlay" @click="handleClose">
         <div class="layout-modal" @click.stop>
-          <div class="layout-modal-header">
+          <div class="layout-modal-header d-flex justify-content-between align-items-center">
             <h2 class="layout-modal-title">{{ getCardDisplayName(card) }}</h2>
             <button class="layout-modal-close" @click="handleClose">
               <i class="fa fa-times"></i>
