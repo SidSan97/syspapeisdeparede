@@ -91,13 +91,21 @@
           </tbody>
         </table>
       </div>
+
+      <div
+        v-if="!loading && filteredItems.length > 0 && paginationData && paginationData.last_page > 1"
+        class="p-3"
+      >
+        <PaginationNav :data="paginationData" @pagination-change-page="handlePageChange" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
+import PaginationNav from '@/components/pagination/PaginationNav.vue';
 import { formatDate } from '@/utils/dateUtils';
 
 const props = defineProps({
@@ -109,9 +117,20 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  paginationData: {
+    type: Object,
+    default: () => ({
+      current_page: 1,
+      last_page: 1,
+      per_page: 15,
+      total: 0,
+      from: 0,
+      to: 0,
+    }),
+  },
 });
 
-const emit = defineEmits(['view-details', 'generate-separation-label']);
+const emit = defineEmits(['view-details', 'generate-separation-label', 'page-change', 'search-change']);
 
 const searchQuery = ref('');
 
@@ -122,18 +141,16 @@ const separations = computed(() => {
 });
 
 const filteredItems = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-
-  return separations.value.filter((expedition) => {
-    const matchesQuery =
-      !query ||
-      expedition.order?.name?.toLowerCase().includes(query) ||
-      String(expedition.id).includes(query) ||
-      String(expedition.order_id).includes(query);
-
-    return matchesQuery;
-  });
+  return separations.value;
 });
+
+watch(searchQuery, (newValue) => {
+  emit('search-change', newValue);
+});
+
+function handlePageChange(page) {
+  emit('page-change', page);
+}
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',

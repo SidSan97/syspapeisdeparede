@@ -1,10 +1,34 @@
 import axios from 'axios';
 
 export function useExpeditionService() {
-  async function fetchExpeditions() {
-    const { data } = await axios.get('v1/orders/expedition');
-    const payload = Array.isArray(data?.data) ? data.data : [];
-    return payload;
+  async function fetchExpeditions(params = {}) {
+    const { data } = await axios.get('v1/orders/expedition', { params });
+
+    if (data?.success && data?.data) {
+      return {
+        items: Array.isArray(data.data.data) ? data.data.data : [],
+        pagination: {
+          current_page: data.data.current_page || 1,
+          last_page: data.data.last_page || 1,
+          per_page: data.data.per_page || 15,
+          total: data.data.total || 0,
+          from: data.data.from || 0,
+          to: data.data.to || 0,
+        },
+      };
+    }
+
+    return {
+      items: [],
+      pagination: {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+        from: 0,
+        to: 0,
+      },
+    };
   }
 
   async function fetchInvoices() {

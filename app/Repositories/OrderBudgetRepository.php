@@ -192,6 +192,54 @@ class OrderBudgetRepository {
             });
     }
 
+    public function paginateReadyForPicking(int $perPage = 15, ?string $search = null)
+    {
+        $query = $this->orderBudget::where('production_percentage', 100)
+            ->with('order')
+            ->where('ready_to_expedition', 0)
+            ->orderBy('id', 'asc');
+
+        // Filtro de busca
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('order', function ($orderQuery) use ($search) {
+                    $orderQuery->where('name', 'like', "%{$search}%");
+                })
+                ->orWhere('id', 'like', "%{$search}%")
+                ->orWhere('order_id', 'like', "%{$search}%");
+            });
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        // Transformar os itens
+        $paginated->getCollection()->transform(function ($orderBudget) {
+            return [
+                'id' => $orderBudget->id,
+                'order_id' => $orderBudget->order_id,
+                'description' => $orderBudget->description,
+                'name' => $orderBudget->order->name ?? $orderBudget->description ?? null,
+                'production_percentage' => $orderBudget->production_percentage,
+                'production_date' => $orderBudget->production_date,
+                'order_index' => $orderBudget->order_index,
+                'total_index' => $orderBudget->order ? $orderBudget->order->orderBudgets()->max('order_index') ?? $orderBudget->order_index : $orderBudget->order_index,
+                'created_at' => $orderBudget->created_at,
+                'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
+                'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
+                'ready_to_expedition' => $orderBudget->ready_to_expedition,
+                'order' => $orderBudget->order ? [
+                    'id' => $orderBudget->order->id,
+                    'name' => $orderBudget->order->name,
+                    'total_amount' => $orderBudget->order->total_amount,
+                    'status' => $orderBudget->order->status,
+                    'created_at' => $orderBudget->order->created_at,
+                ] : null,
+            ];
+        });
+
+        return $paginated;
+    }
+
     public function updateTinyErpOrderId(int $orderId, string $tinyErpOrderId)
     {
         $this->orderBudget::where('order_id', $orderId)->update([

@@ -19,14 +19,27 @@ class OrderExpeditionController extends Controller
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->repository = $orderRepository;
     }
-    public function expedition(): JsonResponse
+
+    public function expedition(Request $request): JsonResponse
     {
         try {
-            $orderBudgets = $this->orderBudgetRepository->getReadyForPicking();
+            $perPage = $request->input('per_page', 15);
+            $search = $request->input('search');
+            $page = $request->input('page', 1);
+
+            $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($perPage, $search);
 
             return response()->json([
                 'success' => true,
-                'data' => $orderBudgets,
+                'data' => [
+                    'data' => $paginatedBudgets->items(),
+                    'current_page' => $paginatedBudgets->currentPage(),
+                    'last_page' => $paginatedBudgets->lastPage(),
+                    'per_page' => $paginatedBudgets->perPage(),
+                    'total' => $paginatedBudgets->total(),
+                    'from' => $paginatedBudgets->firstItem(),
+                    'to' => $paginatedBudgets->lastItem(),
+                ],
                 'message' => 'Lista de separações recuperada com sucesso',
             ], 200);
         } catch (\Exception $e) {

@@ -10,14 +10,41 @@ export function useExpeditionData() {
   const groupings = ref([]);
   const loading = ref(true);
   const loadingGroupings = ref(false);
+  const paginationData = ref({
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
 
-  async function fetchExpeditions() {
+  async function fetchExpeditions(page = 1, search = null) {
     try {
       loading.value = true;
-      expeditions.value = await expeditionService.fetchExpeditions();
+      const params = {
+        page,
+        per_page: 15,
+      };
+
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+
+      const result = await expeditionService.fetchExpeditions(params);
+      expeditions.value = result.items;
+      paginationData.value = result.pagination;
     } catch (error) {
       console.error('Erro ao buscar expedições:', error);
       expeditions.value = [];
+      paginationData.value = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+        from: 0,
+        to: 0,
+      };
     } finally {
       loading.value = false;
     }
@@ -100,6 +127,7 @@ export function useExpeditionData() {
     groupings,
     loading,
     loadingGroupings,
+    paginationData,
     fetchExpeditions,
     fetchInvoices,
     searchInvoices,

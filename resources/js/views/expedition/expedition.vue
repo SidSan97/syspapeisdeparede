@@ -61,8 +61,11 @@
             <SeparationTable
               :expeditions="expeditions"
               :loading="loading"
+              :pagination-data="paginationData"
               @view-details="viewDetails"
               @generate-separation-label="handleGenerateSeparationLabel"
+              @page-change="handleSeparationPageChange"
+              @search-change="handleSeparationSearchChange"
             />
           </div>
 
@@ -147,6 +150,7 @@ const {
   groupings,
   loading,
   loadingGroupings,
+  paginationData,
   fetchExpeditions,
   fetchInvoices,
   searchInvoices,
@@ -196,6 +200,17 @@ function handleGenerateDanfe(id) {
 
 function handlePrintCarrierLabels(groupingId) {
   printCarrierLabels(groupingId, loading);
+}
+
+const separationSearchQuery = ref('');
+
+function handleSeparationPageChange(page) {
+  fetchExpeditions(page, separationSearchQuery.value);
+}
+
+function handleSeparationSearchChange(search) {
+  separationSearchQuery.value = search;
+  fetchExpeditions(1, search);
 }
 
 watch(activeTab, (newTab) => {
