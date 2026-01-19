@@ -61,6 +61,13 @@ class UserController extends BaseController
         return $this->sendResponse($users, 'Lista de revendedores');
     }
 
+    public function listDesigners()
+    {
+        $users = $this->user->with('roles')->role(['designer'])->get();
+
+        return $this->sendResponse($users, 'Lista de designers');
+    }
+
     public function store(UserRequest $request)
     {
         $user = $this->user->create($request->validated());

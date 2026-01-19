@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('roles/list', [RoleController::class, 'list']);
     Route::get('users/list-resellers', [UserController::class, 'listResellers']);
+    Route::get('users/list-designers', [UserController::class, 'listDesigners']);
 
     // Users
     //----------------------------------

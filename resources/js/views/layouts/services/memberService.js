@@ -9,9 +9,8 @@ export function useMemberService() {
      * @param {string} role - Role para filtrar (ex: 'designer')
      * @returns {Promise}
      */
-    async function searchMembers(role = 'designer') {
-        const response = await axios.get('v1/users/search', {
-            params: { role }
+    async function searchDesigners() {
+        const response = await axios.get('v1/users/list-designers', {
         });
         return response.data;
     }
@@ -46,7 +45,7 @@ export function useMemberService() {
     }
 
     return {
-        searchMembers,
+        searchDesigners,
         addMember,
         removeMember,
     };

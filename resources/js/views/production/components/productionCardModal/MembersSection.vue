@@ -200,7 +200,7 @@ function closeMembersMenu() {
 async function fetchMembers() {
   try {
     loadingMembers.value = true;
-    const response = await memberService.searchMembers('designer');
+    const response = await memberService.searchDesigners();
 
     if (response.success && response.data) {
       // Se a resposta estiver paginada, pegar o array de dados
