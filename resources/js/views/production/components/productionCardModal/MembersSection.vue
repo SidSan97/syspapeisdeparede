@@ -27,7 +27,7 @@
       </button>
 
       <!-- Menu de adicionar membros -->
-      <div v-if="showMembersMenu" class="position-absolute mt-2 bg-dark border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">
+      <div v-if="showMembersMenu" class="position-absolute mt-2 border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">
         <div class="d-flex align-items-center justify-content-between py-3 px-4 border-bottom border-secondary-subtle members-section-menu-header">
           <button class="border-0 bg-transparent text-body p-2 rounded members-section-menu-back" @click="closeMembersMenu">
             <i class="fa fa-chevron-left fa-fw"></i>
@@ -457,6 +457,7 @@ watch(() => props.card?.id, () => {
   width: 340px;
   max-height: 600px;
   z-index: 1000;
+  background-color: var(--ds-background-accent-blue-subtlest-hovered);
 }
 
 .members-section-list-title {
