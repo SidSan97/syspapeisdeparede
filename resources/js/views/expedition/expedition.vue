@@ -58,99 +58,12 @@
             :class="{ active: activeTab === 'separation' }"
             role="tabpanel"
           >
-            <form class="g-3 align-items-center mb-4" role="search">
-              <label for="search-query-separation" class="sr-only">Pesquisar separação</label>
-
-              <div class="d-flex">
-                <div class="me-3">
-                  <div class="input-group input-group-prefix">
-                    <input
-                      id="search-query-separation"
-                      type="text"
-                      class="form-control"
-                      placeholder="Pesquisar separação"
-                      v-model="searchQuerySeparation"
-                    />
-                    <span class="input-group-text">
-                      <i class="fa fa-search"></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </form>
-
-            <div class="card-body p-0 mt-4">
-              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-                Carregando separações...
-              </div>
-
-              <EmptyState
-                v-else-if="filteredSeparations.length === 0"
-                heading="Nenhuma separação encontrada"
-                icon="shipping-fast"
-                class="p-5"
-              >
-                Não há itens prontos para separação no momento.
-              </EmptyState>
-
-              <div v-else class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col" style="width: 64px;">Nº</th>
-                      <th scope="col" style="width: 64px;">Data</th>
-                      <th class="text-nowrap" scope="col">Pedido</th>
-                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="expedition in filteredSeparations" :key="expedition.id">
-                      <th scope="row">{{ expedition.id }}</th>
-                      <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
-                      <td style="min-width: 240px;">
-                        <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
-                        <small class="text-muted">Pedido #{{ expedition.order_id }}</small> -
-                        <small class="text-muted">Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small>
-                      </td>
-                      <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
-                      <td>
-                        <div class="dropdown">
-                          <button
-                            class="btn btn-subtle btn-sm"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                          >
-                            <i class="fa fa-ellipsis-h"></i>
-                          </button>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="viewDetails(expedition)"
-                              >
-                                Ver detalhes
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="generateSeparationLabel(expedition)"
-                              >
-                                Gerar etiqueta de separação
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <SeparationTable
+              :expeditions="expeditions"
+              :loading="loading"
+              @view-details="viewDetails"
+              @generate-separation-label="generateSeparationLabel"
+            />
           </div>
 
           <!-- Aba Expedição -->
@@ -160,138 +73,17 @@
             :class="{ active: activeTab === 'expedition' }"
             role="tabpanel"
           >
-            <form class="g-3 align-items-center mb-4" role="search">
-              <label for="search-query-expedition" class="sr-only">Pesquisar Notas Fiscais</label>
-
-              <div class="d-flex flex-wrap gap-3">
-                <div>
-                  <div class="input-group input-group-prefix">
-                    <input
-                      id="search-query-expedition"
-                      type="text"
-                      class="form-control"
-                      placeholder="Pesquisar Notas Fiscais"
-                      v-model="searchQueryExpedition"
-                    />
-                    <span class="input-group-text">
-                      <i class="fa fa-search"></i>
-                    </span>
-                  </div>
-                </div>
-                <div style="min-width: 200px;">
-                  <select
-                    class="form-select"
-                    v-model="selectedCarrier"
-                  >
-                    <option :value="null">Todas as transportadoras</option>
-                    <option
-                      v-for="carrier in carriersList"
-                      :key="carrier"
-                      :value="carrier"
-                    >
-                      {{ carrier }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </form>
-
-            <div class="card-body p-0 mt-4">
-              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-                Carregando notas fiscais...
-              </div>
-
-              <EmptyState
-                v-else-if="filteredExpeditions.length === 0"
-                heading="Nenhuma nota fiscal encontrada"
-                icon="shipping-fast"
-                class="p-5"
-              >
-                Não há notas fiscais para expedição no momento.
-              </EmptyState>
-
-              <div v-else>
-                <!-- Barra de seleção -->
-                <div v-if="selectedCount > 0" class="d-flex align-items-center justify-content-between mb-3 p-3 rounded count-nf-section">
-                  <div class="d-flex align-items-center">
-                    <span class="fw-semibold me-2">{{ selectedCount }}</span>
-                    <span class="text-muted">selecionados</span>
-                  </div>
-                  <button class="btn btn-primary" @click="expedir">
-                    Agrupar e expedir
-                  </button>
-                </div>
-
-                <div class="table-responsive">
-                  <h6 class="mt-3">Notas Fiscais</h6>
-                  <table class="table table-hover align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col" style="width: 50px;">
-                          <input
-                            ref="selectAllCheckbox"
-                            type="checkbox"
-                            class="form-check-input checkbox-invoice"
-                            :checked="isAllSelected"
-                            @change="toggleSelectAll"
-                          />
-                        </th>
-                        <th class="text-nowrap" scope="col">Nome</th>
-                        <th scope="col" style="width: 120px;">Data de Emissão</th>
-                        <th scope="col" style="width: 100px;">Nº Pedido</th>
-                        <th scope="col" style="width: 100px;">Nº Nota Fiscal</th>
-                        <th class="text-nowrap" scope="col">Transportador</th>
-                        <th class="text-nowrap" scope="col">Valor</th>
-                        <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="invoice in filteredExpeditions" :key="invoice.nota_fiscal?.id">
-                        <th scope="row">
-                          <input
-                            type="checkbox"
-                            class="form-check-input checkbox-invoice"
-                            :checked="isInvoiceSelected(invoice.nota_fiscal?.id)"
-                            @change="toggleSelectInvoice(invoice.nota_fiscal?.id)"
-                          />
-                        </th>
-                        <td style="min-width: 240px;">
-                          <div class="fw-semibold">{{ invoice.nota_fiscal?.nome || '—' }}</div>
-                        </td>
-                        <td>{{ invoice.nota_fiscal?.data_emissao || '—' }}</td>
-                        <td class="fw-semibold">#{{ formatInvoiceNumber(invoice.nota_fiscal?.numero_ecommerce) }}</td>
-                        <td class="fw-semibold">{{ invoice.nota_fiscal?.id || '—' }}</td>
-                        <td>{{ invoice.nota_fiscal?.transportador?.nome || '—' }}</td>
-                        <td>{{ formatCurrency(invoice.nota_fiscal?.valor || 0) }}</td>
-                        <td>
-                          <div class="dropdown">
-                            <button
-                              class="btn btn-subtle btn-sm"
-                              type="button"
-                              data-bs-toggle="dropdown"
-                              aria-expanded="false"
-                            >
-                              <i class="fa fa-ellipsis-h"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                              <li>
-                                <button
-                                  class="dropdown-item"
-                                  type="button"
-                                  @click="viewInvoiceDetails(invoice)"
-                                >
-                                  Ver detalhes
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            <ExpeditionTable
+              :invoices="invoicesList"
+              :loading="loading"
+              :selected-invoices="selectedInvoices"
+              :selected-carrier="selectedCarrier"
+              @carrier-changed="selectedCarrier = $event"
+              @toggle-select-all="toggleSelectAll"
+              @toggle-invoice="toggleSelectInvoice"
+              @expedir="expedir"
+              @view-invoice-details="viewInvoiceDetails"
+            />
           </div>
 
           <!-- Aba Agrupamentos -->
@@ -301,106 +93,14 @@
             :class="{ active: activeTab === 'groupings' }"
             role="tabpanel"
           >
-            <form class="g-3 align-items-center mb-4" role="search">
-              <div class="d-flex">
-                <div style="min-width: 200px;">
-                  <label for="grouping-carrier-select" class="form-label">Transportadora</label>
-                  <select
-                    id="grouping-carrier-select"
-                    class="form-select"
-                    v-model="selectedGroupingCarrier"
-                    @change="searchGroupings"
-                  >
-                    <option :value="null">Selecione uma transportadora</option>
-                    <option
-                      v-for="carrier in carriersList"
-                      :key="carrier"
-                      :value="carrier"
-                    >
-                      {{ carrier }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </form>
-
-            <div class="card-body p-0 mt-4">
-              <div v-if="loadingGroupings" class="p-5 text-center text-muted fw-semibold">
-                Carregando agrupamentos...
-              </div>
-
-              <EmptyState
-                v-else-if="!selectedGroupingCarrier"
-                heading="Selecione uma transportadora"
-                icon="shipping-fast"
-                class="p-5"
-              >
-                Por favor, selecione uma transportadora para visualizar os agrupamentos.
-              </EmptyState>
-
-              <EmptyState
-                v-else-if="groupings.length === 0"
-                heading="Nenhum agrupamento encontrado"
-                icon="shipping-fast"
-                class="p-5"
-              >
-                Não há agrupamentos para a transportadora selecionada no momento.
-              </EmptyState>
-
-              <div v-else class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col">Nº Agrupamento</th>
-                      <th scope="col">Transportadora</th>
-                      <th scope="col">Quantidade de Notas</th>
-                      <th scope="col">Data</th>
-                      <th scope="col" style="width: 64px;">Opções</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="grouping in groupings" :key="grouping.id">
-                      <th scope="row" class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</th>
-                      <td>{{ selectedGroupingCarrier }}</td>
-                      <td>{{ grouping.expedicoes.length || 0 }}</td>
-                      <td>{{ formatDate(grouping.data) }}</td>
-                      <td>
-                        <div class="dropdown">
-                          <button
-                            class="btn btn-subtle btn-sm"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                          >
-                            <i class="fa fa-ellipsis-h"></i>
-                          </button>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="viewGroupingDetails(grouping)"
-                              >
-                                Ver detalhes
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="printCarrierLabels(grouping.idAgrupamento)"
-                              >
-                                Imprimir etiquetas {{ selectedGroupingCarrier }}
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <GroupingsTable
+              :groupings="groupings"
+              :loading="loadingGroupings"
+              :selected-carrier="selectedGroupingCarrier"
+              @carrier-changed="handleGroupingCarrierChanged"
+              @view-details="viewGroupingDetails"
+              @print-labels="printCarrierLabels"
+            />
           </div>
 
           <!-- Aba Faturar -->
@@ -410,119 +110,13 @@
             :class="{ active: activeTab === 'invoice' }"
             role="tabpanel"
           >
-            <form class="g-3 align-items-center mb-4" role="search">
-              <label for="search-query-invoice" class="sr-only">Pesquisar faturar</label>
-
-              <div class="d-flex">
-                <div class="me-3">
-                  <div class="input-group input-group-prefix">
-                    <input
-                      id="search-query-invoice"
-                      type="text"
-                      class="form-control"
-                      placeholder="Pesquisar faturar"
-                      v-model="searchQueryInvoice"
-                    />
-                    <span class="input-group-text">
-                      <i class="fa fa-search"></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </form>
-
-            <div class="card-body p-0 mt-4">
-              <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-                Carregando pedidos para faturar...
-              </div>
-
-              <EmptyState
-                v-else-if="filteredInvoices.length === 0"
-                heading="Nenhum pedido encontrado"
-                icon="shipping-fast"
-                class="p-5"
-              >
-                Não há pedidos prontos para faturar no momento.
-              </EmptyState>
-
-              <div v-else class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col" style="width: 64px;">ID</th>
-                      <th scope="col" style="width: 64px;">Data</th>
-                      <th class="text-nowrap" scope="col">Pedido</th>
-                      <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-                      <th class="text-nowrap" scope="col" style="width: 120px;">Status</th>
-                      <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="invoice in filteredInvoices" :key="invoice.id">
-                      <th scope="row">{{ invoice.id }}</th>
-                      <td>{{ formatDate(invoice?.created_at || invoice.created_at) }}</td>
-                      <td style="min-width: 240px;">
-                        <div class="fw-semibold">{{ invoice?.name || '—' }}</div>
-                        <small class="text-muted">Pedido #{{ invoice.order_id }}</small>
-                      </td>
-                      <td>{{ formatCurrency(invoice?.total_amount || 0) }}</td>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <span
-                            class="dot me-2"
-                            :class="invoice?.nf_sent === 1 ? 'dot-success' : 'dot-secondary'"
-                          ></span>
-                          <span class="text-muted small">
-                            {{ invoice?.nf_sent === 1 ? 'Faturado' : 'Não faturado' }}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="dropdown">
-                          <button
-                            class="btn btn-subtle btn-sm"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                          >
-                            <i class="fa fa-ellipsis-h"></i>
-                          </button>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="viewDetails(invoice)"
-                              >
-                                Ver detalhes
-                              </button>
-                            </li>
-                            <li v-if="invoice?.nf_sent === 0">
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="generateInvoice(invoice)"
-                              >
-                                Gerar Nota Fiscal
-                              </button>
-                            </li>
-                            <li v-if="invoice?.nf_sent === 1">
-                              <button
-                                class="dropdown-item"
-                                type="button"
-                                @click="generateDanfe(invoice.nf_id)"
-                              >
-                                Gerar DANFE
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <InvoiceTable
+              :invoices="invoices"
+              :loading="loading"
+              @view-details="viewDetails"
+              @generate-invoice="generateInvoice"
+              @generate-danfe="generateDanfe"
+            />
           </div>
         </div>
       </div>
@@ -531,128 +125,73 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
-import EmptyState from '@/components/empty-state/EmptyState.vue';
-import axios from 'axios';
-import { formatDate } from '@/utils/dateUtils';
-import { getCarriersList } from '@/constants/carriers';
+import SeparationTable from './components/SeparationTable.vue';
+import ExpeditionTable from './components/ExpeditionTable.vue';
+import InvoiceTable from './components/InvoiceTable.vue';
+import GroupingsTable from './components/GroupingsTable.vue';
+import { useExpeditionService } from './services/expeditionService';
 import { createLinkAlertConfig } from '@/utils/sweetalertHelpers';
 
 const router = useRouter();
-const selectAllCheckbox = ref(null);
+const expeditionService = useExpeditionService();
 
 const expeditions = ref([]);
 const invoices = ref([]);
 const invoicesList = ref([]);
 const loading = ref(true);
 const activeTab = ref('separation');
-const searchQuerySeparation = ref('');
-const searchQueryExpedition = ref('');
-const searchQueryInvoice = ref('');
 const selectedInvoices = ref(new Set());
 const selectedCarrier = ref(null);
-const carriersList = ref(getCarriersList());
 const selectedGroupingCarrier = ref(null);
 const groupings = ref([]);
 const loadingGroupings = ref(false);
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
+const filteredExpeditions = computed(() => {
+  return invoicesList.value;
 });
 
-function formatCurrency(value) {
-  if (value === null || value === undefined) {
-    return currencyFormatter.format(0);
+async function fetchExpeditions() {
+  try {
+    loading.value = true;
+    expeditions.value = await expeditionService.fetchExpeditions();
+  } catch (error) {
+    console.error('Erro ao buscar expedições:', error);
+    expeditions.value = [];
+  } finally {
+    loading.value = false;
   }
-
-  const numericValue = Number(value);
-  return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
 }
 
-const separations = computed(() => {
-  return expeditions.value.filter((expedition) => {
-    return expedition?.ready_to_expedition === 0;
-  });
-});
+async function fetchInvoices() {
+  try {
+    loading.value = true;
+    invoices.value = await expeditionService.fetchInvoices();
+  } catch (error) {
+    console.error('Erro ao buscar pedidos para faturar:', error);
+    invoices.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
 
-const expeditionsList = computed(() => {
-  return expeditions.value.filter((expedition) => {
-    return expedition?.ready_to_expedition === 1;
-  });
-});
-
-// Filtros de busca
-const filteredSeparations = computed(() => {
-  const query = searchQuerySeparation.value.trim().toLowerCase();
-
-  return separations.value.filter((expedition) => {
-    const matchesQuery =
-      !query ||
-      expedition.order?.name?.toLowerCase().includes(query) ||
-      String(expedition.id).includes(query) ||
-      String(expedition.order_id).includes(query);
-
-    return matchesQuery;
-  });
-});
-
-const filteredExpeditions = computed(() => {
-  const query = searchQueryExpedition.value.trim().toLowerCase();
-
-  return invoicesList.value.filter((invoice) => {
-    const notaFiscal = invoice.nota_fiscal;
-
-    // Filtro por busca
-    const matchesQuery =
-      !query ||
-      notaFiscal?.nome?.toLowerCase().includes(query) ||
-      notaFiscal?.numero_ecommerce?.toString().includes(query) ||
-      notaFiscal?.transportador?.nome?.toLowerCase().includes(query) ||
-      notaFiscal?.data_emissao?.includes(query);
-
-    // Filtro por transportadora
-    const matchesCarrier =
-      !selectedCarrier.value ||
-      notaFiscal?.transportador?.nome === selectedCarrier.value;
-
-    return matchesQuery && matchesCarrier;
-  });
-});
-
-const selectedCount = computed(() => selectedInvoices.value.size);
-
-const isAllSelected = computed(() => {
-  if (filteredExpeditions.value.length === 0) return false;
-  return filteredExpeditions.value.every((invoice) =>
-    selectedInvoices.value.has(invoice.nota_fiscal?.id)
-  );
-});
-
-const isIndeterminate = computed(() => {
-  const selected = selectedCount.value;
-  const total = filteredExpeditions.value.length;
-  return selected > 0 && selected < total;
-});
-
-watch([isIndeterminate, isAllSelected], () => {
-  nextTick(() => {
-    if (selectAllCheckbox.value) {
-      selectAllCheckbox.value.indeterminate = isIndeterminate.value;
-    }
-  });
-});
-
-onMounted(() => {
-  searchTinyErpProducts();
-  searchTinyErpCarriersTypes();
-});
+async function searchInvoices() {
+  try {
+    loading.value = true;
+    invoicesList.value = await expeditionService.searchInvoices();
+  } catch (error) {
+    console.error('Erro ao buscar invoices:', error);
+    invoicesList.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
 
 async function searchTinyErpProducts() {
     try {
-        const { data } = await axios.get('v1/tiny-erp/all');
+    await expeditionService.searchTinyErpProducts();
     } catch (error) {
         console.error('Erro ao buscar produtos:', error);
         window.Swal.fire({
@@ -667,7 +206,7 @@ async function searchTinyErpProducts() {
 
 async function searchTinyErpCarriersTypes() {
     try {
-        const { data } = await axios.get('v1/tiny-erp/carriers-types');
+    await expeditionService.searchTinyErpCarriersTypes();
     } catch (error) {
         console.error('Erro ao buscar tipos de transportadores:', error);
     }
@@ -675,12 +214,10 @@ async function searchTinyErpCarriersTypes() {
 
 function toggleSelectAll() {
   if (isAllSelected.value) {
-    // Desmarcar todos
     filteredExpeditions.value.forEach((invoice) => {
       selectedInvoices.value.delete(invoice.nota_fiscal?.id);
     });
   } else {
-    // Marcar todos
     filteredExpeditions.value.forEach((invoice) => {
       if (invoice.nota_fiscal?.id) {
         selectedInvoices.value.add(invoice.nota_fiscal.id);
@@ -697,9 +234,12 @@ function toggleSelectInvoice(invoiceId) {
   }
 }
 
-function isInvoiceSelected(invoiceId) {
-  return selectedInvoices.value.has(invoiceId);
-}
+const isAllSelected = computed(() => {
+  if (filteredExpeditions.value.length === 0) return false;
+  return filteredExpeditions.value.every((invoice) =>
+    selectedInvoices.value.has(invoice.nota_fiscal?.id)
+  );
+});
 
 async function expedir() {
   try {
@@ -718,12 +258,10 @@ async function expedir() {
       return;
     }
 
-    // Verificar se todas as notas fiscais selecionadas têm o mesmo transportador
     const selectedInvoicesData = filteredExpeditions.value.filter(invoice =>
       invoiceIds.includes(invoice.nota_fiscal?.id)
     );
 
-    // Obter todos os order_id das notas fiscais selecionadas
     const orderIds = selectedInvoicesData
       .map(invoice => invoice.nota_fiscal?.numero_ecommerce)
       .filter(orderId => orderId);
@@ -732,7 +270,6 @@ async function expedir() {
       .map(invoice => invoice.nota_fiscal?.transportador?.nome)
       .filter(transporter => transporter);
 
-    // Verificar se todas têm transportador
     if (transporters.length === 0 || transporters.length !== selectedInvoicesData.length) {
       loading.value = false;
       window.Swal.fire({
@@ -744,7 +281,6 @@ async function expedir() {
       return;
     }
 
-    // Verificar se todas têm o mesmo transportador
     const firstTransporter = transporters[0];
     const allSameTransporter = transporters.every(transporter => transporter === firstTransporter);
 
@@ -759,13 +295,11 @@ async function expedir() {
       return;
     }
 
-    const carrier = firstTransporter;
-
-    const { data } = await axios.post('v1/send-invoice-to-expedition', {
-      invoice_ids: invoiceIds,
-      carrier: carrier,
-      order_ids: orderIds
-    });
+    const data = await expeditionService.sendInvoiceToExpedition(
+      invoiceIds,
+      firstTransporter,
+      orderIds
+    );
 
     if (data.success) {
       window.Swal.fire({
@@ -776,7 +310,6 @@ async function expedir() {
       });
 
       selectedInvoices.value.clear();
-
       await searchInvoices();
     }
   } catch (error) {
@@ -792,54 +325,6 @@ async function expedir() {
   }
 }
 
-const filteredInvoices = computed(() => {
-  const query = searchQueryInvoice.value.trim().toLowerCase();
-
-  return invoices.value.filter((invoice) => {
-    const matchesQuery =
-      !query ||
-      invoice.order?.name?.toLowerCase().includes(query) ||
-      String(invoice.id).includes(query) ||
-      String(invoice.order_id).includes(query);
-
-    return matchesQuery;
-  });
-});
-
-async function fetchExpeditions() {
-  try {
-    loading.value = true;
-
-    const { data } = await axios.get('v1/orders/expedition');
-
-    const payload = Array.isArray(data?.data) ? data.data : [];
-
-    expeditions.value = payload;
-  } catch (error) {
-    console.error('Erro ao buscar expedições:', error);
-    expeditions.value = [];
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function fetchInvoices() {
-  try {
-    loading.value = true;
-
-    const { data } = await axios.get('v1/orders/ready-for-invoice');
-
-    const payload = Array.isArray(data?.data) ? data.data : [];
-
-    invoices.value = payload;
-  } catch (error) {
-    console.error('Erro ao buscar pedidos para faturar:', error);
-    invoices.value = [];
-  } finally {
-    loading.value = false;
-  }
-}
-
 function viewDetails(expedition) {
   // TODO: Implementar ação de ver detalhes
   console.log('Ver detalhes da expedição:', expedition);
@@ -848,7 +333,7 @@ function viewDetails(expedition) {
 async function generateSeparationLabel(expedition) {
     try {
         loading.value = true;
-        const { data } = await axios.get(`v1/generate-separation-label/${expedition.id}`);
+    const data = await expeditionService.generateSeparationLabel(expedition.id);
 
         if (data.success) {
             const result = await window.Swal.fire({
@@ -861,7 +346,7 @@ async function generateSeparationLabel(expedition) {
             });
 
             if (result.isConfirmed) {
-                viewSeparationLabelPdf(expedition.id);
+        await viewSeparationLabelPdf(expedition.id);
             }
         }
     } catch (error) {
@@ -880,15 +365,12 @@ async function generateSeparationLabel(expedition) {
 async function viewSeparationLabelPdf(orderBudgetId) {
     try {
         loading.value = true;
-        const response = await axios.get(`v1/generate-separation-label-pdf/${orderBudgetId}`, {
-            responseType: 'blob',
-        });
+    const blobData = await expeditionService.viewSeparationLabelPdf(orderBudgetId);
 
-        const blob = new Blob([response.data], { type: 'application/pdf' });
+    const blob = new Blob([blobData], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
 
-        // Limpar a URL após um tempo para liberar memória
         setTimeout(() => {
             URL.revokeObjectURL(url);
         }, 100);
@@ -908,7 +390,7 @@ async function viewSeparationLabelPdf(orderBudgetId) {
 async function generateInvoice(invoice) {
     try {
         loading.value = true;
-        const { data } = await axios.post(`v1/generate-invoice/${invoice.order_id}`);
+    const data = await expeditionService.generateInvoice(invoice.order_id);
 
         if (data.success) {
             window.Swal.fire({
@@ -918,7 +400,6 @@ async function generateInvoice(invoice) {
                 confirmButtonText: 'Entendi!',
             });
 
-            // Recarregar a lista de invoices
             await fetchInvoices();
         }
     } catch (error) {
@@ -937,7 +418,7 @@ async function generateInvoice(invoice) {
 async function generateDanfe(id) {
     try {
         loading.value = true;
-        const { data } = await axios.get(`v1/generate-danfe/${id}`);
+    const data = await expeditionService.generateDanfe(id);
 
         if (data.success && data.data.link_nfe) {
             const result = await window.Swal.fire(
@@ -979,7 +460,7 @@ async function generateDanfe(id) {
 async function printCarrierLabels(groupingId) {
     try {
         loading.value = true;
-        const { data } = await axios.get(`v1/generate-grouping-print-label/${groupingId}`);
+    const data = await expeditionService.printCarrierLabels(groupingId);
 
         if (data.success && data.data.links) {
             const result = await window.Swal.fire(
@@ -1018,39 +499,20 @@ async function printCarrierLabels(groupingId) {
     }
 }
 
-async function searchInvoices() {
-    try {
-        loading.value = true;
-        const { data } = await axios.get('v1/search-invoices');
-
-        if (data.success && data.data.notas_fiscais) {
-            invoicesList.value = data.data.notas_fiscais;
-        } else {
-            invoicesList.value = [];
-        }
-    } catch (error) {
-        console.error('Erro ao buscar invoices:', error);
-        invoicesList.value = [];
-    } finally {
-        loading.value = false;
-    }
-}
-
-function formatInvoiceNumber(numero) {
-    if (!numero) return '00000';
-    return String(numero).padStart(5, '0');
-}
-
 function viewInvoiceDetails(invoice) {
     const invoiceId = invoice.nota_fiscal?.id;
     if (invoiceId) {
-        // Salva os dados no sessionStorage antes de navegar
         sessionStorage.setItem(`invoice_${invoiceId}`, JSON.stringify(invoice.nota_fiscal));
         router.push({
             name: 'ShowInvoiceDetails',
             params: { id: invoiceId }
         });
     }
+}
+
+function handleGroupingCarrierChanged(carrier) {
+  selectedGroupingCarrier.value = carrier;
+  searchGroupings();
 }
 
 async function searchGroupings() {
@@ -1061,14 +523,7 @@ async function searchGroupings() {
 
   try {
     loadingGroupings.value = true;
-    const { data } = await axios.get(`v1/search-groupings/${encodeURIComponent(selectedGroupingCarrier.value)}`);
-
-    if (data.success && data.data) {
-      groupings.value = data.data.agrupamentos || [];
-      console.log(groupings.value);
-    } else {
-      groupings.value = [];
-    }
+    groupings.value = await expeditionService.searchGroupings(selectedGroupingCarrier.value);
   } catch (error) {
     console.error('Erro ao buscar agrupamentos:', error);
     groupings.value = [];
@@ -1086,7 +541,6 @@ async function searchGroupings() {
 function viewGroupingDetails(grouping) {
   const groupingId = grouping.idAgrupamento;
   if (groupingId) {
-    // Salva os dados no sessionStorage antes de navegar
     sessionStorage.setItem(`grouping_${groupingId}`, JSON.stringify(grouping));
     router.push({
       name: 'ShowGroupingDetails',
@@ -1105,7 +559,6 @@ watch(activeTab, (newTab) => {
   }
 
   if (newTab === 'groupings') {
-    // Resetar seleção quando a aba for aberta
     if (!selectedGroupingCarrier.value) {
       groupings.value = [];
     }
@@ -1114,6 +567,8 @@ watch(activeTab, (newTab) => {
 
 onMounted(() => {
   fetchExpeditions();
+  searchTinyErpProducts();
+  searchTinyErpCarriersTypes();
   document.title = 'Expedição';
 });
 </script>
@@ -1141,31 +596,6 @@ onMounted(() => {
 .input-group-text,
 input {
   height: 36px !important;
-}
-
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dot-success {
-  background-color: #28a745;
-}
-
-.dot-secondary {
-  background-color: #6c757d;
-}
-
-.checkbox-invoice {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.count-nf-section {
-  background-color: var(--ds-background-accent-gray-subtlest-hovered);
 }
 </style>
 

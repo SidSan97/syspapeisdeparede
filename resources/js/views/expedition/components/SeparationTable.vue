@@ -1,0 +1,151 @@
+<template>
+  <div>
+    <form class="g-3 align-items-center mb-4" role="search">
+      <label for="search-query-separation" class="sr-only">Pesquisar separação</label>
+      <div class="d-flex">
+        <div class="me-3">
+          <div class="input-group input-group-prefix">
+            <input
+              id="search-query-separation"
+              type="text"
+              class="form-control"
+              placeholder="Pesquisar separação"
+              v-model="searchQuery"
+            />
+            <span class="input-group-text">
+              <i class="fa fa-search"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="card-body p-0 mt-4">
+      <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
+        Carregando separações...
+      </div>
+
+      <EmptyState
+        v-else-if="filteredItems.length === 0"
+        heading="Nenhuma separação encontrada"
+        icon="shipping-fast"
+        class="p-5"
+      >
+        Não há itens prontos para separação no momento.
+      </EmptyState>
+
+      <div v-else class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col" style="width: 64px;">Nº</th>
+              <th scope="col" style="width: 64px;">Data</th>
+              <th class="text-nowrap" scope="col">Pedido</th>
+              <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+              <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="expedition in filteredItems" :key="expedition.id">
+              <th scope="row">{{ expedition.id }}</th>
+              <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
+              <td style="min-width: 240px;">
+                <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
+                <small class="text-muted">Pedido #{{ expedition.order_id }}</small> -
+                <small class="text-muted">Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small>
+              </td>
+              <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
+              <td>
+                <div class="dropdown">
+                  <button
+                    class="btn btn-subtle btn-sm"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i class="fa fa-ellipsis-h"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        @click="$emit('view-details', expedition)"
+                      >
+                        Ver detalhes
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        @click="$emit('generate-separation-label', expedition)"
+                      >
+                        Gerar etiqueta de separação
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue';
+import EmptyState from '@/components/empty-state/EmptyState.vue';
+import { formatDate } from '@/utils/dateUtils';
+
+const props = defineProps({
+  expeditions: {
+    type: Array,
+    default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['view-details', 'generate-separation-label']);
+
+const searchQuery = ref('');
+
+const separations = computed(() => {
+  return props.expeditions.filter((expedition) => {
+    return expedition?.ready_to_expedition === 0;
+  });
+});
+
+const filteredItems = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+
+  return separations.value.filter((expedition) => {
+    const matchesQuery =
+      !query ||
+      expedition.order?.name?.toLowerCase().includes(query) ||
+      String(expedition.id).includes(query) ||
+      String(expedition.order_id).includes(query);
+
+    return matchesQuery;
+  });
+});
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
+function formatCurrency(value) {
+  if (value === null || value === undefined) {
+    return currencyFormatter.format(0);
+  }
+
+  const numericValue = Number(value);
+  return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
+}
+</script>
