@@ -1,7 +1,7 @@
 <template>
-  <aside class="comments-activity-sidebar">
-    <div class="comments-activity-sidebar-header">
-      <h3>Comentários e atividade</h3>
+  <aside class="rounded p-3 position-sticky comments-activity-sidebar">
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header">
+      <h3 class="mb-0 fw-semibold text-body comments-activity-sidebar-title">Comentários e atividade</h3>
       <button class="btn btn-primary" type="button" @click="toggleDetails">
         {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
       </button>
@@ -20,7 +20,7 @@
         ></textarea>
         <div v-if="isEditingComment" class="d-flex justify-content-between align-items-center">
           <span class="text-muted small">{{ newCommentText.length }}/500</span>
-          <div class="comments-activity-input-actions">
+          <div class="d-flex gap-2">
             <button class="btn btn-subtle" @click="cancelNewComment">
               Cancelar
             </button>
@@ -39,25 +39,25 @@
         <div
           v-for="comment in comments"
           :key="comment.id"
-          class="comments-activity-comment-item"
+          class="p-3 bg-body rounded comments-activity-comment-item"
         >
           <div v-if="editingCommentId !== comment.id" class="d-flex flex-column gap-2">
             <div class="d-flex justify-content-between align-items-center">
               <div class="d-flex align-items-center gap-2">
-                <div class="comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
                   {{ getInitials(comment.user_name) }}
                 </div>
-                <span class="comments-activity-author">{{ comment.user_name }}</span>
+                <span class="fw-semibold text-body comments-activity-author">{{ comment.user_name }}</span>
               </div>
               <span class="comments-activity-date">{{ formatDate(comment.created_at) }}</span>
             </div>
-            <div class="comments-activity-text">{{ comment.comment }}</div>
-            <div class="comments-activity-actions">
-              <button class="comments-activity-action-btn" @click="startEditComment(comment)">
+            <div class="text-body comments-activity-text">{{ comment.comment }}</div>
+            <div class="d-flex align-items-center gap-1 mt-2 pt-2 border-top border-secondary-subtle comments-activity-actions">
+              <button class="border-0 bg-transparent comments-activity-action-btn" @click="startEditComment(comment)">
                 Editar
               </button>
-              <span class="comments-activity-action-separator">/</span>
-              <button class="comments-activity-action-btn comments-activity-action-delete" @click="deleteComment(comment.id)">
+              <span class="text-secondary-subtle user-select-none comments-activity-action-separator">/</span>
+              <button class="border-0 bg-transparent text-danger comments-activity-action-btn" @click="deleteComment(comment.id)">
                 Excluir
               </button>
             </div>
@@ -71,7 +71,7 @@
             ></textarea>
             <div class="d-flex justify-content-between align-items-center">
               <span class="text-muted small">{{ editingCommentText.length }}/500</span>
-              <div class="comments-activity-input-actions">
+              <div class="d-flex gap-2">
                 <button class="btn btn-subtle" @click="cancelEditComment">
                   Cancelar
                 </button>
@@ -93,19 +93,19 @@
           <div
             v-for="(activity, activityIndex) in activityItems"
             :key="activity.id || activityIndex"
-            class="comments-activity-activity-item"
+            class="p-3 bg-body rounded comments-activity-activity-item"
             :class="{ 'is-history': activity.type === 'history' }"
           >
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="d-flex align-items-center gap-2">
-                <div v-if="activity.type !== 'history'" class="comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                <div v-if="activity.type !== 'history'" class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
                   {{ getInitials(getActivityUser(activity)) }}
                 </div>
-                <div v-else class="comments-activity-icon">
+                <div v-else class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white flex-shrink-0 comments-activity-icon">
                   <i class="fa fa-history"></i>
                 </div>
-                <span v-if="activity.type !== 'history'" class="comments-activity-author">{{ getActivityUser(activity) }}</span>
-                <span v-else class="comments-activity-author">Histórico</span>
+                <span v-if="activity.type !== 'history'" class="fw-semibold text-body comments-activity-author">{{ getActivityUser(activity) }}</span>
+                <span v-else class="fw-semibold text-body comments-activity-author">Histórico</span>
               </div>
               <span class="comments-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
             </div>
@@ -427,54 +427,23 @@ async function deleteComment(commentId) {
 
 <style lang="scss" scoped>
 .comments-activity-sidebar {
-  background-color: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  position: sticky;
   top: 1.5rem;
   max-height: calc(90vh - 200px);
   overflow-y: auto;
+  background-color: var(--bs-secondary-bg);
 }
 
-.comments-activity-sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-
-  h3 {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--bs-body-color);
-    margin: 0;
-  }
-}
-
-.comments-activity-comment-item {
-  padding: 0.75rem;
-  background-color: var(--bs-card-bg);
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color);
+.comments-activity-sidebar-title {
+  font-size: 0.9375rem;
 }
 
 .comments-activity-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--bs-white);
-  font-weight: 600;
   font-size: 0.75rem;
-  flex-shrink: 0;
 }
 
 .comments-activity-author {
-  font-weight: 600;
-  color: var(--bs-body-color);
   font-size: 0.8125rem;
 }
 
@@ -484,48 +453,28 @@ async function deleteComment(commentId) {
 
 .comments-activity-text {
   font-size: 0.8125rem;
-  color: var(--bs-body-color);
   line-height: 1.4;
   word-wrap: break-word;
 }
 
 .comments-activity-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--bs-border-color);
   min-height: 24px;
 }
 
 .comments-activity-action-separator {
-  color: var(--bs-border-color);
   font-size: 0.6875rem;
   padding: 0 0.125rem;
-  user-select: none;
 }
 
 .comments-activity-action-btn {
-  background: none;
-  border: none;
   font-size: 12px;
 
   &:hover {
     text-decoration: underline;
   }
-
-  &.comments-activity-action-delete {
-    color: var(--bs-danger);
-  }
 }
 
 .comments-activity-activity-item {
-  padding: 0.75rem;
-  background-color: var(--bs-card-bg);
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color);
-
   &.is-history {
     border-left: 3px solid var(--bs-success);
   }
@@ -539,24 +488,12 @@ async function deleteComment(commentId) {
 .comments-activity-icon {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bs-success);
-  color: var(--bs-white);
   font-size: 0.875rem;
-  flex-shrink: 0;
 }
 
 .comments-activity-info {
   font-size: 0.875rem;
   line-height: 1.5;
-}
-
-.comments-activity-input-actions {
-  display: flex;
-  gap: 0.5rem;
 }
 </style>
 

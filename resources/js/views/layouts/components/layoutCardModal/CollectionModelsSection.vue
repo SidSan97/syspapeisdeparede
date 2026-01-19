@@ -2,7 +2,7 @@
   <div v-if="wall && wall.collection_model" class="collection-models-section">
     <!-- Modelos selecionados -->
     <div class="collection-models-section-item">
-      <h3 class="collection-models-section-title">
+      <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
         <i class="fa fa-cube"></i> Modelos selecionados
       </h3>
       <div v-if="wall.collection_model.name" class="collection-models-section-name">
@@ -15,7 +15,7 @@
 
     <!-- Imagens da Parede Específica -->
     <div class="collection-models-section-item">
-      <h3 class="collection-models-section-title">
+      <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
         <i class="fa fa-image"></i> Imagens da Parede
       </h3>
       <div v-if="wall.collection_model.files && wall.collection_model.files.length > 0" class="collection-models-section-images">
@@ -81,10 +81,6 @@ function getImageUrl(file) {
   font-size: 1rem;
   font-weight: 600;
   color: var(--bs-body-color);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .collection-models-section-name {

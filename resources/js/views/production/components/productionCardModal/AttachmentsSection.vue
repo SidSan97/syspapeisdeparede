@@ -1,31 +1,32 @@
 <template>
   <div v-if="attachments && attachments.length > 0" class="attachments-section">
-    <h3 class="attachments-section-title">
-      <i class="fa fa-paperclip"></i> Anexos
+    <h3 class="d-flex align-items-center gap-2 text-body mb-3 attachments-section-title">
+      <i class="fa fa-paperclip text-primary"></i> Anexos
     </h3>
     <div class="d-flex flex-column gap-3">
       <div
         v-for="(file, fileIndex) in attachments"
         :key="fileIndex"
-        class="attachments-section-item"
+        class="d-flex gap-3 p-3 align-items-center attachments-section-item"
       >
-        <div class="attachments-section-item-preview">
+        <div class="overflow-hidden bg-body d-flex align-items-center justify-content-center attachments-section-item-preview">
           <img
             v-if="isImageFile(file)"
+            class="w-100 h-100"
             :src="getImageUrl(file)"
             :alt="getAttachmentName(file, fileIndex)"
           />
-          <i v-else class="fa fa-file fa-fw"></i>
+          <i v-else class="fa fa-file fa-fw text-secondary"></i>
         </div>
         <div class="d-flex flex-column gap-2 flex-grow-1">
-          <div class="attachments-section-item-name">
+          <div class="fw-semibold text-body attachments-section-item-name">
             {{ getAttachmentName(file, fileIndex) }}
           </div>
-          <div class="attachments-section-item-meta">
+          <div class="text-secondary attachments-section-item-meta">
             {{ formatDate(file.created_at) }}
           </div>
           <a
-            class="attachments-section-item-button"
+            class="align-self-start text-decoration-none attachments-section-item-button"
             :href="getImageUrl(file)"
             target="_blank"
             rel="noopener noreferrer"
@@ -39,8 +40,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-
 const props = defineProps({
   attachments: {
     type: Array,
@@ -110,67 +109,41 @@ function formatDate(date) {
 .attachments-section-title {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 1rem;
-  color: var(--bs-body-color);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  i {
-    color: var(--bs-primary);
-  }
 }
 
 .attachments-section-item {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: var(--bs-secondary-bg);
   border-radius: 0.5rem;
-  align-items: center;
+  background-color: var(--bs-secondary-bg);
 }
 
 .attachments-section-item-preview {
   width: 64px;
   height: 64px;
   border-radius: 6px;
-  overflow: hidden;
-  background-color: var(--bs-card-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 
   img {
-    width: 100%;
-    height: 100%;
     object-fit: cover;
   }
 
   i {
     font-size: 1.5rem;
-    color: var(--bs-secondary);
   }
 }
 
 .attachments-section-item-name {
-  font-weight: 600;
-  color: var(--bs-body-color);
   font-size: 14px;
 }
 
 .attachments-section-item-meta {
   font-size: 12px;
-  color: var(--bs-secondary);
 }
 
 .attachments-section-item-button {
-  align-self: flex-start;
   padding: 0.375rem 0.75rem;
   background-color: var(--bs-dark, var(--bs-body-color));
   color: var(--bs-white, var(--bs-body-bg));
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  text-decoration: none;
   transition: background-color 0.2s ease;
 
   &:hover {

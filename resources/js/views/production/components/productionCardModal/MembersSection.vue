@@ -1,7 +1,7 @@
 <template>
   <div class="members-section">
     <!-- Botões de ação -->
-    <div class="members-section-actions position-relative">
+      <div class="mb-4 position-relative members-section-actions">
       <button class="btn btn-primary me-2" @click="toggleMembersMenu">
         <i class="fa-solid fa-plus fa-fw"></i>
         Adicionar membro
@@ -27,47 +27,47 @@
       </button>
 
       <!-- Menu de adicionar membros -->
-      <div v-if="showMembersMenu" class="members-section-menu">
-        <div class="members-section-menu-header">
-          <button class="members-section-menu-back" @click="closeMembersMenu">
+      <div v-if="showMembersMenu" class="position-absolute mt-2 bg-dark border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">
+        <div class="d-flex align-items-center justify-content-between py-3 px-4 border-bottom border-secondary-subtle members-section-menu-header">
+          <button class="border-0 bg-transparent text-body p-2 rounded members-section-menu-back" @click="closeMembersMenu">
             <i class="fa fa-chevron-left fa-fw"></i>
           </button>
-          <h3 class="members-section-menu-title">Membros</h3>
-          <button class="members-section-menu-close" @click="closeMembersMenu">
+          <h3 class="mb-0 fw-semibold text-body flex-fill text-center members-section-menu-title">Membros</h3>
+          <button class="border-0 bg-transparent text-body p-2 rounded members-section-menu-close" @click="closeMembersMenu">
             <i class="fa fa-times fa-fw"></i>
           </button>
         </div>
 
-        <div class="members-section-menu-search">
+        <div class="py-3 px-4 border-bottom border-secondary-subtle members-section-menu-search">
           <input
             v-model="memberSearchQuery"
             type="text"
-            class="members-section-menu-search-input"
+            class="form-control form-control-sm members-section-menu-search-input"
             placeholder="Pesquisar membros"
           />
         </div>
 
-        <div class="members-section-menu-content">
-          <h4 class="members-section-menu-section-title">Adicionar membros</h4>
-          <div v-if="loadingMembers" class="members-section-menu-loading">
+        <div class="flex-fill overflow-auto py-3 px-4 members-section-menu-content">
+          <h4 class="small fw-semibold text-secondary text-uppercase mb-3 members-section-menu-section-title">Adicionar membros</h4>
+          <div v-if="loadingMembers" class="py-4 text-center text-secondary small members-section-menu-loading">
             <span>Carregando...</span>
           </div>
-          <div v-else-if="availableMembers.length === 0" class="members-section-menu-empty">
+          <div v-else-if="availableMembers.length === 0" class="py-4 text-center text-secondary small members-section-menu-empty">
             <span>Nenhum designer encontrado</span>
           </div>
-          <div v-else class="members-section-menu-list">
+          <div v-else class="d-flex flex-column gap-1 members-section-menu-list">
             <div
               v-for="member in filteredMembers"
               :key="member.id"
-              class="members-section-menu-item"
+              class="d-flex align-items-center gap-3 p-2 rounded position-relative members-section-menu-item"
               :class="{ 'is-adding': addingMember && currentAddingMemberId === member.id }"
               @click="handleAddMember(member)"
             >
-              <div class="members-section-menu-avatar" :style="{ backgroundColor: getAvatarColor(member.name) }">
+              <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 members-section-menu-avatar" :style="{ backgroundColor: getAvatarColor(member.name) }">
                 {{ getInitials(member.name) }}
               </div>
-              <span class="members-section-menu-name">{{ member.name }}</span>
-              <span v-if="addingMember && currentAddingMemberId === member.id" class="members-section-menu-loading-indicator">
+              <span class="small text-body members-section-menu-name">{{ member.name }}</span>
+              <span v-if="addingMember && currentAddingMemberId === member.id" class="ms-auto text-primary small members-section-menu-loading-indicator">
                 <i class="fa fa-spinner fa-spin fa-fw"></i>
               </span>
             </div>
@@ -77,23 +77,23 @@
     </div>
 
     <!-- Lista de membros do card -->
-    <div v-if="card.members && card.members.length > 0" class="members-section-list-container">
-      <h3 class="members-section-list-title">
+    <div v-if="card.members && card.members.length > 0" class="mt-4 members-section-list-container">
+      <h3 class="fw-semibold text-body mb-3 d-flex align-items-center gap-2 members-section-list-title">
         <i class="fa fa-user"></i> Membros
       </h3>
-      <div class="members-section-list">
+      <div class="d-flex flex-wrap gap-2 align-items-center members-section-list">
         <div
           v-for="member in card.members"
           :key="member.id"
-          class="members-section-member-avatar"
+          class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 position-relative members-section-member-avatar"
           :class="{ 'is-clickable': canRemoveMembers }"
           :style="{ backgroundColor: getAvatarColor(member.name) }"
           :title="member.name"
           @click="canRemoveMembers ? handleMemberClick(member) : null"
         >
           {{ getInitials(member.name) }}
-          <div v-if="showMemberMenu && selectedMember?.id === member.id" class="members-section-member-popover" @click.stop>
-            <button class="members-section-member-remove" @click="handleRemoveMember(member)">
+          <div v-if="showMemberMenu && selectedMember?.id === member.id" class="position-absolute mt-2 bg-body border rounded shadow-lg overflow-hidden members-section-member-popover" @click.stop>
+            <button class="w-100 border-0 bg-transparent text-start text-danger small d-flex align-items-center gap-2 members-section-member-remove" @click="handleRemoveMember(member)">
               <i class="fa fa-times fa-fw"></i>
               Remover do card
             </button>
@@ -451,44 +451,21 @@ watch(() => props.card?.id, () => {
   margin-bottom: 24px;
 }
 
-.members-section-actions {
-  margin-bottom: 16px;
-}
-
 .members-section-menu {
-  position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 0.5rem;
   width: 340px;
-  background-color: var(--bs-dark, var(--bs-body-bg));
-  border-radius: 0.5rem;
-  box-shadow: var(--bs-box-shadow-lg);
-  z-index: 1000;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
   max-height: 600px;
-  border: 1px solid var(--bs-border-color);
+  z-index: 1000;
 }
 
-.members-section-menu-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--bs-border-color-translucent);
+.members-section-list-title {
+    font-size: 15px;
 }
 
 .members-section-menu-back,
 .members-section-menu-close {
-  background: none;
-  border: none;
-  color: var(--bs-body-color);
   font-size: 1rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
   transition: background-color 0.2s ease;
 
   &:hover {
@@ -496,78 +473,14 @@ watch(() => props.card?.id, () => {
   }
 }
 
-.members-section-menu-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--bs-body-color);
-  margin: 0;
-  flex: 1;
-  text-align: center;
-}
-
-.members-section-menu-search {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--bs-border-color-translucent);
-}
-
-.members-section-menu-search-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background-color: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.25rem;
-  color: var(--bs-body-color);
-  font-size: 0.875rem;
-
-  &::placeholder {
-    color: var(--bs-secondary);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--bs-primary);
-    background-color: var(--bs-body-bg);
-  }
-}
-
-.members-section-menu-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.75rem 1rem;
-}
-
 .members-section-menu-section-title {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--bs-secondary);
-  text-transform: uppercase;
-  margin: 0 0 0.75rem 0;
   letter-spacing: 0.5px;
 }
 
-.members-section-menu-loading,
-.members-section-menu-empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--bs-secondary);
-  font-size: 0.875rem;
-}
-
-.members-section-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .members-section-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  position: relative;
 
   &:hover:not(.is-adding) {
     background-color: var(--bs-secondary-bg);
@@ -583,66 +496,22 @@ watch(() => props.card?.id, () => {
   }
 }
 
-.members-section-menu-loading-indicator {
-  margin-left: auto;
-  color: var(--bs-primary);
-  font-size: 0.875rem;
-}
-
 .members-section-menu-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--bs-white);
   font-size: 0.8125rem;
-  font-weight: 600;
-  flex-shrink: 0;
 }
 
 .members-section-menu-name {
   font-size: 0.875rem;
-  color: var(--bs-body-color);
-  font-weight: 400;
-}
-
-.members-section-list-container {
-  margin-top: 16px;
-}
-
-.members-section-list-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--bs-body-color);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.members-section-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
 }
 
 .members-section-member-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--bs-white);
-  font-weight: 600;
   font-size: 0.875rem;
-  flex-shrink: 0;
   cursor: default;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
 
   &:hover {
     transform: scale(1.1);
@@ -655,31 +524,15 @@ watch(() => props.card?.id, () => {
 }
 
 .members-section-member-popover {
-  position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 0.5rem;
-  background-color: var(--bs-dropdown-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.375rem;
-  box-shadow: var(--bs-box-shadow-lg);
-  z-index: 1000;
   min-width: 180px;
-  overflow: hidden;
+  z-index: 1000;
 }
 
 .members-section-member-remove {
-  width: 100%;
   padding: 0.625rem 1rem;
   background: antiquewhite;
-  border: none;
-  text-align: left;
-  color: var(--bs-danger);
-  font-size: 0.875rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   transition: background-color 0.2s ease;
 
   &:hover {
