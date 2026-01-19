@@ -25,7 +25,7 @@ class GeneratePaymentService
         }
 
         $client = new Client([
-            'base_uri' => 'https://sdx-api.pagar.me',
+            'base_uri' => env('PAGARME_BASE_URL'),
             'timeout' => 10,
         ]);
 
