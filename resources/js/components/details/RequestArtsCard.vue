@@ -45,7 +45,7 @@
                         :class="{ show: interactionIndex === 0 }"
                         data-bs-parent="#requestArtsAccordion"
                     >
-                        <div class="accordion-body">
+                        <div class="accordion-body p-4">
                             <div v-if="interaction.wall_info" class="mb-3 p-2 rounded border">
                                 <div class="row g-2">
                                     <div class="col-md-12">
@@ -304,7 +304,7 @@ async function fetchRequestLayoutArts() {
                 if (!imageUrl && art.path_file) {
                     imageUrl = resolveImageUrl(art.path_file);
                 }
-                
+
                 return {
                     id: art.id,
                     order_id: art.order_id || null,
