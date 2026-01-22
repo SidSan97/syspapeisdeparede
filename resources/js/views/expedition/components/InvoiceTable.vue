@@ -77,15 +77,6 @@
                     <i class="fa fa-ellipsis-h"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        @click="$emit('view-details', invoice)"
-                      >
-                        Ver detalhes
-                      </button>
-                    </li>
                     <li v-if="invoice?.nf_sent === 0">
                       <button
                         class="dropdown-item"

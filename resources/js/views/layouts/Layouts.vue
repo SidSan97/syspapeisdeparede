@@ -21,6 +21,20 @@
                         @delete="confirmDeleteColumn(column.id)"
                         @drop="handleDrop($event, column.id)"
                     >
+                    <!-- Placeholders de carregamento -->
+                    <template v-if="cardsLoading">
+                            <div
+                                v-for="i in 3"
+                                :key="`placeholder-${column.id}-${i}`"
+                                class="card-placeholder mb-2"
+                            >
+                                <div class="placeholder-glow">
+                                    <div class="placeholder placeholder-lg w-100 mb-2" style="height: 120px; border-radius: 0.375rem;"></div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Cards reais -->
                         <LayoutCard
                             v-for="card in getCardsByColumn(column.id)"
                             :key="card.id"
