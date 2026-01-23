@@ -1,155 +1,162 @@
 <template>
-  <div class="description-section">
-    <h3 class="description-section-title">
-      <i class="fa fa-align-left"></i> Descrição
-    </h3>
-    <div v-if="!isEditing" class="description-section-display" :class="{ 'is-empty': !description }" @click="startEdit">
-      {{ description || 'Adicione uma descrição mais detalhada...' }}
-    </div>
-    <div v-else class="d-flex flex-column gap-3">
-      <textarea
-        v-model="descriptionText"
-        class="form-control"
-        maxlength="500"
-        rows="4"
-        placeholder="Adicione uma descrição mais detalhada..."
-      ></textarea>
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="text-muted small">{{ descriptionText.length }}/500</span>
-        <div class="d-flex gap-1">
-          <button class="btn btn-subtle" @click="cancelEdit">
-            Cancelar
-          </button>
-          <button class="btn btn-primary" @click="save" :disabled="isSaving">
+  <section class="d-flex gap-3 mb-3">
+    <i class="fa fa-align-left py-1"></i>
+
+    <div class="flex-fill">
+      <header class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fs-sm fw-bold text-body m-0">Descrição</h3>
+
+        <button
+          type="button"
+          class="btn btn-default btn-sm"
+          @click="startEdit"
+          v-if="!isEditing"
+        >
+          Editar
+        </button>
+      </header>
+
+      <!-- Visualização -->
+      <div
+        v-if="!isEditing"
+        class="cursor-pointer"
+        :class="{ 'is-empty': !description }"
+        @click="startEdit"
+      >
+        {{ description || 'Adicione uma descrição mais detalhada...' }}
+      </div>
+
+      <!-- Edição -->
+      <div v-else class="d-flex flex-column gap-3">
+        <textarea
+          ref="textareaRef"
+          v-model.trim="descriptionDraft"
+          class="form-control"
+          maxlength="500"
+          rows="4"
+          placeholder="Adicione uma descrição mais detalhada..."
+          @keyup.esc="cancelEdit"
+        />
+
+        <div>
+          <button
+            class="btn btn-primary me-2"
+            @click="save"
+            :disabled="isSaving || !canSave"
+          >
             {{ isSaving ? 'Salvando...' : 'Salvar' }}
+          </button>
+
+          <button class="btn btn-default" @click="cancelEdit">
+            Cancelar
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { useDescriptionService } from '@/views/layouts/services/descriptionService';
+import { ref, computed, watch, nextTick } from 'vue'
+import { useDescriptionService } from '@/views/layouts/services/descriptionService'
 
 const props = defineProps({
   card: {
     type: Object,
-    required: true,
-  },
-});
-
-const emit = defineEmits(['description-updated']);
-
-const descriptionService = useDescriptionService();
-
-const isEditing = ref(false);
-const descriptionText = ref('');
-const originalDescription = ref('');
-const isSaving = ref(false);
-
-const description = computed(() => {
-  return props.card?.description || '';
-});
-
-// Inicializar descrição quando o card mudar
-watch(() => props.card?.id, (newCardId) => {
-  if (newCardId) {
-    descriptionText.value = props.card?.description || '';
-    originalDescription.value = props.card?.description || '';
-    isEditing.value = false;
+    required: true
   }
-}, { immediate: true });
+})
 
-function startEdit() {
-  originalDescription.value = props.card?.description || '';
-  descriptionText.value = originalDescription.value;
-  isEditing.value = true;
+const emit = defineEmits(['description-updated'])
+
+const descriptionService = useDescriptionService()
+
+const isEditing = ref(false)
+const isSaving = ref(false)
+
+const descriptionDraft = ref('')
+const originalDescription = ref('')
+const textareaRef = ref(null)
+
+const description = computed(() => props.card?.description ?? '')
+
+const canSave = computed(() => {
+  return (
+    descriptionDraft.value.trim().length > 0 &&
+    descriptionDraft.value !== originalDescription.value
+  )
+})
+
+watch(
+  () => props.card?.id,
+  () => {
+    resetState()
+  },
+  { immediate: true }
+)
+
+function resetState() {
+  const value = props.card?.description ?? ''
+  descriptionDraft.value = value
+  originalDescription.value = value
+  isEditing.value = false
+}
+
+async function startEdit() {
+  isEditing.value = true
+  await nextTick()
+  textareaRef.value?.focus()
 }
 
 function cancelEdit() {
-  descriptionText.value = originalDescription.value;
-  isEditing.value = false;
+  descriptionDraft.value = originalDescription.value
+  isEditing.value = false
 }
 
 async function save() {
-  if (!props.card?.id) {
-    return;
-  }
+  if (!props.card?.id || !canSave.value) return
 
-  isSaving.value = true;
+  isSaving.value = true
 
   try {
-    const response = await descriptionService.updateDescription(props.card.id, descriptionText.value, 'layout');
+    const response = await descriptionService.updateDescription(
+      props.card.id,
+      descriptionDraft.value,
+      'layout'
+    )
 
-    // Atualizar o card localmente
-    if (props.card) {
-      props.card.description = descriptionText.value;
-    }
+    originalDescription.value = descriptionDraft.value
+    isEditing.value = false
 
-    originalDescription.value = descriptionText.value;
-    isEditing.value = false;
+    emit('description-updated', descriptionDraft.value)
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Descrição salva com sucesso',
-      });
-    }
-
-    emit('description-updated', descriptionText.value);
+    window.Toast?.fire({
+      icon: 'success',
+      title: response.message || 'Descrição salva com sucesso'
+    })
   } catch (error) {
-    console.error('Erro ao salvar descrição:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao salvar descrição. Tente novamente.';
+    console.error(error)
 
-    if (window.Swal) {
-      window.Swal.fire('Erro!', errorMessage, 'error');
-    } else {
-      alert(errorMessage);
-    }
+    const message =
+      error.response?.data?.message ||
+      'Erro ao salvar descrição. Tente novamente.'
+
+    window.Swal
+      ? window.Swal.fire('Erro!', message, 'error')
+      : alert(message)
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.description-section {
-  margin-bottom: 24px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.description-section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--bs-body-color);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.description-section-display {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  min-height: 80px;
-  color: var(--bs-body-color);
-  line-height: 1.5;
+.cursor-pointer {
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  border: 1px solid var(--bs-border-color);
+}
 
-  &:hover {
-    background-color: var(--bs-tertiary-bg);
-  }
-
-  &.is-empty {
-    color: var(--bs-secondary);
-  }
+.is-empty {
+  color: var(--bs-secondary);
 }
 </style>
 
