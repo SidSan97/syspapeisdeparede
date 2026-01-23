@@ -1,43 +1,37 @@
 <template>
-    <div
-        class="card production-card"
-        :draggable="!isFullyProduced"
-        @dragstart="$emit('drag-start', $event)"
-        @click="$emit('click')"
-    >
-        <div v-if="coverImage" class="production-card-image">
-            <img :src="coverImage" :alt="card.name" />
+    <div class="card mb-2 production-card" :draggable="!isFullyProduced" @dragstart="$emit('drag-start', $event)"
+        @click="$emit('click')">
+        <div v-if="coverImage" class="ratio ratio-21x9">
+            <img :src="coverImage" :alt="card.name" class="production-card-image card-img-top bg-light" />
         </div>
-        <div class="card-body production-card-body">
-            <div class="production-card-body-content">
-                <p class="production-card-body-text fs-sm m-0">{{ displayName }}</p>
-                <div class="d-flex gap-3">
-                    <div class="production-card-deadline">
-                        <i class="far fa-clock-o"></i>
-                        <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
-                    </div>
-
-                    <div v-if="commentsCount > 0" class="fs-xs">
-                        <i class="far fa-comment me-1"></i>
-                        <span>{{ commentsCount }}</span>
-                    </div>
-
-                    <div v-if="activitiesCount > 0" class="production-card-activity-count">
-                        <i class="fa fa-list"></i>
-                        <span>{{ activitiesCount }}</span>
-                    </div>
-
-                    <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="production-card-attachment-count">
-                        <i class="fa fa-paperclip"></i>
-                        <span>{{ card.uploaded_files.length }}</span>
-                    </div>
+        <div class="card-body px-3 pt-3 pb-2">
+            <p class="fs-sm mb-2">{{ displayName }}</p>
+            <div class="d-flex gap-3">
+                <div class="fa-xs text-body-secondary">
+                    <i class="far fa-clock me-2"></i>
+                    <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
                 </div>
-                <div v-if="card.production_date" class="production-card-production-date">
-                    Data da produção: {{ formattedProductionDate }}
-                    <div v-if="productionTimerText" class="badge bg-secondary text-white fs-sm" :class="productionTimerClass">
-                        <i class="fa fa-hourglass-half me-1"></i>
-                        <span>{{ productionTimerText }}</span>
-                    </div>
+
+                <div v-if="commentsCount > 0" class="fa-xs text-body-secondary">
+                    <i class="far fa-comment me-2"></i>
+                    <span>{{ commentsCount }}</span>
+                </div>
+
+                <div v-if="activitiesCount > 0" class="fa-xs text-body-secondary">
+                    <i class="fa fa-list me-2"></i>
+                    <span>{{ activitiesCount }}</span>
+                </div>
+
+                <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="fa-xs text-body-secondary">
+                    <i class="fa fa-paperclip me-2"></i>
+                    <span>{{ card.uploaded_files.length }}</span>
+                </div>
+            </div>
+            <div v-if="card.production_date" class="mt-2">
+                <span class="fa-xs text-body-secondary">Produção: {{ formattedProductionDate }}</span>
+                <div v-if="productionTimerText" class="badge bg-light fs-sm" :class="productionTimerClass">
+                    <i class="fa fa-hourglass-half me-1"></i>
+                    <span>{{ productionTimerText }}</span>
                 </div>
             </div>
         </div>
@@ -115,9 +109,6 @@ defineEmits(['drag-start', 'click']);
 .production-card-image {
     width: 100%;
     height: 150px;
-    overflow: hidden;
-    background-color: var(--bs-secondary-bg);
-    flex-shrink: 0;
 }
 
 .production-card-image img {
