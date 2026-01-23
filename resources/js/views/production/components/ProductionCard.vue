@@ -1,6 +1,6 @@
 <template>
     <div
-        class="production-card"
+        class="card production-card"
         :draggable="!isFullyProduced"
         @dragstart="$emit('drag-start', $event)"
         @click="$emit('click')"
@@ -8,22 +8,25 @@
         <div v-if="coverImage" class="production-card-image">
             <img :src="coverImage" :alt="card.name" />
         </div>
-        <div class="production-card-footer">
-            <div class="production-card-footer-content">
-                <span class="production-card-footer-text">{{ displayName }}</span>
-                <div class="production-card-footer-meta">
+        <div class="card-body production-card-body">
+            <div class="production-card-body-content">
+                <p class="production-card-body-text fs-sm m-0">{{ displayName }}</p>
+                <div class="d-flex gap-3">
                     <div class="production-card-deadline">
-                        <i class="fa fa-clock-o"></i>
+                        <i class="far fa-clock-o"></i>
                         <span>{{ card.delivery_date_start }} - {{ card.delivery_date_end }}</span>
                     </div>
-                    <div v-if="commentsCount > 0" class="production-card-comment-count">
-                        <i class="fa fa-comment"></i>
+
+                    <div v-if="commentsCount > 0" class="fs-xs">
+                        <i class="far fa-comment me-1"></i>
                         <span>{{ commentsCount }}</span>
                     </div>
+
                     <div v-if="activitiesCount > 0" class="production-card-activity-count">
                         <i class="fa fa-list"></i>
                         <span>{{ activitiesCount }}</span>
                     </div>
+
                     <div v-if="card.uploaded_files && card.uploaded_files.length > 0" class="production-card-attachment-count">
                         <i class="fa fa-paperclip"></i>
                         <span>{{ card.uploaded_files.length }}</span>
@@ -31,8 +34,8 @@
                 </div>
                 <div v-if="card.production_date" class="production-card-production-date">
                     Data da produção: {{ formattedProductionDate }}
-                    <div v-if="productionTimerText" class="production-card-timer" :class="productionTimerClass">
-                        <i class="fa fa-hourglass-half"></i>
+                    <div v-if="productionTimerText" class="badge bg-secondary text-white fs-sm" :class="productionTimerClass">
+                        <i class="fa fa-hourglass-half me-1"></i>
                         <span>{{ productionTimerText }}</span>
                     </div>
                 </div>
@@ -86,21 +89,22 @@ defineEmits(['drag-start', 'click']);
 
 <style scoped>
 .production-card {
-    background-color: var(--bs-card-bg);
+    --bs-card-border-radius: var(--bs-border-radius-lg, 8px);
+    box-shadow: var(--ds-shadow-raised);
+    cursor: pointer;
+    /* background-color: var(--bs-card-bg);
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
-    cursor: pointer;
-    box-shadow: var(--bs-box-shadow-sm);
     transition: all 0.2s ease;
     user-select: none;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; */
 }
 
 .production-card:hover {
-    box-shadow: var(--bs-box-shadow);
+    /* box-shadow: var(--bs-box-shadow); */
     transform: translateY(-2px);
 }
 
@@ -122,8 +126,8 @@ defineEmits(['drag-start', 'click']);
     object-fit: cover;
 }
 
-.production-card-footer {
-    background-color: var(--ds-surface-sunken);
+.production-card-body {
+    /* background-color: var(--ds-surface-sunken); */
     color: var(--ds-text);
     padding: 0.5rem 0.75rem;
     display: flex;
@@ -133,23 +137,23 @@ defineEmits(['drag-start', 'click']);
     min-height: 36px;
 }
 
-.production-card-footer-content {
+.production-card-body-content {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     width: 100%;
 }
 
-.production-card-footer-text {
-    font-size: 0.75rem;
+.production-card-body-text {
+    /* font-size: 0.75rem;
     color: var(--ds-text);
     font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: nowrap; */
 }
 
-.production-card-footer-meta {
+.production-card-body-meta {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -227,7 +231,7 @@ defineEmits(['drag-start', 'click']);
 }
 
 .production-card-timer-normal i {
-    color: var(--ds-text);
+    /* color: var(--ds-text); */
 }
 
 .production-card-timer-urgent {

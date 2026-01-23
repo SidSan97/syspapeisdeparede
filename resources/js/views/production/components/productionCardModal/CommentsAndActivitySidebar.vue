@@ -1,87 +1,30 @@
 <template>
-  <aside class="rounded p-3 position-sticky comments-activity-sidebar">
+  <aside class="bg-light p-4 border-start h-100">
     <div class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header">
-      <h3 class="mb-0 fw-semibold text-body comments-activity-sidebar-title">Comentários e atividade</h3>
-      <button class="btn btn-primary" type="button" @click="toggleDetails">
+      <h3 class="fs-sm">
+        <i class="far fa-comment-alt me-2"></i>
+
+        Comentários e atividade
+    </h3>
+      <button class="btn btn-default" type="button" @click="toggleDetails">
         {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
       </button>
     </div>
 
-    <!-- Caixa de texto para escrever comentários -->
-    <div class="mb-3">
-      <div class="d-flex flex-column gap-2">
-        <textarea
-          v-model="newCommentText"
-          class="form-control"
-          maxlength="500"
-          rows="3"
-          placeholder="Escrever um comentário..."
-          @focus="isEditingComment = true"
-        ></textarea>
-        <div v-if="isEditingComment" class="d-flex justify-content-between align-items-center">
-          <span class="text-muted small">{{ newCommentText.length }}/500</span>
-          <div class="d-flex gap-2">
-            <button class="btn btn-subtle" @click="cancelNewComment">
-              Cancelar
-            </button>
-            <button class="btn btn-primary" @click="saveNewComment" :disabled="isSavingComment || !newCommentText.trim()">
-              {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CommentInput v-model="newCommentText" @save="saveNewComment"/>
 
     <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
     <div v-if="showDetails">
       <!-- Lista de comentários -->
-      <div class="d-flex flex-column gap-3 mb-3">
-        <div
+      <div class="d-flex flex-column gap-3 my-3">
+        <CommentItem
           v-for="comment in comments"
           :key="comment.id"
-          class="p-3 bg-body rounded comments-activity-comment-item"
-        >
-          <div v-if="editingCommentId !== comment.id" class="d-flex flex-column gap-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="d-flex align-items-center gap-2">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(comment.user_name) }">
-                  {{ getInitials(comment.user_name) }}
-                </div>
-                <span class="fw-semibold text-body comments-activity-author">{{ comment.user_name }}</span>
-              </div>
-              <span class="comments-activity-date">{{ formatDate(comment.created_at) }}</span>
-            </div>
-            <div class="text-body comments-activity-text">{{ comment.comment }}</div>
-            <div class="d-flex align-items-center gap-1 mt-2 pt-2 border-top border-secondary-subtle comments-activity-actions">
-              <button class="border-0 bg-transparent comments-activity-action-btn" @click="startEditComment(comment)">
-                Editar
-              </button>
-              <span class="text-secondary-subtle user-select-none comments-activity-action-separator">/</span>
-              <button class="border-0 bg-transparent text-danger comments-activity-action-btn" @click="deleteComment(comment.id)">
-                Excluir
-              </button>
-            </div>
-          </div>
-          <div v-else class="d-flex flex-column gap-2">
-            <textarea
-              v-model="editingCommentText"
-              class="form-control"
-              maxlength="500"
-              rows="3"
-            ></textarea>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="text-muted small">{{ editingCommentText.length }}/500</span>
-              <div class="d-flex gap-2">
-                <button class="btn btn-subtle" @click="cancelEditComment">
-                  Cancelar
-                </button>
-                <button class="btn btn-primary" @click="saveEditComment(comment.id)" :disabled="isSavingComment || !editingCommentText.trim()">
-                  {{ isSavingComment ? 'Salvando...' : 'Salvar' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          :comment="comment"
+          :saving="isSavingComment"
+          @delete="onDeleteComment"
+          @save="onUpdateComment"
+        ></CommentItem>
         <div v-if="comments.length === 0" class="comments-activity-info text-muted">
           Nenhum comentário ainda.
         </div>
@@ -123,6 +66,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useCommentService } from '@/views/layouts/services/commentService';
+import CommentInput from '@/components/CommentInput.vue';
+import CommentItem from '@/components/CommentItem.vue';
 
 const props = defineProps({
   card: {
@@ -331,19 +276,19 @@ function cancelEditComment() {
   editingCommentText.value = '';
 }
 
-async function saveEditComment(commentId) {
-  if (!props.card?.id || !editingCommentText.value.trim()) {
+async function onUpdateComment({id, newComment}) {
+  if (!props.card?.id || !newComment.trim()) {
     return;
   }
 
   isSavingComment.value = true;
 
   try {
-    const response = await commentService.updateComment(props.card.id, commentId, editingCommentText.value);
+    const response = await commentService.updateComment(props.card.id, id, newComment);
 
     // Atualizar o comentário na lista
     if (props.card && Array.isArray(props.card.comments)) {
-      const index = props.card.comments.findIndex(c => c.id === commentId);
+      const index = props.card.comments.findIndex(c => c.id === id);
       if (index !== -1) {
         props.card.comments[index] = response.data;
       }
@@ -374,30 +319,13 @@ async function saveEditComment(commentId) {
   }
 }
 
-async function deleteComment(commentId) {
+async function onDeleteComment(commentId) {
   if (!props.card?.id) {
     return;
   }
 
-  if (window.Swal) {
-    const result = await window.Swal.fire({
-      title: 'Excluir comentário?',
-      text: 'Esta ação não pode ser desfeita.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sim, excluir',
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-  }
-
   try {
-    await commentService.deleteComment(props.card.id, commentId);
+    await commentService.onDeleteComment(props.card.id, commentId);
 
     // Remover o comentário da lista
     if (props.card && Array.isArray(props.card.comments)) {

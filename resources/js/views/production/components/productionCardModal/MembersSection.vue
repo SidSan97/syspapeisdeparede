@@ -1,30 +1,30 @@
 <template>
   <div class="members-section">
+
+    <!-- Lista de membros do card -->
+    <div>
+      <h3 class="fs-xs text-body-secondary">Membros</h3>
+      <div class="avatar-group">
+        <div
+        class="position-relative"
+          v-for="member in card.members"
+          :key="member.id"
+          :title="member.name"
+          @click="canRemoveMembers ? handleMemberClick(member) : null"
+        >
+            <span class="avatar" :style="{ backgroundColor: getAvatarColor(member.name) }" role="button">{{ getInitials(member.name) }}</span>
+
+          <div v-if="showMemberMenu && selectedMember?.id === member.id" class="position-absolute start-0 top-0 mt-7 dropdown-menu show" @click.stop>
+            <button class="dropdown-item" @click="handleRemoveMember(member)">Remover do Cartão</button>
+          </div>
+        </div>
+        <button class="btn btn-default btn-icon rounded-pill" @click="toggleMembersMenu">
+        <i class="fa-solid fa-plus fa-fw"></i>
+      </button>
+      </div>
+    </div>
     <!-- Botões de ação -->
       <div class="mb-4 position-relative members-section-actions">
-      <button class="btn btn-primary me-2" @click="toggleMembersMenu">
-        <i class="fa-solid fa-plus fa-fw"></i>
-        Adicionar membro
-      </button>
-
-      <button
-        v-if="!isCurrentUserMember"
-        class="btn btn-secondary"
-        @click="handleJoinAsMember"
-        :disabled="joiningAsMember"
-      >
-        <i class="bi bi-plus-circle fa-fw"></i>
-        {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
-      </button>
-      <button
-        v-else
-        class="btn btn-danger"
-        @click="handleLeaveAsMember"
-        :disabled="leavingAsMember"
-      >
-        <i class="bi bi-x-circle fa-fw"></i>
-        {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
-      </button>
 
       <!-- Menu de adicionar membros -->
       <div v-if="showMembersMenu" class="position-absolute mt-2 border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">
@@ -74,32 +74,26 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Lista de membros do card -->
-    <div v-if="card.members && card.members.length > 0" class="mt-4 members-section-list-container">
-      <h3 class="fw-semibold text-body mb-3 d-flex align-items-center gap-2 members-section-list-title">
-        <i class="fa fa-user"></i> Membros
-      </h3>
-      <div class="d-flex flex-wrap gap-2 align-items-center members-section-list">
-        <div
-          v-for="member in card.members"
-          :key="member.id"
-          class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 position-relative members-section-member-avatar"
-          :class="{ 'is-clickable': canRemoveMembers }"
-          :style="{ backgroundColor: getAvatarColor(member.name) }"
-          :title="member.name"
-          @click="canRemoveMembers ? handleMemberClick(member) : null"
-        >
-          {{ getInitials(member.name) }}
-          <div v-if="showMemberMenu && selectedMember?.id === member.id" class="position-absolute mt-2 bg-body border rounded shadow-lg overflow-hidden members-section-member-popover" @click.stop>
-            <button class="w-100 border-0 bg-transparent text-start text-danger small d-flex align-items-center gap-2 members-section-member-remove" @click="handleRemoveMember(member)">
-              <i class="fa fa-times fa-fw"></i>
-              Remover do card
-            </button>
-          </div>
-        </div>
-      </div>
+
+      <button
+        v-if="!isCurrentUserMember"
+        class="btn btn-secondary"
+        @click="handleJoinAsMember"
+        :disabled="joiningAsMember"
+      >
+        <i class="bi bi-plus-circle fa-fw"></i>
+        {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
+      </button>
+      <button
+        v-else
+        class="btn btn-danger"
+        @click="handleLeaveAsMember"
+        :disabled="leavingAsMember"
+      >
+        <i class="bi bi-x-circle fa-fw"></i>
+        {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
+      </button>
     </div>
   </div>
 </template>

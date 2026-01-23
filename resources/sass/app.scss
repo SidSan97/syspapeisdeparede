@@ -73,3 +73,7 @@
         box-shadow: var(--ds-shadow-overlay);
     }
 }
+
+.btn-icon {
+    --bs-btn-padding-x: var(--bs-btn-padding-y)
+}
