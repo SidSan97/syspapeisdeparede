@@ -1,18 +1,10 @@
 @extends('layouts.guest')
 
-@push('css')
-    <style>
-        body {
-            background-color: var(--ds-background-disabled)
-        }
-    </style>
-@endpush
-
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-4">
-            <div class="card my-3">
+            <div class="card border-0 my-3">
                 <div class="card-body p-9">
                     <h1 class="fs-6 mb-2 text-center">{{ __('Reset Password') }}</h1>
                     @if (session('status'))

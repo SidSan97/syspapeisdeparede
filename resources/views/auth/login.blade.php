@@ -1,19 +1,11 @@
 @extends('layouts.guest')
 
-@push('css')
-    <style>
-        body {
-            background-color: var(--ds-background-disabled)
-        }
-    </style>
-@endpush
-
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-4">
             <div class="p-3 my-3">
-                <div class="card">
+                <div class="card border-0">
                     <div class="card-body p-9">
                         <h1 class="card-title fs-6 text-center">Entre para continuar</h1>
                         <form method="POST" action="{{ route('login') }}">
