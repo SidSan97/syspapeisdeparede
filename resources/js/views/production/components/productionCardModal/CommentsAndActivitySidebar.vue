@@ -1,5 +1,5 @@
 <template>
-  <aside class="bg-light p-4 border-start h-100">
+  <aside class="p-4 border-start h-100">
     <div class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header">
       <h3 class="fs-sm">
         <i class="far fa-comment-alt me-2"></i>

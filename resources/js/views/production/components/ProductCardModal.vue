@@ -11,12 +11,12 @@
           </div>
 
           <div class="modal-body d-flex px-0">
-            <div v-if="coverImage" class="layout-modal-cover">
+            <div class="row g-0 flex-fill">
+                <div v-if="coverImage" class="layout-modal-cover">
               <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
             </div>
 
-            <div class="row g-0 flex-fill">
-              <div class="col-md-7 overflow-y-auto h-100">
+            <div class="col-md-7 overflow-y-auto h-100">
                 <main class="p-4">
                     <header class="d-flex align-items-center gap-3 mb-4">
                         <button class="btn btn-sm btn-subtle rounded-pill p-2" @click="markAsProduced" :disabled="markingAsProduced"
@@ -72,10 +72,11 @@
                   <ProductionReportsSection :card="card" :reports="productionReports"
                     :loading="loadingProductionReports" />
                 </main>
-              </div>
-              <div class="col-md-5 overflow-y-auto h-100">
+            </div>
+
+            <div class="col-md-5 overflow-y-auto h-100">
                 <CommentsAndActivitySidebar :card="card" v-model:showDetails="showDetails" />
-              </div>
+            </div>
             </div>
           </div>
         </div>
