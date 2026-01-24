@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Teleport v-if="card" to="body">
     <div class="modal show d-block" @click="handleClose">
       <div class="modal-dialog modal-xl modal-dialog-scrollable" @click.stop>
@@ -22,7 +22,7 @@
                     </header>
                   <div class="row">
                     <div class="col col-md-auto">
-                      <MembersSection :card="card" :canRemoveMembers="canRemoveMembers" />
+                      <MembersSection :card="card" :canRemoveMembers="canRemoveMembers" typePage="layout" />
                     </div>
                     <div class="col col-md-auto">
                         <h3 class="fs-xs text-body-secondary">Prazo</h3>
@@ -33,7 +33,7 @@
                     </div>
                   </div>
 
-                  <DescriptionSection :card="card" />
+                  <DescriptionSection :card="card" typePage="layout" />
 
                   <AttachmentsSection :attachments="card.uploaded_files" />
 
@@ -98,7 +98,7 @@
             </div>
 
             <div class="col-md-5 overflow-y-auto h-100">
-                <CommentsAndActivitySidebar :card="card" v-model:showDetails="showDetails" />
+                <CommentsAndActivitySidebar :card="card" v-model:showDetails="showDetails" typePage="layout" />
             </div>
             </div>
           </div>
@@ -114,13 +114,13 @@
   import { useAuthStore } from '@/stores/auth';
   import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
-  import CommentsAndActivitySidebar from './layoutCardModal/CommentsAndActivitySidebar.vue';
-  import DescriptionSection from './layoutCardModal/DescriptionSection.vue';
+  import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
+  import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
   import AttachmentsSection from './layoutCardModal/AttachmentsSection.vue';
-  import LoadArtSection from './layoutCardModal/LoadArtSection.vue';
-  import RequestArtsSection from './layoutCardModal/RequestArtsSection.vue';
-  import MembersSection from './layoutCardModal/MembersSection.vue';
-  import WallDetailsSection from './layoutCardModal/WallDetailsSection.vue';
+  import LoadArtSection from '@/components/cardModal/LoadArtSection.vue';
+  import RequestArtsSection from '@/components/cardModal/RequestArtsSection.vue';
+  import MembersSection from '@/components/cardModal/MembersSection.vue';
+  import WallDetailsSection from '@/components/cardModal/WallDetailsSection.vue';
   import CollectionModelsSection from './layoutCardModal/CollectionModelsSection.vue';
   import { useRequestLayoutArts } from '@/views/layouts/composables/useRequestLayoutArts';
 

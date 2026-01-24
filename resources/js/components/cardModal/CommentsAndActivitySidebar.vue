@@ -78,6 +78,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  typePage: {
+    type: String,
+    default: 'layout',
+    validator: (value) => ['layout', 'product'].includes(value),
+  },
 });
 
 const emit = defineEmits(['update:showDetails', 'comment-added', 'comment-updated', 'comment-deleted']);
@@ -104,10 +109,10 @@ const activityItems = computed(() => {
 
   const activities = [];
 
-  // Adicionar histórico do card (filtrar apenas histórico de produção)
+  // Adicionar histórico do card (filtrar pelo tipo de página)
   if (Array.isArray(props.card.history) && props.card.history.length > 0) {
     props.card.history
-      .filter((historyItem) => historyItem.type_page === 'product')
+      .filter((historyItem) => historyItem.type_page === props.typePage)
       .forEach((historyItem) => {
         activities.push({
           id: `history-${historyItem.id}`,

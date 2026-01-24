@@ -29,7 +29,7 @@
                     </header>
                   <div class="row">
                     <div class="col col-md-auto">
-                      <MembersSection :card="card" :canRemoveMembers="canRemoveMembers" />
+                      <MembersSection :card="card" :canRemoveMembers="canRemoveMembers" typePage="product" />
                     </div>
                     <div class="col col-md-auto">
                         <h3 class="fs-xs text-body-secondary">Prazo</h3>
@@ -42,7 +42,7 @@
 
                   <ProductionPercentageSection :card="card" />
 
-                  <DescriptionSection :card="card" />
+                  <DescriptionSection :card="card" typePage="product" />
 
                   <AttachmentsSection :attachments="card.uploaded_files" />
 
@@ -75,7 +75,7 @@
             </div>
 
             <div class="col-md-5 overflow-y-auto h-100">
-                <CommentsAndActivitySidebar :card="card" v-model:showDetails="showDetails" />
+                <CommentsAndActivitySidebar :card="card" v-model:showDetails="showDetails" typePage="product" />
             </div>
             </div>
           </div>
@@ -91,15 +91,15 @@ import { computed, ref, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
 import { getCardDisplayName } from '@/utils/cardUtils';
-import MembersSection from './productionCardModal/MembersSection.vue';
-import DescriptionSection from './productionCardModal/DescriptionSection.vue';
+import MembersSection from '@/components/cardModal/MembersSection.vue';
+import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
 import AttachmentsSection from './productionCardModal/AttachmentsSection.vue';
-import WallDetailsSection from './productionCardModal/WallDetailsSection.vue';
+import WallDetailsSection from '@/components/cardModal/WallDetailsSection.vue';
 import CollectionModelsSection from './productionCardModal/CollectionModelsSection.vue';
 import ProductionPercentageSection from './productionCardModal/ProductionPercentageSection.vue';
 import ProductionReportsSection from './productionCardModal/ProductionReportsSection.vue';
-import RequestArtsSection from './productionCardModal/RequestArtsSection.vue';
-import CommentsAndActivitySidebar from './productionCardModal/CommentsAndActivitySidebar.vue';
+import RequestArtsSection from '@/components/cardModal/RequestArtsSection.vue';
+import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
 
 const props = defineProps({
   card: {

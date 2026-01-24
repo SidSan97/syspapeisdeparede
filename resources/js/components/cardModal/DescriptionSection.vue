@@ -64,7 +64,12 @@ const props = defineProps({
   card: {
     type: Object,
     required: true
-  }
+  },
+  typePage: {
+    type: String,
+    default: 'layout',
+    validator: (value) => ['layout', 'product'].includes(value),
+  },
 })
 
 const emit = defineEmits(['description-updated'])
@@ -122,7 +127,7 @@ async function save() {
     const response = await descriptionService.updateDescription(
       props.card.id,
       descriptionDraft.value,
-      'layout'
+      props.typePage
     )
 
     originalDescription.value = descriptionDraft.value

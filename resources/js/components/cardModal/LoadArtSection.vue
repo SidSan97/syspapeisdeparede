@@ -148,16 +148,6 @@ watch(() => props.card?.id, () => {
 });
 </script>
 
-<script>
-import { computed } from 'vue';
-
-export default {
-  setup() {
-    return {};
-  }
-};
-</script>
-
 <style lang="scss" scoped>
 .load-art-section {
   margin-bottom: 24px;

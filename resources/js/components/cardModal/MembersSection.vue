@@ -112,6 +112,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  typePage: {
+    type: String,
+    default: 'layout',
+    validator: (value) => ['layout', 'product'].includes(value),
+  },
 });
 
 const emit = defineEmits(['member-added', 'member-removed', 'user-joined', 'user-left']);
@@ -227,7 +232,7 @@ async function handleAddMember(member) {
   currentAddingMemberId.value = member.id;
 
   try {
-    const response = await memberService.addMember(props.card.id, member.id, 'layout');
+    const response = await memberService.addMember(props.card.id, member.id, props.typePage);
 
     // Fechar o menu de membros após adicionar
     closeMembersMenu();
@@ -274,7 +279,7 @@ async function handleJoinAsMember() {
   joiningAsMember.value = true;
 
   try {
-    const response = await memberService.addMember(props.card.id, auth.user.id);
+    const response = await memberService.addMember(props.card.id, auth.user.id, props.typePage);
 
     // Adicionar o usuário logado à lista de membros do card
     if (props.card && !props.card.members) {
@@ -317,7 +322,7 @@ async function handleLeaveAsMember() {
   leavingAsMember.value = true;
 
   try {
-    const response = await memberService.removeMember(props.card.id, auth.user.id, 'layout');
+    const response = await memberService.removeMember(props.card.id, auth.user.id, props.typePage);
 
     // Remover o usuário logado da lista de membros do card
     if (props.card && Array.isArray(props.card.members)) {
@@ -381,7 +386,7 @@ async function handleRemoveMember(member) {
   }
 
   try {
-    const response = await memberService.removeMember(props.card.id, member.id, 'layout');
+    const response = await memberService.removeMember(props.card.id, member.id, props.typePage);
 
     // Remover o membro da lista do card
     if (props.card && Array.isArray(props.card.members)) {
