@@ -10,8 +10,8 @@ export function useOrderService() {
      * @returns {Promise<Object>} Dados do pedido
      */
     async function getOrder(orderId) {
-        const { data: response } = await axios.get(`v1/orders/${orderId}`);
-        return response?.data || response;
+        const { data } = await axios.get(`v1/orders/${orderId}`);
+        return data?.data || data;
     }
 
     /**
@@ -67,13 +67,8 @@ export function useOrderService() {
      * @returns {Promise<Object>} Dados atualizados do pedido com o link de pagamento
      */
     async function generatePaymentLink(orderId) {
-        const { data: response } = await axios.post(`v1/orders/${orderId}/generate-payment-link`);
-
-        if (!response?.success) {
-            throw new Error(response?.message || 'Erro ao gerar link de pagamento');
-        }
-
-        return response.data || response;
+        const { data } = await axios.post(`v1/orders/${orderId}/generate-payment-link`);
+        return data?.data || data;
     }
 
     /**

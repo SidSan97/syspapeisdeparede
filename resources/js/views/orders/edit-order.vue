@@ -1071,13 +1071,12 @@ async function loadOrder() {
     try {
         const { data } = await axios.get(`v1/orders/${orderId.value}`);
 
-        if (!data?.success || !data?.data) {
+        const orderData = data?.data || data;
+
+        if (!orderData) {
             throw new Error('Pedido não encontrado');
         }
 
-        const orderData = data.data;
-
-        // Normalizar e carregar dados
         const normalized = normalizeOrderFromAPI(orderData);
         Object.assign(budget, normalized);
 
@@ -1673,15 +1672,16 @@ function updateBudget() {
 
     axios.put(`v1/orders/${orderId.value}`, payload)
         .then(response => {
-            console.log('Pedido atualizado:', response.data);
+            const updatedData = response.data?.data || response.data || budget;
+            console.log('Pedido atualizado:', updatedData);
+
             window.Swal.fire({
                 title: 'Pedido atualizado!',
-                text: response.data?.message ?? 'Pedido foi atualizado com sucesso!',
+                text: 'Pedido foi atualizado com sucesso!',
                 confirmButtonText: 'Entendi!',
             });
 
             // Atualizar originalBudget e budget para refletir as mudanças salvas
-            const updatedData = response.data?.data || budget;
             const normalized = normalizeOrderFromAPI(updatedData);
             // Atualizar valores salvos no budget
             budget.total_amount = normalized.total_amount;

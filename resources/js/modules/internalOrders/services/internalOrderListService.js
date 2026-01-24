@@ -7,11 +7,11 @@ export function useInternalOrderListService() {
     async function getOrders(params = {}) {
         const { data } = await axios.get('v1/orders', { params });
 
-        if (data?.success && data?.data) {
+        if (data && Array.isArray(data.data)) {
             const meta = data.meta || {};
 
             return {
-                items: Array.isArray(data.data) ? data.data : [],
+                items: data.data,
                 pagination: {
                     current_page: meta.current_page || 1,
                     last_page: meta.last_page || 1,

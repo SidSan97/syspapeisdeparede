@@ -15,7 +15,7 @@ export function useProductionService() {
 
     async function getLayouts() {
         const { data } = await axios.get('v1/orders/production-layouts');
-        return Array.isArray(data?.data) ? data.data : [];
+        return Array.isArray(data) ? data : [];
     }
 
     async function createColumn(name) {

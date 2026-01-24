@@ -53,240 +53,123 @@ class OrderController extends Controller
 
     public function index(ListRequest $request): JsonResponse
     {
-        try {
-            $validated = $request->validated();
+        $validated = $request->validated();
 
-            $filters = [
-                'search' => $validated['search'] ?? null,
-                'status' => $validated['status'] ?? 'all',
-                'date_from' => $validated['date_from'] ?? null,
-                'date_to' => $validated['date_to'] ?? null,
-                'user_id' => $validated['user_id'] ?? null,
-            ];
+        $filters = [
+            'search' => $validated['search'] ?? null,
+            'status' => $validated['status'] ?? 'all',
+            'date_from' => $validated['date_from'] ?? null,
+            'date_to' => $validated['date_to'] ?? null,
+            'user_id' => $validated['user_id'] ?? null,
+        ];
 
-            $perPage = (int) config('pagination.per_page', 15);
-            $paginatedOrders = $this->repository->paginate($filters, $perPage);
+        $perPage = (int) config('pagination.per_page', 15);
+        $paginatedOrders = $this->repository->paginate($filters, $perPage);
 
-            return BudgetResource::collection($paginatedOrders)
-                ->additional([
-                    'success' => true,
-                    'message' => 'Lista de pedidos recuperada com sucesso',
-                ])
-                ->response()
-                ->setStatusCode(200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar pedidos',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return BudgetResource::collection($paginatedOrders)->response(); 
     }
 
     public function all(): JsonResponse
     {
-        try {
-            $orders = $this->repository->all();
-            $data = OrderResource::collection($orders)->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lista de pedidos',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar pedidos',
-            ], 500);
-        }
+        $orders = $this->repository->all();
+        return OrderResource::collection($orders)->response();
     }
 
     public function layouts(): JsonResponse
     {
-        try {
-            $orderBudgets = $this->repository->getLayoutsForApprove();
-            $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
+        $orderBudgets = $this->repository->getLayoutsForApprove();
+        $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
 
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lista de layouts',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar layouts',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($data);
     }
 
     public function show(int $id): JsonResponse
     {
-        try {
-            $order = $this->repository->find($id);
+        $order = $this->repository->find($id);
 
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pedido não encontrado',
-                ], 404);
-            }
-
-            $transformed = new OrderResource($order);
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed->toArray(request()),
-                'message' => 'Pedido recuperado com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao recuperar pedido',
-                'error' => $e->getMessage(),
-            ], 500);
+        if (!$order) {
+            abort(404, 'Pedido não encontrado');
         }
+
+        return (new OrderResource($order))->response();
     }
 
     public function update(UpdateOrderRequest $request, int $id): JsonResponse
     {
-        try {
-            $order = $this->repository->find($id);
+        $order = $this->repository->find($id);
 
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pedido não encontrado',
-                ], 404);
-            }
-
-            $validated = $request->validated();
-            $order = $this->repository->update($order, $validated);
-
-            if (!empty($validated['dropshipping_data']) && $validated['dropshipping_budget'] === 1) {
-                $existingDropshipping = $order->dropshippingData;
-
-                if ($existingDropshipping) {
-                    $this->dropshippingRepository->update(
-                        $validated['dropshipping_data'],
-                        $existingDropshipping->id
-                    );
-                } else {
-                    $this->dropshippingRepository->create(
-                        $validated['dropshipping_data'],
-                        null,
-                        $order->id,
-                        Auth::id()
-                    );
-                }
-            } elseif (isset($validated['dropshipping_budget']) && $validated['dropshipping_budget'] === 0) {
-                $order->dropshippingData()->delete();
-            }
-
-            $transformed = new OrderResource($order);
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed->toArray(request()),
-                'message' => 'Pedido atualizado com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar pedido',
-                'error' => $e->getMessage(),
-            ], 500);
+        if (!$order) {
+            abort(404, 'Pedido não encontrado');
         }
+
+        $validated = $request->validated();
+        $order = $this->repository->update($order, $validated);
+
+        if (!empty($validated['dropshipping_data']) && $validated['dropshipping_budget'] === 1) {
+            $existingDropshipping = $order->dropshippingData;
+
+            if ($existingDropshipping) {
+                $this->dropshippingRepository->update(
+                    $validated['dropshipping_data'],
+                    $existingDropshipping->id
+                );
+            } else {
+                $this->dropshippingRepository->create(
+                    $validated['dropshipping_data'],
+                    null,
+                    $order->id,
+                    Auth::id()
+                );
+            }
+        } elseif (isset($validated['dropshipping_budget']) && $validated['dropshipping_budget'] === 0) {
+            $order->dropshippingData()->delete();
+        }
+
+        return (new OrderResource($order))->response();
     }
 
     public function getByStatus(Request $request, string $status): JsonResponse
     {
-        try {
-            $orders = $this->repository->getByStatus($status);
-            $data = OrderResource::collection($orders)->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => "Lista de pedidos com status: {$status}",
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar pedidos por status',
-            ], 500);
-        }
+        $orders = $this->repository->getByStatus($status);
+        return OrderResource::collection($orders)->response();
     }
 
     public function generatePaymentLink(Request $request, int $id): JsonResponse
     {
-        try {
-            $order = Order::findOrFail($id);
+        $order = Order::findOrFail($id);
 
-            // Gerar link de pagamento
-            $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
-            $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
+        // Gerar link de pagamento
+        $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
+        $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
 
-            if (!($paymentLinkData['success'] ?? false)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erro ao gerar link de pagamento: ' . ($paymentLinkData['message'] ?? 'Erro desconhecido'),
-                ], 500);
-            }
-
-            // Extrair URL e data de expiração
-            $apiResponse = $paymentLinkData['data'] ?? [];
-            $paymentUrl = $apiResponse['url'] ?? null;
-            $expirationDate = $apiResponse['expiration_date'] ?? $apiResponse['expires_at'] ?? null;
-
-            if (!$paymentUrl) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'URL de pagamento não encontrada na resposta',
-                ], 500);
-            }
-
-            // Salvar URL e data de expiração no pedido
-            $order->update([
-                'link_payment' => $paymentUrl,
-                'payment_expiration_date' => $expirationDate,
-            ]);
-
-            $transformed = (new OrderResource($order->refresh()))->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed,
-                'message' => 'Link de pagamento gerado com sucesso',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao gerar link de pagamento: ' . $e->getMessage(),
-            ], 500);
+        if (!($paymentLinkData['success'] ?? false)) {
+            abort(500, 'Erro ao gerar link de pagamento: ' . ($paymentLinkData['message'] ?? 'Erro desconhecido'));
         }
+
+        // Extrair URL e data de expiração
+        $apiResponse = $paymentLinkData['data'] ?? [];
+        $paymentUrl = $apiResponse['url'] ?? null;
+        $expirationDate = $apiResponse['expiration_date'] ?? $apiResponse['expires_at'] ?? null;
+
+        if (!$paymentUrl) {
+            abort(500, 'URL de pagamento não encontrada na resposta');
+        }
+
+        // Salvar URL e data de expiração no pedido
+        $order->update([
+            'link_payment' => $paymentUrl,
+            'payment_expiration_date' => $expirationDate,
+        ]);
+
+        return (new OrderResource($order->refresh()))->response();
     }
 
     public function productionLayouts(): JsonResponse
     {
-        try {
-            $orderBudgets = $this->repository->getLayoutsForProduction();
-            $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
+        $orderBudgets = $this->repository->getLayoutsForProduction();
+        $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
 
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lista de layouts de produção',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar layouts de produção: ' . $e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($data);
     }
 
     public function cancel(Request $request): JsonResponse
@@ -295,31 +178,15 @@ class OrderController extends Controller
             'id' => ['required', 'integer', 'exists:orders,id'],
         ]);
 
-        try {
-            $order = $this->repository->find($validated['id']);
+        $order = $this->repository->find($validated['id']);
 
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pedido não encontrado',
-                ], 404);
-            }
-
-            $orderUpdated = $this->repository->cancel($order);
-            $transformed = (new OrderResource($orderUpdated))->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed,
-                'message' => 'Pedido cancelado com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao cancelar pedido',
-                'error' => $e->getMessage(),
-            ], 500);
+        if (!$order) {
+            abort(404, 'Pedido não encontrado');
         }
+
+        $orderUpdated = $this->repository->cancel($order);
+
+        return (new OrderResource($orderUpdated))->response();
     }
 }
 

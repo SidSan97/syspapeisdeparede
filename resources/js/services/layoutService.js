@@ -15,7 +15,7 @@ export function useLayoutService() {
 
     async function getLayouts() {
         const { data } = await axios.get('v1/orders/layouts');
-        return Array.isArray(data?.data) ? data.data : [];
+        return Array.isArray(data) ? data : [];
     }
 
     async function createColumn(name) {
