@@ -69,10 +69,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Page from '@/components/page/Page.vue';
-import LayoutCardModal from './components/LayoutCardModal.vue';
-import LayoutColumn from './components/LayoutColumn.vue';
-import LayoutCard from './components/LayoutCard.vue';
-import LayoutAddColumn from './components/LayoutAddColumn.vue';
+import LayoutCardModal from '@/modules/layouts/components/LayoutCardModal.vue';
+import LayoutColumn from '@/modules/layouts/components/LayoutColumn.vue';
+import LayoutCard from '@/modules/layouts/components/LayoutCard.vue';
+import LayoutAddColumn from '@/modules/layouts/components/LayoutAddColumn.vue';
 import { useLayoutColumns } from '@/composables/useLayoutColumns';
 import { useLayoutCards } from '@/composables/useLayoutCards';
 

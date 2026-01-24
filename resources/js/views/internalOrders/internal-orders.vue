@@ -2,26 +2,26 @@
     <section class="content">
       <Page title="Pedidos">
         <div class="border-0 shadow-sm">
-                <InternalOrderFilters
-                    :is-admin="isAdmin"
-                    :is-commercial="isCommercialUser"
-                    :loading="loading"
-                    :loading-users="loadingUsers"
-                    :users="users"
-                    :search-query="searchQuery"
-                    :status-filter="statusFilter"
-                    :date-from="dateFrom"
-                    :date-to="dateTo"
-                    :selected-user-id="selectedUserId"
-                    :status-options="statusOptions"
-                    :current-status-label="currentStatusLabel"
-                    @update:search-query="searchQuery = $event"
-                    @update:status-filter="setStatusFilter($event)"
-                    @update:date-from="dateFrom = $event"
-                    @update:date-to="dateTo = $event"
-                    @update:selected-user-id="selectedUserId = $event"
-                    @clear-filters="clearFilters"
-                />
+          <InternalOrderFilters
+              :is-admin="isAdmin"
+              :is-commercial="isCommercialUser"
+              :loading="loading"
+              :loading-users="loadingUsers"
+              :users="users"
+              :search-query="searchQuery"
+              :status-filter="statusFilter"
+              :date-from="dateFrom"
+              :date-to="dateTo"
+              :selected-user-id="selectedUserId"
+              :status-options="statusOptions"
+              :current-status-label="currentStatusLabel"
+              @update:search-query="searchQuery = $event"
+              @update:status-filter="setStatusFilter($event)"
+              @update:date-from="dateFrom = $event"
+              @update:date-to="dateTo = $event"
+              @update:selected-user-id="selectedUserId = $event"
+              @clear-filters="clearFilters"
+          />
 
           <div class="card-body p-0 mt-4">
             <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
@@ -29,7 +29,7 @@
             </div>
 
             <EmptyState
-                        v-else-if="orders.length === 0"
+              v-else-if="orders.length === 0"
               heading="Nenhum pedido encontrado"
               icon="file-alt"
               class="p-5"
@@ -37,18 +37,18 @@
               Ajuste os filtros ou crie um novo pedido.
             </EmptyState>
 
-                    <InternalOrderItemsTable
-                        v-else
-                        :orders="orders"
-                        :status-options="statusOptions"
-                        @view-order="viewOrder"
-                    />
+              <InternalOrderItemsTable
+                v-else
+                :orders="orders"
+                :status-options="statusOptions"
+                @view-order="viewOrder"
+              />
 
-                    <div
-                        v-if="!loading && orders.length > 0 && paginationData.last_page > 1"
-                        class="p-3"
-                    >
-                        <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
+              <div
+                v-if="!loading && orders.length > 0 && paginationData.last_page > 1"
+                class="p-3"
+              >
+                <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
             </div>
           </div>
         </div>

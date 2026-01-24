@@ -74,10 +74,10 @@
   <script setup>
     import { ref, onMounted, onUnmounted, nextTick } from 'vue';
     import Page from '@/components/page/Page.vue';
-    import ProductCardModal from './components/ProductCardModal.vue';
-    import ProductionColumn from './components/ProductionColumn.vue';
-    import ProductionCard from './components/ProductionCard.vue';
-    import ProductionAddColumn from './components/ProductionAddColumn.vue';
+    import ProductCardModal from '@/modules/production/components/ProductCardModal.vue';
+    import ProductionColumn from '@/modules/production/components/ProductionColumn.vue';
+    import ProductionCard from '@/modules/production/components/ProductionCard.vue';
+    import ProductionAddColumn from '@/modules/production/components/ProductionAddColumn.vue';
     import { useProductionColumns } from '@/modules/production/composables/useProductionColumns';
     import { useProductionCards } from '@/modules/production/composables/useProductionCards';
 
