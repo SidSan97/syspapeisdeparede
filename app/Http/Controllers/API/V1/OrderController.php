@@ -64,24 +64,16 @@ class OrderController extends Controller
                 'user_id' => $validated['user_id'] ?? null,
             ];
 
-            $perPage = $validated['per_page'] ?? 15;
+            $perPage = (int) config('pagination.per_page', 15);
             $paginatedOrders = $this->repository->paginate($filters, $perPage);
 
-            $data = BudgetResource::collection($paginatedOrders->items())->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'data' => $data,
-                    'current_page' => $paginatedOrders->currentPage(),
-                    'last_page' => $paginatedOrders->lastPage(),
-                    'per_page' => $paginatedOrders->perPage(),
-                    'total' => $paginatedOrders->total(),
-                    'from' => $paginatedOrders->firstItem(),
-                    'to' => $paginatedOrders->lastItem(),
-                ],
-                'message' => 'Lista de pedidos recuperada com sucesso',
-            ], 200);
+            return BudgetResource::collection($paginatedOrders)
+                ->additional([
+                    'success' => true,
+                    'message' => 'Lista de pedidos recuperada com sucesso',
+                ])
+                ->response()
+                ->setStatusCode(200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

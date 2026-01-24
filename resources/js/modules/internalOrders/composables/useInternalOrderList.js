@@ -61,7 +61,6 @@ export function useInternalOrderList() {
 
             const params = {
                 page,
-                per_page: 15,
             };
 
             // Adicionar filtros

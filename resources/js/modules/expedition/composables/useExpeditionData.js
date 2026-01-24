@@ -24,7 +24,6 @@ export function useExpeditionData() {
       loading.value = true;
       const params = {
         page,
-        per_page: 15,
       };
 
       if (search && search.trim()) {

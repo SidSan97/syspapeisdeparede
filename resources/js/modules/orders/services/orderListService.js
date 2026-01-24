@@ -8,15 +8,17 @@ export function useOrderListService() {
         const { data } = await axios.get('v1/orders', { params });
 
         if (data?.success && data?.data) {
+            const meta = data.meta || {};
+
             return {
-                items: Array.isArray(data.data.data) ? data.data.data : [],
+                items: Array.isArray(data.data) ? data.data : [],
                 pagination: {
-                    current_page: data.data.current_page || 1,
-                    last_page: data.data.last_page || 1,
-                    per_page: data.data.per_page || 15,
-                    total: data.data.total || 0,
-                    from: data.data.from || 0,
-                    to: data.data.to || 0,
+                    current_page: meta.current_page || 1,
+                    last_page: meta.last_page || 1,
+                    per_page: meta.per_page || 15,
+                    total: meta.total || 0,
+                    from: meta.from || 0,
+                    to: meta.to || 0,
                 },
             };
         }
@@ -26,7 +28,7 @@ export function useOrderListService() {
             pagination: {
                 current_page: 1,
                 last_page: 1,
-                per_page: 15,
+                    per_page: 15,
                 total: 0,
                 from: 0,
                 to: 0,

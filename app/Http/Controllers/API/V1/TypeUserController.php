@@ -20,7 +20,8 @@ class TypeUserController extends BaseController
      */
     public function index()
     {
-        $typeUsers = $this->typeUser->latest()->paginate(100);
+        $perPage = (int) config('pagination.per_page', 15);
+        $typeUsers = $this->typeUser->latest()->paginate($perPage);
 
         return $this->sendResponse($typeUsers, 'Lista de tipos de usuários');
     }

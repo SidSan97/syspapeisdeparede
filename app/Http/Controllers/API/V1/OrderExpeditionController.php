@@ -23,7 +23,7 @@ class OrderExpeditionController extends Controller
     public function expedition(Request $request): JsonResponse
     {
         try {
-            $perPage = $request->input('per_page', 15);
+            $perPage = (int) config('pagination.per_page', 15);
             $search = $request->input('search');
             $page = $request->input('page', 1);
 

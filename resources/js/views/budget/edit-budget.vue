@@ -671,9 +671,7 @@ async function fetchCollectionModels() {
     modelsError.value = null;
 
     try {
-        const { data } = await axios.get('v1/collection-models', {
-            params: { per_page: 100 }
-        });
+        const { data } = await axios.get('v1/collection-models');
 
         const payload = data?.data;
         const { items } = extractItemsFromResponse(payload);

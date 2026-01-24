@@ -45,7 +45,6 @@ export function useOrderList() {
 
             const params = {
                 page,
-                per_page: 15,
             };
 
             // Adicionar filtros

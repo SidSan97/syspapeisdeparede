@@ -231,7 +231,6 @@ const fetchUsers = async (page = 1) => {
   try {
     const params = {
       page,
-      per_page: 15,
     };
 
     // Adicionar filtro de busca

@@ -289,7 +289,7 @@ const fetchCollections = async () => {
   loadingCollections.value = true;
   try {
     const { data } = await axios.get('v1/collection-categories', {
-      params: { tree: true, per_page: 100 },
+      params: { tree: true },
     });
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);

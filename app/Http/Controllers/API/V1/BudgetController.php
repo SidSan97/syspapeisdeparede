@@ -79,7 +79,7 @@ class BudgetController extends Controller
                 'user_id' => $validated['user_id'] ?? null,
             ];
 
-            $perPage = $validated['per_page'] ?? 15;
+            $perPage = (int) config('pagination.per_page', 15);
             $paginatedBudgets = $this->repository->paginate($filters, $perPage);
 
             $data = BudgetResource::collection($paginatedBudgets->items())->toArray(request());
