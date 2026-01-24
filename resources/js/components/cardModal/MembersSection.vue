@@ -24,7 +24,7 @@
       </div>
     </div>
     <!-- Botões de ação -->
-      <div class="mb-4 position-relative members-section-actions">
+      <div class="mb-4 mt-2 position-relative members-section-actions">
 
       <!-- Menu de adicionar membros -->
       <div v-if="showMembersMenu" class="position-absolute mt-2 border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">

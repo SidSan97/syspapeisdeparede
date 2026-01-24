@@ -130,13 +130,13 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import Page from '@/components/page/Page.vue';
-import SeparationTable from './components/SeparationTable.vue';
-import ExpeditionTable from './components/ExpeditionTable.vue';
-import InvoiceTable from './components/InvoiceTable.vue';
-import GroupingsTable from './components/GroupingsTable.vue';
-import { useExpeditionData } from './composables/useExpeditionData';
-import { useExpeditionSelection } from './composables/useExpeditionSelection';
-import { useExpeditionActions } from './composables/useExpeditionActions';
+import SeparationTable from '@/modules/expedition/components/SeparationTable.vue';
+import ExpeditionTable from '@/modules/expedition/components/ExpeditionTable.vue';
+import InvoiceTable from '@/modules/expedition/components/InvoiceTable.vue';
+import GroupingsTable from '@/modules/expedition/components/GroupingsTable.vue';
+import { useExpeditionData } from '@/modules/expedition/composables/useExpeditionData';
+import { useExpeditionSelection } from '@/modules/expedition/composables/useExpeditionSelection';
+import { useExpeditionActions } from '@/modules/expedition/composables/useExpeditionActions';
 
 const activeTab = ref('separation');
 const selectedCarrier = ref(null);

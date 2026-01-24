@@ -57,37 +57,37 @@
   </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import Page from '@/components/page/Page.vue';
   import EmptyState from '@/components/empty-state/EmptyState.vue';
-import InternalOrderFilters from './components/InternalOrderFilters.vue';
-import InternalOrderItemsTable from './components/InternalOrderItemsTable.vue';
+  import InternalOrderFilters from '@/modules/internalOrders/components/InternalOrderFilters.vue';
+  import InternalOrderItemsTable from '@/modules/internalOrders/components/InternalOrderItemsTable.vue';
   import { useAuthStore } from '@/stores/auth';
-import { useInternalOrderList } from './composables/useInternalOrderList';
-import { useInternalOrderFilters } from './composables/useInternalOrderFilters';
-import { useInternalOrderListService } from './services/internalOrderListService';
+  import { useInternalOrderList } from '@/modules/internalOrders/composables/useInternalOrderList';
+  import { useInternalOrderFilters } from '@/modules/internalOrders/composables/useInternalOrderFilters';
+  import { useInternalOrderListService } from '@/modules/internalOrders/services/internalOrderListService';
 
-const router = useRouter();
+  const router = useRouter();
   const auth = useAuthStore();
-const internalOrderListService = useInternalOrderListService();
+  const internalOrderListService = useInternalOrderListService();
 
-const { orders, loading, paginationData, fetchOrders } = useInternalOrderList();
+  const { orders, loading, paginationData, fetchOrders } = useInternalOrderList();
 
-const {
-    filters,
-    searchQuery,
-    statusFilter,
-    dateFrom,
-    dateTo,
-    selectedUserId,
-    statusOptions,
-    currentStatusLabel,
-    setStatusFilter,
-    clearFilters,
-} = useInternalOrderFilters(() => {
-    fetchOrders(filters.value);
-});
+  const {
+      filters,
+      searchQuery,
+      statusFilter,
+      dateFrom,
+      dateTo,
+      selectedUserId,
+      statusOptions,
+      currentStatusLabel,
+      setStatusFilter,
+      clearFilters,
+  } = useInternalOrderFilters(() => {
+      fetchOrders(filters.value);
+  });
 
   const users = ref([]);
   const loadingUsers = ref(false);
@@ -95,7 +95,7 @@ const {
   const isAdmin = computed(() => auth.isAdmin());
   const isCommercialUser = computed(() => auth.hasRole('commercial'));
 
-function handlePageChange(page) {
+  function handlePageChange(page) {
     fetchOrders(filters.value, page);
   }
 
@@ -115,7 +115,7 @@ function handlePageChange(page) {
     }
   }
 
-function viewOrder(order) {
+  function viewOrder(order) {
     router.push({ name: 'ShowOrderDetails', params: { id: order.id } });
   }
 

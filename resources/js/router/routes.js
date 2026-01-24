@@ -114,12 +114,12 @@ const routes = [
             {
                 path: '/expedicao/nota-fiscal/:id',
                 name: 'ShowInvoiceDetails',
-                component: () => import('../views/expedition/components/showInvoiceDetails.vue'),
+                component: () => import('../modules/expedition/components/showInvoiceDetails.vue'),
             },
             {
                 path: '/expedicao/agrupamento/:id',
                 name: 'ShowGroupingDetails',
-                component: () => import('../views/expedition/components/showGroupingDetails.vue'),
+                component: () => import('../modules/expedition/components/showGroupingDetails.vue'),
             },
             ...settings,
         ]
