@@ -9,21 +9,19 @@ export function useExpeditionActions() {
   async function generateSeparationLabel(expedition, loading) {
     try {
       loading.value = true;
-      const data = await expeditionService.generateSeparationLabel(expedition.id);
+      await expeditionService.generateSeparationLabel(expedition.id);
 
-      if (data.success) {
-        const result = await window.Swal.fire({
-          title: 'Etiqueta gerada com sucesso!',
-          text: 'Deseja visualizar a etiqueta agora?',
-          icon: 'success',
-          showCancelButton: true,
-          confirmButtonText: 'Visualizar etiqueta',
-          cancelButtonText: 'Fechar',
-        });
+      const result = await window.Swal.fire({
+        title: 'Etiqueta gerada com sucesso!',
+        text: 'Deseja visualizar a etiqueta agora?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Visualizar etiqueta',
+        cancelButtonText: 'Fechar',
+      });
 
-        if (result.isConfirmed) {
-          await viewSeparationLabelPdf(expedition.id, loading);
-        }
+      if (result.isConfirmed) {
+        await viewSeparationLabelPdf(expedition.id, loading);
       }
     } catch (error) {
       console.error('Erro ao gerar etiqueta de separação:', error);
@@ -66,18 +64,16 @@ export function useExpeditionActions() {
   async function generateInvoice(invoice, loading, fetchInvoices) {
     try {
       loading.value = true;
-      const data = await expeditionService.generateInvoice(invoice.order_id);
+      await expeditionService.generateInvoice(invoice.order_id);
 
-      if (data.success) {
-        window.Swal.fire({
-          title: 'Nota Fiscal gerada com sucesso!',
-          text: data.message || 'A nota fiscal foi gerada com sucesso.',
-          icon: 'success',
-          confirmButtonText: 'Entendi!',
-        });
+      window.Swal.fire({
+        title: 'Nota Fiscal gerada com sucesso!',
+        text: 'A nota fiscal foi gerada com sucesso.',
+        icon: 'success',
+        confirmButtonText: 'Entendi!',
+      });
 
-        await fetchInvoices();
-      }
+      await fetchInvoices();
     } catch (error) {
       console.error('Erro ao gerar nota fiscal:', error);
       window.Swal.fire({
@@ -96,12 +92,17 @@ export function useExpeditionActions() {
       loading.value = true;
       const data = await expeditionService.generateDanfe(id);
 
-      if (data.success && data.data.link_nfe) {
+      const link =
+        data?.link_nfe ||
+        data?.data?.link_nfe ||
+        (Array.isArray(data?.links) ? data.links[0]?.link : null);
+
+      if (link) {
         const result = await window.Swal.fire(
           createLinkAlertConfig({
             title: 'DANFE gerado com sucesso!',
             linkId: 'danfe-link',
-            linkValue: data.data.link_nfe,
+            linkValue: link,
             message: 'Deseja abrir o DANFE agora?',
             successMessage: 'O link do DANFE foi copiado para a área de transferência.',
             confirmButtonText: 'Abrir DANFE',
@@ -110,7 +111,7 @@ export function useExpeditionActions() {
         );
 
         if (result.isConfirmed) {
-          window.open(data.data.link_nfe, '_blank');
+          window.open(link, '_blank');
         }
       } else {
         window.Swal.fire({
@@ -138,12 +139,18 @@ export function useExpeditionActions() {
       loading.value = true;
       const data = await expeditionService.printCarrierLabels(groupingId);
 
-      if (data.success && data.data.links) {
+      const link =
+        data?.links?.[0]?.link ||
+        data?.data?.links?.[0]?.link ||
+        data?.link ||
+        null;
+
+      if (link) {
         const result = await window.Swal.fire(
           createLinkAlertConfig({
             title: 'Etiqueta gerada com sucesso!',
             linkId: 'label-link',
-            linkValue: data.data.links[0].link,
+            linkValue: link,
             message: 'Deseja visualizar a etiqueta agora?',
             successMessage: 'O link da etiqueta foi copiado para a área de transferência.',
             confirmButtonText: 'Visualizar etiqueta',
@@ -152,7 +159,7 @@ export function useExpeditionActions() {
         );
 
         if (result.isConfirmed) {
-          window.open(data.data.links[0].link, '_blank');
+          window.open(link, '_blank');
         }
       } else {
         window.Swal.fire({

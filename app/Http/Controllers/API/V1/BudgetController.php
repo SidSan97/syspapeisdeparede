@@ -68,42 +68,20 @@ class BudgetController extends Controller
 
     public function index(ListRequest $request): JsonResponse
     {
-        try {
-            $validated = $request->validated();
+        $validated = $request->validated();
 
-            $filters = [
-                'search' => $validated['search'] ?? null,
-                'status' => $validated['status'] ?? 'all',
-                'date_from' => $validated['date_from'] ?? null,
-                'date_to' => $validated['date_to'] ?? null,
-                'user_id' => $validated['user_id'] ?? null,
-            ];
+        $filters = [
+            'search' => $validated['search'] ?? null,
+            'status' => $validated['status'] ?? 'all',
+            'date_from' => $validated['date_from'] ?? null,
+            'date_to' => $validated['date_to'] ?? null,
+            'user_id' => $validated['user_id'] ?? null,
+        ];
 
-            $perPage = (int) config('pagination.per_page', 15);
-            $paginatedBudgets = $this->repository->paginate($filters, $perPage);
+        $perPage = (int) config('pagination.per_page', 15);
+        $paginatedBudgets = $this->repository->paginate($filters, $perPage);
 
-            $data = BudgetResource::collection($paginatedBudgets->items())->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'data' => $data,
-                    'current_page' => $paginatedBudgets->currentPage(),
-                    'last_page' => $paginatedBudgets->lastPage(),
-                    'per_page' => $paginatedBudgets->perPage(),
-                    'total' => $paginatedBudgets->total(),
-                    'from' => $paginatedBudgets->firstItem(),
-                    'to' => $paginatedBudgets->lastItem(),
-                ],
-                'message' => 'Lista de orçamentos',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar orçamentos',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return BudgetResource::collection($paginatedBudgets)->response();
     }
 
     public function show($id): JsonResponse

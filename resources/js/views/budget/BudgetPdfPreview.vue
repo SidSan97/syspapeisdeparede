@@ -419,9 +419,10 @@ async function loadBudget() {
 
   try {
     const { data } = await axios.get(`v1/budgets/${route.params.id}`);
+    const payload = data?.data || data;
 
-    if (data.success && data.data) {
-      budget.value = data.data;
+    if (payload) {
+      budget.value = payload;
     } else {
       error.value = 'Orçamento não encontrado';
     }

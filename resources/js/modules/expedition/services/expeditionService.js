@@ -4,16 +4,19 @@ export function useExpeditionService() {
   async function fetchExpeditions(params = {}) {
     const { data } = await axios.get('v1/orders/expedition', { params });
 
-    if (data?.success && data?.data) {
+    // Estrutura padrão de paginação do Laravel: { data, meta, links }
+    if (data && Array.isArray(data.data)) {
+      const meta = data.meta || {};
+
       return {
-        items: Array.isArray(data.data.data) ? data.data.data : [],
+        items: data.data,
         pagination: {
-          current_page: data.data.current_page || 1,
-          last_page: data.data.last_page || 1,
-          per_page: data.data.per_page || 15,
-          total: data.data.total || 0,
-          from: data.data.from || 0,
-          to: data.data.to || 0,
+          current_page: meta.current_page || 1,
+          last_page: meta.last_page || 1,
+          per_page: meta.per_page || 15,
+          total: meta.total || 0,
+          from: meta.from || 0,
+          to: meta.to || 0,
         },
       };
     }
@@ -33,23 +36,25 @@ export function useExpeditionService() {
 
   async function fetchInvoices() {
     const { data } = await axios.get('v1/orders/ready-for-invoice');
-    const payload = Array.isArray(data?.data) ? data.data : [];
-    return payload;
+    // API agora retorna diretamente o array de pedidos prontos para faturar
+    return Array.isArray(data) ? data : [];
   }
 
   async function searchInvoices() {
     const { data } = await axios.get('v1/search-invoices');
-    if (data.success && data.data.notas_fiscais) {
-      return data.data.notas_fiscais;
+    if (Array.isArray(data?.notas_fiscais)) {
+      return data.notas_fiscais;
     }
+
     return [];
   }
 
   async function searchGroupings(carrier) {
     const { data } = await axios.get(`v1/search-groupings/${encodeURIComponent(carrier)}`);
-    if (data.success && data.data) {
-      return data.data.agrupamentos || [];
+    if (Array.isArray(data?.agrupamentos)) {
+      return data.agrupamentos;
     }
+
     return [];
   }
 

@@ -6,7 +6,7 @@ import axios from 'axios';
 export function useProductionService() {
     async function getColumns() {
         const { data } = await axios.get('v1/production-column-names');
-        const payload = Array.isArray(data?.data) ? data.data : [];
+        const payload = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
         return payload.map(col => ({
             id: col.id,
             name: col.name,
@@ -29,8 +29,8 @@ export function useProductionService() {
     }
 
     async function deleteColumn(columnId) {
-        const { data } = await axios.delete(`v1/production-column-names/${columnId}`);
-        return data;
+        await axios.delete(`v1/production-column-names/${columnId}`);
+        return true;
     }
 
     async function updateCardColumn(orderBudgetId, productionColumnNamesId) {

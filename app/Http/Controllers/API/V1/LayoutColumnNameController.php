@@ -14,24 +14,13 @@ class LayoutColumnNameController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-            ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
 
-            $column = LayoutColumnName::create($validated);
+        $column = LayoutColumnName::create($validated);
 
-            return response()->json([
-                'success' => true,
-                'data' => $column,
-                'message' => 'Coluna criada com sucesso',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao criar coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($column, 201);
     }
 
     /**
@@ -39,20 +28,9 @@ class LayoutColumnNameController extends Controller
      */
     public function index(): JsonResponse
     {
-        try {
-            $columns = LayoutColumnName::orderBy('id')->get();
+        $columns = LayoutColumnName::orderBy('id')->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $columns,
-                'message' => 'Lista de colunas de layout',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar colunas: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($columns);
     }
 
     /**
@@ -60,24 +38,13 @@ class LayoutColumnNameController extends Controller
      */
     public function update(Request $request, LayoutColumnName $layoutColumnName): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-            ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
 
-            $layoutColumnName->update($validated);
+        $layoutColumnName->update($validated);
 
-            return response()->json([
-                'success' => true,
-                'data' => $layoutColumnName->fresh(),
-                'message' => 'Coluna atualizada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($layoutColumnName->fresh());
     }
 
     /**
@@ -85,19 +52,9 @@ class LayoutColumnNameController extends Controller
      */
     public function destroy(LayoutColumnName $layoutColumnName): JsonResponse
     {
-        try {
-            $layoutColumnName->delete();
+        $layoutColumnName->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Coluna excluída com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao excluir coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->noContent();
     }
 }
 

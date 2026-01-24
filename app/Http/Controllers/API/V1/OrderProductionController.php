@@ -39,133 +39,75 @@ class OrderProductionController extends Controller
             'id' => ['required', 'integer', 'exists:orders,id'],
         ]);
 
-        try {
-            $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
-            if($order->dropshipping_budget) {
-                $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
-                $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
-                $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
+        $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
 
-                if($orderTiny['status'] == "Erro") {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Houve um erro ao cadastrar o produto no ERP. Tente novamente mais tarde!',
-                        'error' => $orderTiny['registros']['registro']['erros']
-                    ], 403);
-                }
+        if ($order->dropshipping_budget) {
+            $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+            $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
+            $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
 
-                $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
+            if ($orderTiny['status'] === 'Erro') {
+                abort(403, 'Houve um erro ao cadastrar o produto no ERP. Tente novamente mais tarde!');
             }
 
-            $order->update(['status' => 'Aprovado']);
-
-            // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
-            $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
-
-            if (!$firstColumn) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.',
-                ], 400);
-            }
-
-            $this->orderBudget->where('order_id', $order->id)
-                ->update(['status' => 'Liberado para produção']);
-
-            $orderBudgets = $this->orderBudget->where('order_id', $order->id)->get();
-
-            $transformed = (new OrderResource($order->refresh()))->toArray(request());
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformed,
-                'order_budgets' => $orderBudgets,
-                'message' => 'Orçamento aprovado com sucesso',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao aprovar orçamento: ' . $e->getMessage(),
-            ], 500);
+            $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
         }
+
+        $order->update(['status' => 'Aprovado']);
+
+        // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
+        $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+
+        if (!$firstColumn) {
+            abort(400, 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
+        }
+
+        $this->orderBudget->where('order_id', $order->id)
+            ->update(['status' => 'Liberado para produção']);
+
+        return (new OrderResource($order->refresh()))->response();
     }
 
     public function markAsProduced(Request $request, int $orderBudgetId): JsonResponse
     {
-        try {
-            $user = $request->user();
-            $orderBudget = $this->orderBudgetRepository->markAsProduced(
-                $orderBudgetId,
-                $user,
-                'product'
-            );
+        $user = $request->user();
+        $orderBudget = $this->orderBudgetRepository->markAsProduced(
+            $orderBudgetId,
+            $user,
+            'product'
+        );
 
-            // Gerar relatório de produção
-            $productionReportService = app(\App\Services\ProductionReportService::class);
-            $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
+        // Gerar relatório de produção
+        $productionReportService = app(\App\Services\ProductionReportService::class);
+        $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
 
-            return response()->json([
-                'success' => true,
-                'data' => $orderBudget,
-                'message' => 'Data de produção atualizada com sucesso',
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pedido não encontrado',
-                'error' => $e->getMessage(),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar data de produção: ' . $e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($orderBudget);
     }
 
     public function updateProductionPercentage(Request $request, int $orderBudgetId): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'production_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
-            ]);
+        $validated = $request->validate([
+            'production_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
 
-            $user = $request->user();
-            $orderBudget = $this->orderBudgetRepository->updateProductionPercentage(
-                $orderBudgetId,
-                $validated['production_percentage'],
+        $user = $request->user();
+        $orderBudget = $this->orderBudgetRepository->updateProductionPercentage(
+            $orderBudgetId,
+            $validated['production_percentage'],
+            $user,
+            'product'
+        );
+
+        if ($validated['production_percentage'] == 100) {
+            // Gerar relatório de produção quando atinge 100%
+            $productionReportService = app(\App\Services\ProductionReportService::class);
+            $productionReportService->generateProductionPercentageReport(
+                $orderBudget,
                 $user,
-                'product'
+                $validated['production_percentage']
             );
-
-            if($validated['production_percentage'] == 100) {
-                // Gerar relatório de produção quando atinge 100%
-                $productionReportService = app(\App\Services\ProductionReportService::class);
-                $productionReportService->generateProductionPercentageReport(
-                    $orderBudget,
-                    $user,
-                    $validated['production_percentage']
-                );
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $orderBudget,
-                'message' => 'Porcentagem de produção atualizada com sucesso',
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pedido não encontrado',
-                'error' => $e->getMessage(),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar porcentagem de produção: ' . $e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        return response()->json($orderBudget);
     }
 }

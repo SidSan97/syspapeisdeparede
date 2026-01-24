@@ -137,18 +137,20 @@ async function save() {
       production_percentage: percentage,
     });
 
+    const updated = response?.data || null;
+
     // Atualizar o card localmente
-    if (props.card && response.data?.data) {
-      props.card.production_percentage = response.data.data.production_percentage;
+    if (props.card && updated) {
+      props.card.production_percentage = updated.production_percentage;
     }
 
-    originalProductionPercentage.value = percentage;
+    originalProductionPercentage.value = props.card?.production_percentage ?? percentage;
     isEditing.value = false;
 
     if (window.Toast) {
       window.Toast.fire({
         icon: 'success',
-        title: response.data.message || 'Porcentagem de produção atualizada com sucesso',
+        title: 'Porcentagem de produção atualizada com sucesso',
       });
     }
 

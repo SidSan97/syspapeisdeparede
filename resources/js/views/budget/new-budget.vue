@@ -1148,13 +1148,13 @@ function saveBudget() {
 
     axios.post('v1/budgets', payload)
         .then(response => {
-            console.log('Orçamento salvo:', response.data);
+            const budgetData = response.data?.data || response.data;
+            console.log('Orçamento salvo:', budgetData);
             window.Swal.fire({
                 title: 'Orçamento criado!',
-                text: response.data?.message ?? 'Orçamento foi criado com sucesso!',
+                text: 'Orçamento foi criado com sucesso!',
                 confirmButtonText: 'Entendi!',
             });
-            // Redirecionar para a lista de orçamentos
             setTimeout(() => {
                 router.push('/budget');
             }, 1500);

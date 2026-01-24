@@ -57,18 +57,15 @@ export function useLayoutColumns() {
 
         try {
             savingColumn.value = columnId;
-            const data = await layoutService.updateColumn(columnId, newName);
+            const updated = await layoutService.updateColumn(columnId, newName);
 
-            if (data.success) {
-                const columnIndex = columns.value.findIndex(c => c.id === columnId);
-                if (columnIndex !== -1) {
-                    columns.value[columnIndex].name = newName;
-                }
-                editingColumns.value[columnId] = false;
-                delete editingNames.value[columnId];
-                return true;
+            const columnIndex = columns.value.findIndex(c => c.id === columnId);
+            if (columnIndex !== -1) {
+                columns.value[columnIndex].name = updated?.name ?? newName;
             }
-            return false;
+            editingColumns.value[columnId] = false;
+            delete editingNames.value[columnId];
+            return true;
         } catch (error) {
             console.error('Erro ao salvar coluna:', error);
             return false;
@@ -79,13 +76,10 @@ export function useLayoutColumns() {
 
     async function deleteColumn(columnId) {
         try {
-            const data = await layoutService.deleteColumn(columnId);
+            await layoutService.deleteColumn(columnId);
 
-            if (data.success) {
-                columns.value = columns.value.filter(c => c.id !== columnId);
-                return columns.value.length > 0 ? columns.value[0].id : null;
-            }
-            return null;
+            columns.value = columns.value.filter(c => c.id !== columnId);
+            return columns.value.length > 0 ? columns.value[0].id : null;
         } catch (error) {
             console.error('Erro ao excluir coluna:', error);
             return null;
@@ -100,14 +94,14 @@ export function useLayoutColumns() {
 
         try {
             creatingColumn.value = true;
-            const data = await layoutService.createColumn(name);
+            const column = await layoutService.createColumn(name);
 
-            if (data.success) {
+            if (column?.id) {
                 columns.value.push({
-                    id: data.data.id,
-                    name: data.data.name,
+                    id: column.id,
+                    name: column.name,
                 });
-                return data.data;
+                return column;
             }
             return null;
         } catch (error) {

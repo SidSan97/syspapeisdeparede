@@ -893,10 +893,8 @@ async function loadBudget() {
     loadingBudget.value = true;
 
     try {
-        // Buscar da lista de orçamentos
-        const { data } = await axios.get('v1/budgets');
-        const budgets = data?.data?.data ?? data?.data ?? [];
-        const budgetData = budgets.find(b => b.id === budgetId.value);
+        const { data } = await axios.get(`v1/budgets/${budgetId.value}`);
+        const budgetData = data?.data || data;
 
         if (!budgetData) {
             window.Swal.fire({

@@ -14,24 +14,13 @@ class ProductionColumnNameController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:155'],
-            ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:155'],
+        ]);
 
-            $column = ProductionColumnName::create($validated);
+        $column = ProductionColumnName::create($validated);
 
-            return response()->json([
-                'success' => true,
-                'data' => $column,
-                'message' => 'Coluna criada com sucesso',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao criar coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($column, 201);
     }
 
     /**
@@ -39,20 +28,9 @@ class ProductionColumnNameController extends Controller
      */
     public function index(): JsonResponse
     {
-        try {
-            $columns = ProductionColumnName::orderBy('id')->get();
+        $columns = ProductionColumnName::orderBy('id')->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $columns,
-                'message' => 'Lista de colunas de produção',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar colunas: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($columns);
     }
 
     /**
@@ -60,24 +38,13 @@ class ProductionColumnNameController extends Controller
      */
     public function update(Request $request, ProductionColumnName $productionColumnName): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:155'],
-            ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:155'],
+        ]);
 
-            $productionColumnName->update($validated);
+        $productionColumnName->update($validated);
 
-            return response()->json([
-                'success' => true,
-                'data' => $productionColumnName->fresh(),
-                'message' => 'Coluna atualizada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($productionColumnName->fresh());
     }
 
     /**
@@ -85,19 +52,9 @@ class ProductionColumnNameController extends Controller
      */
     public function destroy(ProductionColumnName $productionColumnName): JsonResponse
     {
-        try {
-            $productionColumnName->delete();
+        $productionColumnName->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Coluna excluída com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao excluir coluna: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->noContent();
     }
 }
 

@@ -20,9 +20,8 @@ export function useOrderService() {
      * @returns {Promise<Object>} Dados do orçamento
      */
     async function getBudget(budgetId) {
-        const { data: response } = await axios.get('v1/budgets');
-        const budgets = response?.data?.data ?? response?.data ?? [];
-        const budget = budgets.find(b => b.id === Number(budgetId));
+        const { data } = await axios.get(`v1/budgets/${budgetId}`);
+        const budget = data?.data || data;
 
         if (!budget) {
             throw new Error('Orçamento não encontrado');
@@ -50,15 +49,12 @@ export function useOrderService() {
      * @returns {Promise<Object>} Resposta da API
      */
     async function approveOrder(orderId) {
-        const response = await axios.post('v1/orders/approve', {
+        const { data } = await axios.post('v1/orders/approve', {
             id: orderId,
         });
 
-        if (!response.data?.success) {
-            throw new Error(response.data?.message || 'Erro ao aprovar pedido');
-        }
-
-        return response.data;
+        // API retorna OrderResource ({ data: {...} })
+        return data?.data || data;
     }
 
     /**

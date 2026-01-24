@@ -248,12 +248,9 @@ async function fetchProductionReports() {
     loadingProductionReports.value = true;
 
     const response = await axios.get(`v1/orders/order-budgets/${props.card.id}/production-reports`);
+    const data = response?.data ?? [];
 
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      productionReports.value = response.data.data;
-    } else {
-      productionReports.value = [];
-    }
+    productionReports.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Erro ao buscar relatórios de produção:', error);
     productionReports.value = [];
@@ -271,17 +268,18 @@ async function markAsProduced() {
 
   try {
     const response = await axios.post(`v1/orders/order-budgets/${props.card.id}/mark-as-produced`);
+    const updated = response?.data || null;
 
     // Atualizar o card localmente
-    if (props.card && response.data?.data) {
-      props.card.production_date = response.data.data.production_date;
-      props.card.production_column_names_id = response.data.data.production_column_names_id;
+    if (props.card && updated) {
+      props.card.production_date = updated.production_date;
+      props.card.production_column_names_id = updated.production_column_names_id;
     }
 
     if (window.Toast) {
       window.Toast.fire({
         icon: 'success',
-        title: response.data.message || 'Data de produção atualizada com sucesso',
+        title: 'Data de produção atualizada com sucesso',
       });
     }
   } catch (error) {

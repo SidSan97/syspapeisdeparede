@@ -904,24 +904,26 @@ async function submitOrder() {
       },
     });
 
-    if (!response.data?.data) {
+    const payload = response.data?.data || response.data;
+
+    if (!payload) {
       throw new Error('Resposta inválida do servidor.');
     }
 
-    let orderId = response.data?.data?.order_id;
+    let orderId = payload.order_id;
 
     if (!orderId) {
       throw new Error('ID do pedido não encontrado na resposta.');
     }
 
-    emit('updated', response.data.data);
+    emit('updated', payload);
     emit('close');
 
     router.push({ name: 'ShowOrderDetails', params: { id: orderId } });
 
     window.Swal.fire({
       title: 'Pedido realizado',
-      text: response.data?.message ?? 'Pedido registrado com sucesso.',
+      text: 'Pedido registrado com sucesso.',
       confirmButtonText: 'Entendi!',
     });
   } catch (error) {

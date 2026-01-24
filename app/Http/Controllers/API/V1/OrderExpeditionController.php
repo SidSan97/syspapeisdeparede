@@ -22,51 +22,20 @@ class OrderExpeditionController extends Controller
 
     public function expedition(Request $request): JsonResponse
     {
-        try {
-            $perPage = (int) config('pagination.per_page', 15);
-            $search = $request->input('search');
-            $page = $request->input('page', 1);
+        $perPage = (int) config('pagination.per_page', 15);
+        $search = $request->input('search');
 
-            $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($perPage, $search);
+        $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($perPage, $search);
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'data' => $paginatedBudgets->items(),
-                    'current_page' => $paginatedBudgets->currentPage(),
-                    'last_page' => $paginatedBudgets->lastPage(),
-                    'per_page' => $paginatedBudgets->perPage(),
-                    'total' => $paginatedBudgets->total(),
-                    'from' => $paginatedBudgets->firstItem(),
-                    'to' => $paginatedBudgets->lastItem(),
-                ],
-                'message' => 'Lista de separações recuperada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar separações',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        // Retorna a estrutura padrão de paginação do Laravel
+        return response()->json($paginatedBudgets);
     }
 
     public function readyForInvoice(): JsonResponse
     {
-        try {
-            $orders = $this->repository->getReadyForInvoice();
+        $orders = $this->repository->getReadyForInvoice();
 
-            return response()->json([
-                'success' => true,
-                'data' => $orders,
-                'message' => 'Lista de pedidos prontos para faturar recuperada com sucesso',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao listar pedidos prontos para faturar',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        // Retorna diretamente a coleção de pedidos prontos para faturar
+        return response()->json($orders);
     }
 }
