@@ -133,7 +133,7 @@ Route::prefix('v1')->group(function () {
     Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
     Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
-    Route::get('budgets/{id}', [BudgetController::class, 'show'])->middleware('auth:api');
+    Route::get('budgets/{budget}', [BudgetController::class, 'show'])->middleware('auth:api');
 
     // Pedidos
     Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
