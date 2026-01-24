@@ -514,7 +514,7 @@ import axios from 'axios';
 // Swal importado via window.Swal do plugin
 // Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
-import DropshippingForm from './components/DropshippingForm.vue';
+import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();

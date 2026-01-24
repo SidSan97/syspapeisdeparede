@@ -73,8 +73,8 @@ import LayoutCardModal from './components/LayoutCardModal.vue';
 import LayoutColumn from './components/LayoutColumn.vue';
 import LayoutCard from './components/LayoutCard.vue';
 import LayoutAddColumn from './components/LayoutAddColumn.vue';
-import { useLayoutColumns } from './composables/useLayoutColumns';
-import { useLayoutCards } from './composables/useLayoutCards';
+import { useLayoutColumns } from '@/composables/useLayoutColumns';
+import { useLayoutCards } from '@/composables/useLayoutCards';
 
 const boardRef = ref(null);
 const editInputRefs = ref({});

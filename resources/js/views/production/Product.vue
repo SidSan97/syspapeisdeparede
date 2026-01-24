@@ -78,8 +78,8 @@
     import ProductionColumn from './components/ProductionColumn.vue';
     import ProductionCard from './components/ProductionCard.vue';
     import ProductionAddColumn from './components/ProductionAddColumn.vue';
-    import { useProductionColumns } from './composables/useProductionColumns';
-    import { useProductionCards } from './composables/useProductionCards';
+    import { useProductionColumns } from '@/modules/cardModals/production/composables/useProductionColumns';
+    import { useProductionCards } from '@/modules/cardModals/production/composables/useProductionCards';
 
     const boardRef = ref(null);
     const editInputRefs = ref({});

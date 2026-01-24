@@ -493,7 +493,7 @@ import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
-import DropshippingForm from './components/DropshippingForm.vue';
+import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 
 const router = useRouter();
 const auth = useAuthStore();

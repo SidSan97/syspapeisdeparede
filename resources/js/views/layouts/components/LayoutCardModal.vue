@@ -122,7 +122,7 @@
   import MembersSection from '@/components/cardModal/MembersSection.vue';
   import WallDetailsSection from '@/components/cardModal/WallDetailsSection.vue';
   import CollectionModelsSection from './layoutCardModal/CollectionModelsSection.vue';
-  import { useRequestLayoutArts } from '@/views/layouts/composables/useRequestLayoutArts';
+  import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
   const props = defineProps({
     card: {

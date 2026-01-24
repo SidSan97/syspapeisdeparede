@@ -65,7 +65,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useCommentService } from '@/views/layouts/services/commentService';
+import { useCommentService } from '@/modules/cardModals/services/commentService';
 import CommentInput from '@/components/CommentInput.vue';
 import CommentItem from '@/components/CommentItem.vue';
 

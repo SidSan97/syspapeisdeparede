@@ -45,7 +45,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useArtService } from '@/views/layouts/services/artService';
+import { useArtService } from '@/modules/cardModals/services/artService';
 import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({

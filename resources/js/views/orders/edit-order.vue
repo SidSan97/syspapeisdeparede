@@ -665,7 +665,7 @@ import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
-import DropshippingForm from '../budget/components/DropshippingForm.vue';
+import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
