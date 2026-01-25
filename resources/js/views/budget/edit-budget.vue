@@ -36,9 +36,9 @@
                                     class="form-control"
                                 >
                                     <option :value="null">Sem status</option>
-                                    <option value="em aberto">Em aberto</option>
-                                    <option value="cancelado">Cancelado</option>
-                                    <option value="aprovado">Aprovado</option>
+                                    <option value="Em aberto">Em aberto</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                    <option value="Aprovado">Aprovado</option>
                                 </select>
                             </div>
 
@@ -513,7 +513,7 @@ import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
-import { useBudgetEditService } from '@/modules/budgets/services/budgetEditService';
+import { useBudgetService } from '@/modules/budgets/services/budgetService';
 import { normalizeBudgetFromAPI, createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
 import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
 import { validateBudget } from '@/modules/budgets/composables/useBudgetValidation';
@@ -524,7 +524,7 @@ import { useBudgetEditState } from '@/modules/budgets/composables/useBudgetEditS
 
 const router = useRouter();
 const auth = useAuthStore();
-const budgetEditService = useBudgetEditService();
+const budgetService = useBudgetService();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
@@ -629,7 +629,7 @@ const canEnableDropshipping = computed(() => {
 async function searchTinyErpProducts() {
     try {
         loading.value = true;
-        const data = await budgetEditService.getTinyErpProducts();
+        const data = await budgetService.getTinyErpProducts();
         tinyErpProducts.value = data;
         PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
         PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
@@ -693,7 +693,7 @@ async function calculateFreight() {
 
     calculatingFreight.value = true;
     try {
-        const carriers = await budgetEditService.calculateFreight(budget.cep, tinyErpProducts.value);
+        const carriers = await budgetService.calculateFreight(budget.cep, tinyErpProducts.value);
 
         budget.carriers = carriers;
 
@@ -760,7 +760,7 @@ function updateBudget() {
         delete payload.dropshipping_data;
     }
 
-    budgetEditService.updateBudget(budgetId.value, payload)
+    budgetService.updateBudget(budgetId.value, payload)
         .then(response => {
             console.log('Orçamento atualizado:', response);
             window.Swal.fire({

@@ -1,11 +1,11 @@
 import { ref, computed, reactive } from 'vue';
-import { useBudgetEditService } from '../services/budgetEditService';
+import { useBudgetService } from '../services/budgetService';
 
 /**
  * Composable para gerenciamento de modelos de coleção
  */
 export function useBudgetModels(budget) {
-    const budgetEditService = useBudgetEditService();
+    const budgetService = useBudgetService();
     const productModels = ref([]);
     const modelsLoading = ref(false);
     const modelsError = ref(null);
@@ -26,7 +26,7 @@ export function useBudgetModels(budget) {
         modelsError.value = null;
 
         try {
-            const normalized = await budgetEditService.getCollectionModels();
+            const normalized = await budgetService.getCollectionModels();
             const availableIds = new Set(normalized.map((item) => item.id));
 
             productModels.value = normalized;

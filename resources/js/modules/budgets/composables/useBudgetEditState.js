@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { normalizeBudgetFromAPI } from './useBudgetUtils';
-import { useBudgetEditService } from '../services/budgetEditService';
+import { useBudgetService } from '../services/budgetService';
 
 /**
  * Função auxiliar para normalizar valores para comparação
@@ -29,7 +29,7 @@ function normalizeForComparison(value) {
 export function useBudgetEditState(budget) {
     const router = useRouter();
     const route = useRoute();
-    const budgetEditService = useBudgetEditService();
+    const budgetService = useBudgetService();
 
     const budgetId = ref(null);
     const loadingBudget = ref(false);
@@ -90,7 +90,7 @@ export function useBudgetEditState(budget) {
         loadingBudget.value = true;
 
         try {
-            const budgetData = await budgetEditService.getBudget(budgetId.value);
+            const budgetData = await budgetService.getBudget(budgetId.value);
 
             if (!budgetData) {
                 window.Swal.fire({

@@ -462,7 +462,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Previsão de entrega:</span>
-                                    <strong>{{ calculateDeliveryTime(budget) }} dias</strong>
+                                    <strong>{{ deliveryTimeDisplay }} dias</strong>
                                 </div>
                             </div>
                             <hr>
@@ -488,15 +488,20 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
-// Swal importado via window.Swal do plugin
 import Page from '@/components/page/Page.vue';
-// Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
+import { useBudgetService } from '@/modules/budgets/services/budgetService';
+import { createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
+import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
+import { validateBudget } from '@/modules/budgets/composables/useBudgetValidation';
+import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStructure';
+import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
+import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 
 const router = useRouter();
 const auth = useAuthStore();
+const budgetService = useBudgetService();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
@@ -512,106 +517,12 @@ const canEnableDropshipping = computed(() => {
   return auth.hasRole('admin') || user?.is_dropshipping === 1 || user?.is_dropshipping === true;
 });
 
-// Modelos de produto disponíveis
-const productModels = ref([]);
-const modelsLoading = ref(false);
-const modelsError = ref(null);
-const modelSlides = reactive({});
-
-const STRIP_WIDTH = 0.6;
-const STRIP_HEIGHT_OPTIONS = [
-    1.0, 1.2, 1.5, 1.7, 2.0, 2.2, 2.5, 2.7, 3.0, 3.2, 3.3, 3.4, 3.5, 3.6,
-    3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0,
-    5.1, 5.2, 5.3, 5.4, 5.5, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8,
-    6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
-];
-
-const createDefaultContinuation = () => ({
-                        direction: '',
-                        width: null,
-                        height: null,
-                        sameArt: false
-});
-
-const createDefaultWall = () => ({
-    name: '',
-    width: null,
-    height: null,
-    model: null,
-    continueSameArt: false,
-    continuations: []
-});
-
 const showWarning = (message) =>
     window.Swal.fire({
         title: 'Atenção',
         text: message,
         icon: 'warning'
     });
-
-const extractItemsFromResponse = (payload) => {
-    if (!payload) {
-        return { items: [], meta: {} };
-    }
-
-    if (Array.isArray(payload)) {
-        return { items: payload, meta: {} };
-    }
-
-    const resourceItems = payload.items?.data ?? payload.items ?? [];
-    const meta =
-        payload.meta ??
-        payload.items?.meta ?? {
-            current_page: payload.items?.current_page ?? 1,
-            per_page: payload.items?.per_page ?? resourceItems.length,
-            total: payload.items?.total ?? resourceItems.length,
-            last_page: payload.items?.last_page ?? 1
-        };
-
-    return {
-        items: resourceItems,
-        meta
-    };
-};
-
-const normalizeCollectionModel = (model = {}) => {
-    const files = Array.isArray(model.files)
-        ? model.files.map((file) => ({
-              id: file.id ?? null,
-              name: file.name ?? file.fileName ?? file.file_name ?? 'Arquivo',
-              url: file.url ?? file.fileUrl ?? null
-          }))
-        : [];
-
-    const name = (model.name ?? '').toString().trim();
-    const typeName =
-        model.type?.name ??
-        model.type_name ??
-        model.typeModelName ??
-        null;
-
-    const displayName = name.length > 0
-        ? name
-        : model.comment?.trim()
-            ? model.comment.trim()
-            : `Modelo ${model.id}`;
-
-    return {
-        id: Number(model.id),
-        displayName,
-        typeName,
-        value: Number(model.value ?? 0),
-        deadline: Number(model.deadline ?? 0),
-        requests: {
-            link: Boolean(model?.requests?.link),
-            comment: Boolean(model?.requests?.comment),
-            file: Boolean(model?.requests?.file)
-        },
-        link: model.link ?? '',
-        comment: model.comment ?? '',
-        files
-    };
-};
 
 const budget = reactive({
     name: '',
@@ -632,64 +543,47 @@ const budget = reactive({
     dropshipping_data: {}
 });
 
-async function fetchCollectionModels() {
-    modelsLoading.value = true;
-    modelsError.value = null;
+// Composables
+const {
+    productModels,
+    modelsLoading,
+    modelsError,
+    modelSlides,
+    getModelById,
+    fetchCollectionModels
+} = useBudgetModels(budget);
 
-    try {
-        const { data } = await axios.get('v1/collection-models');
+const {
+    totalWalls,
+    totalArea,
+    totalModelsCost,
+    freightCost,
+    totalBudgetVista,
+    totalBudgetPrazo,
+    totalBudget,
+    getWallArea,
+    calculateStrips,
+    calculateStripHeight,
+    calculateDeliveryTime
+} = useBudgetCalculations(budget, getModelById, PRECO_VISTA, PRECO_PRAZO, computed(() => false));
 
-        const payload = data?.data;
-        const { items } = extractItemsFromResponse(payload);
+const {
+    addRoom,
+    removeRoom,
+    addWall,
+    removeWall,
+    addContinuation,
+    removeContinuation,
+    handleContinuationToggle
+} = useBudgetStructure(budget);
 
-    const normalized = items.map(normalizeCollectionModel);
-        const availableIds = new Set(normalized.map((item) => item.id));
+const { formatStripHeight, formatCEP: formatCEPValue } = useBudgetFormatters();
 
-        productModels.value = normalized;
-
-    // Initialize or clamp carousel indices
-    normalized.forEach((model) => {
-        if (typeof modelSlides[model.id] !== 'number' || Number.isNaN(modelSlides[model.id])) {
-            modelSlides[model.id] = 0;
-        } else {
-            const maxIndex = Math.max(0, model.files.length - 1);
-            modelSlides[model.id] = Math.min(Math.max(modelSlides[model.id], 0), maxIndex);
-        }
-    });
-
-    // Remove slide states for removed models
-    Object.keys(modelSlides).forEach((id) => {
-        const numericId = Number(id);
-        if (!availableIds.has(numericId)) {
-            delete modelSlides[id];
-        }
-    });
-
-        budget.rooms.forEach((room) => {
-            room.walls.forEach((wall) => {
-                if (wall.model && !availableIds.has(wall.model)) {
-                    wall.model = null;
-                }
-            });
-        });
-    } catch (error) {
-        modelsError.value =
-            error?.response?.data?.message ||
-            'Não foi possível carregar os modelos. Tente novamente.';
-    } finally {
-        modelsLoading.value = false;
-    }
+// Wrapper para formatCEP que recebe event
+function formatCEP(event) {
+    const formatted = formatCEPValue(event.target.value);
+    budget.cep = formatted;
 }
-
-const productModelsMap = computed(() => {
-    const map = new Map();
-    productModels.value.forEach((model) => {
-        map.set(model.id, model);
-    });
-    return map;
-});
-
-const getModelById = (id) => productModelsMap.value.get(id);
 
 const showPrevImage = (modelId) => {
     if (!modelSlides[modelId]) {
@@ -720,6 +614,7 @@ const showNextImage = (modelId) => {
 
 onMounted(() => {
     fetchCollectionModels();
+    searchTinyErpProducts();
 });
 
 watch(
@@ -745,334 +640,21 @@ watch(
     { deep: true }
 );
 
-// Computed
-const totalWalls = computed(() => {
-    return budget.rooms.reduce((total, room) => total + room.walls.length, 0);
-});
-
-const totalArea = computed(() => {
-    let area = 0;
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            area += getWallArea(wall);
-        });
-    });
-    return area;
-});
-
-// Calcular custo dos modelos
-const totalModelsCost = computed(() => {
-    let total = 0;
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            if (wall.model) {
-                const model = getModelById(wall.model);
-                if (model) {
-                    total += model.value;
-                }
-            }
-        });
-    });
-    return total;
-});
-
-// Calcular custo do frete
-const freightCost = computed(() => {
-    if (budget.selectedCarrier !== null && budget.carriers[budget.selectedCarrier]) {
-        return budget.carriers[budget.selectedCarrier].price;
-    }
-    return 0;
-});
-
-// Total à vista: metros × precoVista + modelos + frete
-const totalBudgetVista = computed(() => {
-    return (totalArea.value * PRECO_VISTA.value) + totalModelsCost.value + freightCost.value;
-});
-
-// Total a prazo: metros × precoPrazo + modelos + frete
-const totalBudgetPrazo = computed(() => {
-    return (totalArea.value * PRECO_PRAZO.value) + totalModelsCost.value + freightCost.value;
-});
-
-// Total baseado na forma de pagamento selecionada
-const totalBudget = computed(() => {
-    if (budget.paymentMethod === 'pix') {
-        return totalBudgetVista.value;
-    } else if (budget.paymentMethod === 'credit_card') {
-        return totalBudgetPrazo.value;
-    }
-    return 0;
-});
-
-// Methods
-function validateBudget() {
-    if (!budget.name) {
-        showWarning('Por favor, informe o nome do orçamento');
-        return false;
-    }
-
-    // Validar se há pelo menos um ambiente com pelo menos uma parede
-    if (budget.rooms.length === 0) {
-        showWarning('Por favor, adicione pelo menos um ambiente');
-        return false;
-    }
-
-    const isValidDimension = (value) =>
-        typeof value === 'number' && !Number.isNaN(value) && value > 0;
-
-    for (let roomIndex = 0; roomIndex < budget.rooms.length; roomIndex++) {
-        const room = budget.rooms[roomIndex];
-        const roomLabel = room.name?.trim() || `Ambiente ${roomIndex + 1}`;
-
-        if (!room.name || !room.name.toString().trim()) {
-            showWarning(`Informe o nome do ${roomLabel}.`);
-            return false;
-        }
-
-        if (!room.walls.length) {
-            showWarning(`Adicione pelo menos uma parede em ${roomLabel}.`);
-            return false;
-        }
-
-        for (let wallIndex = 0; wallIndex < room.walls.length; wallIndex++) {
-            const wall = room.walls[wallIndex];
-            const wallLabel = wall.name?.trim() || `Parede ${wallIndex + 1}`;
-
-            if (!wall.name || !wall.name.toString().trim()) {
-                showWarning(`Informe o nome da ${wallLabel} em ${roomLabel}.`);
-                return false;
-            }
-
-            if (!isValidDimension(wall.width) || !isValidDimension(wall.height)) {
-                showWarning(
-                    `Informe largura e altura válidas para ${wallLabel} em ${roomLabel}.`
-                );
-                return false;
-            }
-
-            if (wall.continueSameArt && Array.isArray(wall.continuations)) {
-                for (
-                    let continuationIndex = 0;
-                    continuationIndex < wall.continuations.length;
-                    continuationIndex++
-                ) {
-                    const continuation = wall.continuations[continuationIndex];
-                    if (!isValidDimension(continuation.width)) {
-                        showWarning(
-                            `Informe a largura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
-                        );
-                        return false;
-                    }
-                    if (!isValidDimension(continuation.height)) {
-                        showWarning(
-                            `Informe a altura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
-                        );
-                        return false;
-                    }
-                }
-            }
-
-            if (!wall.model) {
-                showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
-                return false;
-            }
-        }
-    }
-
-    if (modelsLoading.value) {
-        showWarning('Aguarde o carregamento dos modelos antes de salvar.');
-        return false;
-    }
-
-    if (!productModels.value.length) {
-        showWarning('Nenhum modelo disponível no momento.');
-        return false;
-    }
-
-    if (budget.cep && budget.cep.length >= 8 && budget.selectedCarrier === null) {
-        showWarning('Por favor, selecione uma transportadora ou remova o CEP');
-        return false;
-    }
-
-    if (!budget.paymentMethod) {
-        showWarning('Por favor, selecione uma forma de pagamento');
-        return false;
-    }
-
-    // Validar formulário de dropshipping se estiver habilitado
-    if (enableDropshipping.value && dropshippingFormRef.value) {
-        const isValidDropshipping = dropshippingFormRef.value.validate();
-        if (!isValidDropshipping) {
-            showWarning('Por favor, preencha todos os campos obrigatórios do formulário de dropshipping');
-            return false;
-        }
-    }
-
-    return true;
-}
-
-function addRoom() {
-    budget.rooms.push({
-        name: '',
-        walls: [createDefaultWall()]
-    });
-}
-
-function removeRoom(index) {
-    budget.rooms.splice(index, 1);
-}
-
-function addWall(roomIndex) {
-    budget.rooms[roomIndex].walls.push(createDefaultWall());
-}
-
-function removeWall(roomIndex, wallIndex) {
-    budget.rooms[roomIndex].walls.splice(wallIndex, 1);
-}
-
-function addContinuation(roomIndex, wallIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-    if (!Array.isArray(wall.continuations)) {
-        wall.continuations = [];
-    }
-    if (!wall.continueSameArt) {
-        wall.continueSameArt = true;
-    }
-    wall.continuations.push(createDefaultContinuation());
-}
-
-function removeContinuation(roomIndex, wallIndex, continuationIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-    if (!Array.isArray(wall.continuations)) {
-        return;
-    }
-    wall.continuations.splice(continuationIndex, 1);
-}
-
-function handleContinuationToggle(roomIndex, wallIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-
-    if (!wall.continueSameArt) {
-        wall.continuations = [];
-        return;
-    }
-
-    if (!wall.width || !wall.height) {
-        wall.continueSameArt = false;
-        wall.continuations = [];
-        return;
-    }
-
-    if (!Array.isArray(wall.continuations) || !wall.continuations.length) {
-        wall.continuations = [createDefaultContinuation()];
-    }
-}
-
-function getWallContinuations(wall) {
-    if (!wall.continueSameArt) {
-        return [];
-    }
-
-    return Array.isArray(wall.continuations) ? wall.continuations : [];
-}
-
-function getWallArea(wall) {
-    const strips = calculateStrips(wall);
-    const stripHeight = calculateStripHeight(wall);
-
-    if (strips > 0 && stripHeight) {
-        return strips * stripHeight;
-    }
-
-    return 0;
-}
-
-function getStripCalculation(wall) {
-    const baseWidth = Number(wall.width) || 0;
-    const continuationWidth = getWallContinuations(wall).reduce((sum, continuation) => {
-        const width = Number(continuation.width) || 0;
-        return sum + width;
-    }, 0);
-    const width = baseWidth + continuationWidth;
-
-    const heights = [];
-    const baseHeight = Number(wall.height) || 0;
-    if (baseHeight) {
-        heights.push(baseHeight);
-    }
-
-    getWallContinuations(wall).forEach((continuation) => {
-        const continuationHeight = Number(continuation.height) || 0;
-        if (continuationHeight) {
-            heights.push(continuationHeight);
-        }
-    });
-
-    const height = heights.length ? Math.max(...heights) : 0;
-
-    if (!width || !height) {
-        return {
-            numberOfStrips: 0,
-            stripHeight: null
-        };
-    }
-
-    let numberOfStrips = Math.ceil(width / STRIP_WIDTH);
-    const stripHeight = STRIP_HEIGHT_OPTIONS.find(
-        (alt) => alt >= height + 0.09
-    );
-
-    if (stripHeight && stripHeight >= 6 && numberOfStrips % 2 !== 0) {
-        numberOfStrips += 1;
-    }
-
-    return {
-        numberOfStrips,
-        stripHeight: stripHeight || null
-    };
-}
-
-function calculateStrips(wall) {
-    return getStripCalculation(wall).numberOfStrips;
-}
-
-function calculateStripHeight(wall) {
-    return getStripCalculation(wall).stripHeight;
-}
-
-function formatStripHeight(wall) {
-    const height = calculateStripHeight(wall);
-    return height ? height.toFixed(2) : 'N/D';
-}
-
-function formatCEP(event) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 5) {
-        value = value.substring(0, 5) + '-' + value.substring(5, 8);
-    }
-    budget.cep = value;
-}
-
 async function calculateFreight() {
+    if (!budget.cep) {
+        return;
+    }
+
     calculatingFreight.value = true;
-
     try {
-        const { data } = await axios.post('v1/frenet/calculate-shipping', {
-            cep: budget.cep,
-            productData: tinyErpProducts.value
-        });
+        const carriers = await budgetService.calculateFreight(budget.cep, tinyErpProducts.value);
+        
+        budget.carriers = carriers;
 
-        // Mapear os dados da resposta para o formato esperado
-        if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
-            budget.carriers = data.data.ShippingSevicesArray
-                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
-                .map(service => ({
-                    name: `${service.Carrier} - ${service.ServiceDescription}`,
-                    price: parseFloat(service.ShippingPrice) || 0,
-                    deliveryTime: parseInt(service.DeliveryTime) || 0
-                }));
-        } else {
-            budget.carriers = [];
+        if (budget.carriers.length === 0) {
+            budget.selectedCarrier = null;
+        } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
+            budget.selectedCarrier = null;
         }
 
         calculatingFreight.value = false;
@@ -1087,36 +669,29 @@ async function calculateFreight() {
     }
 }
 
-function calculateDeliveryTime(budget) {
-    // Encontrar o maior tempo de desenvolvimento de arte entre todas as paredes
-    let maxDevelopmentTime = 0;
-
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            if (wall.model) {
-                const model = getModelById(wall.model);
-                if (model) {
-                    const days = Math.max(0, Number(model.deadline ?? 0));
-                    if (days > maxDevelopmentTime) {
-                        maxDevelopmentTime = days;
-                    }
-                }
-            }
-        });
-    });
-
-    // Tempo de produção base (5 dias) + maior tempo de desenvolvimento + tempo de frete
-    const productionTime = 5;
-    const freightTime = budget.carriers[budget.selectedCarrier]?.deliveryTime || 0;
-
-    budget.deliveryTime = productionTime + maxDevelopmentTime + freightTime;
-
-    return budget.deliveryTime;
+function calculateDeliveryTimeWrapper() {
+    const deliveryTime = calculateDeliveryTime();
+    budget.deliveryTime = deliveryTime;
+    return deliveryTime;
 }
 
+// Computed para deliveryTime que recalcula quando necessário
+const deliveryTimeDisplay = computed(() => {
+    return calculateDeliveryTime();
+});
+
 function saveBudget() {
-    if (!validateBudget()) {
+    if (!validateBudget(budget, modelsLoading, productModels, showWarning)) {
         return;
+    }
+
+    // Validar dropshipping se estiver habilitado
+    if (enableDropshipping.value && dropshippingFormRef.value) {
+        const isValid = dropshippingFormRef.value.validate();
+        if (!isValid) {
+            showWarning('Por favor, preencha todos os campos obrigatórios do formulário de dropshipping');
+            return;
+        }
     }
 
     saving.value = true;
@@ -1142,17 +717,19 @@ function saveBudget() {
     // Configurar dropshipping_budget e dropshipping_data
     payload.dropshipping_budget = enableDropshipping.value ? 1 : 0;
 
-    if (!enableDropshipping.value) {
+    if (enableDropshipping.value && dropshippingFormRef.value) {
+        payload.dropshipping_data = dropshippingFormRef.value.getData();
+    } else {
         delete payload.dropshipping_data;
     }
 
-    axios.post('v1/budgets', payload)
+    budgetService.createBudget(payload)
         .then(response => {
-            const budgetData = response.data?.data || response.data;
+            const budgetData = response?.data || response;
             console.log('Orçamento salvo:', budgetData);
             window.Swal.fire({
                 title: 'Orçamento criado!',
-                text: 'Orçamento foi criado com sucesso!',
+                text: response?.message || 'Orçamento foi criado com sucesso!',
                 confirmButtonText: 'Entendi!',
             });
             setTimeout(() => {
@@ -1167,7 +744,6 @@ function saveBudget() {
                 text: message ?? 'Tente novamente mais tarde.',
                 confirmButtonText: 'Entendi!',
             });
-
         })
         .finally(() => {
             saving.value = false;
@@ -1177,10 +753,8 @@ function saveBudget() {
 async function searchTinyErpProducts() {
     try {
         loading.value = true;
-
-        const { data } = await axios.get('v1/tiny-erp/all');
+        const data = await budgetService.getTinyErpProducts();
         tinyErpProducts.value = data;
-
         PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
         PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
     } catch (error) {
@@ -1195,10 +769,6 @@ async function searchTinyErpProducts() {
         loading.value = false;
     }
 }
-
-onMounted(() => {
-    searchTinyErpProducts();
-});
 </script>
 
 <style lang="scss" scoped>

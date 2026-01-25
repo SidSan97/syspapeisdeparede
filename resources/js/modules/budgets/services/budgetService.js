@@ -7,16 +7,24 @@ import {
 } from '../composables/useBudgetUtils';
 
 /**
- * Service para gerenciar chamadas de API relacionadas à edição de orçamentos
+ * Service para gerenciar chamadas de API relacionadas a orçamentos (criação, edição, consulta)
  */
 
-export function useBudgetEditService() {
+export function useBudgetService() {
     /**
      * Busca um orçamento por ID
      */
     async function getBudget(budgetId) {
         const { data } = await axios.get(`v1/budgets/${budgetId}`);
         return data?.data || data;
+    }
+
+    /**
+     * Cria um novo orçamento
+     */
+    async function createBudget(payload) {
+        const { data } = await axios.post('v1/budgets', payload);
+        return data;
     }
 
     /**
@@ -70,6 +78,7 @@ export function useBudgetEditService() {
 
     return {
         getBudget,
+        createBudget,
         updateBudget,
         getCollectionModels,
         getTinyErpProducts,

@@ -286,7 +286,7 @@ class BudgetRepository {
     public function cancel(Budget $budget): Budget
     {
         $budget->update([
-            'status' => 'cancelado',
+            'status' => 'Cancelado',
         ]);
 
         return $budget->fresh(['rooms.walls.collectionModel']);

@@ -5,6 +5,7 @@ namespace App\Services;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 
 class FrenetService
@@ -56,6 +57,7 @@ class FrenetService
                 'data' => json_decode($response->getBody(), true),
             ], 200);
         }catch (GuzzleException $e) {
+            Log::error('Erro ao calcular frete: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao calcular frete.',
