@@ -210,7 +210,7 @@ class BudgetController extends Controller
     public function createLayoutOrder(Order $order, Budget $budget)
     {
         // Atualizar status do orçamento
-        $budget->update(['status' => 'Aprovar Layout']);
+        $budget->update(['status' => 'Aprovado']);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
