@@ -509,29 +509,25 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import axios from 'axios';
+import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useBudgetEditService } from '@/modules/budgets/services/budgetEditService';
-import {
-    createDefaultWall,
-    extractItemsFromResponse,
-    normalizeCollectionModel,
-    normalizeBudgetFromAPI
-} from '@/modules/budgets/composables/useBudgetUtils';
+import { normalizeBudgetFromAPI, createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
+import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
+import { validateBudget } from '@/modules/budgets/composables/useBudgetValidation';
+import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStructure';
+import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
+import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
+import { useBudgetEditState } from '@/modules/budgets/composables/useBudgetEditState';
 
 const router = useRouter();
-const route = useRoute();
 const auth = useAuthStore();
 const budgetEditService = useBudgetEditService();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
-const budgetId = ref(null);
-const loadingBudget = ref(false);
-const originalBudget = ref(null);
 const enableDropshipping = ref(false);
 const dropshippingData = ref({});
 const dropshippingFormRef = ref(null);
@@ -541,28 +537,6 @@ const loading = ref(false);
 
 const PRECO_VISTA = ref(0);
 const PRECO_PRAZO = ref(0);
-
-// Modelos de produto disponíveis
-const productModels = ref([]);
-const modelsLoading = ref(false);
-const modelsError = ref(null);
-const modelSlides = reactive({});
-
-const STRIP_WIDTH = 0.6;
-const STRIP_HEIGHT_OPTIONS = [
-    1.0, 1.2, 1.5, 1.7, 2.0, 2.2, 2.5, 2.7, 3.0, 3.2, 3.3, 3.4, 3.5, 3.6,
-    3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0,
-    5.1, 5.2, 5.3, 5.4, 5.5, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8,
-    6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
-];
-
-const createDefaultContinuation = () => ({
-                        direction: '',
-                        width: null,
-                        height: null,
-                        sameArt: false
-});
-
 
 const showWarning = (message) =>
     window.Swal.fire({
@@ -595,194 +569,68 @@ const budget = reactive({
     dropshipping_data: null
 });
 
+// Composables
+const {
+    productModels,
+    modelsLoading,
+    modelsError,
+    modelSlides,
+    getModelById,
+    fetchCollectionModels
+} = useBudgetModels(budget);
+
+const {
+    budgetId,
+    loadingBudget,
+    originalBudget,
+    hasChanges,
+    loadBudget,
+    updateOriginalBudget
+} = useBudgetEditState(budget);
+
+const {
+    totalWalls,
+    totalArea,
+    totalModelsCost,
+    freightCost,
+    totalBudgetVista,
+    totalBudgetPrazo,
+    totalBudget,
+    getWallArea,
+    calculateStrips,
+    calculateStripHeight,
+    calculateDeliveryTime
+} = useBudgetCalculations(budget, getModelById, PRECO_VISTA, PRECO_PRAZO, hasChanges);
+
+const {
+    addRoom,
+    removeRoom,
+    addWall,
+    removeWall,
+    addContinuation,
+    removeContinuation,
+    handleContinuationToggle
+} = useBudgetStructure(budget);
+
+const { formatStripHeight, formatCEP: formatCEPValue } = useBudgetFormatters();
+
+function formatCEP(event) {
+    const formatted = formatCEPValue(event.target.value);
+    budget.cep = formatted;
+}
+
 // Computed para verificar se pode habilitar dropshipping
 const canEnableDropshipping = computed(() => {
     return auth.hasRole(['admin', 'reseller']) ||
            auth.user?.is_dropshipping === 1;
 });
 
-async function fetchCollectionModels() {
-    modelsLoading.value = true;
-    modelsError.value = null;
-
-    try {
-        const normalized = await budgetEditService.getCollectionModels();
-        const availableIds = new Set(normalized.map((item) => item.id));
-
-        productModels.value = normalized;
-
-    // Initialize or clamp carousel indices
-    normalized.forEach((model) => {
-        if (typeof modelSlides[model.id] !== 'number' || Number.isNaN(modelSlides[model.id])) {
-            modelSlides[model.id] = 0;
-        } else {
-            const maxIndex = Math.max(0, model.files.length - 1);
-            modelSlides[model.id] = Math.min(Math.max(modelSlides[model.id], 0), maxIndex);
-        }
-    });
-
-    // Remove slide states for removed models
-    Object.keys(modelSlides).forEach((id) => {
-        const numericId = Number(id);
-        if (!availableIds.has(numericId)) {
-            delete modelSlides[id];
-        }
-    });
-
-        budget.rooms.forEach((room) => {
-            room.walls.forEach((wall) => {
-                if (wall.model && !availableIds.has(wall.model)) {
-                    wall.model = null;
-                }
-            });
-        });
-    } catch (error) {
-        modelsError.value =
-            error?.response?.data?.message ||
-            'Não foi possível carregar os modelos. Tente novamente.';
-    } finally {
-        modelsLoading.value = false;
-    }
-}
-
-const productModelsMap = computed(() => {
-    const map = new Map();
-    productModels.value.forEach((model) => {
-        map.set(model.id, model);
-    });
-    return map;
-});
-
-const getModelById = (id) => productModelsMap.value.get(id);
-
-// Função auxiliar para normalizar valores para comparação
-function normalizeForComparison(value) {
-    if (value === null || value === undefined) return null;
-    if (typeof value === 'string') return value.trim();
-    if (typeof value === 'number') return value;
-    if (Array.isArray(value)) {
-        return value.map(item => normalizeForComparison(item));
-    }
-    if (typeof value === 'object') {
-        const normalized = {};
-        for (const key in value) {
-            normalized[key] = normalizeForComparison(value[key]);
-        }
-        return normalized;
-    }
-    return value;
-}
-
-// Detectar mudanças
-const hasChanges = computed(() => {
-    if (!originalBudget.value) return false;
-
-    // Criar objetos com a mesma estrutura para comparação
-    const original = {
-        name: originalBudget.value.name || '',
-        status: originalBudget.value.status === null || originalBudget.value.status === undefined || originalBudget.value.status === '' ? null : originalBudget.value.status,
-        rooms: originalBudget.value.rooms || [],
-        cep: originalBudget.value.cep || '',
-        selectedCarrier: originalBudget.value.selectedCarrier,
-        paymentMethod: originalBudget.value.paymentMethod || '',
-        installments: originalBudget.value.installments || 1
-    };
-
-    const current = {
-        name: budget.name || '',
-        status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
-        rooms: budget.rooms || [],
-        cep: budget.cep || '',
-        selectedCarrier: budget.selectedCarrier,
-        paymentMethod: budget.paymentMethod || '',
-        installments: budget.installments || 1
-    };
-
-    // Normalizar antes de comparar
-    const normalizedOriginal = normalizeForComparison(original);
-    const normalizedCurrent = normalizeForComparison(current);
-
-    // Comparar usando JSON.stringify
-    return JSON.stringify(normalizedOriginal) !== JSON.stringify(normalizedCurrent);
-});
-
-// Carregar orçamento
-async function loadBudget() {
-    const id = route.params.id;
-    if (!id) {
-        window.Swal.fire({
-            title: 'Erro!',
-            text: 'ID do orçamento não encontrado',
-            icon: 'error',
-            confirmButtonText: 'Entendi!',
-        });
-        router.push('/budget');
-        return;
-    }
-
-    budgetId.value = Number(id);
-    loadingBudget.value = true;
-
-    try {
-        const budgetData = await budgetEditService.getBudget(budgetId.value);
-
-        if (!budgetData) {
-            window.Swal.fire({
-                title: 'Erro!',
-                text: 'Orçamento não encontrado',
-                icon: 'error',
-                confirmButtonText: 'Entendi!',
-            });
-            router.push('/budget');
-            return;
-        }
-
-        console.log(budgetData);
-
-        // Normalizar e carregar dados
-        const normalized = normalizeBudgetFromAPI(budgetData);
-        Object.assign(budget, normalized);
-
-        // Carregar dados de dropshipping se existirem
-        if (normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
-            enableDropshipping.value = true;
-            dropshippingData.value = { ...normalized.dropshipping_data };
-        } else {
-            enableDropshipping.value = false;
-            dropshippingData.value = {};
-        }
-
-        originalBudget.value = JSON.parse(JSON.stringify({
-            name: budget.name || '',
-            status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
-            rooms: budget.rooms || [],
-            cep: budget.cep || '',
-            selectedCarrier: budget.selectedCarrier,
-            paymentMethod: budget.paymentMethod || '',
-            installments: budget.installments || 1
-        }));
-
-    } catch (error) {
-        console.error('Erro ao carregar orçamento:', error);
-        window.Swal.fire({
-            title: 'Erro!',
-            text: 'Não foi possível carregar o orçamento',
-            icon: 'error',
-            confirmButtonText: 'Entendi!',
-        });
-        router.push('/budget');
-    } finally {
-        loadingBudget.value = false;
-    }
-}
 
 async function searchTinyErpProducts() {
     try {
         loading.value = true;
-
         const data = await budgetEditService.getTinyErpProducts();
         tinyErpProducts.value = data;
-
         PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
         PRECO_PRAZO.value = tinyErpProducts.value.precoPromocionalPrazo;
     } catch (error) {
@@ -798,9 +646,19 @@ async function searchTinyErpProducts() {
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
     fetchCollectionModels();
-    loadBudget();
+    const normalized = await loadBudget();
+
+    // Carregar dados de dropshipping se existirem
+    if (normalized && normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
+        enableDropshipping.value = true;
+        dropshippingData.value = { ...normalized.dropshipping_data };
+    } else {
+        enableDropshipping.value = false;
+        dropshippingData.value = {};
+    }
+
     searchTinyErpProducts();
 });
 
@@ -827,322 +685,6 @@ watch(
     { deep: true }
 );
 
-// Computed
-const totalWalls = computed(() => {
-    return budget.rooms.reduce((total, room) => total + room.walls.length, 0);
-});
-
-const totalArea = computed(() => {
-    let area = 0;
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            area += getWallArea(wall);
-        });
-    });
-    return area;
-});
-
-// Calcular custo dos modelos
-const totalModelsCost = computed(() => {
-    let total = 0;
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            if (wall.model) {
-                const model = getModelById(wall.model);
-                if (model) {
-                    total += model.value;
-                }
-            }
-        });
-    });
-    return total;
-});
-
-// Calcular custo do frete
-const freightCost = computed(() => {
-    if (budget.selectedCarrier !== null && budget.carriers[budget.selectedCarrier]) {
-        return budget.carriers[budget.selectedCarrier].price;
-    }
-    return 0;
-});
-
-// Calcular total à vista dinamicamente
-const calculatedTotalBudgetVista = computed(() => {
-    return (totalArea.value * PRECO_VISTA.value) + totalModelsCost.value + freightCost.value;
-});
-
-// Calcular total a prazo dinamicamente
-const calculatedTotalBudgetPrazo = computed(() => {
-    return (totalArea.value * PRECO_PRAZO.value) + totalModelsCost.value + freightCost.value;
-});
-
-// Total à vista: usar valor do banco se não houver mudanças, senão calcular dinamicamente
-const totalBudgetVista = computed(() => {
-    if (hasChanges.value) {
-        return calculatedTotalBudgetVista.value;
-    }
-    // Por padrão, usar valores do banco que vieram na requisição
-    return budget.total_amount || calculatedTotalBudgetVista.value;
-});
-
-// Total a prazo: usar valor do banco se não houver mudanças, senão calcular dinamicamente
-const totalBudgetPrazo = computed(() => {
-    if (hasChanges.value) {
-        return calculatedTotalBudgetPrazo.value;
-    }
-    // Por padrão, usar valores do banco que vieram na requisição
-    return budget.total_amount_installments || calculatedTotalBudgetPrazo.value;
-});
-
-// Total baseado na forma de pagamento selecionada
-const totalBudget = computed(() => {
-    if (budget.paymentMethod === 'pix') {
-        return totalBudgetVista.value;
-    } else if (budget.paymentMethod === 'credit_card') {
-        return totalBudgetPrazo.value;
-    }
-    return 0;
-});
-
-// Methods
-function validateBudget() {
-    if (!budget.name) {
-        showWarning('Por favor, informe o nome do orçamento');
-        return false;
-    }
-
-    // Validar se há pelo menos um ambiente com pelo menos uma parede
-    if (budget.rooms.length === 0) {
-        showWarning('Por favor, adicione pelo menos um ambiente');
-        return false;
-    }
-
-    const isValidDimension = (value) =>
-        typeof value === 'number' && !Number.isNaN(value) && value > 0;
-
-    for (let roomIndex = 0; roomIndex < budget.rooms.length; roomIndex++) {
-        const room = budget.rooms[roomIndex];
-        const roomLabel = room.name?.trim() || `Ambiente ${roomIndex + 1}`;
-
-        if (!room.name || !room.name.toString().trim()) {
-            showWarning(`Informe o nome do ${roomLabel}.`);
-            return false;
-        }
-
-        if (!room.walls.length) {
-            showWarning(`Adicione pelo menos uma parede em ${roomLabel}.`);
-            return false;
-        }
-
-        for (let wallIndex = 0; wallIndex < room.walls.length; wallIndex++) {
-            const wall = room.walls[wallIndex];
-            const wallLabel = wall.name?.trim() || `Parede ${wallIndex + 1}`;
-
-            if (!wall.name || !wall.name.toString().trim()) {
-                showWarning(`Informe o nome da ${wallLabel} em ${roomLabel}.`);
-                return false;
-            }
-
-            if (!isValidDimension(wall.width) || !isValidDimension(wall.height)) {
-                showWarning(
-                    `Informe largura e altura válidas para ${wallLabel} em ${roomLabel}.`
-                );
-                return false;
-            }
-
-            if (wall.continueSameArt && Array.isArray(wall.continuations)) {
-                for (
-                    let continuationIndex = 0;
-                    continuationIndex < wall.continuations.length;
-                    continuationIndex++
-                ) {
-                    const continuation = wall.continuations[continuationIndex];
-                    if (!isValidDimension(continuation.width)) {
-                        showWarning(
-                            `Informe a largura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
-                        );
-                        return false;
-                    }
-                    if (!isValidDimension(continuation.height)) {
-                        showWarning(
-                            `Informe a altura da continuação ${continuationIndex + 1} em ${wallLabel} (${roomLabel}).`
-                        );
-                        return false;
-                    }
-                }
-            }
-
-            if (!wall.model) {
-                showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
-                return false;
-            }
-        }
-    }
-
-    if (modelsLoading.value) {
-        showWarning('Aguarde o carregamento dos modelos antes de salvar.');
-        return false;
-    }
-
-    if (!productModels.value.length) {
-        showWarning('Nenhum modelo disponível no momento.');
-        return false;
-    }
-
-    if (budget.cep && budget.cep.length >= 8 && budget.selectedCarrier === null) {
-        showWarning('Por favor, selecione uma transportadora ou remova o CEP');
-        return false;
-    }
-
-    if (!budget.paymentMethod) {
-        showWarning('Por favor, selecione uma forma de pagamento');
-        return false;
-    }
-
-    return true;
-}
-
-function addRoom() {
-    budget.rooms.push({
-        name: '',
-        walls: [createDefaultWall()]
-    });
-}
-
-function removeRoom(index) {
-    budget.rooms.splice(index, 1);
-}
-
-function addWall(roomIndex) {
-    budget.rooms[roomIndex].walls.push(createDefaultWall());
-}
-
-function removeWall(roomIndex, wallIndex) {
-    budget.rooms[roomIndex].walls.splice(wallIndex, 1);
-}
-
-function addContinuation(roomIndex, wallIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-    if (!Array.isArray(wall.continuations)) {
-        wall.continuations = [];
-    }
-    if (!wall.continueSameArt) {
-        wall.continueSameArt = true;
-    }
-    wall.continuations.push(createDefaultContinuation());
-}
-
-function removeContinuation(roomIndex, wallIndex, continuationIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-    if (!Array.isArray(wall.continuations)) {
-        return;
-    }
-    wall.continuations.splice(continuationIndex, 1);
-}
-
-function handleContinuationToggle(roomIndex, wallIndex) {
-    const wall = budget.rooms[roomIndex].walls[wallIndex];
-
-    if (!wall.continueSameArt) {
-        wall.continuations = [];
-        return;
-    }
-
-    if (!wall.width || !wall.height) {
-        wall.continueSameArt = false;
-        wall.continuations = [];
-        return;
-    }
-
-    if (!Array.isArray(wall.continuations) || !wall.continuations.length) {
-        wall.continuations = [createDefaultContinuation()];
-    }
-}
-
-function getWallContinuations(wall) {
-    if (!wall.continueSameArt) {
-        return [];
-    }
-
-    return Array.isArray(wall.continuations) ? wall.continuations : [];
-}
-
-function getWallArea(wall) {
-    const strips = calculateStrips(wall);
-    const stripHeight = calculateStripHeight(wall);
-
-    if (strips > 0 && stripHeight) {
-        return strips * stripHeight;
-    }
-
-    return 0;
-}
-
-function getStripCalculation(wall) {
-    const baseWidth = Number(wall.width) || 0;
-    const continuationWidth = getWallContinuations(wall).reduce((sum, continuation) => {
-        const width = Number(continuation.width) || 0;
-        return sum + width;
-    }, 0);
-    const width = baseWidth + continuationWidth;
-
-    const heights = [];
-    const baseHeight = Number(wall.height) || 0;
-    if (baseHeight) {
-        heights.push(baseHeight);
-    }
-
-    getWallContinuations(wall).forEach((continuation) => {
-        const continuationHeight = Number(continuation.height) || 0;
-        if (continuationHeight) {
-            heights.push(continuationHeight);
-        }
-    });
-
-    const height = heights.length ? Math.max(...heights) : 0;
-
-    if (!width || !height) {
-        return {
-            numberOfStrips: 0,
-            stripHeight: null
-        };
-    }
-
-    let numberOfStrips = Math.ceil(width / STRIP_WIDTH);
-    const stripHeight = STRIP_HEIGHT_OPTIONS.find(
-        (alt) => alt >= height + 0.09
-    );
-
-    if (stripHeight && stripHeight >= 6 && numberOfStrips % 2 !== 0) {
-        numberOfStrips += 1;
-    }
-
-    return {
-        numberOfStrips,
-        stripHeight: stripHeight || null
-    };
-}
-
-function calculateStrips(wall) {
-    return getStripCalculation(wall).numberOfStrips;
-}
-
-function calculateStripHeight(wall) {
-    return getStripCalculation(wall).stripHeight;
-}
-
-function formatStripHeight(wall) {
-    const height = calculateStripHeight(wall);
-    return height ? height.toFixed(2) : 'N/D';
-}
-
-function formatCEP(event) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 5) {
-        value = value.substring(0, 5) + '-' + value.substring(5, 8);
-    }
-    budget.cep = value;
-}
 
 async function calculateFreight() {
     if (!budget.cep) {
@@ -1174,35 +716,9 @@ async function calculateFreight() {
     }
 }
 
-function calculateDeliveryTime(budget) {
-    // Encontrar o maior tempo de desenvolvimento de arte entre todas as paredes
-    let maxDevelopmentTime = 0;
-
-    budget.rooms.forEach(room => {
-        room.walls.forEach(wall => {
-            if (wall.model) {
-                const model = getModelById(wall.model);
-                if (model) {
-                    const days = Math.max(0, Number(model.deadline ?? 0));
-                    if (days > maxDevelopmentTime) {
-                        maxDevelopmentTime = days;
-                    }
-                }
-            }
-        });
-    });
-
-    // Tempo de produção base (5 dias) + maior tempo de desenvolvimento + tempo de frete
-    const productionTime = 5;
-    const freightTime = budget.carriers[budget.selectedCarrier]?.deliveryTime || 0;
-
-    budget.deliveryTime = productionTime + maxDevelopmentTime + freightTime;
-
-    return budget.deliveryTime;
-}
 
 function updateBudget() {
-    if (!validateBudget()) {
+    if (!validateBudget(budget, modelsLoading, productModels, showWarning)) {
         return;
     }
 
@@ -1260,15 +776,7 @@ function updateBudget() {
             budget.total_amount = normalized.total_amount;
             budget.total_amount_installments = normalized.total_amount_installments;
 
-            originalBudget.value = JSON.parse(JSON.stringify({
-                name: budget.name || '',
-                status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
-                rooms: budget.rooms || [],
-                cep: budget.cep || '',
-                selectedCarrier: budget.selectedCarrier,
-                paymentMethod: budget.paymentMethod || '',
-                installments: budget.installments || 1
-            }));
+            updateOriginalBudget();
             // Redirecionar para a lista de orçamentos
             setTimeout(() => {
                 router.push('/budget');
