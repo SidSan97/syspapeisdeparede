@@ -19,9 +19,7 @@ class CollectionArtController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) config('pagination.per_page', 15);
-
-        $collection = $this->repository->paginate($perPage);
+        $collection = $this->repository->paginate();
 
         return $this->sendResponse(
             [

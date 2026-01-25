@@ -29,9 +29,7 @@ class CollectionArtSubcategoryController extends BaseController
             );
         }
 
-        $perPage = (int) config('pagination.per_page', 15);
-
-        $collection = $this->repository->paginate($perPage);
+        $collection = $this->repository->paginate();
 
         return $this->sendResponse(
             [

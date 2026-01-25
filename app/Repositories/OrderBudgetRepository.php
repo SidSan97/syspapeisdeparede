@@ -192,7 +192,7 @@ class OrderBudgetRepository {
             });
     }
 
-    public function paginateReadyForPicking(int $perPage = 15, ?string $search = null)
+    public function paginateReadyForPicking(?string $search = null)
     {
         $query = $this->orderBudget::where('production_percentage', 100)
             ->with('order')
@@ -210,7 +210,7 @@ class OrderBudgetRepository {
             });
         }
 
-        $paginated = $query->paginate($perPage);
+        $paginated = $query->paginate();
 
         // Transformar os itens
         $paginated->getCollection()->transform(function ($orderBudget) {

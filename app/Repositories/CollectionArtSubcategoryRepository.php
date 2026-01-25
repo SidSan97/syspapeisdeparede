@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Storage;
 
 class CollectionArtSubcategoryRepository
 {
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(): LengthAwarePaginator
     {
         return CollectionArtSubcategory::query()
             ->with(['collectionArt', 'images'])
             ->withCount('images')
             ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->paginate();
     }
 
     public function all(): Collection

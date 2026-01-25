@@ -19,9 +19,7 @@ class CollectionModelController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) config('pagination.per_page', 15);
-
-        $models = $this->repository->paginate($perPage);
+        $models = $this->repository->paginate();
 
         return $this->sendResponse(
             [

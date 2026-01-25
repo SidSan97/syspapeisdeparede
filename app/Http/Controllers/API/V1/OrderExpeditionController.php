@@ -22,10 +22,9 @@ class OrderExpeditionController extends Controller
 
     public function expedition(Request $request): JsonResponse
     {
-        $perPage = (int) config('pagination.per_page', 15);
         $search = $request->input('search');
 
-        $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($perPage, $search);
+        $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($search);
 
         // Retorna a estrutura padrão de paginação do Laravel
         return response()->json($paginatedBudgets);

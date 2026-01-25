@@ -38,8 +38,7 @@ class UserController extends BaseController
             $query->role($request->role);
         }
 
-        $perPage = (int) config('pagination.per_page', 15);
-        $users = $query->latest()->paginate($perPage);
+        $users = $query->latest()->paginate();
 
         return $this->sendResponse($users, 'Lista de usuários');
     }

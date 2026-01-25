@@ -63,8 +63,7 @@ class OrderController extends Controller
             'user_id' => $validated['user_id'] ?? null,
         ];
 
-        $perPage = (int) config('pagination.per_page', 15);
-        $paginatedOrders = $this->repository->paginate($filters, $perPage);
+        $paginatedOrders = $this->repository->paginate($filters);
 
         return BudgetResource::collection($paginatedOrders)->response(); 
     }

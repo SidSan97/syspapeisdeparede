@@ -19,8 +19,6 @@ class CollectionCategoryController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) config('pagination.per_page', 15);
-
         $tree = $request->get('tree', false);
 
         if ($tree) {
@@ -31,7 +29,7 @@ class CollectionCategoryController extends BaseController
             );
         }
 
-        $collection = $this->repository->paginate($perPage);
+        $collection = $this->repository->paginate();
 
         return $this->sendResponse(
             [

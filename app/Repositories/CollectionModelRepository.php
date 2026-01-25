@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Storage;
 
 class CollectionModelRepository
 {
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(): LengthAwarePaginator
     {
         return CollectionModel::with('files')
             ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->paginate();
     }
 
     public function all(): Collection

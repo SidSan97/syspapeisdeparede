@@ -46,7 +46,7 @@ class BudgetRepository {
         return $query->get();
     }
 
-    public function paginate(array $filters = [], int $perPage = 15)
+    public function paginate(array $filters = [])
     {
         $user = Auth::user();
 
@@ -89,7 +89,7 @@ class BudgetRepository {
             $query->where('user_id', $filters['user_id']);
         }
 
-        return $query->paginate($perPage);
+        return $query->paginate();
     }
 
     public function getAllById(int $id)

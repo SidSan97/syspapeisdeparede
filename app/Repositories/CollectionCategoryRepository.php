@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CollectionCategoryRepository
 {
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(): LengthAwarePaginator
     {
         return CollectionCategory::query()
             ->whereNull('parent_id') 
@@ -18,7 +18,7 @@ class CollectionCategoryRepository
                 $query->withCount('images');
             }])
             ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->paginate();
     }
 
     public function all(): Collection
