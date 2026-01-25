@@ -42,6 +42,39 @@ export function useProductionService() {
         return data;
     }
 
+    /**
+     * Busca os relatórios de produção de um card
+     * @param {number|string} orderBudgetId - ID do order budget
+     * @returns {Promise<Array>} Lista de relatórios de produção
+     */
+    async function getProductionReports(orderBudgetId) {
+        if (!orderBudgetId) {
+            return [];
+        }
+
+        try {
+            const { data } = await axios.get(`v1/orders/order-budgets/${orderBudgetId}/production-reports`);
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error('Erro ao buscar relatórios de produção:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Marca um card como produzido
+     * @param {number|string} orderBudgetId - ID do order budget
+     * @returns {Promise<Object>} Dados atualizados do card
+     */
+    async function markAsProduced(orderBudgetId) {
+        if (!orderBudgetId) {
+            throw new Error('ID do card é obrigatório');
+        }
+
+        const { data } = await axios.post(`v1/orders/order-budgets/${orderBudgetId}/mark-as-produced`);
+        return data || null;
+    }
+
     return {
         getColumns,
         getLayouts,
@@ -49,6 +82,8 @@ export function useProductionService() {
         updateColumn,
         deleteColumn,
         updateCardColumn,
+        getProductionReports,
+        markAsProduced,
     };
 }
 

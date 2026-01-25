@@ -67,7 +67,7 @@
         </div>
       </Page>
 
-      <ProductCardModal :card="selectedCard" @close="closeCardModal" />
+      <ProductCardModal :card="selectedCard" @close="closeCardModal" @card-updated="handleCardUpdated" />
     </section>
   </template>
 
@@ -191,6 +191,18 @@ async function handleDeleteColumn(columnId) {
 
   function handleClickOutside() {
     openMenuColumn.value = null;
+  }
+
+  function handleCardUpdated(updatedCard) {
+    // Atualizar o card na lista de cards
+    const cardIndex = cards.value.findIndex(c => c.id === updatedCard.id);
+    if (cardIndex !== -1) {
+      cards.value[cardIndex] = { ...cards.value[cardIndex], ...updatedCard };
+    }
+    // Atualizar o selectedCard se for o mesmo
+    if (selectedCard.value && selectedCard.value.id === updatedCard.id) {
+      selectedCard.value = { ...selectedCard.value, ...updatedCard };
+    }
   }
 
 // Lifecycle

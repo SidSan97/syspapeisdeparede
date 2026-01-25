@@ -89,7 +89,7 @@
 <script setup>
 import { computed, ref, watch, toRef } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import axios from 'axios';
+import { useProductionReportsStore } from '@/stores/productionReports';
 import { getCardDisplayName } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/cardModals/composables/useCardUtils';
 import MembersSection from '@/components/cardModal/MembersSection.vue';
@@ -110,21 +110,27 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'card-updated']);
 
 const auth = useAuthStore();
+const productionReportsStore = useProductionReportsStore();
 
 const showDetails = ref(false);
 
 const cardRef = toRef(props, 'card');
 const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } = useRequestLayoutArts(cardRef);
 
-// Relatórios de produção
-const productionReports = ref([]);
-const loadingProductionReports = ref(false);
+const productionReports = computed(() => {
+  return props.card?.id ? productionReportsStore.getReportsByCardId(props.card.id) : [];
+});
 
-// Marcar como produzido
-const markingAsProduced = ref(false);
+const loadingProductionReports = computed(() => {
+  return props.card?.id ? productionReportsStore.isLoadingByCardId(props.card.id) : false;
+});
+
+const markingAsProduced = computed(() => {
+  return props.card?.id ? productionReportsStore.isMarkingAsProducedByCardId(props.card.id) : false;
+});
 
 const coverImage = computed(() => {
   return getCoverImage(props.card);
@@ -138,44 +144,21 @@ const canRemoveMembers = computed(() => {
   return auth.isAdmin();
 });
 
-
-async function fetchProductionReports() {
-  if (!props.card?.id) {
-    productionReports.value = [];
-    loadingProductionReports.value = false;
-    return;
-  }
-
-  try {
-    loadingProductionReports.value = true;
-
-    const response = await axios.get(`v1/orders/order-budgets/${props.card.id}/production-reports`);
-    const data = response?.data ?? [];
-
-    productionReports.value = Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error('Erro ao buscar relatórios de produção:', error);
-    productionReports.value = [];
-  } finally {
-    loadingProductionReports.value = false;
-  }
-}
-
 async function markAsProduced() {
   if (!props.card?.id || markingAsProduced.value) {
     return;
   }
 
-  markingAsProduced.value = true;
-
   try {
-    const response = await axios.post(`v1/orders/order-budgets/${props.card.id}/mark-as-produced`);
-    const updated = response?.data || null;
+    const updated = await productionReportsStore.markAsProduced(props.card.id);
 
-    // Atualizar o card localmente
+    // Emitir evento para atualizar o card no componente pai
     if (props.card && updated) {
-      props.card.production_date = updated.production_date;
-      props.card.production_column_names_id = updated.production_column_names_id;
+      emit('card-updated', {
+        ...props.card,
+        production_date: updated.production_date,
+        production_column_names_id: updated.production_column_names_id,
+      });
     }
 
     if (window.Toast) {
@@ -185,7 +168,6 @@ async function markAsProduced() {
       });
     }
   } catch (error) {
-    console.error('Erro ao marcar como produzido:', error);
     const errorMessage = error.response?.data?.message || 'Erro ao atualizar data de produção. Tente novamente.';
 
     if (window.Swal) {
@@ -193,16 +175,13 @@ async function markAsProduced() {
     } else {
       alert(errorMessage);
     }
-  } finally {
-    markingAsProduced.value = false;
   }
 }
 
 // Buscar dados quando o card mudar
 watch(() => props.card?.id, (newCardId) => {
   if (newCardId) {
-    // Buscar relatórios de produção quando o card mudar
-    fetchProductionReports();
+    productionReportsStore.fetchProductionReports(newCardId);
   }
 }, { immediate: true });
 </script>
