@@ -49,6 +49,15 @@
                                     <button
                                         class="dropdown-item"
                                         type="button"
+                                        @click="$emit('edit', budget)"
+                                    >
+                                        Editar
+                                    </button>
+                                </li>
+                                <li>
+                                    <button
+                                        class="dropdown-item"
+                                        type="button"
                                         @click="$emit('generate-pdf', budget)"
                                     >
                                         Gerar PDF

@@ -36,9 +36,9 @@
                                     class="form-control"
                                 >
                                     <option :value="null">Sem status</option>
-                                    <option value="Em aberto">Em aberto</option>
-                                    <option value="Pendente de Revisão">Pendente de Revisão</option>
-                                    <option value="Aprovado">Aprovado</option>
+                                    <option value="em aberto">Em aberto</option>
+                                    <option value="cancelado">Cancelado</option>
+                                    <option value="aprovado">Aprovado</option>
                                 </select>
                             </div>
 
@@ -511,15 +511,21 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-// Swal importado via window.Swal do plugin
-// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useBudgetEditService } from '@/modules/budgets/services/budgetEditService';
+import {
+    createDefaultWall,
+    extractItemsFromResponse,
+    normalizeCollectionModel,
+    normalizeBudgetFromAPI
+} from '@/modules/budgets/composables/useBudgetUtils';
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
+const budgetEditService = useBudgetEditService();
 
 const calculatingFreight = ref(false);
 const saving = ref(false);
@@ -557,14 +563,6 @@ const createDefaultContinuation = () => ({
                         sameArt: false
 });
 
-const createDefaultWall = () => ({
-    name: '',
-    width: null,
-    height: null,
-    model: null,
-    continueSameArt: false,
-    continuations: []
-});
 
 const showWarning = (message) =>
     window.Swal.fire({
@@ -573,74 +571,11 @@ const showWarning = (message) =>
         icon: 'warning'
     });
 
-const extractItemsFromResponse = (payload) => {
-    if (!payload) {
-        return { items: [], meta: {} };
-    }
-
-    if (Array.isArray(payload)) {
-        return { items: payload, meta: {} };
-    }
-
-    const resourceItems = payload.items?.data ?? payload.items ?? [];
-    const meta =
-        payload.meta ??
-        payload.items?.meta ?? {
-            current_page: payload.items?.current_page ?? 1,
-            per_page: payload.items?.per_page ?? resourceItems.length,
-            total: payload.items?.total ?? resourceItems.length,
-            last_page: payload.items?.last_page ?? 1
-        };
-
-    return {
-        items: resourceItems,
-        meta
-    };
-};
-
-const normalizeCollectionModel = (model = {}) => {
-    const files = Array.isArray(model.files)
-        ? model.files.map((file) => ({
-              id: file.id ?? null,
-              name: file.name ?? file.fileName ?? file.file_name ?? 'Arquivo',
-              url: file.url ?? file.fileUrl ?? null
-          }))
-        : [];
-
-    const name = (model.name ?? '').toString().trim();
-    const typeName =
-        model.type?.name ??
-        model.type_name ??
-        model.typeModelName ??
-        null;
-
-    const displayName = name.length > 0
-        ? name
-        : model.comment?.trim()
-            ? model.comment.trim()
-            : `Modelo ${model.id}`;
-
-    return {
-        id: Number(model.id),
-        displayName,
-        typeName,
-        value: Number(model.value ?? 0),
-        deadline: Number(model.deadline ?? 0),
-        requests: {
-            link: Boolean(model?.requests?.link),
-            comment: Boolean(model?.requests?.comment),
-            file: Boolean(model?.requests?.file)
-        },
-        link: model.link ?? '',
-        comment: model.comment ?? '',
-        files
-    };
-};
 
 const budget = reactive({
     id: null,
     name: '',
-    status: '',
+    status: null,
     rooms: [
         {
             name: '',
@@ -662,7 +597,7 @@ const budget = reactive({
 
 // Computed para verificar se pode habilitar dropshipping
 const canEnableDropshipping = computed(() => {
-    return auth.hasRole(['admin', 'reseller']) || 
+    return auth.hasRole(['admin', 'reseller']) ||
            auth.user?.is_dropshipping === 1;
 });
 
@@ -671,12 +606,7 @@ async function fetchCollectionModels() {
     modelsError.value = null;
 
     try {
-        const { data } = await axios.get('v1/collection-models');
-
-        const payload = data?.data;
-        const { items } = extractItemsFromResponse(payload);
-
-    const normalized = items.map(normalizeCollectionModel);
+        const normalized = await budgetEditService.getCollectionModels();
         const availableIds = new Set(normalized.map((item) => item.id));
 
         productModels.value = normalized;
@@ -750,7 +680,7 @@ const hasChanges = computed(() => {
     // Criar objetos com a mesma estrutura para comparação
     const original = {
         name: originalBudget.value.name || '',
-        status: originalBudget.value.status || '',
+        status: originalBudget.value.status === null || originalBudget.value.status === undefined || originalBudget.value.status === '' ? null : originalBudget.value.status,
         rooms: originalBudget.value.rooms || [],
         cep: originalBudget.value.cep || '',
         selectedCarrier: originalBudget.value.selectedCarrier,
@@ -760,7 +690,7 @@ const hasChanges = computed(() => {
 
     const current = {
         name: budget.name || '',
-        status: budget.status || '',
+        status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
         rooms: budget.rooms || [],
         cep: budget.cep || '',
         selectedCarrier: budget.selectedCarrier,
@@ -775,105 +705,6 @@ const hasChanges = computed(() => {
     // Comparar usando JSON.stringify
     return JSON.stringify(normalizedOriginal) !== JSON.stringify(normalizedCurrent);
 });
-
-// Normalizar dados do orçamento da API
-function normalizeBudgetFromAPI(budgetData) {
-    const rooms = [];
-
-    if (budgetData.rooms && Array.isArray(budgetData.rooms)) {
-        budgetData.rooms.forEach((room) => {
-            const walls = [];
-
-            if (room.walls && Array.isArray(room.walls)) {
-                room.walls.forEach((wall) => {
-                    const wallData = {
-                        name: wall.name || '',
-                        width: wall.width ? Number(wall.width) : null,
-                        height: wall.height ? Number(wall.height) : null,
-                        model: (wall.collection_model_id || wall.collection_model?.id) ? Number(wall.collection_model_id || wall.collection_model?.id) : null,
-                        continueSameArt: false,
-                        continuations: []
-                    };
-
-                    // Processar continuações se existirem
-                    if (wall.continue_same_art || (wall.continuations && Array.isArray(wall.continuations) && wall.continuations.length > 0)) {
-                        wallData.continueSameArt = Boolean(wall.continue_same_art);
-                        if (wall.continuations && Array.isArray(wall.continuations)) {
-                            wallData.continuations = wall.continuations.map(cont => ({
-                                direction: cont.direction || '',
-                                width: cont.width ? Number(cont.width) : null,
-                                height: cont.height ? Number(cont.height) : null,
-                                sameArt: false
-                            }));
-                        }
-                    }
-
-                    walls.push(wallData);
-                });
-            }
-
-            rooms.push({
-                name: room.name || '',
-                walls: walls.length > 0 ? walls : [createDefaultWall()]
-            });
-        });
-    }
-
-    // Encontrar transportadora selecionada e recriar lista se necessário
-    let carriers = Array.isArray(budgetData.carriers_snapshot)
-        ? budgetData.carriers_snapshot
-        : [];
-
-    let selectedCarrierIndex = null;
-
-    // Se há frete selecionado mas não há lista de transportadoras, recriar a lista
-    if (budgetData.selected_carrier_name && budgetData.selected_carrier_price !== null && budgetData.selected_carrier_price !== undefined) {
-        if (carriers.length === 0) {
-            // Recriar lista de transportadoras com base no frete selecionado
-            carriers = [
-                {
-                    name: budgetData.selected_carrier_name,
-                    price: Number(budgetData.selected_carrier_price) || 0,
-                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
-                }
-            ];
-            selectedCarrierIndex = 0;
-        } else {
-            // Buscar o índice da transportadora selecionada
-            selectedCarrierIndex = carriers.findIndex(c => c.name === budgetData.selected_carrier_name);
-            if (selectedCarrierIndex < 0) {
-                // Se não encontrou, adicionar a transportadora selecionada à lista
-                carriers.push({
-                    name: budgetData.selected_carrier_name,
-                    price: Number(budgetData.selected_carrier_price) || 0,
-                    deliveryTime: Number(budgetData.selected_carrier_delivery_time) || 0
-                });
-                selectedCarrierIndex = carriers.length - 1;
-            }
-        }
-    }
-
-    const normalizedPaymentMethod = budgetData.payment_method === 'installment'
-        ? 'credit_card'
-        : budgetData.payment_method || '';
-
-    return {
-        id: budgetData.id,
-        name: budgetData.name || '',
-        status: budgetData.status || '',
-        rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
-        cep: budgetData.cep || '',
-        carriers: carriers,
-        selectedCarrier: selectedCarrierIndex,
-        paymentMethod: normalizedPaymentMethod,
-        installmentLimit: budgetData.installment_limit || 12,
-        installments: budgetData.installments || 1,
-        total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
-        total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0,
-        dropshipping_budget: budgetData.dropshipping_budget || 0,
-        dropshipping_data: budgetData.dropshipping_data || null
-    };
-}
 
 // Carregar orçamento
 async function loadBudget() {
@@ -893,8 +724,7 @@ async function loadBudget() {
     loadingBudget.value = true;
 
     try {
-        const { data } = await axios.get(`v1/budgets/${budgetId.value}`);
-        const budgetData = data?.data || data;
+        const budgetData = await budgetEditService.getBudget(budgetId.value);
 
         if (!budgetData) {
             window.Swal.fire({
@@ -906,6 +736,8 @@ async function loadBudget() {
             router.push('/budget');
             return;
         }
+
+        console.log(budgetData);
 
         // Normalizar e carregar dados
         const normalized = normalizeBudgetFromAPI(budgetData);
@@ -920,11 +752,9 @@ async function loadBudget() {
             dropshippingData.value = {};
         }
 
-        // Criar cópia profunda do budget atual (não do normalized) para comparação
-        // Usar a mesma estrutura que será comparada no hasChanges
         originalBudget.value = JSON.parse(JSON.stringify({
             name: budget.name || '',
-            status: budget.status || '',
+            status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
             rooms: budget.rooms || [],
             cep: budget.cep || '',
             selectedCarrier: budget.selectedCarrier,
@@ -950,7 +780,7 @@ async function searchTinyErpProducts() {
     try {
         loading.value = true;
 
-        const { data } = await axios.get('v1/tiny-erp/all');
+        const data = await budgetEditService.getTinyErpProducts();
         tinyErpProducts.value = data;
 
         PRECO_VISTA.value = tinyErpProducts.value.precoPromocionalVista;
@@ -1321,29 +1151,14 @@ async function calculateFreight() {
 
     calculatingFreight.value = true;
     try {
-        const { data } = await axios.post('v1/frenet/calculate-shipping', {
-            cep: budget.cep,
-            productData: tinyErpProducts.value
-        });
+        const carriers = await budgetEditService.calculateFreight(budget.cep, tinyErpProducts.value);
 
-        // Mapear os dados da resposta para o formato esperado
-        if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
-            budget.carriers = data.data.ShippingSevicesArray
-                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
-                .map(service => ({
-                    name: `${service.Carrier} - ${service.ServiceDescription}`,
-                    price: parseFloat(service.ShippingPrice) || 0,
-                    deliveryTime: parseInt(service.DeliveryTime) || 0
-                }));
+        budget.carriers = carriers;
 
-            // Resetar a seleção se não houver carriers ou se o índice selecionado não existir mais
-            if (budget.carriers.length === 0) {
-                budget.selectedCarrier = null;
-            } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
-                budget.selectedCarrier = null;
-            }
-        } else {
-            budget.carriers = [];
+        // Resetar a seleção se não houver carriers ou se o índice selecionado não existir mais
+        if (budget.carriers.length === 0) {
+            budget.selectedCarrier = null;
+        } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
             budget.selectedCarrier = null;
         }
 
@@ -1429,17 +1244,17 @@ function updateBudget() {
         delete payload.dropshipping_data;
     }
 
-    axios.put(`v1/budgets/${budgetId.value}`, payload)
+    budgetEditService.updateBudget(budgetId.value, payload)
         .then(response => {
-            console.log('Orçamento atualizado:', response.data);
+            console.log('Orçamento atualizado:', response);
             window.Swal.fire({
                 title: 'Orçamento atualizado!',
-                text: response.data?.message ?? 'Orçamento foi atualizado com sucesso!',
+                text: response?.message ?? 'Orçamento foi atualizado com sucesso!',
                 confirmButtonText: 'Entendi!',
             });
 
             // Atualizar originalBudget e budget para refletir as mudanças salvas
-            const updatedData = response.data?.data || budget;
+            const updatedData = response?.data || budget;
             const normalized = normalizeBudgetFromAPI(updatedData);
             // Atualizar valores salvos no budget
             budget.total_amount = normalized.total_amount;
@@ -1447,7 +1262,7 @@ function updateBudget() {
 
             originalBudget.value = JSON.parse(JSON.stringify({
                 name: budget.name || '',
-                status: budget.status || '',
+                status: budget.status === null || budget.status === undefined || budget.status === '' ? null : budget.status,
                 rooms: budget.rooms || [],
                 cep: budget.cep || '',
                 selectedCarrier: budget.selectedCarrier,
