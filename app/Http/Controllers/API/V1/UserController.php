@@ -23,17 +23,12 @@ class UserController extends BaseController
 
     public function index(Request $request)
     {
-        $query = $this->user->with('userType');
+        $query = $this->user->with('roles:id,name');
 
         // Filtro por busca (nome ou email)
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        $query->search($request->input('search'));
 
+        // Filtro por role (papel)
         if ($request->filled('role')) {
             $query->role($request->role);
         }
@@ -45,7 +40,7 @@ class UserController extends BaseController
 
     public function list()
     {
-        $users = $this->user->with('userType')->get();
+        $users = $this->user->with('roles:id,name')->get();
 
         return $this->sendResponse($users, 'Lista de usuários');
     }
@@ -70,13 +65,19 @@ class UserController extends BaseController
 
     public function store(UserRequest $request)
     {
-        $user = $this->user->create($request->validated());
+        $validated = $request->validated();
+        $role = $validated['role'];
+        
+        // Remover 'role' do array antes de criar o usuário
+        unset($validated['role']);
+        
+        $user = $this->user->create($validated);
 
-        if ($request->has('role')) {
-            $user->assignRole($request->role);
-        }
+        // Atribuir role ao usuário
+        $user->assignRole($role);
 
-        if ($user->hasRole('reseller')) {
+        // Se for revendedor, atualizar is_dropshipping
+        if ($role === 'reseller') {
             $user->update(['is_dropshipping' => $request->is_dropshipping ?? 0]);
         }
 
@@ -85,14 +86,32 @@ class UserController extends BaseController
 
     public function show($id)
     {
-        $user = $this->user->with(['roles:id,name', 'permissions', 'userType'])->findOrFail($id);
+        $user = $this->user->with(['roles:id,name', 'permissions'])->findOrFail($id);
 
         return $this->sendResponse($user, 'Dados do usuário');
     }
 
     public function update(User $user, UserRequest $request)
     {
-        $user->update($request->validated());
+        $validated = $request->validated();
+        $role = $validated['role'];
+        
+        // Remover 'role' do array antes de atualizar o usuário
+        unset($validated['role']);
+        
+        $user->update($validated);
+
+        // Sincronizar roles (remove todas e adiciona a nova)
+        $user->syncRoles([$role]);
+
+        // Se for revendedor, atualizar is_dropshipping
+        if ($role === 'reseller') {
+            $user->update(['is_dropshipping' => $request->is_dropshipping ?? 0]);
+        } else {
+            // Se não for revendedor, garantir que is_dropshipping seja 0
+            $user->update(['is_dropshipping' => 0]);
+        }
+
         return $this->sendResponse($user, 'Dados do usuário atualizados com sucesso');
     }
 

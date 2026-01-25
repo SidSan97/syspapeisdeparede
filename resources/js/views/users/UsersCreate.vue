@@ -6,7 +6,7 @@
           <form @submit.prevent="createUser()">
             <div class="row">
               <div class="col-lg-12">
-                <UsersForm ref="formRef" :type-users="typeUsers"></UsersForm>
+                <UsersForm ref="formRef" :roles="roles"></UsersForm>
               </div>
             </div>
             <hr>
@@ -33,7 +33,6 @@ import EmptyState from '@/components/empty-state/EmptyState.vue'
 import UsersForm from './components/UsersForm.vue'
 
 import { useAuthStore } from '@/stores/auth';
-import { USER_TYPES } from '@/constants/userTypes';
 
 const Toast = window.Toast
 const auth = useAuthStore()
@@ -44,11 +43,6 @@ const roles = ref([])
 const saving = ref(false)
 
 async function createUser() {
-  // Validar formulário antes de submeter
-  if (!formRef.value.validateForm()) {
-    return
-  }
-
   try {
     saving.value = true
 

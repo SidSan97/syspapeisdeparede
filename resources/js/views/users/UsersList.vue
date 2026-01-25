@@ -39,20 +39,20 @@
                     <button
                         class="dropdown-item"
                         type="button"
-                        :class="{ active: selectedRoleId === null }"
+                        :class="{ active: selectedRoleName === null }"
                         @click="setRoleFilter(null)"
                     >
                         Todos os papéis
                     </button>
                 </li>
-                <li v-for="role in typeUsers" :key="role.id">
+                <li v-for="role in roles" :key="role.id">
                     <button
                         class="dropdown-item"
                         type="button"
-                        :class="{ active: selectedRoleId === role.id }"
-                        @click="setRoleFilter(role.id)"
+                        :class="{ active: selectedRoleName === role.name }"
+                        @click="setRoleFilter(role.name)"
                     >
-                        {{ role.name }}
+                        {{ translateRole(role.name) }}
                     </button>
                 </li>
             </ul>
@@ -167,16 +167,17 @@ import EmptyState from '@/components/empty-state/EmptyState.vue';
 import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
 import { swalConfirmation } from '../../../utils/alerts';
+import { translateRole } from '@/utils/roleTranslations';
 import debounce from 'lodash/debounce'
 
 const router = useRouter();
 const auth = useAuthStore();
 
 const users = ref([]);
-const typeUsers = ref([]);
+const roles = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
-const selectedRoleId = ref(null);
+const selectedRoleName = ref(null);
 const paginationData = ref({
   current_page: 1,
   last_page: 1,
@@ -191,11 +192,10 @@ const debouncedFetch = debounce(() => {
 }, 500);
 
 const selectedRoleLabel = computed(() => {
-  if (selectedRoleId.value === null) {
+  if (selectedRoleName.value === null) {
     return 'Filtrar por papel...';
   }
-  const role = typeUsers.value.find((r) => r.id === selectedRoleId.value);
-  return role ? role.name : 'Filtrar por papel...';
+  return translateRole(selectedRoleName.value);
 });
 
 const getUserInitial = (name) => {
@@ -210,17 +210,14 @@ const getAvatarUrl = (avatarPath) => {
 };
 
 const getUserRole = (user) => {
-  if (user.user_type && user.user_type.name) {
-    return user.user_type.name;
-  }
-  if (user.userType && user.userType.name) {
-    return user.userType.name;
+  if (user.roles && user.roles.length > 0) {
+    return translateRole(user.roles[0].name);
   }
   return '—';
 };
 
-const setRoleFilter = (roleId) => {
-  selectedRoleId.value = roleId;
+const setRoleFilter = (roleName) => {
+  selectedRoleName.value = roleName;
   fetchUsers(1);
 };
 
@@ -238,9 +235,9 @@ const fetchUsers = async (page = 1) => {
       params.search = searchQuery.value.trim();
     }
 
-    // Adicionar filtro de tipo de usuário
-    if (selectedRoleId.value !== null) {
-      params.user_type_id = selectedRoleId.value;
+    // Adicionar filtro de role (papel)
+    if (selectedRoleName.value !== null) {
+      params.role = selectedRoleName.value;
     }
 
     const { data } = await axios.get('v1/users', { params });
@@ -290,13 +287,13 @@ const fetchUsers = async (page = 1) => {
   }
 };
 
-const fetchTypeUsers = async () => {
+const fetchRoles = async () => {
   try {
-    const { data } = await axios.get('v1/type-users/list');
+    const { data } = await axios.get('v1/roles/list');
     const payload = data?.data ?? data ?? [];
-    typeUsers.value = Array.isArray(payload) ? payload : [];
+    roles.value = Array.isArray(payload) ? payload : [];
   } catch (error) {
-    typeUsers.value = [];
+    roles.value = [];
   }
 };
 
@@ -343,7 +340,7 @@ const deleteUser = async (user) => {
 
 onMounted(async () => {
   document.title = 'Usuários';
-  await fetchTypeUsers();
+  await fetchRoles();
   fetchUsers(1);
 });
 

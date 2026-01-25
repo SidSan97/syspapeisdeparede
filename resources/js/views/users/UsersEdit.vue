@@ -6,7 +6,7 @@
           <form @submit.prevent="updateUser()">
             <div class="row">
               <div class="col-lg-12">
-                <UsersForm ref="formRef" :type-users="typeUsers" :is-edit="true" :loading="loading"></UsersForm>
+                <UsersForm ref="formRef" :roles="roles" :is-edit="true" :loading="loading"></UsersForm>
               </div>
             </div>
             <hr>
@@ -40,7 +40,7 @@ const auth = useAuthStore()
 
 const Toast = window.Toast
 const formRef = ref()
-const typeUsers = ref([])
+const roles = ref([])
 const saving = ref(false)
 const loading = ref(true)
 
@@ -65,11 +65,13 @@ async function fetchUser() {
       // Garantir que is_dropshipping seja número (0 ou 1)
       const isDropshipping = Number(user.is_dropshipping) || 0
 
+      const userRole = user.roles && user.roles.length > 0 ? user.roles[0].name : ''
+
       formRef.value.form.fill({
         id: user.id,
         name: user.name,
         email: user.email,
-        user_type_id: user.user_type_id,
+        role: userRole,
         is_dropshipping: isDropshipping,
         email_verified_at: user.email_verified_at,
       })
@@ -92,11 +94,6 @@ async function updateUser() {
     return
   }
 
-  // Validar formulário antes de submeter
-  if (!formRef.value.validateForm()) {
-    return
-  }
-
   try {
     saving.value = true
     const userId = formRef.value.form.id
@@ -116,15 +113,15 @@ async function updateUser() {
   }
 }
 
-function fetchTypeUsers() {
-  return axios.get('v1/type-users/list').then(({ data }) => {
+function fetchRoles() {
+  return axios.get('v1/roles/list').then(({ data }) => {
     const payload = data?.data ?? data ?? []
-    typeUsers.value = Array.isArray(payload) ? payload : []
+    roles.value = Array.isArray(payload) ? payload : []
   })
 }
 
 onMounted(async () => {
-  await fetchTypeUsers()
+  await fetchRoles()
   await fetchUser()
 })
 </script>

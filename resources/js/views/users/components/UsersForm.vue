@@ -99,30 +99,29 @@
         </div>
       </div>
 
-      <!-- Terceira linha: Tipo de Usuário -->
       <div class="row">
         <div class="col-12 mb-3">
-          <label for="user_type_id" class="form-label">Tipo de Usuário</label>
+          <label for="role" class="form-label">Papel</label>
           <select
-            name="user_type_id"
-            v-model="form.user_type_id"
-            id="user_type_id"
+            name="role"
+            v-model="form.role"
+            id="role"
             class="form-control"
-            :class="{ 'is-invalid': form.errors.has('user_type_id') }"
-            @change="handleUserTypeChange"
+            :class="{ 'is-invalid': form.errors.has('role') }"
+            @change="handleRoleChange"
             :disabled="loading"
           >
-            <option value="">Selecione um tipo...</option>
-            <option :value="typeUser.id" v-for="typeUser in typeUsers" :key="typeUser.id">
-              {{ typeUser.name }}
+            <option value="">Selecione um papel...</option>
+            <option :value="role.name" v-for="role in roles" :key="role.id">
+              {{ translateRole(role.name) }}
             </option>
           </select>
-          <has-error :form="form" field="user_type_id"></has-error>
+          <has-error :form="form" field="role"></has-error>
         </div>
       </div>
 
-      <!-- Checkbox de Dropshipping (apenas para designer) -->
-      <div v-if="Number(form.user_type_id) === USER_TYPES.RESELLER" class="row">
+      <!-- Checkbox de Dropshipping (apenas para revendedor) -->
+      <div v-if="form.role === 'reseller'" class="row">
         <div class="col-12 mb-3">
           <div class="form-check">
             <input
@@ -147,10 +146,10 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
-import { USER_TYPES } from '@/constants/userTypes'
+import { translateRole } from '@/utils/roleTranslations'
 
 const props = defineProps({
-  typeUsers: {
+  roles: {
     type: Array,
     required: false,
     default: () => [],
@@ -171,7 +170,7 @@ const form = reactive(new Form({
   email: '',
   password: '',
   password_confirmation: '',
-  user_type_id: '',
+  role: '',
   is_dropshipping: 0,
   email_verified_at: '',
 }))
@@ -198,32 +197,32 @@ const validatePasswordMatch = () => {
   }
 }
 
-const handleUserTypeChange = () => {
-  // Se o tipo de usuário não for designer, resetar is_dropshipping para 0
-  if (Number(form.user_type_id) !== USER_TYPES.RESELLER) {
+const handleRoleChange = () => {
+  // Se o papel não for reseller, resetar is_dropshipping para 0
+  if (form.role !== 'reseller') {
     form.is_dropshipping = 0
   }
 }
 
-// Watch para garantir que is_dropshipping seja 0 quando user_type_id não for designer
-watch(() => form.user_type_id, (newValue) => {
-  if (Number(newValue) !== USER_TYPES.RESELLER) {
+// Watch para garantir que is_dropshipping seja 0 quando role não for reseller
+watch(() => form.role, (newValue) => {
+  if (newValue !== 'reseller') {
     form.is_dropshipping = 0
   }
 })
 
-// Se typeUsers não vier via props, buscar da API
-const typeUsers = ref(props.typeUsers || [])
+// Se roles não vier via props, buscar da API
+const roles = ref(props.roles || [])
 
 onMounted(async () => {
-  if (typeUsers.value.length === 0) {
+  if (roles.value.length === 0) {
     try {
-      const { data } = await axios.get('v1/type-users/list')
+      const { data } = await axios.get('v1/roles/list')
       const payload = data?.data ?? data ?? []
-      typeUsers.value = Array.isArray(payload) ? payload : []
+      roles.value = Array.isArray(payload) ? payload : []
     } catch (error) {
-      console.error('Erro ao carregar tipos de usuários:', error)
-      typeUsers.value = []
+      console.error('Erro ao carregar papéis:', error)
+      roles.value = []
     }
   }
 })

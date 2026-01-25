@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasUserScopes;
 use BeyondCode\Comments\Contracts\Commentator;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +17,7 @@ class User extends Authenticatable implements Commentator //implements MustVerif
 {
     use HasApiTokens;
     use HasFactory;
+    use HasUserScopes;
     use Notifiable;
     use HasRoles;
 
