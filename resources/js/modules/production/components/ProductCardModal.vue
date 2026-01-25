@@ -87,10 +87,11 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, toRef } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
 import { getCardDisplayName } from '@/utils/cardUtils';
+import { getCoverImage } from '@/modules/cardModals/composables/useCardUtils';
 import MembersSection from '@/components/cardModal/MembersSection.vue';
 import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
 import AttachmentsSection from './productionCardModal/AttachmentsSection.vue';
@@ -100,6 +101,7 @@ import ProductionPercentageSection from './productionCardModal/ProductionPercent
 import ProductionReportsSection from './productionCardModal/ProductionReportsSection.vue';
 import RequestArtsSection from '@/components/cardModal/RequestArtsSection.vue';
 import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
+import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
 const props = defineProps({
   card: {
@@ -114,9 +116,8 @@ const auth = useAuthStore();
 
 const showDetails = ref(false);
 
-// Solicitações de arte
-const requestLayoutArts = ref([]);
-const loadingRequestArts = ref(false);
+const cardRef = toRef(props, 'card');
+const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } = useRequestLayoutArts(cardRef);
 
 // Relatórios de produção
 const productionReports = ref([]);
@@ -126,55 +127,8 @@ const loadingProductionReports = ref(false);
 const markingAsProduced = ref(false);
 
 const coverImage = computed(() => {
-  if (!props.card) {
-    return '';
-  }
-  if (props.card.image) {
-    return props.card.image;
-  }
-  const imageAttachment = props.card.uploaded_files?.find(file => isImageFile(file));
-  return imageAttachment ? getImageUrl(imageAttachment) : '';
+  return getCoverImage(props.card);
 });
-
-function getImageUrl(file) {
-  if (file.url) {
-    return file.url;
-  }
-  if (file.fileUrl) {
-    return file.fileUrl;
-  }
-  if (file.file_path) {
-    // Se for um caminho relativo, construir a URL completa
-    if (file.file_path.startsWith('http')) {
-      return file.file_path;
-    }
-    return `/storage/${file.file_path}`;
-  }
-  return '';
-}
-
-function isImageFile(file) {
-  if (!file) {
-    return false;
-  }
-  const mime = (file.mime || file.mimetype || '').toLowerCase();
-  if (mime.startsWith('image/')) {
-    return true;
-  }
-  const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
-  return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
-}
-
-function resolveImageUrl(path) {
-  if (!path) {
-    return '';
-  }
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
-  const baseUrl = window.location.origin.replace(/\/$/, '');
-  return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
-}
 
 function handleClose() {
   emit('close');
@@ -184,58 +138,6 @@ const canRemoveMembers = computed(() => {
   return auth.isAdmin();
 });
 
-async function fetchRequestLayoutArts() {
-  if (!props.card?.id || !props.card?.order?.id || !auth.user?.id) {
-    requestLayoutArts.value = [];
-    loadingRequestArts.value = false;
-    return;
-  }
-
-  try {
-    loadingRequestArts.value = true;
-
-    const budgetId = props.card.order.id;
-
-    const params = {
-      budget_id: budgetId,
-      dealer_id: auth.user.id,
-    };
-
-    const response = await axios.get('v1/budgets/request-layout-arts', {
-      params,
-    });
-
-    const data = response?.data || response;
-
-    if (data?.success && Array.isArray(data.data)) {
-      requestLayoutArts.value = data.data.map((art) => {
-        let imageUrl = art.image_url;
-        if (!imageUrl && art.path_file) {
-          imageUrl = resolveImageUrl(art.path_file);
-        }
-
-        return {
-          id: art.id,
-          comment: art.comment || null,
-          image_url: imageUrl,
-          path_file: art.path_file || null,
-          created_at: art.created_at || null,
-          designer_name: art.designer?.name || art.designer_name || null,
-          dealer_name: art.dealer?.name || art.dealer_name || null,
-          wall_info: art.wall_info || null,
-          wall_name: art.wall_name || art.wall_info?.wall_name || null,
-        };
-      });
-    } else {
-      requestLayoutArts.value = [];
-    }
-  } catch (error) {
-    console.error('Erro ao buscar solicitações de artes:', error);
-    requestLayoutArts.value = [];
-  } finally {
-    loadingRequestArts.value = false;
-  }
-}
 
 async function fetchProductionReports() {
   if (!props.card?.id) {
@@ -297,11 +199,10 @@ async function markAsProduced() {
 }
 
 // Buscar dados quando o card mudar
-watch(() => [props.card?.id, props.card?.budget?.id], ([newCardId, newBudgetId]) => {
+watch(() => props.card?.id, (newCardId) => {
   if (newCardId) {
     // Buscar relatórios de produção quando o card mudar
     fetchProductionReports();
-    fetchRequestLayoutArts();
   }
 }, { immediate: true });
 </script>

@@ -13,13 +13,13 @@ export function useArtService() {
         return response.data;
     }
 
-    async function fetchRequestLayoutArts(orderBudgetId, orderId = null) {
-        const params = {
-            order_budget_id: orderBudgetId,
-        };
+    async function fetchRequestLayoutArts(orderBudgetId, orderId = null, budgetId = null) {
+        const params = {};
 
         if (orderId) {
             params.order_id = orderId;
+        } else if (budgetId) {
+            params.budget_id = budgetId;
         }
 
         const response = await axios.get('v1/budgets/request-layout-arts', {

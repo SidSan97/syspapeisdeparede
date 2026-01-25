@@ -33,16 +33,27 @@ export function useRequestLayoutArts(card) {
     try {
       loadingRequestArts.value = true;
 
-      const orderBudgetId = card.value.id;
-
       const orderId = card.value.order_id
         || card.value.order?.id
         || (card.value.order && typeof card.value.order === 'object' ? card.value.order.id : null);
 
-      const data = await artService.fetchRequestLayoutArts(orderBudgetId, orderId);
+      const budgetId = card.value.budget_id
+        || card.value.budget?.id
+        || (card.value.budget && typeof card.value.budget === 'object' ? card.value.budget.id : null);
 
-      if (data?.success && Array.isArray(data.data)) {
-        requestLayoutArts.value = data.data.map((art) => {
+      const response = await artService.fetchRequestLayoutArts(null, orderId, budgetId);
+
+      let artsData = [];
+      if (Array.isArray(response)) {
+        artsData = response;
+      } else if (response?.success && Array.isArray(response.data)) {
+        artsData = response.data;
+      } else if (response?.data && Array.isArray(response.data)) {
+        artsData = response.data;
+      }
+
+      if (artsData.length > 0) {
+        requestLayoutArts.value = artsData.map((art) => {
           let imageUrl = art.image_url;
           if (!imageUrl && art.path_file) {
             imageUrl = resolveImageUrl(art.path_file);

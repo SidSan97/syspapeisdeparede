@@ -110,10 +110,10 @@
 </template>
 
   <script setup>
-  import { computed, ref, watch, toRef } from 'vue';
+  import { computed, ref, toRef } from 'vue';
   import { useAuthStore } from '@/stores/auth';
-  import axios from 'axios';
   import { getCardDisplayName } from '@/utils/cardUtils';
+  import { getCoverImage } from '@/modules/cardModals/composables/useCardUtils';
   import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
   import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
   import AttachmentsSection from './layoutCardModal/AttachmentsSection.vue';
@@ -140,21 +140,13 @@
   const cardRef = toRef(props, 'card');
   const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } = useRequestLayoutArts(cardRef);
 
-
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });
 
   const coverImage = computed(() => {
-    if (!props.card) {
-      return '';
-    }
-    if (props.card.image) {
-      return props.card.image;
-    }
-    const imageAttachment = props.card.uploaded_files?.find(file => isImageFile(file));
-    return imageAttachment ? getImageUrl(imageAttachment) : '';
+    return getCoverImage(props.card);
   });
 
   function formatCurrency(value) {
@@ -163,35 +155,6 @@
     }
     const numericValue = Number(value);
     return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
-  }
-
-  function getImageUrl(file) {
-    if (file.url) {
-      return file.url;
-    }
-    if (file.fileUrl) {
-      return file.fileUrl;
-    }
-    if (file.file_path) {
-      // Se for um caminho relativo, construir a URL completa
-      if (file.file_path.startsWith('http')) {
-        return file.file_path;
-      }
-      return `/storage/${file.file_path}`;
-    }
-    return '';
-  }
-
-  function isImageFile(file) {
-    if (!file) {
-      return false;
-    }
-    const mime = (file.mime || file.mimetype || '').toLowerCase();
-    if (mime.startsWith('image/')) {
-      return true;
-    }
-    const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
-    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
   }
 
   function handleClose() {
