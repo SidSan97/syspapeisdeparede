@@ -8,6 +8,7 @@ use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
 use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
+use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
@@ -259,28 +260,13 @@ class BudgetController extends Controller
         );
     }
 
-    public function updateLayoutColumn(Request $request): JsonResponse
+    public function updateLayoutColumn(UpdateLayoutColumnRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'order_budget_id' => ['required', 'integer', 'exists:order_budgets,id'],
-            'layout_column_names_id' => ['required', 'integer'],
-            'type_page' => ['nullable', 'string', 'in:layout,product'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
         $typePage = $validated['type_page'] ?? 'layout'; // Default para layout
         $columnId = $validated['layout_column_names_id'];
-
-        // Validar se a coluna existe na tabela correta baseado no type_page
-        if ($typePage === 'product') {
-            $request->validate([
-                'layout_column_names_id' => ['exists:production_column_names,id'],
-            ]);
-        } else {
-            $request->validate([
-                'layout_column_names_id' => ['exists:layout_column_names,id'],
-            ]);
-        }
 
         $orderBudget = $this->orderBudgetRepository->editLayoutColumn(
             $validated['order_budget_id'],

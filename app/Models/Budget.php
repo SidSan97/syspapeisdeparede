@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasBudgetScopes;
 use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Budget extends Model
 {
-    use HasFactory, HasTenantScope;
+    use HasFactory, HasTenantScope, HasBudgetScopes;
 
     protected $fillable = [
         'user_id',
@@ -59,6 +60,14 @@ class Budget extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the tenant (user) that owns the budget.
+     */
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'tenant_id');
     }
 
     public function rooms(): HasMany
