@@ -23,11 +23,11 @@ class PlaceOrderRequest extends FormRequest
     {
         return [
             'id' => ['required', 'integer', 'exists:budgets,id'],
-            'comment_referring_model' => ['nullable', 'string', 'max:500'],
-            'link_referring_model' => ['nullable', 'string', 'max:150'],
-            'collection_referring_model' => ['nullable', 'string'],
-            'files_referring_model' => ['nullable', 'array'],
-            'files_referring_model.*' => ['file', 'image', 'max:5120'],
+            'wall_referring_model_data' => ['nullable', 'string'], // JSON com mapeamento wall_id -> {comment, link}
+            'wall_files' => ['nullable', 'array'], // Arquivos por parede: wall_files[wall_id][]
+            'wall_files.*' => ['nullable', 'array'],
+            'wall_files.*.*' => ['file', 'image', 'max:5120'],
+            'collection_referring_model' => ['nullable', 'string'], // JSON com mapeamento wall_id -> image_id
             'terms_accepted' => ['required', 'accepted'],
         ];
     }

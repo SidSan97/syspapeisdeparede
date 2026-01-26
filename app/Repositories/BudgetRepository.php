@@ -301,52 +301,88 @@ class BudgetRepository {
             'status' => 'Pendente de Revisão',
         ]);
 
+        // Processar dados mapeados por parede
+        $wallDataMapping = [];
+        if (!empty($data['wall_referring_model_data'])) {
+            $decoded = json_decode($data['wall_referring_model_data'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $wallDataMapping = $decoded;
+            }
+        }
+
+        // Processar collection_referring_model mapeado por parede
+        $wallImageMapping = [];
+        if (!empty($data['collection_referring_model'])) {
+            $decoded = json_decode($data['collection_referring_model'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $wallImageMapping = $decoded;
+            }
+        }
+
         // Atualizar dados de referring model em todas as walls do budget
         $allNewFiles = [];
-        
+
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
-                $existingFiles = is_array($wall->files_referring_model)
-                    ? $wall->files_referring_model
-                    : [];
+                $wallUpdatePayload = [];
 
-                $uploadedFiles = [];
+                // Processar dados específicos desta parede
+                if (isset($wallDataMapping[$wall->id])) {
+                    $wallData = $wallDataMapping[$wall->id];
 
-                if (!empty($data['files_referring_model'])) {
-                    foreach ($data['files_referring_model'] as $file) {
+                    // Comentário
+                    if (isset($wallData['comment'])) {
+                        $comment = $wallData['comment'];
+                        $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
+                    }
+
+                    // Link
+                    if (isset($wallData['link'])) {
+                        $link = $wallData['link'];
+                        $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
+                    }
+                }
+
+                $wallFiles = null;
+                if (isset($data['wall_files']) && is_array($data['wall_files'])) {
+                    // Tentar acessar como array aninhado
+                    if (isset($data['wall_files'][$wall->id]) && is_array($data['wall_files'][$wall->id])) {
+                        $wallFiles = $data['wall_files'][$wall->id];
+                    }
+                }
+
+                $wallFilesKey = "wall_files.{$wall->id}";
+                if (!$wallFiles && isset($data[$wallFilesKey])) {
+                    $wallFiles = $data[$wallFilesKey];
+                    if (!is_array($wallFiles)) {
+                        $wallFiles = [$wallFiles];
+                    }
+                }
+
+                if ($wallFiles && is_array($wallFiles) && !empty($wallFiles)) {
+                    $existingFiles = is_array($wall->files_referring_model)
+                        ? $wall->files_referring_model
+                        : [];
+
+                    $uploadedFiles = [];
+                    foreach ($wallFiles as $file) {
                         if ($file instanceof UploadedFile) {
                             $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
                         }
                     }
-                }
 
-                $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
-
-                $wallUpdatePayload = [];
-
-                if (array_key_exists('comment_referring_model', $data)) {
-                    $comment = $data['comment_referring_model'];
-                    $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
-                }
-
-                if (array_key_exists('link_referring_model', $data)) {
-                    $link = $data['link_referring_model'];
-                    $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
-                }
-
-                $newFiles = [];
-                if (!empty($mergedFiles)) {
-                    $wallUpdatePayload['files_referring_model'] = $mergedFiles;
-                    // Identificar novos arquivos adicionados
+                    $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
                     $newFiles = array_diff($mergedFiles, $existingFiles);
                     $allNewFiles = array_merge($allNewFiles, $newFiles);
-                } elseif (array_key_exists('files_referring_model', $data)) {
-                    $wallUpdatePayload['files_referring_model'] = null;
+
+                    if (!empty($mergedFiles)) {
+                        $wallUpdatePayload['files_referring_model'] = $mergedFiles;
+                    }
                 }
 
-                if (array_key_exists('collection_referring_model', $data)) {
-                    $collection = $data['collection_referring_model'];
-                    $wallUpdatePayload['collection_referring_model'] = $collection !== null && $collection !== '' ? $collection : null;
+                // Collection image
+                if (isset($wallImageMapping[$wall->id])) {
+                    $wallUpdatePayload['collection_referring_model'] = $wallImageMapping[$wall->id];
                 }
 
                 if (!empty($wallUpdatePayload)) {
