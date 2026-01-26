@@ -117,14 +117,6 @@ class BudgetRepository {
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
                 'selected_carrier_delivery_time' => $selectedCarrier['deliveryTime'] ?? null,
                 'carriers_snapshot' => null,
-                'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                'link_referring_model' => $data['linkReferringModel'] ?? null,
-                'files_referring_model' => isset($data['filesReferringModel'])
-                    ? (array) $data['filesReferringModel']
-                    : null,
-                'collection_referring_model' => $this->formatCollectionReferringModel(
-                    $data['collectionReferringModel'] ?? null
-                ),
                 'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : 0,
                 'raw_payload' => $data,
                 'status' => 'Em aberto',
@@ -156,6 +148,14 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
+                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
+                        'link_referring_model' => $data['linkReferringModel'] ?? null,
+                        'files_referring_model' => isset($data['filesReferringModel'])
+                            ? (array) $data['filesReferringModel']
+                            : null,
+                        'collection_referring_model' => $this->formatCollectionReferringModel(
+                            $data['collectionReferringModel'] ?? null
+                        ),
                     ]);
                 }
             }
@@ -221,14 +221,6 @@ class BudgetRepository {
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
                 'selected_carrier_delivery_time' => $selectedCarrier['deliveryTime'] ?? null,
                 'carriers_snapshot' => null,
-                'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                'link_referring_model' => $data['linkReferringModel'] ?? null,
-                'files_referring_model' => isset($data['filesReferringModel'])
-                    ? (array) $data['filesReferringModel']
-                    : null,
-                'collection_referring_model' => $this->formatCollectionReferringModel(
-                    $data['collectionReferringModel'] ?? null
-                ),
                 'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : $budget->dropshipping_budget,
                 'raw_payload' => $data,
                 'status' => $data['status'] ?? $budget->status,
@@ -267,6 +259,14 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
+                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
+                        'link_referring_model' => $data['linkReferringModel'] ?? null,
+                        'files_referring_model' => isset($data['filesReferringModel'])
+                            ? (array) $data['filesReferringModel']
+                            : null,
+                        'collection_referring_model' => $this->formatCollectionReferringModel(
+                            $data['collectionReferringModel'] ?? null
+                        ),
                     ]);
                 }
             }
@@ -296,59 +296,72 @@ class BudgetRepository {
     {
         $budget->loadMissing(['rooms.walls.collectionModel']);
 
-        $existingFiles = is_array($budget->files_referring_model)
-            ? $budget->files_referring_model
-            : [];
+        // Atualizar status do budget
+        $budget->update([
+            'status' => 'Pendente de Revisão',
+        ]);
 
-        $uploadedFiles = [];
+        // Atualizar dados de referring model em todas as walls do budget
+        $allNewFiles = [];
+        
+        foreach ($budget->rooms as $room) {
+            foreach ($room->walls as $wall) {
+                $existingFiles = is_array($wall->files_referring_model)
+                    ? $wall->files_referring_model
+                    : [];
 
-        if (!empty($data['files_referring_model'])) {
-            foreach ($data['files_referring_model'] as $file) {
-                if ($file instanceof UploadedFile) {
-                    $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                $uploadedFiles = [];
+
+                if (!empty($data['files_referring_model'])) {
+                    foreach ($data['files_referring_model'] as $file) {
+                        if ($file instanceof UploadedFile) {
+                            $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                        }
+                    }
+                }
+
+                $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
+
+                $wallUpdatePayload = [];
+
+                if (array_key_exists('comment_referring_model', $data)) {
+                    $comment = $data['comment_referring_model'];
+                    $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
+                }
+
+                if (array_key_exists('link_referring_model', $data)) {
+                    $link = $data['link_referring_model'];
+                    $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
+                }
+
+                $newFiles = [];
+                if (!empty($mergedFiles)) {
+                    $wallUpdatePayload['files_referring_model'] = $mergedFiles;
+                    // Identificar novos arquivos adicionados
+                    $newFiles = array_diff($mergedFiles, $existingFiles);
+                    $allNewFiles = array_merge($allNewFiles, $newFiles);
+                } elseif (array_key_exists('files_referring_model', $data)) {
+                    $wallUpdatePayload['files_referring_model'] = null;
+                }
+
+                if (array_key_exists('collection_referring_model', $data)) {
+                    $collection = $data['collection_referring_model'];
+                    $wallUpdatePayload['collection_referring_model'] = $collection !== null && $collection !== '' ? $collection : null;
+                }
+
+                if (!empty($wallUpdatePayload)) {
+                    $wall->update($wallUpdatePayload);
                 }
             }
         }
 
-        $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
-
-        $updatePayload = [
-            'status' => 'Pendente de Revisão',
-        ];
-
-        if (array_key_exists('comment_referring_model', $data)) {
-            $comment = $data['comment_referring_model'];
-            $updatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
-        }
-
-        if (array_key_exists('link_referring_model', $data)) {
-            $link = $data['link_referring_model'];
-            $updatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
-        }
-
-        $newFiles = [];
-        if (!empty($mergedFiles)) {
-            $updatePayload['files_referring_model'] = $mergedFiles;
-            // Identificar novos arquivos adicionados
-            $newFiles = array_diff($mergedFiles, $existingFiles);
-        } elseif (array_key_exists('files_referring_model', $data)) {
-            $updatePayload['files_referring_model'] = null;
-        }
-
-        if (array_key_exists('collection_referring_model', $data)) {
-            $collection = $data['collection_referring_model'];
-            $updatePayload['collection_referring_model'] = $collection !== null && $collection !== '' ? $collection : null;
-        }
-
-        $budget->update($updatePayload);
-
         // Registrar no histórico os novos arquivos adicionados
-        if (!empty($newFiles) && Auth::check()) {
+        if (!empty($allNewFiles) && Auth::check()) {
             $user = Auth::user();
             // Buscar todos os OrderBudgets relacionados a este budget
             $orderBudgets = OrderBudget::where('budget_id', $budget->id)->get();
 
-            foreach ($newFiles as $filePath) {
+            foreach ($allNewFiles as $filePath) {
                 $fileName = basename($filePath);
                 // Criar URL pública para o arquivo
                 $fileUrl = asset('storage/' . $filePath);

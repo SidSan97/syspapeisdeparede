@@ -197,11 +197,14 @@ class OrderRepository
 
     public function createFromBudget(Budget $budget, array $additionalData = []): Order
     {
-        $filesReferringModel = $additionalData['files_referring_model'] ?? $budget->files_referring_model;
+        $primaryRoom = $budget->rooms()->orderBy('position')->first();
+        $primaryWall = $primaryRoom ? $primaryRoom->walls()->orderBy('position')->first() : null;
+
+        $filesReferringModel = $additionalData['files_referring_model'] ?? ($primaryWall ? $primaryWall->files_referring_model : null);
 
         if (!empty($filesReferringModel) && is_array($filesReferringModel)) {
             $processedFiles = [];
-            $existingFiles = is_array($budget->files_referring_model) ? $budget->files_referring_model : [];
+            $existingFiles = is_array($primaryWall?->files_referring_model) ? $primaryWall->files_referring_model : [];
 
             foreach ($filesReferringModel as $file) {
                 if ($file instanceof UploadedFile) {
@@ -211,11 +214,10 @@ class OrderRepository
                 }
             }
 
-            // Mesclar com arquivos existentes do budget
             $filesReferringModel = array_values(array_filter(array_unique(array_merge($existingFiles, $processedFiles))));
-        } elseif (empty($filesReferringModel)) {
-            // Se não houver arquivos novos, usar os do budget
-            $filesReferringModel = $budget->files_referring_model;
+        } elseif (empty($filesReferringModel) && $primaryWall) {
+            // Se não houver arquivos novos, usar os da wall
+            $filesReferringModel = $primaryWall->files_referring_model;
         }
 
         $orderData = [
@@ -237,10 +239,10 @@ class OrderRepository
             'primary_budget_room_id' => $budget->primary_budget_room_id,
             'status' => $additionalData['status'] ?? $budget->status ?? 'Pendente de Revisão',
             'payment_file' => $budget->payment_file,
-            'comment_referring_model' => $additionalData['comment_referring_model'] ?? $budget->comment_referring_model,
-            'link_referring_model' => $additionalData['link_referring_model'] ?? $budget->link_referring_model,
+            'comment_referring_model' => $additionalData['comment_referring_model'] ?? ($primaryWall ? $primaryWall->comment_referring_model : null),
+            'link_referring_model' => $additionalData['link_referring_model'] ?? ($primaryWall ? $primaryWall->link_referring_model : null),
             'files_referring_model' => $filesReferringModel,
-            'collection_referring_model' => $additionalData['collection_referring_model'] ?? $budget->collection_referring_model,
+            'collection_referring_model' => $additionalData['collection_referring_model'] ?? ($primaryWall ? $primaryWall->collection_referring_model : null),
             'dropshipping_budget' => $budget->dropshipping_budget,
         ];
 

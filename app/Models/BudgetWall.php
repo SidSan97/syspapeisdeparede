@@ -22,6 +22,10 @@ class BudgetWall extends Model
         'continuations',
         'collection_model_id',
         'total_area',
+        'comment_referring_model',
+        'link_referring_model',
+        'files_referring_model',
+        'collection_referring_model',
         'strip_height',
         'strip_count',
     ];
@@ -34,6 +38,10 @@ class BudgetWall extends Model
         'continuations' => 'array',
         'collection_model_id' => 'integer',
         'total_area' => 'decimal:2',
+        'comment_referring_model' => 'string',
+        'link_referring_model' => 'string',
+        'files_referring_model' => 'array',
+        'collection_referring_model' => 'string',
         'strip_height' => 'decimal:2',
         'strip_count' => 'integer',
     ];

@@ -111,10 +111,35 @@ class BudgetResource extends JsonResource
 
     public static function getBudgetPaymentData(array $budget)
     {
+        // Buscar comment_referring_model da primeira wall da primeira room ou primary room
+        $comment = '';
+        if (!empty($budget['rooms']) && is_array($budget['rooms'])) {
+            $primaryRoomId = $budget['primary_budget_room_id'] ?? null;
+            $targetRoom = null;
+
+            if ($primaryRoomId) {
+                foreach ($budget['rooms'] as $room) {
+                    if (($room['id'] ?? null) == $primaryRoomId) {
+                        $targetRoom = $room;
+                        break;
+                    }
+                }
+            }
+            // Se não encontrou primary room, usar a primeira
+            if (!$targetRoom && !empty($budget['rooms'][0])) {
+                $targetRoom = $budget['rooms'][0];
+            }
+
+            // Buscar da primeira wall da room encontrada
+            if ($targetRoom && !empty($targetRoom['walls']) && is_array($targetRoom['walls']) && !empty($targetRoom['walls'][0])) {
+                $comment = $targetRoom['walls'][0]['comment_referring_model'] ?? '';
+            }
+        }
+
         $data = [
             'id' => $budget['id'],
             'name' => $budget['name'],
-            'comments' => $budget['comment_referring_model'] ?? '',
+            'comments' => $comment,
             'total_amount' => (float)($budget['total_amount'] ?? 0),
             'total_amount_installments' => (float)($budget['total_amount_installments'] ?? 0),
             'payment_method' => self::normalizePaymentMethod($budget['payment_method'] ?? null),

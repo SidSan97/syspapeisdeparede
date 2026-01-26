@@ -203,7 +203,7 @@ class BudgetController extends Controller
         $response = $budgetResource->response();
         $responseData = $response->getData(true);
         $responseData['order_id'] = $order->id;
-        
+
         return response()->json($responseData);
     }
 
@@ -232,7 +232,7 @@ class BudgetController extends Controller
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
                     'layout_column_names_id' => $firstColumn->id,
-                    'description' => $order->comment_referring_model ?? null,
+                    'description' => $order->comment_referring_model ?? $wall->comment_referring_model ?? null,
                     'order_index' => $orderIdx++,
                 ]);
             }

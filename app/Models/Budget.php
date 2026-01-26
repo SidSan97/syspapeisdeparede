@@ -52,8 +52,6 @@ class Budget extends Model
         'carriers_snapshot' => 'array',
         'primary_budget_room_id' => 'integer',
         'status' => 'string',
-        'files_referring_model' => 'array',
-        'collection_referring_model' => 'string',
         'dropshipping_budget' => 'integer',
     ];
 
