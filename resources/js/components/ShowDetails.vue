@@ -3,7 +3,7 @@
         <Page :title="pageTitle" :back-to="backTo">
             <template #actions>
                 <button
-                    v-if="isOrder && data && data.status !== 'Aprovado'"
+                    v-if="isOrder && data && data.status !== 'Aprovado' && data.status != 'cancelado'"
                     type="button"
                     class="btn btn-primary me-3"
                     @click="handleApprove"

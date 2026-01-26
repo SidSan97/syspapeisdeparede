@@ -148,7 +148,7 @@ class OrderRepository
     public function cancel(Order $order): Order
     {
         $order->update([
-            'status' => 'cancelado',
+            'status' => 'Cancelado',
         ]);
 
         return $order->fresh(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom']);
