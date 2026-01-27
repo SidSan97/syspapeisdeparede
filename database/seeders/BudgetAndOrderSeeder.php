@@ -122,10 +122,6 @@ class BudgetAndOrderSeeder extends Seeder
                         'carriers_snapshot' => $budget->carriers_snapshot,
                         'primary_budget_room_id' => $budget->primary_budget_room_id,
                         'status' => fake()->randomElement(['em aberto', 'aprovado', 'aprovar layout', 'pendente de revisão']),
-                        'comment_referring_model' => $budget->comment_referring_model,
-                        'link_referring_model' => $budget->link_referring_model,
-                        'files_referring_model' => $budget->files_referring_model,
-                        'collection_referring_model' => $budget->collection_referring_model,
                         'dropshipping_budget' => $budget->dropshipping_budget,
                     ]);
 

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CollectionModelSeeder::class,
             LayoutColumnNameSeeder::class,
             ProductionColumnNameSeeder::class,
+            BudgetAndOrderSeeder::class,
         ]);
     }
 }

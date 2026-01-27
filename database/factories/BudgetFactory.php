@@ -59,10 +59,6 @@ class BudgetFactory extends Factory
                 ],
             ],
             'status' => fake()->randomElement($statuses),
-            'comment_referring_model' => fake()->boolean(40) ? fake()->sentence() : null,
-            'link_referring_model' => fake()->boolean(30) ? fake()->url() : null,
-            'files_referring_model' => fake()->boolean(20) ? [fake()->url()] : [],
-            'collection_referring_model' => fake()->boolean(30) ? fake()->word() : null,
             'dropshipping_budget' => fake()->boolean(50) ? 1 : 0,
         ];
     }

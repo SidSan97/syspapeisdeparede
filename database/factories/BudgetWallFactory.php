@@ -38,6 +38,10 @@ class BudgetWallFactory extends Factory
             'total_area' => round($totalArea, 2),
             'strip_height' => round($stripHeight, 2),
             'strip_count' => $stripCount,
+            'comment_referring_model' => fake()->boolean(40) ? fake()->sentence() : null,
+            'link_referring_model' => fake()->boolean(30) ? fake()->url() : null,
+            'files_referring_model' => fake()->boolean(20) ? [fake()->url()] : null,
+            'collection_referring_model' => fake()->boolean(30) ? fake()->word() : null,
         ];
     }
 }
