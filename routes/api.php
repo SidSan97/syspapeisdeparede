@@ -1,31 +1,7 @@
 <?php
 
-use App\Http\Controllers\API\V1\{
-    BudgetController,
-    CollectionArtController,
-    CollectionArtSubcategoryController,
-    CollectionImageController,
-    CollectionModelController,
-    ExpeditionController,
-    LayoutColumnNameController,
-    MyFavoriteCollectionImageController,
-    OrderBudgetController,
-    OrderController,
-    OrderExpeditionController,
-    OrderProductionController,
-    OrderReportController,
-    ProductionColumnNameController,
-    ProfileController,
-    TypeUserController,
-    UserController,
-};
-use App\Http\Controllers\API\V1\RoleController;
 use App\Http\Controllers\AppVersionController;
-use App\Http\Controllers\FrenetController;
-use App\Http\Controllers\GeneratePaymentController;
-use App\Http\Controllers\TinyErpController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -76,114 +52,18 @@ Route::middleware('auth:api')->get('/user-api', function (Request $request) {
 // --------------------------------------
 
 Route::prefix('v1')->group(function () {
-
-    // Profile
-    //----------------------------------
-
-    Route::get('profile', [ProfileController::class, 'index']);
-    Route::put('profile', [ProfileController::class, 'update']);
-    Route::post('change-password', [ProfileController::class, 'changePassword']);
-    Route::post('profile/avatar', [ProfileController::class, 'uploadAvatar']);
-
-    Route::get('roles/list', [RoleController::class, 'list']);
-    Route::get('users/list-resellers', [UserController::class, 'listResellers']);
-    Route::get('users/list-designers', [UserController::class, 'listDesigners']);
-
-    // Users
-    //----------------------------------
-
-    Route::get('users/list', [UserController::class, 'list']);
-    Route::get('type-users/list', [TypeUserController::class, 'list']);
-
-    Route::apiResources([
-        'users' => UserController::class,
-        'type-users' => TypeUserController::class,
-        'collection-models' => CollectionModelController::class,
-        'collection-arts' => CollectionArtController::class,
-        'collection-art-subcategories' => CollectionArtSubcategoryController::class,
-        'collection-images' => CollectionImageController::class,
-        'collection-categories' => \App\Http\Controllers\API\V1\CollectionCategoryController::class,
-    ]);
-
-    // Rotas adicionais para collection-categories
-    Route::get('collection-categories/children/{parentId?}', [\App\Http\Controllers\API\V1\CollectionCategoryController::class, 'children'])->middleware('auth:api');
-
-    // My Favorite Collection Images
-    //----------------------------------
-    Route::get('my-favorite-collection-images', [MyFavoriteCollectionImageController::class, 'index'])->middleware('auth:api');
-    Route::post('collection-images/{collectionImage}/toggle-favorite', [MyFavoriteCollectionImageController::class, 'toggle'])->middleware('auth:api');
-    Route::get('collection-images/{collectionImage}/check-favorite', [MyFavoriteCollectionImageController::class, 'check'])->middleware('auth:api');
-
-    // Orçamentos
-    Route::post('budgets', [BudgetController::class, 'store'])->middleware('auth:api');
-    Route::get('budgets', [BudgetController::class, 'index'])->middleware('auth:api');
-    Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview'])->middleware('auth:api');
-    Route::get('budgets/orders', [BudgetController::class, 'orders'])->middleware('auth:api');
-    Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts'])->middleware('auth:api');
-    Route::post('budgets/cancel', [BudgetController::class, 'cancel'])->middleware('auth:api');
-    Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf'])->middleware('auth:api');
-    Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
-    Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
-    Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
-    Route::put('budgets/order-budgets/{orderBudget}/description', [OrderBudgetController::class, 'updateDescription'])->middleware('auth:api');
-    Route::post('budgets/order-budgets/{orderBudget}/comments', [OrderBudgetController::class, 'addComment'])->middleware('auth:api');
-    Route::put('budgets/order-budgets/{orderBudget}/comments/{comment}', [OrderBudgetController::class, 'updateComment'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [OrderBudgetController::class, 'deleteComment'])->middleware('auth:api');
-    Route::post('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'addMember'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'removeMember'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [OrderBudgetController::class, 'removeMember'])->middleware('auth:api');
-    Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
-    Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
-    Route::get('budgets/{budget}', [BudgetController::class, 'show'])->middleware('auth:api');
-
-    // Pedidos
-    Route::get('orders', [OrderController::class, 'index'])->middleware('auth:api');
-    Route::get('orders/layouts', [OrderController::class, 'layouts'])->middleware('auth:api');
-    Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts'])->middleware('auth:api');
-    Route::get('orders/expedition', [OrderExpeditionController::class, 'expedition'])->middleware('auth:api');
-    Route::get('orders/ready-for-invoice', [OrderExpeditionController::class, 'readyForInvoice'])->middleware('auth:api');
-    Route::get('orders/{id}', [OrderController::class, 'show'])->middleware('auth:api');
-    Route::post('orders/approve', [OrderProductionController::class, 'approve'])->middleware('auth:api');
-    Route::post('orders/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
-    Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generatePaymentLink'])->middleware('auth:api');
-    Route::put('orders/{id}', [OrderController::class, 'update'])->middleware('auth:api');
-    Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderProductionController::class, 'markAsProduced'])->middleware('auth:api');
-    Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderProductionController::class, 'updateProductionPercentage'])->middleware('auth:api');
-    Route::get('orders/order-budgets/{orderBudget}/production-reports', [OrderReportController::class, 'getProductionReports'])->middleware('auth:api');
-    Route::get('orders/production-reports/{report}/download-pdf', [OrderReportController::class, 'downloadProductionReportPdf'])->middleware('auth:api');
-
-    // Layout 'trello'
-    Route::get('layout-column-names', [LayoutColumnNameController::class, 'index'])->middleware('auth:api');
-    Route::post('layout-column-names', [LayoutColumnNameController::class, 'store'])->middleware('auth:api');
-    Route::put('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'update'])->middleware('auth:api');
-    Route::delete('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'destroy'])->middleware('auth:api');
-
-    // Production 'trello'
-    Route::get('production-column-names', [ProductionColumnNameController::class, 'index'])->middleware('auth:api');
-    Route::post('production-column-names', [ProductionColumnNameController::class, 'store'])->middleware('auth:api');
-    Route::put('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'update'])->middleware('auth:api');
-    Route::delete('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'destroy'])->middleware('auth:api');
-
-    //Expedição
-    Route::get('generate-separation-label/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabel'])->middleware('auth:api');
-    Route::get('generate-separation-label-pdf/{orderBudgetId}', [ExpeditionController::class, 'generateSeparationLabelPdf'])->middleware('auth:api');
-    Route::post('generate-invoice/{orderId}', [ExpeditionController::class, 'generateInvoice'])->middleware('auth:api');
-    Route::get('search-invoices', [ExpeditionController::class, 'searchInvoices'])->middleware('auth:api');
-    Route::get('generate-danfe/{id}', [ExpeditionController::class, 'generateDanfe'])->middleware('auth:api');
-    Route::post('send-invoice-to-expedition', [ExpeditionController::class, 'sendInvoiceToExpedition'])->middleware('auth:api');
-    Route::get('search-groupings/{carrier}', [ExpeditionController::class, 'searchGroupings'])->middleware('auth:api');
-    Route::get('generate-grouping-print-label/{groupingId}', [ExpeditionController::class, 'printCarrierLabels'])->middleware('auth:api');
-
-    //Pagamentos
-    Route::post('create-link-payment', [GeneratePaymentController::class, 'createLinkPayment'])->middleware('auth:api');
-    Route::get('get-link-payment', [GeneratePaymentController::class, 'getLinkPayment'])->middleware('auth:api');
-
-    //Frenet
-    Route::post('frenet/calculate-shipping', [FrenetController::class, 'calculateShipping'])->middleware('auth:api');
-
-    //Tiny ERP
-    Route::get('tiny-erp/all', [TinyErpController::class, 'all'])->middleware('auth:api');
-    Route::get('tiny-erp/settings', [TinyErpController::class, 'loadSettings'])->middleware('auth:api');
-    Route::post('tiny-erp/settings', [TinyErpController::class, 'store'])->middleware('auth:api');
-    Route::get('tiny-erp/carriers-types', [TinyErpController::class, 'loadCarriersTypes'])->middleware('auth:api');
+    // Rotas autenticadas
+    Route::middleware('auth:api')->group(function () {
+        require __DIR__ . '/v1/profile-api.php';
+        require __DIR__ . '/v1/users-api.php';
+        require __DIR__ . '/v1/collections-api.php';
+        require __DIR__ . '/v1/budgets-api.php';
+        require __DIR__ . '/v1/orders-api.php';
+        require __DIR__ . '/v1/layout-column-names-api.php';
+        require __DIR__ . '/v1/production-column-names-api.php';
+        require __DIR__ . '/v1/expedition-api.php';
+        require __DIR__ . '/v1/payments-api.php';
+        require __DIR__ . '/v1/frenet-api.php';
+        require __DIR__ . '/v1/tiny-erp-api.php';
+    });
 });
