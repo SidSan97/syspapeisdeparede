@@ -14,6 +14,7 @@ use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\BudgetRoom;
+use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
@@ -181,9 +182,71 @@ class BudgetController extends Controller
     public function placeOrder(PlaceOrderRequest $request): JsonResponse
     {
         $data = $request->validated();
-        dd($data);
 
         $budget = Budget::findOrFail($data['id']);
+        $budgetRooms = BudgetRoom::where('budget_id', $budget->id)->get();
+        foreach ($budgetRooms as $budgetRoom) {
+            $budgetWalls = BudgetWall::where('budget_room_id', $budgetRoom->id)->get();
+            foreach ($budgetWalls as $budgetWall) {
+                dd($budgetWall);
+            }
+        }
+
+        // Processar dados por parede se existirem
+        $wallsData = $data['walls'] ?? [];
+        
+        if (!empty($wallsData)) {
+            foreach ($budget->rooms as $room) {
+                foreach ($room->walls as $wall) {
+                    $wallId = (string) $wall->id;
+                    
+                    if (isset($wallsData[$wallId])) {
+                        $wallData = $wallsData[$wallId];
+                        
+                        $updateData = [];
+                        
+                        // Processar comentário
+                        if (isset($wallData['comment_referring_model'])) {
+                            $updateData['comment_referring_model'] = $wallData['comment_referring_model'];
+                        }
+                        
+                        // Processar link
+                        if (isset($wallData['link_referring_model'])) {
+                            $updateData['link_referring_model'] = $wallData['link_referring_model'];
+                        }
+                        
+                        // Processar arquivos
+                        if (isset($wallData['files_referring_model']) && is_array($wallData['files_referring_model'])) {
+                            $processedFiles = [];
+                            $existingFiles = is_array($wall->files_referring_model) ? $wall->files_referring_model : [];
+                            
+                            foreach ($wallData['files_referring_model'] as $file) {
+                                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                                    $processedFiles[] = \Illuminate\Support\Facades\Storage::disk('public')
+                                        ->putFile('budgets/referring-models', $file);
+                                } elseif (is_string($file)) {
+                                    $processedFiles[] = $file;
+                                }
+                            }
+                            
+                            $updateData['files_referring_model'] = array_values(
+                                array_filter(array_unique(array_merge($existingFiles, $processedFiles)))
+                            );
+                        }
+                        
+                        // Processar coleção
+                        if (isset($wallData['collection_referring_model'])) {
+                            $updateData['collection_referring_model'] = $wallData['collection_referring_model'];
+                        }
+                        
+                        // Atualizar a parede se houver dados
+                        if (!empty($updateData)) {
+                            $wall->update($updateData);
+                        }
+                    }
+                }
+            }
+        }
 
         // Criar Order a partir do Budget
         $order = $this->orderRepository->createFromBudget($budget, $data);
@@ -227,13 +290,15 @@ class BudgetController extends Controller
 
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
+                $description = $wall->comment_referring_model ?? $order->comment_referring_model ?? null;
+                
                 $orderBudgets[] = \App\Models\OrderBudget::create([
                     'order_id' => $order->id,
                     'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
                     'layout_column_names_id' => $firstColumn->id,
-                    'description' => $order->comment_referring_model ?? $wall->comment_referring_model ?? null,
+                    'description' => $description,
                     'order_index' => $orderIdx++,
                 ]);
             }
