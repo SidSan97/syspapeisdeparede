@@ -9,6 +9,7 @@ use App\Http\Controllers\API\V1\{
     ExpeditionController,
     LayoutColumnNameController,
     MyFavoriteCollectionImageController,
+    OrderBudgetController,
     OrderController,
     OrderExpeditionController,
     OrderProductionController,
@@ -124,13 +125,13 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets/place-order', [BudgetController::class, 'placeOrder'])->middleware('auth:api');
     Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment'])->middleware('auth:api');
     Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn'])->middleware('auth:api');
-    Route::put('budgets/order-budgets/{orderBudget}/description', [BudgetController::class, 'updateOrderBudgetDescription'])->middleware('auth:api');
-    Route::post('budgets/order-budgets/{orderBudget}/comments', [BudgetController::class, 'addComment'])->middleware('auth:api');
-    Route::put('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'updateComment'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [BudgetController::class, 'deleteComment'])->middleware('auth:api');
-    Route::post('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'addMember'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/members', [BudgetController::class, 'removeMember'])->middleware('auth:api');
-    Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [BudgetController::class, 'removeMember'])->middleware('auth:api');
+    Route::put('budgets/order-budgets/{orderBudget}/description', [OrderBudgetController::class, 'updateDescription'])->middleware('auth:api');
+    Route::post('budgets/order-budgets/{orderBudget}/comments', [OrderBudgetController::class, 'addComment'])->middleware('auth:api');
+    Route::put('budgets/order-budgets/{orderBudget}/comments/{comment}', [OrderBudgetController::class, 'updateComment'])->middleware('auth:api');
+    Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [OrderBudgetController::class, 'deleteComment'])->middleware('auth:api');
+    Route::post('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'addMember'])->middleware('auth:api');
+    Route::delete('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'removeMember'])->middleware('auth:api');
+    Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [OrderBudgetController::class, 'removeMember'])->middleware('auth:api');
     Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt'])->middleware('auth:api');
     Route::put('budgets/{id}', [BudgetController::class, 'update'])->middleware('auth:api');
     Route::get('budgets/{budget}', [BudgetController::class, 'show'])->middleware('auth:api');
