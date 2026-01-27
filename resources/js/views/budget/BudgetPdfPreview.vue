@@ -1,27 +1,35 @@
 <template>
-  <div class="pdf-preview-container">
-    <div class="pdf-preview-header">
-      <button class="btn btn-primary" @click="goBack" style="background: #fff; border-color: #000; color: #000;">
-        <i class="fa fa-arrow-left me-2"></i>
-        Voltar
-      </button>
-      <button class="btn btn-primary" @click="generatePdf" style="background: #000; border-color: #000; color: #fff;">
-        <i class="fa fa-file-pdf me-2"></i>
-        Gerar PDF
-      </button>
-    </div>
+  <section class="content">
+    <Page title="Preview PDF - Orçamento" :back-to="{ name: 'ShowBudgetDetails', params: { id: route.params.id } }">
+      <template #actions>
+        <button
+          type="button"
+          class="btn btn-primary"
+          @click="generatePdf"
+          :disabled="generatingPdf || !budget"
+        >
+          <span
+            v-if="generatingPdf"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <i v-else class="fa fa-file-pdf me-2"></i>
+          Gerar PDF
+        </button>
+      </template>
 
-    <div v-if="loading" class="text-center p-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Carregando...</span>
+      <div v-if="loading" class="text-center p-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
       </div>
-    </div>
 
-    <div v-else-if="error" class="alert alert-danger m-4">
-      {{ error }}
-    </div>
+      <div v-else-if="error" class="alert alert-danger m-4">
+        {{ error }}
+      </div>
 
-    <div v-else class="pdf-preview-content">
+      <div v-else class="pdf-preview-content">
       <!-- Cabeçalho -->
       <div class="pdf-header">
         <div class="pdf-logo">
@@ -196,12 +204,15 @@
       </div>
 
       <!-- Observações -->
-      <div v-if="budget?.comment_referring_model" class="pdf-observations-section">
+      <div v-if="allObservations.length > 0" class="pdf-observations-section">
         <strong>Observações</strong>
-        <p class="mb-0">{{ budget.comment_referring_model }}</p>
+        <div v-for="(observation, index) in allObservations" :key="index" class="mb-2">
+          <p class="mb-0">{{ observation }}</p>
+        </div>
       </div>
-    </div>
-  </div>
+      </div>
+    </Page>
+  </section>
 </template>
 
 <script setup>
@@ -209,6 +220,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { downloadFile } from '@/utils/fileDownload';
+import Page from '@/components/page/Page.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -226,6 +238,21 @@ const installmentInputRef = ref(null);
 
 const dropshippingData = computed(() => {
   return budget.value?.dropshipping_data || null;
+});
+
+const allObservations = computed(() => {
+  if (!budget.value?.rooms) return [];
+  const observations = [];
+  budget.value.rooms.forEach(room => {
+    if (room.walls && Array.isArray(room.walls)) {
+      room.walls.forEach(wall => {
+        if (wall.comment_referring_model && wall.comment_referring_model.trim()) {
+          observations.push(wall.comment_referring_model);
+        }
+      });
+    }
+  });
+  return observations;
 });
 
 const totalRooms = computed(() => {
@@ -311,18 +338,6 @@ function formatWallDetails(wall) {
   }
 
   return parts.length > 0 ? parts.join(' | ') : 'Parede sem detalhes';
-}
-
-function formatDocument(doc) {
-  if (!doc) return '—';
-  const cleaned = doc.replace(/\D/g, '');
-  if (cleaned.length === 11) {
-    return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  }
-  if (cleaned.length === 14) {
-    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-  }
-  return doc;
 }
 
 function formatPhone(phone) {
@@ -471,10 +486,6 @@ function toggleEditInstallment() {
   }
 }
 
-function goBack() {
-  router.back();
-}
-
 async function generatePdf() {
   if (!budget.value?.id) return;
 
@@ -521,28 +532,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.pdf-preview-container {
-  background: #ffffff;
-  min-height: 100vh;
-  padding: 20px;
-}
-
-.pdf-preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 15px;
-  background: white;
-  border: 1px solid #000;
-}
-
 .pdf-preview-content {
   background: white;
   padding: 40px;
   max-width: 210mm;
   margin: 0 auto;
   border: 1px solid #000;
+  filter: grayscale(100%);
 }
 
 /* Cabeçalho */
@@ -772,15 +768,6 @@ onMounted(() => {
 
 /* Estilos para impressão */
 @media print {
-  .pdf-preview-header {
-    display: none;
-  }
-
-  .pdf-preview-container {
-    background: white;
-    padding: 0;
-  }
-
   .pdf-preview-content {
     box-shadow: none;
     padding: 20mm;
