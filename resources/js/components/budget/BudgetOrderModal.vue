@@ -130,7 +130,7 @@
                 </template>
 
                 <div v-if="requiresCollection" class="mb-4">
-                  <h6 class="fw-semibold mb-3">Selecione uma arte da coleção para cada parede</h6>
+                  <h6 class="fw-semibold mb-3">Selecione uma arte da coleção para a parede</h6>
                   <div v-if="collectionLoading" class="alert alert-warning mb-0">
                     Carregando coleções disponíveis...
                   </div>

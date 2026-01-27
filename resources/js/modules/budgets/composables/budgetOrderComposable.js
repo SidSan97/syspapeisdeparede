@@ -267,11 +267,11 @@ export function useBudgetOrderComposable(budget) {
   // Funções de manipulação de arquivos por parede
   function handleOrderFilesChange(wallKey, event) {
     const files = event?.target?.files ? Array.from(event.target.files) : [];
-    
+
     if (!wallForms[wallKey]) {
       wallForms[wallKey] = createWallForm(wallKey);
     }
-    
+
     wallForms[wallKey].files = files;
 
     if (event?.target) {
@@ -322,7 +322,7 @@ export function useBudgetOrderComposable(budget) {
   // Função auxiliar para criar formulário de parede
   function createWallForm(wallKey) {
     const wall = wallsWithRequirements.value.find((w) => w.key === wallKey);
-    
+
     if (!wall) {
       return {
         comment: '',
@@ -347,7 +347,7 @@ export function useBudgetOrderComposable(budget) {
     // Inicializar formulários para cada parede
     wallsWithRequirements.value.forEach((wall) => {
       wallForms[wall.key] = createWallForm(wall.key);
-      
+
       // Limpar inputs de arquivo
       if (orderFileInputs[wall.key] && orderFileInputs[wall.key].value) {
         orderFileInputs[wall.key].value = '';
@@ -399,7 +399,7 @@ export function useBudgetOrderComposable(budget) {
     // Validar cada parede
     for (const wall of wallsWithRequirements.value) {
       const form = wallForms[wall.key];
-      
+
       if (!form) {
         continue;
       }
@@ -450,7 +450,7 @@ export function useBudgetOrderComposable(budget) {
       // Enviar dados por parede
       wallsWithRequirements.value.forEach((wall) => {
         const form = wallForms[wall.key];
-        
+
         if (!form) {
           return;
         }
@@ -487,7 +487,7 @@ export function useBudgetOrderComposable(budget) {
         throw new Error('Resposta inválida do servidor.');
       }
 
-      let orderId = payload.order_id;
+      let orderId = payload.id;
 
       if (!orderId) {
         throw new Error('ID do pedido não encontrado na resposta.');

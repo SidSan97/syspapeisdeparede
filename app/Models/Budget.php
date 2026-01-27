@@ -33,10 +33,6 @@ class Budget extends Model
         'primary_budget_room_id',
         'status',
         'payment_file',
-        'comment_referring_model',
-        'link_referring_model',
-        'files_referring_model',
-        'collection_referring_model',
         'dropshipping_budget',
     ];
 

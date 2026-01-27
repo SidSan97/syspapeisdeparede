@@ -50,10 +50,6 @@ return new class extends Migration
 
             // Status and reference fields
             $table->string('status', 50)->nullable();
-            $table->string('comment_referring_model', 500)->nullable();
-            $table->string('link_referring_model', 150)->nullable();
-            $table->json('files_referring_model')->nullable();
-            $table->text('collection_referring_model')->nullable();
 
             // Other fields
             $table->tinyInteger('dropshipping_budget')->default(0);

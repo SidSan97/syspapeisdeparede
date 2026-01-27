@@ -33,10 +33,6 @@ return new class extends Migration
             $table->unsignedBigInteger('primary_budget_room_id')->nullable();
             $table->string('status', 50)->nullable();
             $table->string('payment_file')->nullable();
-            $table->string('comment_referring_model', 500)->nullable();
-            $table->string('link_referring_model', 150)->nullable();
-            $table->json('files_referring_model')->nullable();
-            $table->text('collection_referring_model')->nullable();
             $table->tinyInteger('dropshipping_budget')->default(0);
             $table->timestamps();
 

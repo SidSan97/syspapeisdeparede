@@ -62,7 +62,9 @@ class BudgetRepository {
 
     public function getAllById(int $id)
     {
-        return Budget::with('rooms.walls.collectionModel')->where('id', $id)->get();
+        return Budget::with(['rooms.walls.collectionModel', 'primaryRoom.walls.collectionModel'])
+            ->where('id', $id)
+            ->first();
     }
 
     public function create(array $data)

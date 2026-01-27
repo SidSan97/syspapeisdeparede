@@ -239,10 +239,6 @@ class OrderRepository
             'primary_budget_room_id' => $budget->primary_budget_room_id,
             'status' => $additionalData['status'] ?? $budget->status ?? 'Pendente de Revisão',
             'payment_file' => $budget->payment_file,
-            'comment_referring_model' => $additionalData['comment_referring_model'] ?? ($primaryWall ? $primaryWall->comment_referring_model : null),
-            'link_referring_model' => $additionalData['link_referring_model'] ?? ($primaryWall ? $primaryWall->link_referring_model : null),
-            'files_referring_model' => $filesReferringModel,
-            'collection_referring_model' => $additionalData['collection_referring_model'] ?? ($primaryWall ? $primaryWall->collection_referring_model : null),
             'dropshipping_budget' => $budget->dropshipping_budget,
         ];
 

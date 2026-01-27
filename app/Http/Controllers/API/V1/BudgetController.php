@@ -19,6 +19,7 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
+use App\Repositories\BudgetWallRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use App\Repositories\RequestLayoutArtRepository;
@@ -38,6 +39,7 @@ use App\Services\TinyErpService;
 class BudgetController extends Controller
 {
     protected $repository;
+    protected $budgetWallRepository;
     protected $generatePdfService;
     protected $generatePaymentService;
     protected $layoutService;
@@ -49,6 +51,7 @@ class BudgetController extends Controller
 
     public function __construct(
         BudgetRepository $repository,
+        BudgetWallRepository $budgetWallRepository,
         GeneratePdfService $generatePdfService,
         GeneratePaymentService $generatePaymentService,
         LayoutService $layoutService,
@@ -59,6 +62,7 @@ class BudgetController extends Controller
         TinyErpService $tinyErpService
     ) {
         $this->repository = $repository;
+        $this->budgetWallRepository = $budgetWallRepository;
         $this->generatePdfService = $generatePdfService;
         $this->generatePaymentService = $generatePaymentService;
         $this->layoutService = $layoutService;
@@ -183,69 +187,15 @@ class BudgetController extends Controller
     {
         $data = $request->validated();
 
-        $budget = Budget::findOrFail($data['id']);
-        $budgetRooms = BudgetRoom::where('budget_id', $budget->id)->get();
-        foreach ($budgetRooms as $budgetRoom) {
-            $budgetWalls = BudgetWall::where('budget_room_id', $budgetRoom->id)->get();
-            foreach ($budgetWalls as $budgetWall) {
-                dd($budgetWall);
-            }
-        }
+        $budget = $this->repository->getAllById($data['id']);
+        $budgetRoom = $budget->primaryRoom;
 
-        // Processar dados por parede se existirem
-        $wallsData = $data['walls'] ?? [];
-        
-        if (!empty($wallsData)) {
-            foreach ($budget->rooms as $room) {
-                foreach ($room->walls as $wall) {
-                    $wallId = (string) $wall->id;
-                    
-                    if (isset($wallsData[$wallId])) {
-                        $wallData = $wallsData[$wallId];
-                        
-                        $updateData = [];
-                        
-                        // Processar comentário
-                        if (isset($wallData['comment_referring_model'])) {
-                            $updateData['comment_referring_model'] = $wallData['comment_referring_model'];
-                        }
-                        
-                        // Processar link
-                        if (isset($wallData['link_referring_model'])) {
-                            $updateData['link_referring_model'] = $wallData['link_referring_model'];
-                        }
-                        
-                        // Processar arquivos
-                        if (isset($wallData['files_referring_model']) && is_array($wallData['files_referring_model'])) {
-                            $processedFiles = [];
-                            $existingFiles = is_array($wall->files_referring_model) ? $wall->files_referring_model : [];
-                            
-                            foreach ($wallData['files_referring_model'] as $file) {
-                                if ($file instanceof \Illuminate\Http\UploadedFile) {
-                                    $processedFiles[] = \Illuminate\Support\Facades\Storage::disk('public')
-                                        ->putFile('budgets/referring-models', $file);
-                                } elseif (is_string($file)) {
-                                    $processedFiles[] = $file;
-                                }
-                            }
-                            
-                            $updateData['files_referring_model'] = array_values(
-                                array_filter(array_unique(array_merge($existingFiles, $processedFiles)))
-                            );
-                        }
-                        
-                        // Processar coleção
-                        if (isset($wallData['collection_referring_model'])) {
-                            $updateData['collection_referring_model'] = $wallData['collection_referring_model'];
-                        }
-                        
-                        // Atualizar a parede se houver dados
-                        if (!empty($updateData)) {
-                            $wall->update($updateData);
-                        }
-                    }
-                }
-            }
+        // Buscar walls do budget room
+        $walls = $this->budgetWallRepository->getByBudgetRoom($budgetRoom);
+
+        // Atualizar walls com os dados da requisição
+        if (isset($data['walls']) && is_array($data['walls'])) {
+            $this->budgetWallRepository->updateFromRequestData($walls, $data['walls']);
         }
 
         // Criar Order a partir do Budget
@@ -291,7 +241,7 @@ class BudgetController extends Controller
         foreach ($budget->rooms as $room) {
             foreach ($room->walls as $wall) {
                 $description = $wall->comment_referring_model ?? $order->comment_referring_model ?? null;
-                
+
                 $orderBudgets[] = \App\Models\OrderBudget::create([
                     'order_id' => $order->id,
                     'tenant_id' => $tenantId,
