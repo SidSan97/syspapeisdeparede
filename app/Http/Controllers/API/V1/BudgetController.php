@@ -181,6 +181,7 @@ class BudgetController extends Controller
     public function placeOrder(PlaceOrderRequest $request): JsonResponse
     {
         $data = $request->validated();
+        dd($data);
 
         $budget = Budget::findOrFail($data['id']);
 
