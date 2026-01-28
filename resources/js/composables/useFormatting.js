@@ -98,6 +98,58 @@ export function useFormatting() {
         return `${baseUrl}/storage/${String(path).replace(/^storage\//, '')}`;
     }
 
+    function formatPhone(phone) {
+        if (!phone) return '—';
+        const cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 10) {
+            return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        }
+        if (cleaned.length === 11) {
+            return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        return phone;
+    }
+
+    function formatAddressLine1(dropshipping) {
+        if (!dropshipping) return '—';
+        const parts = [];
+        if (dropshipping.public_space) {
+            parts.push(dropshipping.public_space);
+        }
+        if (dropshipping.number) {
+            parts.push(`Nº ${dropshipping.number}`);
+        }
+        if (dropshipping.complement) {
+            parts.push(dropshipping.complement);
+        }
+        if (dropshipping.neighborhood) {
+            parts.push(`Bairro: ${dropshipping.neighborhood}`);
+        }
+        return parts.length > 0 ? parts.join('. ') : '—';
+    }
+
+    function formatAddressLine2(dropshipping) {
+        if (!dropshipping) return '';
+        const parts = [];
+        if (dropshipping.cep) {
+            const cep = dropshipping.cep.replace(/\D/g, '');
+            const formattedCep = cep.length === 8 ? cep.replace(/(\d{5})(\d{3})/, '$1-$2') : dropshipping.cep;
+            parts.push(formattedCep);
+        }
+        if (dropshipping.city && dropshipping.uf) {
+            parts.push(`${dropshipping.city}, ${dropshipping.uf}`);
+        }
+        return parts.length > 0 ? parts.join(' - ') : '';
+    }
+
+    function formatEstimatedDate(deliveryTime) {
+        if (!deliveryTime) return '—';
+        const today = new Date();
+        const estimated = new Date(today);
+        estimated.setDate(today.getDate() + parseInt(deliveryTime));
+        return estimated.toLocaleDateString('pt-BR');
+    }
+
     return {
         formatCurrency,
         formatNumber,
@@ -108,6 +160,10 @@ export function useFormatting() {
         resolveStorageUrl,
         extractFileName,
         resolveImageUrl,
+        formatPhone,
+        formatAddressLine1,
+        formatAddressLine2,
+        formatEstimatedDate,
     };
 }
 
