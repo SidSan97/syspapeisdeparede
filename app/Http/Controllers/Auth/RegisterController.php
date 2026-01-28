@@ -37,7 +37,41 @@ class RegisterController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest');
+        $this->middleware('auth');
+    }
+
+    /**
+     * Show the registration form.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showRegistrationForm()
+    {
+        // Verifica se o usuário é admin
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, 'Acesso negado.');
+        }
+
+        return view('auth.register');
+    }
+
+    /**
+     * Handle a registration request for the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function register(\Illuminate\Http\Request $request)
+    {
+        // Verifica se o usuário é admin
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, 'Acesso negado.');
+        }
+
+        // Chama o método do trait para processar o registro
+        return parent::register($request);
     }
 
     /**

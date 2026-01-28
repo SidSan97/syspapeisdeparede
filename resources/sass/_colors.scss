@@ -1,0 +1,67 @@
+:root, [data-bs-theme="light"] {
+    --bs-primary: #2898BD;
+    --bs-primary-rgb: 40,152,189;
+    --bs-primary-border-subtle: #2898BD;
+    --bs-link-color: #2898BD;
+    --bs-link-color-rgb: 40,152,189;
+    --bs-link-hover-color: #2898BD;
+    --bs-link-hover-color-rgb: 40,152,189;
+  }
+  
+  :root, [data-bs-theme="light"] {
+    --bs-primary-border-subtle-rgb: 40,152,189;
+    --ds-text-selected: #2898BD;
+    --ds-text-brand: #2898BD;
+    --ds-link: #2898BD;
+    --ds-link-pressed: #206A83;
+    --ds-background-selected-pressed: #9DD9EE;
+    --ds-background-selected-bold: #2898BD;
+    --ds-background-selected-bold-hovered: #206A83;
+    --ds-background-selected-bold-pressed: #164555;
+    --ds-background-brand-bold: #2898BD;
+    --ds-background-brand-bold-hovered: #206A83;
+    --ds-background-brand-bold-pressed: #164555;
+    --ds-background-brand-boldest: #1E3137;
+    --ds-background-brand-boldest-hovered: #164555;
+    --ds-background-brand-boldest-pressed: #206A83;
+    --ds-border-selected: #2898BD;
+    --ds-border-brand: #2898BD;
+    --ds-border-focused: #42B2D7;
+    --ds-icon-selected: #2898BD;
+    --ds-icon-brand: #2898BD;
+  }
+  
+  [data-bs-theme="dark"] {
+    --bs-primary: #6CC3E0;
+    --bs-primary-rgb: 108,195,224;
+    --bs-primary-border-subtle: #6CC3E0;
+    --bs-link-color: #6CC3E0;
+    --bs-link-color-rgb: 108,195,224;
+    --bs-link-hover-color: #6CC3E0;
+    --bs-link-hover-color-rgb: 108,195,224;
+  }
+  
+  [data-bs-theme="dark"] {
+    --bs-primary-border-subtle-rgb: 108,195,224;
+    --ds-text-selected: #6CC3E0;
+    --ds-text-brand: #6CC3E0;
+    --ds-link: #6CC3E0;
+    --ds-link-pressed: #9DD9EE;
+    --ds-background-selected: #1E3137;
+    --ds-background-selected-hovered: #164555;
+    --ds-background-selected-pressed: #9DD9EE;
+    --ds-background-selected-bold: #6CC3E0;
+    --ds-background-selected-bold-hovered: #9DD9EE;
+    --ds-background-selected-bold-pressed: #C6EDFB;
+    --ds-background-brand-bold: #6CC3E0;
+    --ds-background-brand-bold-hovered: #9DD9EE;
+    --ds-background-brand-bold-pressed: #C6EDFB;
+    --ds-background-brand-boldest: #E7F9FF;
+    --ds-background-brand-boldest-hovered: #C6EDFB;
+    --ds-background-brand-boldest-pressed: #9DD9EE;
+    --ds-border-selected: #6CC3E0;
+    --ds-border-brand: #6CC3E0;
+    --ds-border-focused: #9DD9EE;
+    --ds-icon-selected: #6CC3E0;
+    --ds-icon-brand: #6CC3E0;
+  }

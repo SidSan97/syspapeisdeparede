@@ -47,23 +47,13 @@
                                 {{ __('Login') }}
                             </button>
 
-                            <ul class="list-inline text-center m-0">
-                                @if (Route::has('password.request'))
-                                    <li class="list-inline-item text-center">
-                                        <a class="fs-sm" href="{{ route('password.request') }}">
-                                            {{ __('Forgot Your Password?') }}
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if (Route::has('register'))
-                                    <li class="list-inline-item text-center">
-                                        <a class="fs-sm" href="{{ route('register') }}">
-                                            {{ __('Register') }}
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
+                            @if (Route::has('password.request'))
+                                <div class="text-center">
+                                    <a class="fs-sm" href="{{ route('password.request') }}">
+                                        {{ __('Forgot Your Password?') }}
+                                    </a>
+                                </div>
+                            @endif
 
                         </form>
                     </div>
