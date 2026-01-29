@@ -50,6 +50,7 @@
                         @create-order="openOrderModal"
                         @edit="editBudget"
                         @cancel="openCancelModal"
+                        @delete="openDeleteModal"
                     />
 
                     <div
@@ -100,6 +101,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useBudgetList } from '@/modules/budgets/composables/useBudgetList';
 import { useBudgetFilters } from '@/modules/budgets/composables/useBudgetFilters';
 import { useBudgetListService } from '@/modules/budgets/services/budgetListService';
+import { swalConfirmation, swalSuccess, swalError } from '@/utils/alerts';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -132,6 +134,9 @@ const showCancelModal = ref(false);
 const budgetToCancel = ref(null);
 const cancelling = ref(false);
 const cancelError = ref('');
+const budgetToDelete = ref(null);
+const deleting = ref(false);
+const deleteError = ref('');
 
 const isAdmin = computed(() => auth.isAdmin());
 
@@ -226,6 +231,49 @@ async function confirmCancelBudget() {
   } finally {
     cancelling.value = false;
   }
+}
+
+function openDeleteModal(budget) {
+    budgetToDelete.value = budget;
+    deleteError.value = '';
+    
+    swalConfirmation(
+        'Excluir orçamento?',
+        `Tem certeza que deseja excluir o orçamento "${budget.name}"? Esta ação não pode ser desfeita.`,
+        'warning',
+        'Sim, excluir',
+        'Cancelar'
+    ).then(async (result) => {
+        if (result.isConfirmed) {
+            await confirmDeleteBudget();
+        } else {
+            budgetToDelete.value = null;
+        }
+    });
+}
+
+async function confirmDeleteBudget() {
+    if (!budgetToDelete.value?.id) {
+        return;
+    }
+
+    deleting.value = true;
+    deleteError.value = '';
+
+    try {
+        await budgetListService.deleteBudget(budgetToDelete.value.id);
+
+        await swalSuccess('Orçamento excluído', 'O orçamento foi excluído com sucesso.');
+
+        budgetToDelete.value = null;
+        fetchBudgets(filters.value, paginationData.value.current_page);
+    } catch (error) {
+        deleteError.value = error?.response?.data?.message || 'Não foi possível excluir o orçamento. Tente novamente.';
+        
+        await swalError('Erro ao excluir', deleteError.value);
+    } finally {
+        deleting.value = false;
+    }
 }
 
 onMounted(() => {

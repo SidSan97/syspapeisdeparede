@@ -17,10 +17,8 @@ use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
-use App\Services\GeneratePdfService;
-use App\Models\ProductionReport;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -186,6 +184,37 @@ class OrderController extends Controller
         $orderUpdated = $this->repository->cancel($order);
 
         return (new OrderResource($orderUpdated))->response();
+    }
+
+    public function destroy(Order $order): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $hasOrders = $order->rooms()
+                ->whereNotNull('order_id')
+                ->exists();
+
+            if ($hasOrders) {
+                $order->delete();
+            } else {
+                $order->delete();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pedido excluído com sucesso.',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao excluir pedido: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
 

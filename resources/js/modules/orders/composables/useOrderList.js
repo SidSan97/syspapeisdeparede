@@ -8,7 +8,7 @@ import { convertDateMaskToIso } from '@/utils/dateUtils';
 export function useOrderList() {
     const orderListService = useOrderListService();
 
-    const pedidos = ref([]);
+    const orders = ref([]);
     const loading = ref(false);
     const paginationData = ref({
         current_page: 1,
@@ -22,24 +22,24 @@ export function useOrderList() {
     /**
      * Normaliza um pedido para formato padrão
      */
-    function normalizePedido(pedido) {
-        if (!pedido) {
+    function normalizeOrder(order) {
+        if (!order) {
             return null;
         }
 
         return {
-            ...pedido,
-            name: pedido.name ?? 'Não informado',
-            total_amount: Number(pedido.total_amount ?? pedido.totalAmount ?? 0),
-            delivery_time: pedido.delivery_time ?? pedido.deliveryTime ?? null,
-            status: pedido.status ?? null,
+            ...order,
+            name: order.name ?? 'Não informado',
+            total_amount: Number(order.total_amount ?? order.totalAmount ?? 0),
+            delivery_time: order.delivery_time ?? order.deliveryTime ?? null,
+            status: order.status ?? null,
         };
     }
 
     /**
      * Busca pedidos com filtros
      */
-    async function fetchPedidos(filters = {}, page = 1) {
+    async function fetchOrders(filters = {}, page = 1) {
         try {
             loading.value = true;
 
@@ -75,11 +75,11 @@ export function useOrderList() {
             }
 
             const result = await orderListService.getOrders(params);
-            pedidos.value = result.items.map(normalizePedido);
+            orders.value = result.items.map(normalizeOrder);
             paginationData.value = result.pagination;
         } catch (error) {
             console.error('Erro ao carregar pedidos:', error);
-            pedidos.value = [];
+            orders.value = [];
             paginationData.value = {
                 current_page: 1,
                 last_page: 1,
@@ -94,10 +94,10 @@ export function useOrderList() {
     }
 
     return {
-        pedidos,
+        orders,
         loading,
         paginationData,
-        fetchPedidos,
+        fetchOrders,
     };
 }
 

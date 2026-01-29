@@ -63,10 +63,21 @@ export function useOrderListService() {
         return data?.data || data;
     }
 
+    async function deleteOrder(orderId) {
+        const response = await axios.delete(`v1/orders/${orderId}`);
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Erro ao excluir pedido');
+        }
+
+        return response.data;
+    }
+
     return {
         getOrders,
         getUsers,
         cancelOrder,
+        deleteOrder,
     };
 }
 

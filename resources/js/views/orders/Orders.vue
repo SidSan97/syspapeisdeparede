@@ -28,7 +28,7 @@
           </div>
 
           <EmptyState
-            v-else-if="pedidos.length === 0"
+            v-else-if="orders.length === 0"
             heading="Nenhum pedido encontrado"
             icon="box"
             class="p-5"
@@ -38,16 +38,17 @@
 
                     <OrderItemsTable
                         v-else
-                        :pedidos="pedidos"
+                        :orders="orders"
                         :can-register-payment="canRegisterPayment"
                         @view-details="openDetailsModal"
                         @register-payment="openPaymentModal"
                         @edit="editOrder"
                         @cancel="openCancelModal"
+                        @delete="openDeleteModal"
                     />
 
                     <div
-                        v-if="!loading && pedidos.length > 0 && paginationData.last_page > 1"
+                        v-if="!loading && orders.length > 0 && paginationData.last_page > 1"
                         class="p-3"
                     >
                         <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
@@ -95,12 +96,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useOrderList } from '@/modules/orders/composables/useOrderList';
 import { useOrderFilters } from '@/modules/orders/composables/useOrderFilters';
 import { useOrderListService } from '@/modules/orders/services/orderListService';
+import { swalConfirmation, swalSuccess, swalError } from '@/utils/alerts';
 
 const router = useRouter();
 const auth = useAuthStore();
 const orderListService = useOrderListService();
 
-const { pedidos, loading, paginationData, fetchPedidos } = useOrderList();
+const { orders, loading, paginationData, fetchOrders } = useOrderList();
 
 const {
     filters,
@@ -114,7 +116,7 @@ const {
     setStatusFilter,
     clearFilters,
 } = useOrderFilters(() => {
-    fetchPedidos(filters.value);
+    fetchOrders(filters.value);
 });
 
 const users = ref([]);
@@ -127,6 +129,9 @@ const showCancelModal = ref(false);
 const pedidoToCancel = ref(null);
 const cancelling = ref(false);
 const cancelError = ref('');
+const orderToDelete = ref(null);
+const deleting = ref(false);
+const deleteError = ref('');
 
 const isAdmin = computed(() => auth.isAdmin());
 
@@ -135,7 +140,7 @@ const canRegisterPayment = computed(() => {
 });
 
 function handlePageChange(page) {
-    fetchPedidos(filters.value, page);
+    fetchOrders(filters.value, page);
 }
 
 async function fetchUsers() {
@@ -165,7 +170,7 @@ function closeDetailsModal() {
 
 function handleApprove(pedido) {
   closeDetailsModal();
-    fetchPedidos(filters.value, paginationData.value.current_page);
+    fetchOrders(filters.value, paginationData.value.current_page);
 }
 
 function openPaymentModal(pedido) {
@@ -179,7 +184,7 @@ function closePaymentModal() {
 }
 
 function handlePaymentSuccess() {
-    fetchPedidos(filters.value, paginationData.value.current_page);
+    fetchOrders(filters.value, paginationData.value.current_page);
 }
 
 function editOrder(order) {
@@ -215,7 +220,7 @@ async function confirmCancelPedido() {
     showCancelModal.value = false;
     pedidoToCancel.value = null;
 
-        fetchPedidos(filters.value, paginationData.value.current_page);
+        fetchOrders(filters.value, paginationData.value.current_page);
   } catch (error) {
         cancelError.value = error?.response?.data?.message || 'Não foi possível cancelar o pedido. Tente novamente.';
   } finally {
@@ -223,8 +228,57 @@ async function confirmCancelPedido() {
   }
 }
 
+function openDeleteModal(order) {
+    if (!order) {
+        return;
+    }
+    
+    orderToDelete.value = order;
+    deleteError.value = '';
+    
+    const orderName = order?.name || order?.id || 'este pedido';
+    
+    swalConfirmation(
+        'Excluir pedido?',
+        `Tem certeza que deseja excluir o pedido "${orderName}"? Esta ação não pode ser desfeita.`,
+        'warning',
+        'Sim, excluir',
+        'Cancelar'
+    ).then(async (result) => {
+        if (result.isConfirmed) {
+            await confirmDeleteOrder();
+        } else {
+            orderToDelete.value = null;
+        }
+    });
+}
+
+async function confirmDeleteOrder() {
+    if (!orderToDelete.value?.id) {
+        return;
+    }
+
+    deleting.value = true;
+    deleteError.value = '';
+
+    try {
+        await orderListService.deleteOrder(orderToDelete.value.id);
+
+        await swalSuccess('Pedido excluído', 'O pedido foi excluído com sucesso.');
+
+        orderToDelete.value = null;
+        fetchOrders(filters.value, paginationData.value.current_page);
+    } catch (error) {
+        deleteError.value = error?.response?.data?.message || 'Não foi possível excluir o pedido. Tente novamente.';
+        
+        await swalError('Erro ao excluir', deleteError.value);
+    } finally {
+        deleting.value = false;
+    }
+}
+
 onMounted(() => {
-    fetchPedidos(filters.value, 1);
+    fetchOrders(filters.value, 1);
   if (isAdmin.value) {
     fetchUsers();
   }

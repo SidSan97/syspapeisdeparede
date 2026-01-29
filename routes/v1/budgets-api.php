@@ -17,6 +17,7 @@ Route::post('budgets/register-payment', [BudgetController::class, 'registerPayme
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);
 Route::put('budgets/{id}', [BudgetController::class, 'update']);
 Route::get('budgets/{budget}', [BudgetController::class, 'show']);
+Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
 
 // Order Budgets
 Route::put('budgets/order-budgets/{orderBudget}/description', [OrderBudgetController::class, 'updateDescription']);

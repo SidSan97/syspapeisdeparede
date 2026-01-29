@@ -87,6 +87,18 @@
                                         Cancelar
                                     </button>
                                 </li>
+                                <li>
+                                    <hr class="dropdown-divider" />
+                                </li>
+                                <li>
+                                    <button
+                                        class="dropdown-item text-danger"
+                                        type="button"
+                                        @click="$emit('delete', budget)"
+                                    >
+                                        Excluir
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                     </td>
@@ -107,7 +119,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['view-details', 'generate-pdf', 'create-order', 'edit', 'cancel']);
+defineEmits(['view-details', 'generate-pdf', 'create-order', 'edit', 'cancel', 'delete']);
 
 function isCancelled(budget) {
     const status = (budget?.status ?? '').toString().toLowerCase();

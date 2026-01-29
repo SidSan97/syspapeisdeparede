@@ -68,10 +68,21 @@ export function useBudgetListService() {
         return response.data;
     }
 
+    async function deleteBudget(budgetId) {
+        const response = await axios.delete(`v1/budgets/${budgetId}`);
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Erro ao excluir orçamento');
+        }
+
+        return response.data;
+    }
+
     return {
         getBudgets,
         getUsers,
         cancelBudget,
+        deleteBudget,
     };
 }
 

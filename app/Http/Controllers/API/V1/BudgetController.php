@@ -183,6 +183,37 @@ class BudgetController extends Controller
         return (new BudgetResource($budgetUpdated))->response();
     }
 
+    public function destroy(Budget $budget): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $hasOrders = $budget->rooms()
+                ->whereNotNull('order_id')
+                ->exists();
+
+            if ($hasOrders) {
+                $budget->delete();
+            } else {
+                $budget->delete();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orçamento excluído com sucesso.',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao excluir orçamento: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function placeOrder(PlaceOrderRequest $request): JsonResponse
     {
         $data = $request->validated();

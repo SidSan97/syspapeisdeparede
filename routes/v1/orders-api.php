@@ -17,6 +17,7 @@ Route::post('orders/approve', [OrderProductionController::class, 'approve']);
 Route::post('orders/cancel', [OrderController::class, 'cancel']);
 Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generatePaymentLink']);
 Route::put('orders/{id}', [OrderController::class, 'update']);
+Route::delete('orders/{order}', [OrderController::class, 'destroy']);
 
 // Order Budgets
 Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderProductionController::class, 'markAsProduced']);

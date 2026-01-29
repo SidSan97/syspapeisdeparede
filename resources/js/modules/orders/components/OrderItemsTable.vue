@@ -12,22 +12,22 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="pedido in pedidos" :key="pedido.id">
-                    <th scope="row">{{ pedido.id }}</th>
-                    <td>{{ formatDate(pedido.created_at || pedido.createdAt) }}</td>
+                <tr v-for="order in orders" :key="order.id">
+                    <th scope="row">{{ order.id }}</th>
+                    <td>{{ formatDate(order.created_at || order.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button
                             class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
-                            @click="$emit('view-details', pedido)"
+                            @click="$emit('view-details', order)"
                         >
-                            {{ pedido.name }}
+                            {{ order.name }}
                         </button>
                     </td>
                     <td class="">
-                        <span class="fw-semibold">{{ formatCurrency(pedido.total_amount) }}</span>
+                        <span class="fw-semibold">{{ formatCurrency(order.total_amount) }}</span>
                     </td>
                     <td>
-                        <OrderStatusBadge :status="pedido.status" />
+                        <OrderStatusBadge :status="order.status" />
                     </td>
                     <td>
                         <div class="dropdown">
@@ -44,16 +44,16 @@
                                     <button
                                         class="dropdown-item"
                                         type="button"
-                                        @click="$emit('view-details', pedido)"
+                                        @click="$emit('view-details', order)"
                                     >
                                         Ver detalhes
                                     </button>
                                 </li>
-                                <li v-if="pedido.status !== 'Aprovado' && canRegisterPayment">
+                                <li v-if="order.status !== 'Aprovado' && canRegisterPayment">
                                     <button
                                         class="dropdown-item"
                                         type="button"
-                                        @click="$emit('register-payment', pedido)"
+                                        @click="$emit('register-payment', order)"
                                     >
                                         Registrar pagamento
                                     </button>
@@ -62,18 +62,30 @@
                                     <button
                                         class="dropdown-item"
                                         type="button"
-                                        @click="$emit('edit', pedido)"
+                                        @click="$emit('edit', order)"
                                     >
                                         Editar
                                     </button>
                                 </li>
-                                <li v-if="!isCancelled(pedido)">
+                                <li v-if="!isCancelled(order)">
                                     <button
                                         class="dropdown-item text-danger"
                                         type="button"
-                                        @click="$emit('cancel', pedido)"
+                                        @click="$emit('cancel', order)"
                                     >
                                         Cancelar
+                                    </button>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider" />
+                                </li>
+                                <li>
+                                    <button
+                                        class="dropdown-item text-danger"
+                                        type="button"
+                                        @click="$emit('delete', order)"
+                                    >
+                                        Excluir
                                     </button>
                                 </li>
                             </ul>
@@ -90,7 +102,7 @@ import { formatDate } from '@/utils/dateUtils';
 import OrderStatusBadge from './OrderStatusBadge.vue';
 
 const props = defineProps({
-    pedidos: {
+    orders: {
         type: Array,
         required: true,
     },
@@ -100,7 +112,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['view-details', 'register-payment', 'edit', 'cancel']);
+defineEmits(['view-details', 'register-payment', 'edit', 'cancel', 'delete']);
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -116,9 +128,9 @@ function formatCurrency(value) {
     return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
 }
 
-function isCancelled(pedido) {
-    const status = (pedido?.status ?? '').toString().toLowerCase();
-    return status === 'cancelled' || status === 'cancelado';
+function isCancelled(order) {
+    const status = (order?.status ?? '').toString().toLowerCase();
+    return status === 'cancelled' || status == 'Cancelado';
 }
 </script>
 
