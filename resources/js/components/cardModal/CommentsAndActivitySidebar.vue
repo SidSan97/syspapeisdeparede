@@ -18,8 +18,8 @@
       <!-- Lista de comentários -->
       <div class="d-flex flex-column gap-3 my-3">
         <CommentItem
-          v-for="comment in comments"
-          :key="comment.id"
+          v-for="(comment, index) in comments"
+          :key="comment?.id ?? `comment-${index}`"
           :comment="comment"
           :saving="isSavingComment"
           @delete="onDeleteComment"
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useCommentService } from '@/modules/cardModals/services/commentService';
 import CommentInput from '@/components/CommentInput.vue';
 import CommentItem from '@/components/CommentItem.vue';
@@ -95,12 +95,22 @@ const isSavingComment = ref(false);
 const editingCommentId = ref(null);
 const editingCommentText = ref('');
 
-const comments = computed(() => {
-  if (!props.card || !Array.isArray(props.card.comments)) {
-    return [];
-  }
-  return props.card.comments;
-});
+// Lista local reativa para exibir comentários (permite ver novos comentários imediatamente)
+const localComments = ref([]);
+
+watch(
+  () => [props.card?.id, props.card?.comments],
+  () => {
+    if (!props.card || !Array.isArray(props.card.comments)) {
+      localComments.value = [];
+      return;
+    }
+    localComments.value = props.card.comments.filter((c) => c != null);
+  },
+  { immediate: true, deep: true }
+);
+
+const comments = computed(() => localComments.value);
 
 const activityItems = computed(() => {
   if (!props.card) {
@@ -239,12 +249,12 @@ async function saveNewComment() {
   try {
     const response = await commentService.createComment(props.card.id, newCommentText.value);
 
-    // Adicionar o novo comentário à lista
-    if (props.card && Array.isArray(props.card.comments)) {
-      props.card.comments.unshift(response.data);
-    } else if (props.card) {
-      props.card.comments = [response.data];
-    }
+    const commentFromApi = response?.data ?? response;
+    const newComment = {
+      ...commentFromApi,
+      id: commentFromApi?.id ?? `new-${Date.now()}`,
+    };
+    localComments.value = [newComment, ...localComments.value];
 
     newCommentText.value = '';
     isEditingComment.value = false;
@@ -256,7 +266,7 @@ async function saveNewComment() {
       });
     }
 
-    emit('comment-added', response.data);
+    emit('comment-added', newComment);
   } catch (error) {
     console.error('Erro ao adicionar comentário:', error);
     const errorMessage = error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
@@ -291,12 +301,13 @@ async function onUpdateComment({id, newComment}) {
   try {
     const response = await commentService.updateComment(props.card.id, id, newComment);
 
-    // Atualizar o comentário na lista
-    if (props.card && Array.isArray(props.card.comments)) {
-      const index = props.card.comments.findIndex(c => c.id === id);
-      if (index !== -1) {
-        props.card.comments[index] = response.data;
-      }
+    const index = localComments.value.findIndex((c) => c.id === id);
+    if (index !== -1) {
+      localComments.value = [
+        ...localComments.value.slice(0, index),
+        response.data,
+        ...localComments.value.slice(index + 1),
+      ];
     }
 
     editingCommentId.value = null;
@@ -332,10 +343,7 @@ async function onDeleteComment(commentId) {
   try {
     await commentService.onDeleteComment(props.card.id, commentId);
 
-    // Remover o comentário da lista
-    if (props.card && Array.isArray(props.card.comments)) {
-      props.card.comments = props.card.comments.filter(c => c.id !== commentId);
-    }
+    localComments.value = localComments.value.filter((c) => c.id !== commentId);
 
     if (window.Toast) {
       window.Toast.fire({

@@ -147,35 +147,16 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    // Se for usuário de produção, só pode acessar rotas de produção e perfil
+    // Usuário de produção: acesso à página Produção (/products) e ao próprio perfil (/profile)
     if (auth.hasRole('production')) {
-        const allowedRoutes = [
-            '/dashboard',
-            '/profile',
-            '/layouts',
-            '/products',
-            '/pedidos-producao',
-        ];
-
-        let isAllowed = false;
-
-        if (to.path === '/dashboard' || to.path === '/') {
-            isAllowed = true;
-        } else if (to.path === '/profile') {
-            isAllowed = true;
-        } else if (to.path.startsWith('/layouts')) {
-            isAllowed = true;
-        } else if (to.path.startsWith('/products')) {
-            isAllowed = true;
-        } else if (to.path.startsWith('/pedidos-producao')) {
-            isAllowed = true;
-        }
-
-        if (!isAllowed) {
-            // Redirecionar para dashboard se tentar acessar rota não permitida
-            next({ path: '/dashboard' });
+        const isProductsRoute = to.path === '/products' || to.path.startsWith('/products/');
+        const isProfileRoute = to.path === '/profile';
+        if (!isProductsRoute && !isProfileRoute) {
+            next({ path: '/products' });
             return;
         }
+        next();
+        return;
     }
 
     if (auth.hasRole('commercial')) {

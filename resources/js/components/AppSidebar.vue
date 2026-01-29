@@ -1,8 +1,7 @@
 <template>
   <aside class="bd-sidebar" :class="{ 'bd-sidebar-collapsed': isCollapsed }">
     <nav class="bd-sidebar-nav">
-      <!-- Grupo 1: Início (Ativo) -->
-      <div class="bd-sidebar-group">
+      <div v-if="!isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/dashboard"
           class="bd-sidebar-item"
@@ -13,10 +12,10 @@
         </RouterLink>
       </div>
 
-      <hr v-if="!isDesigner && !isExpeditionUser && !isCommercialUser" class="bd-sidebar-divider">
+      <hr v-if="!isDesigner && !isExpeditionUser && !isCommercialUser && !isProductionUser" class="bd-sidebar-divider">
 
       <!-- Grupo 2: Orçamentos e Pedidos -->
-      <div v-if="!isDesigner && !isExpeditionUser && !isCommercialUser" class="bd-sidebar-group">
+      <div v-if="!isDesigner && !isExpeditionUser && !isCommercialUser && !isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/budget/new-budget"
           class="bd-sidebar-item"
@@ -54,10 +53,9 @@
         </RouterLink>
       </div>
 
-      <hr v-if="isAdmin || isProductionUser || isDesigner" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isDesigner" class="bd-sidebar-divider">
 
-      <!-- Grupo 3: Layouts -->
-      <div v-if="isAdmin || isProductionUser || isDesigner" class="bd-sidebar-group">
+      <div v-if="isAdmin || isDesigner" class="bd-sidebar-group">
         <RouterLink
           to="/layouts"
           class="bd-sidebar-item"
@@ -68,9 +66,9 @@
         </RouterLink>
       </div>
 
-      <hr v-if="isAdmin || isProductionUser || isCommercialUser" class="bd-sidebar-divider">
+      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
 
-      <!-- Grupo 4: Produção -->
+      <!-- Grupo 4: Produção (único menu visível para usuário production) -->
       <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
         <RouterLink
           to="/products"
