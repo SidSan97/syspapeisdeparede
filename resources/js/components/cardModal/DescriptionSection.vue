@@ -83,7 +83,9 @@ const descriptionDraft = ref('')
 const originalDescription = ref('')
 const textareaRef = ref(null)
 
-const description = computed(() => props.card?.description ?? '')
+const localDescription = ref('')
+
+const description = computed(() => localDescription.value)
 
 const canSave = computed(() => {
   return (
@@ -93,7 +95,7 @@ const canSave = computed(() => {
 })
 
 watch(
-  () => props.card?.id,
+  () => [props.card?.id, props.card?.description],
   () => {
     resetState()
   },
@@ -104,6 +106,7 @@ function resetState() {
   const value = props.card?.description ?? ''
   descriptionDraft.value = value
   originalDescription.value = value
+  localDescription.value = value
   isEditing.value = false
 }
 
@@ -131,6 +134,7 @@ async function save() {
     )
 
     originalDescription.value = descriptionDraft.value
+    localDescription.value = descriptionDraft.value
     isEditing.value = false
 
     emit('description-updated', descriptionDraft.value)

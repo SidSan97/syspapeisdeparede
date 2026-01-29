@@ -84,8 +84,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(user, index) in users" :key="user.id">
-              <th scope="row">{{ (paginationData.current_page - 1) * paginationData.per_page + index + 1 }}</th>
+            <tr v-for="(user) in users" :key="user.id">
+              <th scope="row">{{ user.id }}</th>
               <td>
                 <div class="d-flex align-items-center gap-3">
                   <div
