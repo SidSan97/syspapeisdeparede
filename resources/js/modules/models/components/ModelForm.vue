@@ -29,12 +29,10 @@
           <label for="modelValue" class="form-label">Valor</label>
           <div class="input-group">
             <span class="input-group-text">R$</span>
-            <input
+            <money
               id="modelValue"
               v-model.number="form.value"
-              type="number"
-              step="0.01"
-              min="0"
+              v-bind="moneyConfig"
               class="form-control"
               required
             />
@@ -152,6 +150,16 @@ defineProps({
 });
 
 const emit = defineEmits(['submit', 'cancel', 'reset']);
+
+const moneyConfig = {
+  decimal: ',',
+  thousands: '.',
+  precision: 2,
+  prefix: '',
+  allowBlank: true,
+  min: 0,
+  disableNegative: true,
+};
 
 function handleSubmit() {
   emit('submit');

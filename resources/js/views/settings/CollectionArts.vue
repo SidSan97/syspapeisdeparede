@@ -1,9 +1,9 @@
 <template>
   <section class="content">
-    <Page title="Gerenciar Coleções" subtitle="Gerencie coleções, subcategorias e imagens." back-to="/settings">
+    <Page title="Categorias" subtitle="Edite categorias, subcategorias e imagens." back-to="/settings">
       <template #actions>
         <button type="button" class="btn btn-primary" @click="startCreatingCollection">
-          <i class="fa fa-plus me-2"></i> Nova coleção
+          <i class="fa fa-plus me-2"></i> Criar categoria
         </button>
       </template>
 

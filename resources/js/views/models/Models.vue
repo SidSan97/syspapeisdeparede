@@ -26,7 +26,6 @@
           :models="models"
           :is-loading="isLoading"
           :has-models="hasModels"
-          :total-models="totalModels"
           :deleting-id="deletingId"
           @edit="editModel"
           @delete="confirmDelete"

@@ -1,10 +1,6 @@
 <template>
   <section class="models-table mt-5">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">Modelos cadastrados</h5>
-      <span class="badge bg-secondary rounded-pill">
-        {{ totalModels }} {{ totalModels === 1 ? 'modelo' : 'modelos' }}
-      </span>
     </div>
 
     <div v-if="isLoading" class="border rounded p-4 text-center text-muted">
@@ -16,64 +12,53 @@
 
     <div v-else class="table-responsive shadow-sm rounded">
       <table class="table align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr>
             <th>Nome</th>
             <th>Valor</th>
             <th>Prazo (dias)</th>
-            <th>Solicita link?</th>
-            <th>Solicita comentário?</th>
-            <th>Solicita arquivo?</th>
-            <th>Escolher da coleção?</th>
             <th class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="model in models" :key="model.id">
-            <td>{{ model.name }}</td>
-            <td>R$ {{ model.value.toFixed(2) }}</td>
+            <td class="text-nowrap">{{ model.name }}</td>
+            <td class="text-nowrap">R$ {{ formatValue(model.value) }}</td>
             <td>{{ model.deadline }}</td>
-            <td>
-              <i
-                class="fa"
-                :class="model.requests.link ? 'fa-check text-success' : 'fa-times text-muted'"
-              />
-            </td>
-            <td>
-              <i
-                class="fa"
-                :class="model.requests.comment ? 'fa-check text-success' : 'fa-times text-muted'"
-              />
-            </td>
-            <td>
-              <i
-                class="fa"
-                :class="model.requests.file ? 'fa-check text-success' : 'fa-times text-muted'"
-              />
-            </td>
-            <td>
-              <i
-                class="fa"
-                :class="model.requests.collection ? 'fa-check text-success' : 'fa-times text-muted'"
-              />
-            </td>
             <td class="text-end">
-              <div class="btn-group btn-group-sm" role="group">
+              <div class="dropdown">
                 <button
+                  class="btn btn-subtle btn-sm"
                   type="button"
-                  class="btn btn-outline-primary edit-button"
-                  @click="handleEdit(model)"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
                 >
-                  Editar
+                  <i class="fa fa-ellipsis-h"></i>
                 </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-danger"
-                  :disabled="deletingId === model.id"
-                  @click="handleDelete(model)"
-                >
-                  Excluir
-                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <button
+                      class="dropdown-item"
+                      type="button"
+                      @click="handleEdit(model)"
+                    >
+                      Editar
+                    </button>
+                  </li>
+                  <li>
+                    <hr class="dropdown-divider" />
+                  </li>
+                  <li>
+                    <button
+                      class="dropdown-item text-danger"
+                      type="button"
+                      :disabled="deletingId === model.id"
+                      @click="handleDelete(model)"
+                    >
+                      Excluir
+                    </button>
+                  </li>
+                </ul>
               </div>
             </td>
           </tr>
@@ -98,10 +83,6 @@ defineProps({
     type: Boolean,
     required: true,
   },
-  totalModels: {
-    type: Number,
-    required: true,
-  },
   deletingId: {
     type: [Number, String],
     default: null,
@@ -109,6 +90,16 @@ defineProps({
 });
 
 const emit = defineEmits(['edit', 'delete']);
+
+const valueFormatter = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatValue(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? valueFormatter.format(n) : '0,00';
+}
 
 function handleEdit(model) {
   emit('edit', model);
@@ -127,10 +118,6 @@ function handleDelete(model) {
 .table td,
 .table th {
   vertical-align: middle;
-}
-
-.edit-button {
-  margin-right: 10px;
 }
 </style>
 
