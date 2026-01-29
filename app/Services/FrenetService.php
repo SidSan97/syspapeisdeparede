@@ -12,7 +12,7 @@ class FrenetService
 {
     public function shippingData(array $item)
     {
-        $apiKey = env('FRENET_TOKEN');
+        $apiKey = config('services.frenet.token');
 
         if (!$apiKey) {
             return response()->json([
@@ -22,7 +22,7 @@ class FrenetService
         }
 
         $client = new Client([
-            'base_uri' => env('FRENET_API_URL'),
+            'base_uri' => config('services.frenet.base_url'),
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',

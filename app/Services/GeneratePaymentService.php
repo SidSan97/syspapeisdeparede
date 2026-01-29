@@ -15,7 +15,7 @@ class GeneratePaymentService
      */
     public function generateLinkPayment(array $budget): JsonResponse
     {
-        $apiKey = env('PAGARME_API_KEY');
+        $apiKey = config('services.pagarme.api_key');
 
         if (!$apiKey) {
             return response()->json([
@@ -25,7 +25,7 @@ class GeneratePaymentService
         }
 
         $client = new Client([
-            'base_uri' => env('PAGARME_BASE_URL'),
+            'base_uri' => config('services.pagarme.base_url'),
             'timeout' => 10,
         ]);
 

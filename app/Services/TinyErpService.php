@@ -22,8 +22,8 @@ class TinyErpService
             'cookies' => true,
             'timeout' => 30,
         ]);
-        $this->token = env('TINY_ERP_TOKEN');
-        $this->apiUrl = env('TINY_ERP_API_URL');
+        $this->token = config('services.tiny_erp.token');
+        $this->apiUrl = config('services.tiny_erp.api_url');
     }
 
     public function searchProducts(): JsonResponse|array

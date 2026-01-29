@@ -131,7 +131,7 @@ class OrderController extends Controller
         return OrderResource::collection($orders)->response();
     }
 
-    public function generatePaymentLink(Request $request, int $id): JsonResponse
+    public function generatePaymentLink(int $id): JsonResponse
     {
         $order = Order::findOrFail($id);
 

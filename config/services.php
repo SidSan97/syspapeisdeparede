@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    'pagarme' => [
+        'api_key'  => env('PAGARME_API_KEY'),
+        'base_url' => env('PAGARME_BASE_URL'),
+    ],
+
+    'frenet' => [
+        'token'    => env('FRENET_TOKEN'),
+        'base_url' => env('FRENET_API_URL'),
+    ],
+
+    'tiny_erp' => [
+        'token'    => env('TINY_ERP_TOKEN'),
+        'api_url'  => env('TINY_ERP_API_URL'),
+    ],
+
 ];
