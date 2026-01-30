@@ -116,12 +116,12 @@
   import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
   import CommentsAndActivitySidebar from '@/components/card-modal/CommentsAndActivitySidebar.vue';
   import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
-  import AttachmentsSection from './layoutCardModal/AttachmentsSection.vue';
+  import AttachmentsSection from './layout-card-modal/AttachmentsSection.vue';
   import LoadArtSection from '@/components/card-modal/LoadArtSection.vue';
   import RequestArtsSection from '@/components/card-modal/RequestArtsSection.vue';
   import MembersSection from '@/components/card-modal/MembersSection.vue';
   import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
-  import CollectionModelsSection from './layoutCardModal/CollectionModelsSection.vue';
+  import CollectionModelsSection from './layout-card-modal/CollectionModelsSection.vue';
   import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
   const props = defineProps({
