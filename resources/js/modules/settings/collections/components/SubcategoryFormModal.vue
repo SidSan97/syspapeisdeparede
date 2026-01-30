@@ -1,7 +1,14 @@
 <template>
   <Teleport v-if="visible" to="body">
     <div>
-      <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+      <div
+        class="modal fade show d-block"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-hidden="true"
+        @click.self="handleClose"
+      >
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -84,7 +91,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useCollectionService } from '../services/collectionService';
 
 const props = defineProps({
@@ -148,6 +155,10 @@ function fillForm(s, parent) {
   if (imageInputRef.value) imageInputRef.value.value = '';
 }
 
+function onEscapeKey(event) {
+  if (event.key === 'Escape') handleClose();
+}
+
 watch(() => props.visible, (v) => {
   if (v) {
     if (props.subcategory) fillForm(props.subcategory, props.parentCollection);
@@ -155,7 +166,14 @@ watch(() => props.visible, (v) => {
       resetForm();
       form.parent_id = props.parentCollection?.id ?? null;
     }
+    document.addEventListener('keydown', onEscapeKey);
+  } else {
+    document.removeEventListener('keydown', onEscapeKey);
   }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onEscapeKey);
 });
 
 function handleClose() {
