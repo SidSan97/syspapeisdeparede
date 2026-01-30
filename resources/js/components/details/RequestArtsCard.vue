@@ -54,7 +54,7 @@
                                         </div>
                                         <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
 
-                                        <img :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
+                                        <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
                                     </div>
                                     <hr>
                                     <div class="col-md-6">
@@ -229,9 +229,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import axios from 'axios';
 import { useFormatting } from '@/composables/useFormatting';
 import { useAuthStore } from '@/stores/auth';
+import { useRequestArtService } from '@/services/requestArtService';
 
 const props = defineProps({
     data: {
@@ -245,6 +245,7 @@ const props = defineProps({
 });
 
 const auth = useAuthStore();
+const requestArtService = useRequestArtService();
 const { formatNumber, formatDate, resolveImageUrl } = useFormatting();
 
 const requestLayoutArts = ref([]);
@@ -262,79 +263,6 @@ function handleImageError(event) {
     event.target.style.display = 'none';
 }
 
-async function fetchRequestLayoutArts() {
-    if (!props.data || !auth.user?.id) {
-        requestLayoutArts.value = [];
-        loadingRequestArts.value = false;
-        return;
-    }
-
-    try {
-        loadingRequestArts.value = true;
-
-        let params = {};
-
-        if (props.isOrder) {
-            const orderId = props.data.id;
-            if (!orderId) {
-                requestLayoutArts.value = [];
-                return;
-            }
-            params = {
-                order_id: orderId,
-            };
-        } else {
-            const budgetId = props.data.id;
-            if (!budgetId) {
-                requestLayoutArts.value = [];
-                return;
-            }
-            params = {
-                budget_id: budgetId,
-                dealer_id: auth.user.id,
-            };
-        }
-
-        const response = await axios.get('v1/budgets/request-layout-arts', { params });
-        const responseData = response?.data || response;
-
-        if (responseData?.success && Array.isArray(responseData.data)) {
-            requestLayoutArts.value = responseData.data.map((art) => {
-                let imageUrl = art.image_url;
-                if (!imageUrl && art.path_file) {
-                    imageUrl = resolveImageUrl(art.path_file);
-                }
-
-                return {
-                    id: art.id,
-                    order_id: art.order_id || null,
-                    order_budget_id: art.order_budget_id || null,
-                    dealer_id: art.dealer_id || null,
-                    designer_id: art.designer_id || null,
-                    comment: art.comment || null,
-                    path_file: art.path_file || null,
-                    image_url: imageUrl,
-                    created_at: art.created_at || null,
-                    designer_name: art.designer?.name || art.designer_name || null,
-                    dealer_name: art.dealer?.name || art.dealer_name || null,
-                    wall_info: art.wall_info || null,
-                    wall_name: art.wall_name || art.wall_info?.wall_name || null,
-                    arts_count: art.arts_count || art.arts?.length || 0,
-                    arts: art.arts || [],
-                    card_id: art.card_id || art.order_budget_id || null,
-                };
-            });
-        } else {
-            requestLayoutArts.value = [];
-        }
-    } catch (error) {
-        console.error('Erro ao buscar solicitações de artes:', error);
-        requestLayoutArts.value = [];
-    } finally {
-        loadingRequestArts.value = false;
-    }
-}
-
 function handleArtFileChange(event, interactionId) {
     const file = event.target.files[0];
     if (file) {
@@ -350,8 +278,83 @@ function clearArtFile(interactionId) {
     }
 }
 
+function normalizeToInteractions(dataArray) {
+    return dataArray.map((art) => {
+        let imageUrl = art.image_url;
+        if (!imageUrl && art.path_file) {
+            imageUrl = resolveImageUrl(art.path_file);
+        }
+        const designerName = art.designer?.name ?? art.designer_name ?? null;
+        const dealerName = art.dealer?.name ?? art.dealer_name ?? null;
+        const normalized = {
+            id: art.id,
+            order_id: art.order_id ?? null,
+            order_budget_id: art.order_budget_id ?? null,
+            dealer_id: art.dealer_id ?? art.dealer?.id ?? null,
+            designer_id: art.designer_id ?? art.designer?.id ?? null,
+            comment: art.comment ?? null,
+            path_file: art.path_file ?? null,
+            image_url: imageUrl,
+            created_at: art.created_at ?? null,
+            designer_name: designerName,
+            dealer_name: dealerName,
+            wall_info: art.wall_info ?? null,
+            wall_name: art.wall_name ?? art.wall_info?.wall_name ?? null,
+            card_id: art.card_id ?? art.order_budget_id ?? null,
+        };
+        const arts = Array.isArray(art.arts) && art.arts.length > 0
+            ? art.arts.map((a) => ({
+                ...a,
+                designer_name: a.designer?.name ?? a.designer_name ?? designerName,
+                dealer_name: a.dealer?.name ?? a.dealer_name ?? dealerName,
+            }))
+            : [normalized];
+        const arts_count = art.arts_count ?? art.arts?.length ?? arts.length;
+        return { ...normalized, arts_count, arts };
+    });
+}
+
+async function fetchRequestLayoutArts() {
+    if (!props.data || !auth.user?.id) {
+        requestLayoutArts.value = [];
+        loadingRequestArts.value = false;
+        return;
+    }
+    let params = {};
+    if (props.isOrder) {
+        const orderId = props.data.id;
+        if (!orderId) {
+            requestLayoutArts.value = [];
+            return;
+        }
+        params = { order_id: orderId };
+    } else {
+        const budgetId = props.data.id;
+        if (!budgetId) {
+            requestLayoutArts.value = [];
+            return;
+        }
+        params = { budget_id: budgetId, dealer_id: auth.user.id };
+    }
+    try {
+        loadingRequestArts.value = true;
+        const data = await requestArtService.getRequestLayoutArts(params);
+        const dataArray = Array.isArray(data) ? data : (data?.data ?? []);
+        if (!Array.isArray(dataArray)) {
+            requestLayoutArts.value = [];
+            return;
+        }
+        requestLayoutArts.value = normalizeToInteractions(dataArray);
+    } catch (error) {
+        console.error('Erro ao buscar solicitações de artes:', error);
+        requestLayoutArts.value = [];
+    } finally {
+        loadingRequestArts.value = false;
+    }
+}
+
 async function handleRespondToInteraction(interaction) {
-    if (!interaction || !interaction.card_id || !props.data || !auth.user?.id) {
+    if (!interaction?.card_id || !props.data || !auth.user?.id) {
         window.Swal.fire({
             title: 'Erro',
             text: 'Dados insuficientes para responder a interação.',
@@ -361,11 +364,9 @@ async function handleRespondToInteraction(interaction) {
         });
         return;
     }
-
     const interactionId = interaction.id;
     const artFile = artFiles.value[interactionId];
     const comment = (artComments.value[interactionId] || '').trim();
-
     if (!comment) {
         window.Swal.fire({
             title: 'Atenção',
@@ -376,53 +377,32 @@ async function handleRespondToInteraction(interaction) {
         });
         return;
     }
+    const orderId = props.isOrder ? props.data.id : (props.data.order_id ?? props.data.id);
+    const formData = new FormData();
+    if (artFile) formData.append('art_file', artFile);
+    formData.append('order_budget_id', interaction.card_id);
+    formData.append('dealer_id', auth.user.id);
+    formData.append('designer_id', auth.user.id);
+    formData.append('order_id', orderId);
+    formData.append('comment', comment);
 
     uploadingArt.value[interactionId] = true;
-
     try {
-        let orderId = props.data.id;
-
-        if (props.isOrder) {
-            orderId = props.data.id;
-        } else {
-            orderId = props.data.order_id || props.data.id;
-        }
-
-        const formData = new FormData();
-        if (artFile) {
-            formData.append('art_file', artFile);
-        }
-        formData.append('order_budget_id', interaction.card_id);
-        formData.append('dealer_id', auth.user.id);
-        formData.append('designer_id', auth.user.id);
-        formData.append('order_id', orderId);
-        formData.append('comment', comment);
-
-        const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-
-        if (response.data?.success) {
-            // Limpar formulário
+        const response = await requestArtService.uploadArt(formData);
+        if (response.data?.id) {
             clearArtFile(interactionId);
             artComments.value[interactionId] = '';
-
-            // Recarregar solicitações de artes
             await fetchRequestLayoutArts();
-
             window.Toast.fire({
                 icon: 'success',
-                title: response.data.message || 'Arte enviada com sucesso.',
+                title: response.data.message || 'Resposta enviada com sucesso.',
             });
         } else {
-            throw new Error(response.data?.message || 'Erro ao enviar arte');
+            throw new Error(response.data?.message || 'Erro ao enviar resposta');
         }
     } catch (error) {
         console.error('Erro ao responder interação:', error);
-        const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível enviar a arte. Tente novamente.';
-
+        const errorMessage = error?.response?.data?.message ?? error?.message ?? 'Não foi possível enviar a arte. Tente novamente.';
         window.Swal.fire({
             title: 'Erro',
             text: errorMessage,
@@ -435,7 +415,6 @@ async function handleRespondToInteraction(interaction) {
     }
 }
 
-// Carregar dados quando o componente for montado ou quando as props mudarem
 onMounted(() => {
     if (props.data && auth.user?.id) {
         fetchRequestLayoutArts();
