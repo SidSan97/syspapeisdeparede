@@ -55,13 +55,6 @@
       </div>
     </Page>
 
-    <PedidoDetailsModal
-      :visible="showDetailsModal"
-      :pedido="selectedPedido"
-      @close="closeDetailsModal"
-      @approve="handleApprove"
-    />
-
     <OrdersRegisterPayment
       :visible="showPaymentModal"
       :pedido="paymentPedido"
@@ -85,7 +78,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '../../components/page/Page.vue';
 import EmptyState from '../../components/empty-state/EmptyState.vue';
-import PedidoDetailsModal from '@/modules/orders/components/OrdersDetailsModal.vue';
 import OrdersRegisterPayment from '@/modules/orders/components/OrdersRegisterPayment.vue';
 import OrderFilters from '@/modules/orders/components/OrderFilters.vue';
 import OrderItemsTable from '@/modules/orders/components/OrderItemsTable.vue';
@@ -119,8 +111,6 @@ const {
 
 const users = ref([]);
 const loadingUsers = ref(false);
-const showDetailsModal = ref(false);
-const selectedPedido = ref(null);
 const showPaymentModal = ref(false);
 const paymentPedido = ref(null);
 const showCancelModal = ref(false);
@@ -159,16 +149,6 @@ async function fetchUsers() {
 
 function openDetailsModal(pedido) {
   router.push({ name: 'ShowOrderDetails', params: { id: pedido.id } });
-}
-
-function closeDetailsModal() {
-  showDetailsModal.value = false;
-  selectedPedido.value = null;
-}
-
-function handleApprove(pedido) {
-  closeDetailsModal();
-    fetchOrders(filters.value, paginationData.value.current_page);
 }
 
 function openPaymentModal(pedido) {
