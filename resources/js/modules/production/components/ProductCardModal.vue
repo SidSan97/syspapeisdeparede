@@ -92,15 +92,15 @@ import { useAuthStore } from '@/stores/auth';
 import { useProductionReportsStore } from '@/stores/productionReports';
 import { getCardDisplayName } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
-import MembersSection from '@/components/cardModal/MembersSection.vue';
-import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
+import MembersSection from '@/components/card-modal/MembersSection.vue';
+import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
 import AttachmentsSection from './productionCardModal/AttachmentsSection.vue';
-import WallDetailsSection from '@/components/cardModal/WallDetailsSection.vue';
+import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
 import CollectionModelsSection from './productionCardModal/CollectionModelsSection.vue';
 import ProductionPercentageSection from './productionCardModal/ProductionPercentageSection.vue';
 import ProductionReportsSection from './productionCardModal/ProductionReportsSection.vue';
-import RequestArtsSection from '@/components/cardModal/RequestArtsSection.vue';
-import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
+import RequestArtsSection from '@/components/card-modal/RequestArtsSection.vue';
+import CommentsAndActivitySidebar from '@/components/card-modal/CommentsAndActivitySidebar.vue';
 import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
 const props = defineProps({

@@ -114,13 +114,13 @@
   import { useAuthStore } from '@/stores/auth';
   import { getCardDisplayName } from '@/utils/cardUtils';
   import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
-  import CommentsAndActivitySidebar from '@/components/cardModal/CommentsAndActivitySidebar.vue';
-  import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
+  import CommentsAndActivitySidebar from '@/components/card-modal/CommentsAndActivitySidebar.vue';
+  import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
   import AttachmentsSection from './layoutCardModal/AttachmentsSection.vue';
-  import LoadArtSection from '@/components/cardModal/LoadArtSection.vue';
-  import RequestArtsSection from '@/components/cardModal/RequestArtsSection.vue';
-  import MembersSection from '@/components/cardModal/MembersSection.vue';
-  import WallDetailsSection from '@/components/cardModal/WallDetailsSection.vue';
+  import LoadArtSection from '@/components/card-modal/LoadArtSection.vue';
+  import RequestArtsSection from '@/components/card-modal/RequestArtsSection.vue';
+  import MembersSection from '@/components/card-modal/MembersSection.vue';
+  import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
   import CollectionModelsSection from './layoutCardModal/CollectionModelsSection.vue';
   import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
