@@ -348,7 +348,10 @@ export function useCollection() {
   function resetForm(fileInputRef = null) {
     selectedFiles.value = [];
     fileIdCounter = 0;
-    if (fileInputRef?.value) fileInputRef.value.value = '';
+    const el = fileInputRef?.value ?? fileInputRef;
+    if (el && typeof el !== 'string' && el.tagName) {
+      el.value = '';
+    }
   }
 
   async function handleUpload(fileInputRef = null) {
@@ -389,9 +392,16 @@ export function useCollection() {
         formData.append('images[]', item.file);
         formData.append(`names[${i}]`, item.name.trim());
       });
+
       const res = await service.uploadImages(formData);
+
+      if (res?.success === false) {
+        throw new Error(res?.message ?? 'Erro ao enviar imagens.');
+      }
+
       const list = res?.data ?? [];
-      if (Array.isArray(list) && list.length && list[0]?.images) {
+
+      if (Array.isArray(list) && list.length && Array.isArray(list[0]?.images)) {
         collectionImages[selectedSubcategoryId.value] = list[0].images.map((img) => ({
           id: Number(img.id ?? 0),
           name: img.name ?? '',
@@ -403,16 +413,19 @@ export function useCollection() {
       } else if (selectedSubcategoryId.value) {
         await fetchSubcategoryImages(selectedSubcategoryId.value);
       }
+
       window.Swal.fire({
         title: 'Imagens adicionadas!',
-        text: 'Imagens adicionadas com sucesso.',
+        text: res?.message ?? 'Imagens adicionadas com sucesso.',
         icon: 'success',
         confirmButtonText: 'Entendi!',
       });
       resetForm(fileInputRef);
       activeTab.value = 'images';
+
     } catch (e) {
       const msg =
+        e?.message ??
         e?.response?.data?.message ??
         e?.response?.data?.errors?.images?.[0] ??
         'Não foi possível enviar as imagens.';
