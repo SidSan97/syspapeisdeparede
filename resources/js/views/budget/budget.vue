@@ -7,7 +7,7 @@
         </button>
       </template>
 
-      <div class="border-0 shadow-sm">
+      <div>
                 <BudgetFilters
                     :is-admin="isAdmin"
                     :loading="loading"
@@ -28,7 +28,6 @@
                     @clear-filters="clearFilters"
                 />
 
-        <div class="card-body p-0 mt-4">
           <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
             Carregando orçamentos...
           </div>
@@ -42,24 +41,23 @@
             Ajuste os filtros ou crie um novo orçamento.
           </EmptyState>
 
-                    <BudgetItemsTable
-                        v-else
-                        :budgets="budgets"
-                        @view-details="openDetailsModal"
-                        @generate-pdf="openPdfPreview"
-                        @create-order="openOrderModal"
-                        @edit="editBudget"
-                        @cancel="openCancelModal"
-                        @delete="openDeleteModal"
-                    />
+            <BudgetItemsTable
+                v-else
+                :budgets="budgets"
+                @view-details="openDetailsModal"
+                @generate-pdf="openPdfPreview"
+                @create-order="openOrderModal"
+                @edit="editBudget"
+                @cancel="openCancelModal"
+                @delete="openDeleteModal"
+            />
 
-                    <div
-                        v-if="!loading && budgets.length > 0 && paginationData.last_page > 1"
-                        class="p-3"
-                    >
-                        <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
-          </div>
-        </div>
+              <div
+                  v-if="!loading && budgets.length > 0 && paginationData.last_page > 1"
+                  class="p-3"
+              >
+                <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
+              </div>
       </div>
     </Page>
 

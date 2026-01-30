@@ -7,7 +7,7 @@
         </button>
       </template>
 
-      <div class="shadow-sm">
+      <div>
           <CollectionList
             :collections="collections"
             :is-loading-collections="isLoadingCollections"

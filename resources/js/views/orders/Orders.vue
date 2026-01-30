@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page title="Pedidos">
-      <div class="border-0 shadow-sm">
+      <div>
                 <OrderFilters
                     :is-admin="isAdmin"
                     :loading="loading"
@@ -22,7 +22,6 @@
                     @clear-filters="clearFilters"
                 />
 
-        <div class="card-body p-0 mt-4">
           <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
             Carregando pedidos...
           </div>
@@ -51,9 +50,8 @@
                         v-if="!loading && orders.length > 0 && paginationData.last_page > 1"
                         class="p-3"
                     >
-                        <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
+                      <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
           </div>
-        </div>
       </div>
     </Page>
 
