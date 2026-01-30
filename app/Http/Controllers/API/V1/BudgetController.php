@@ -206,7 +206,7 @@ class BudgetController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao excluir orçamento: ' . $e->getMessage(),
@@ -248,7 +248,7 @@ class BudgetController extends Controller
         $response = $budgetResource->response();
         $responseData = $response->getData(true);
         $responseData['order_id'] = $order->id;
-        // Incluir order_id dentro de 'data' para o frontend que usa response.data?.data
+
         if (isset($responseData['data']) && is_array($responseData['data'])) {
             $responseData['data']['order_id'] = $order->id;
         }
