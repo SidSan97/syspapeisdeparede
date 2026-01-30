@@ -450,31 +450,7 @@ watch(() => props.card?.id, () => {
   margin-bottom: 24px;
 }
 
-.avatar-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: var(--bs-box-shadow);
-  }
-}
 
 .members-section-menu {
   top: 100%;

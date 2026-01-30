@@ -487,7 +487,7 @@ export function useBudgetOrderComposable(budget) {
         throw new Error('Resposta inválida do servidor.');
       }
 
-      let orderId = payload.id;
+      let orderId = payload.order_id;
 
       if (!orderId) {
         throw new Error('ID do pedido não encontrado na resposta.');
