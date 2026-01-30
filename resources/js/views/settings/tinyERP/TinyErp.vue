@@ -1,21 +1,11 @@
 <template>
   <section class="content">
     <Page title="Tiny ERP" subtitle="Configure produtos associados à plataforma." back-to="/settings">
-      <div class="card">
-        <div class="card-body">
+      <div class="p-2">
           <form @submit.prevent="handleSubmit">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label for="gtin" class="form-label">
-                  GTIN
-                  <i
-                    class="fa fa-question-circle text-muted ms-1"
-                    style="font-size: 0.875rem; cursor: help;"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="Código GTIN do produto no Tiny ERP"
-                  ></i>
-                </label>
+                <label for="gtin" class="form-label">GTIN</label>
                 <input
                   id="gtin"
                   v-model.trim="form.gtin"
@@ -24,19 +14,11 @@
                   :class="{ 'is-invalid': form.errors.has('gtin') }"
                   placeholder="Ex: 7891234567890"
                 />
+                <small class="form-text text-muted">Código GTIN do produto no Tiny ERP.</small>
                 <has-error :form="form" field="gtin"></has-error>
               </div>
               <div class="col-12 col-md-6">
-                <label for="cep" class="form-label">
-                  CEP
-                  <i
-                    class="fa fa-question-circle text-muted ms-1"
-                    style="font-size: 0.875rem; cursor: help;"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="CEP do remetente dos pedidos para cálculo de frete e entrega"
-                  ></i>
-                </label>
+                <label for="cep" class="form-label">CEP</label>
                 <input
                   id="cep"
                   v-model.trim="form.cep"
@@ -47,19 +29,11 @@
                   maxlength="9"
                   @input="formatCep"
                 />
+                <small class="form-text text-muted">CEP do remetente dos pedidos para cálculo de frete e entrega.</small>
                 <has-error :form="form" field="cep"></has-error>
               </div>
               <div class="col-12 col-md-6">
-                <label for="ncm" class="form-label">
-                  NCM
-                  <i
-                    class="fa fa-question-circle text-muted ms-1"
-                    style="font-size: 0.875rem; cursor: help;"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="NCM do produto no Tiny ERP. Obrigatório para emissão de nota fiscal."
-                  ></i>
-                </label>
+                <label for="ncm" class="form-label">NCM</label>
                 <input
                   id="ncm"
                   v-model.trim="form.ncm"
@@ -69,6 +43,7 @@
                   placeholder="Ex: 4814.20.00"
                   maxlength="10"
                 />
+                <small class="form-text text-muted">NCM do produto no Tiny ERP. Obrigatório para emissão de nota fiscal.</small>
                 <has-error :form="form" field="ncm"></has-error>
               </div>
             </div>
@@ -80,19 +55,15 @@
                 <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 {{ isSaving ? 'Salvando...' : 'Salvar configurações' }}
               </button>
-              <router-link :to="{ name: 'SettingsHome' }" class="btn btn-subtle">
-                Cancelar
-              </router-link>
             </div>
           </form>
-        </div>
       </div>
     </Page>
   </section>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, nextTick } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
@@ -185,16 +156,9 @@ const handleSubmit = async () => {
   }
 };
 
-onMounted(async () => {
+onMounted(() => {
   document.title = 'Tiny ERP - Configurações';
-  await loadSettings();
-  
-  // Inicializar tooltips do Bootstrap
-  await nextTick();
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  if (typeof bootstrap !== 'undefined') {
-    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-  }
+  loadSettings();
 });
 </script>
 
