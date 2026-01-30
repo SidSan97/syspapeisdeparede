@@ -61,12 +61,12 @@
   import { useRouter } from 'vue-router';
   import Page from '@/components/page/Page.vue';
   import EmptyState from '@/components/empty-state/EmptyState.vue';
-  import InternalOrderFilters from '@/modules/internalOrders/components/InternalOrderFilters.vue';
-  import InternalOrderItemsTable from '@/modules/internalOrders/components/InternalOrderItemsTable.vue';
+  import InternalOrderFilters from '@/modules/internal-orders/components/InternalOrderFilters.vue';
+  import InternalOrderItemsTable from '@/modules/internal-orders/components/InternalOrderItemsTable.vue';
   import { useAuthStore } from '@/stores/auth';
-  import { useInternalOrderList } from '@/modules/internalOrders/composables/useInternalOrderList';
-  import { useInternalOrderFilters } from '@/modules/internalOrders/composables/useInternalOrderFilters';
-  import { useInternalOrderListService } from '@/modules/internalOrders/services/internalOrderListService';
+  import { useInternalOrderList } from '@/modules/internal-orders/composables/useInternalOrderList';
+  import { useInternalOrderFilters } from '@/modules/internal-orders/composables/useInternalOrderFilters';
+  import { useInternalOrderListService } from '@/modules/internal-orders/services/internalOrderListService';
 
   const router = useRouter();
   const auth = useAuthStore();

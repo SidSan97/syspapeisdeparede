@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue';
-import { useArtService } from '@/modules/cardModals/services/artService';
+import { useArtService } from '@/modules/card-modals/services/artService';
 import { useAuthStore } from '@/stores/auth';
 
 /**

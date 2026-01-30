@@ -8,7 +8,7 @@ import {
     getCommentsCount,
     getActivitiesCount,
     useCardModal,
-} from '@/modules/cardModals/composables/useCardUtils';
+} from '@/modules/card-modals/composables/useCardUtils';
 
 /**
  * Composable para gerenciar cards de layout

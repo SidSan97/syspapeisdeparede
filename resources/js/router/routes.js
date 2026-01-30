@@ -1,6 +1,6 @@
 import settings from './settings';
 import AppLayout from '../layouts/AppLayout.vue';
-import Budget from '../views/budget/budget.vue';
+import Budget from '../views/budget/BudgetView.vue';
 
 const routes = [
     {
@@ -14,22 +14,22 @@ const routes = [
             {
                 path: '/dashboard',
                 name: 'Dashboard',
-                component: () => import('../views/dashboard/Dashboard.vue')
+                component: () => import('../views/dashboard/DashboardView.vue')
             },
             {
                 path: '/profile',
                 name: 'Profile',
-                component: () => import('../views/profile/Profile.vue')
+                component: () => import('../views/profile/ProfileView.vue')
             },
             {
                 path: '/budget/new-budget',
                 name: 'NewBudget',
-                component: () => import('../views/budget/new-budget.vue')
+                component: () => import('../views/budget/NewBudget.vue')
             },
             {
                 path: '/budget/edit/:id',
                 name: 'EditBudget',
-                component: () => import('../views/budget/edit-budget.vue')
+                component: () => import('../views/budget/EditBudget.vue')
             },
             {
                 path: '/budget/:id',
@@ -49,12 +49,12 @@ const routes = [
             {
                 path: '/colecao-arts',
                 name: 'CollectionModels',
-                component: () => import('../views/colecao-arts/CollectionModels.vue'),
+                component: () => import('../views/colecao-arts/CollectionModelsView.vue'),
             },
             {
                 path: '/colecao-arts/colecao/:id',
                 name: 'CollectionSubcategories',
-                component: () => import('../views/colecao-arts/CollectionSubcategories.vue'),
+                component: () => import('../views/colecao-arts/CollectionSubcategoriesView.vue'),
             },
             {
                 path: '/colecao-arts/catalogo',
@@ -64,22 +64,22 @@ const routes = [
             {
                 path: '/colecao-arts/subcategoria/:id',
                 name: 'SubcategoryImages',
-                component: () => import('../views/colecao-arts/SubcategoryImages.vue'),
+                component: () => import('../views/colecao-arts/SubcategoryImagesView.vue'),
             },
             {
                 path: '/colecao-arts/favoritos',
                 name: 'MyFavorites',
-                component: () => import('../views/colecao-arts/MyFavorites.vue'),
+                component: () => import('../views/colecao-arts/MyFavoritesView.vue'),
             },
             {
                 path: '/pedidos',
                 name: 'Pedidos',
-                component: () => import('../views/orders/Orders.vue'),
+                component: () => import('../views/orders/OrdersView.vue'),
             },
             {
                 path: '/pedidos/:id/edit',
                 name: 'EditOrder',
-                component: () => import('../views/orders/edit-order.vue'),
+                component: () => import('../views/orders/EditOrderView.vue'),
             },
             {
                 path: '/pedidos/:id',
@@ -89,27 +89,27 @@ const routes = [
             {
                 path: '/modelos',
                 name: 'Models',
-                component: () => import('../views/models/Models.vue'),
+                component: () => import('../views/models/ModelsView.vue'),
             },
             {
                 path: '/layouts',
                 name: 'Layouts',
-                component: () => import('../views/layouts/Layouts.vue'),
+                component: () => import('../views/layouts/LayoutsView.vue'),
             },
             {
                 path: '/products',
                 name: 'Product',
-                component: () => import('../views/production/Product.vue'),
+                component: () => import('../views/production/ProductView.vue'),
             },
             {
                 path: '/pedidos-producao',
                 name: 'InternalOrders',
-                component: () => import('../views/internalOrders/internal-orders.vue'),
+                component: () => import('../views/internal-orders/InternalOrders.vue'),
             },
             {
                 path: '/expedicao',
                 name: 'Expedition',
-                component: () => import('../views/expedition/expedition.vue'),
+                component: () => import('../views/expedition/ExpeditionView.vue'),
             },
             {
                 path: '/expedicao/nota-fiscal/:id',

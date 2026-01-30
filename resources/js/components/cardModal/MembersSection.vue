@@ -100,7 +100,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useMemberService } from '@/modules/cardModals/services/memberService';
+import { useMemberService } from '@/modules/card-modals/services/memberService';
 import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({

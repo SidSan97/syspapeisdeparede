@@ -58,7 +58,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { useDescriptionService } from '@/modules/cardModals/services/descriptionService'
+import { useDescriptionService } from '@/modules/card-modals/services/descriptionService'
 
 const props = defineProps({
   card: {

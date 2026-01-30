@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <Teleport v-if="card" to="body">
     <div class="modal show d-block" @click="handleClose">
       <div class="modal-dialog modal-xl modal-dialog-scrollable" @click.stop>
@@ -91,7 +91,7 @@ import { computed, ref, watch, toRef } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useProductionReportsStore } from '@/stores/productionReports';
 import { getCardDisplayName } from '@/utils/cardUtils';
-import { getCoverImage } from '@/modules/cardModals/composables/useCardUtils';
+import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
 import MembersSection from '@/components/cardModal/MembersSection.vue';
 import DescriptionSection from '@/components/cardModal/DescriptionSection.vue';
 import AttachmentsSection from './productionCardModal/AttachmentsSection.vue';

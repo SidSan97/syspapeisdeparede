@@ -18,7 +18,7 @@ export default [
       {
         path: 'tiny-erp',
         name: 'TinyErpSettings',
-        component: () => import('../views/settings/tinyERP/TinyErp.vue'),
+        component: () => import('../views/settings/tiny-erp/TinyErp.vue'),
       },
       ...users,
     ],
