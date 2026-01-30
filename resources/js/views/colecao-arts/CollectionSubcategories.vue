@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <Page title="Subcategorias" back-to="/colecao-arts">
+    <Page :title="collectionName || 'Subcategorias'" back-to="/colecao-arts">
         <template #actions>
             <button class="btn btn-primary" type="button" @click="openAddModal">
                 Adicionar
@@ -16,7 +16,7 @@
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         <RouterLink to="/settings/colecoes" class="dropdown-item">
-                            Administração de Categorias
+                          Categorias
                         </RouterLink>
                     </li>
                 </ul>
@@ -43,11 +43,11 @@
             class="col-12 col-sm-6 col-md-4 col-lg-3"
             >
             <div
-                class="card border-0 shadow-sm h-100 subcategory-card"
+                class="card border h-100 subcategory-card"
                 style="cursor: pointer;"
                 @click="viewSubcategoryImages(subcategory)"
             >
-                <div class="position-relative" style="padding-top: 66.67%; overflow: hidden;">
+                <div class="position-relative ratio ratio-4x3 category-cover">
                 <div
                     class="position-absolute top-0 start-0 w-100 h-100"
                     :style="getSubcategoryBackground(subcategory)"
@@ -201,8 +201,7 @@ import Page from '@/components/page/Page.vue';
 // Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
 
-const DEFAULT_COVER =
-  'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
+const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 const route = useRoute();
 const router = useRouter();
@@ -476,11 +475,17 @@ onMounted(async () => {
 <style scoped>
 .subcategory-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 5px;
 }
 
 .subcategory-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.category-cover {
+  overflow: hidden;
+  border-radius: 8px;
 }
 </style>
 

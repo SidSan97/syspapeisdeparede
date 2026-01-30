@@ -27,7 +27,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
                 <RouterLink to="/settings/colecoes" class="dropdown-item">
-                    Administração de Categorias
+                  Categorias
                 </RouterLink>
               </li>
             </ul>
@@ -55,11 +55,11 @@
           class="col-12 col-sm-6 col-md-4 col-lg-3"
         >
           <div
-            class="card border-0 shadow-sm h-100 collection-card"
+            class="card border h-100 collection-card"
             style="cursor: pointer;"
             @click="viewCollectionSubcategories(collection)"
           >
-            <div class="position-relative" style="padding-top: 66.67%; overflow: hidden;">
+            <div class="position-relative ratio ratio-4x3 category-cover">
               <div
                 class="position-absolute top-0 start-0 w-100 h-100"
                 :style="getCollectionBackground(collection)"
@@ -155,9 +155,9 @@
                 </select>
               </div>
 
-              <!-- Subcategoria (opcional) -->
+              <!-- Subcategoria -->
               <div class="mb-3">
-                <label for="collection-subcategory" class="form-label">Subcategoria (opcional)</label>
+                <label for="collection-subcategory" class="form-label">Subcategoria <span class="text-danger">*</span></label>
                 <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
                   <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   <span>Carregando...</span>
@@ -167,8 +167,14 @@
                   class="form-select"
                   id="collection-subcategory"
                   v-model="formData.subcategory_id"
+                  :disabled="!formData.collection_art_id || !availableSubcategories.length"
+                  required
                 >
-                  <option value="">Usar categoria selecionada</option>
+                  <option value="">
+                    {{ formData.collection_art_id && !availableSubcategories.length
+                      ? 'Esta categoria não possui subcategorias'
+                      : 'Selecionar subcategoria' }}
+                  </option>
                   <option
                     v-for="subcategory in availableSubcategories"
                     :key="subcategory.id"
@@ -177,6 +183,9 @@
                     {{ subcategory.name }}
                   </option>
                 </select>
+                <small v-if="formData.collection_art_id && !availableSubcategories.length && !loadingSubcategories" class="form-text text-muted">
+                  Selecione outra categoria que possua subcategorias.
+                </small>
               </div>
             </form>
           </div>
@@ -210,8 +219,7 @@ import axios from 'axios';
 // Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
 
-const DEFAULT_COVER =
-  'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
+const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 const router = useRouter();
 
@@ -313,23 +321,13 @@ const fetchCollectionsForModal = async () => {
     });
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
-    // Buscar todas as categorias (raiz e filhos) para o select
-    const allCategories = [];
-    const flattenCategories = (cats, parentName = '') => {
-      cats.forEach(cat => {
-        const displayName = parentName ? `${parentName} > ${cat.name}` : cat.name;
-        allCategories.push({
-          id: Number(cat.id ?? 0),
-          name: displayName,
-          parent_id: cat.parent_id,
-        });
-        if (cat.children && Array.isArray(cat.children)) {
-          flattenCategories(cat.children, displayName);
-        }
-      });
-    };
-    flattenCategories(items.filter(item => !item.parent_id));
-    availableCollections.value = allCategories;
+    const roots = items.filter((item) => !item.parent_id);
+    
+    availableCollections.value = roots.map((cat) => ({
+      id: Number(cat.id ?? 0),
+      name: (cat.name ?? '').toString(),
+      parent_id: cat.parent_id ?? null,
+    }));
   } catch (error) {
     availableCollections.value = [];
   }
@@ -412,6 +410,16 @@ const saveCollection = async () => {
     return;
   }
 
+  if (!formData.value.subcategory_id) {
+    window.Swal.fire({
+      title: 'Erro!',
+      text: 'Por favor, selecione uma subcategoria.',
+      icon: 'error',
+      confirmButtonText: 'Entendi!',
+    });
+    return;
+  }
+
   if (!formData.value.image) {
     window.Swal.fire({
       title: 'Erro!',
@@ -424,9 +432,8 @@ const saveCollection = async () => {
 
   saving.value = true;
   try {
-    const categoryId = Number(formData.value.subcategory_id || formData.value.collection_art_id);
+    const categoryId = Number(formData.value.subcategory_id);
 
-    // Enviar imagem para collection_images usando o ID da categoria
     const formDataToSend = new FormData();
     formDataToSend.append('collection_category_id', categoryId);
     formDataToSend.append('images[]', formData.value.image);
@@ -485,5 +492,10 @@ onMounted(async () => {
 .collection-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.category-cover {
+  overflow: hidden;
+  border-radius: 8px;
 }
 </style>
