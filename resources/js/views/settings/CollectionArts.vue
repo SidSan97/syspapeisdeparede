@@ -8,8 +8,7 @@
       </template>
 
       <!-- Lista de Coleções -->
-      <div class="card shadow-sm">
-        <div class="card-body">
+      <div class="shadow-sm">
           <div v-if="isLoadingCollections" class="text-center text-muted py-5">
             <div class="spinner-border" role="status">
               <span class="visually-hidden">Carregando...</span>
@@ -42,20 +41,21 @@
                     <span class="fw-semibold">{{ collection.name }}</span>
                     <div class="dropdown" @click.stop>
                       <button
-                        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                        class="btn btn-subtle btn-sm"
                         type="button"
                         data-bs-toggle="dropdown"
+                        aria-expanded="false"
                       >
-                        Ações
+                        <i class="fa fa-ellipsis-h"></i>
                       </button>
-                      <ul class="dropdown-menu">
+                      <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                           <button
                             class="dropdown-item"
                             type="button"
                             @click="openSubcategoryModal(null, collection)"
                           >
-                            <i class="fa fa-plus me-2"></i> Nova subcategoria
+                            Nova subcategoria
                           </button>
                         </li>
                         <li>
@@ -64,7 +64,7 @@
                             type="button"
                             @click="openCollectionModal(collection)"
                           >
-                            <i class="fa fa-edit me-2"></i> Editar
+                            Editar
                           </button>
                         </li>
                         <li><hr class="dropdown-divider"></li>
@@ -75,7 +75,7 @@
                             :disabled="deletingCollectionId === collection.id"
                             @click="confirmDeleteCollection(collection)"
                           >
-                            <i class="fa fa-trash me-2"></i> Excluir
+                            Excluir
                           </button>
                         </li>
                       </ul>
@@ -89,7 +89,7 @@
                 :class="{ show: expandedCollections.has(collection.id) }"
                 data-bs-parent="#collectionsAccordion"
               >
-                <div class="accordion-body">
+                <div class="accordion-body p-4">
                   <!-- Subcategorias da Coleção -->
                   <div v-if="loadingSubcategories[collection.id]" class="text-center text-muted py-3">
                     <div class="spinner-border spinner-border-sm" role="status"></div>
@@ -113,21 +113,21 @@
                         </div>
                         <div class="d-flex gap-1">
                           <button
-                            class="btn btn-sm btn-outline-primary"
+                            class="btn btn-sm btn-default"
                             type="button"
                             @click.stop="openSubcategoryModal(subcategory, collection)"
                             title="Editar subcategoria"
                           >
-                            <i class="fa fa-edit"></i>
+                            Editar
                           </button>
                           <button
-                            class="btn btn-sm btn-outline-danger"
+                            class="btn btn-sm btn-danger"
                             type="button"
                             :disabled="deletingSubcategoryId === subcategory.id"
                             @click.stop="confirmDeleteSubcategory(subcategory)"
                             title="Excluir subcategoria"
                           >
-                            <i class="fa fa-trash"></i>
+                            Excluir
                           </button>
                         </div>
                       </div>
@@ -137,7 +137,6 @@
               </div>
             </div>
           </div>
-        </div>
       </div>
 
       <!-- Painel de Gerenciamento de Subcategoria -->
@@ -145,16 +144,16 @@
         <div class="card-header">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <h5 class="mb-0">Gerenciar: {{ selectedSubcategory.name }}</h5>
+              <h5 class="mb-0">Editar: {{ selectedSubcategory.name }}</h5>
               <small class="text-muted">Coleção: {{ getCollectionName(selectedSubcategory.parent_id) }}</small>
             </div>
             <div class="d-flex align-items-center gap-2">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-primary"
+                class="btn btn-sm btn-default"
                 @click="openSubcategoryModal(selectedSubcategory, getCollectionById(selectedSubcategory.parent_id))"
               >
-                <i class="fa fa-edit me-1"></i> Editar
+                 Editar
               </button>
               <button type="button" class="btn-close" @click="clearSubcategorySelection"></button>
             </div>
@@ -372,4 +371,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+  .accordion-button {
+    padding: 0 15px 0 15px;
+    height: 50px;
+  }
 </style>
