@@ -90,6 +90,7 @@ class BudgetAndOrderSeeder extends Seeder
                     $budget = Budget::factory()->create([
                         'user_id' => $user->id,
                         'tenant_id' => $user->id,
+                        'status' => fake()->randomElement(['Em aberto', 'Aprovado', 'Cancelado']),
                     ]);
 
                     // Criar rooms e walls para o Budget
@@ -121,7 +122,7 @@ class BudgetAndOrderSeeder extends Seeder
                         'selected_carrier_delivery_time' => $budget->selected_carrier_delivery_time,
                         'carriers_snapshot' => $budget->carriers_snapshot,
                         'primary_budget_room_id' => $budget->primary_budget_room_id,
-                        'status' => fake()->randomElement(['em aberto', 'aprovado', 'aprovar layout', 'pendente de revisão']),
+                        'status' => fake()->randomElement(['Em aberto', 'Aprovado', 'Aprovar layout', 'Pendente de revisão', 'Cancelado']),
                         'dropshipping_budget' => $budget->dropshipping_budget,
                     ]);
 
