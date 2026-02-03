@@ -26,7 +26,7 @@
                     <td class="">
                         <span class="fw-semibold">{{ formatCurrency(order.total_amount) }}</span>
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         <OrderStatusBadge :status="order.status" />
                     </td>
                     <td>

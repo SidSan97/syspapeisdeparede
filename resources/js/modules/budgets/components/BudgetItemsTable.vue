@@ -22,7 +22,7 @@
                             {{ budget.name }}
                         </button>
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         <BudgetStatusBadge :status="budget.status" />
                     </td>
                     <td>

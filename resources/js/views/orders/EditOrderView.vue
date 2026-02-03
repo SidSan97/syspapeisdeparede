@@ -37,8 +37,10 @@
                                 >
                                     <option :value="null">Sem status</option>
                                     <option value="Em aberto">Em aberto</option>
-                                    <option value="Pendente de Revisão">Pendente de Revisão</option>
+                                    <option value="Pendente de revisão">Pendente de Revisão</option>
+                                    <option value="Aprovar layout">Aprovar layout</option>
                                     <option value="Aprovado">Aprovado</option>
+                                    <option value="Cancelado">Cancelado</option>
                                 </select>
                             </div>
 
@@ -540,7 +542,7 @@
                                     <div class="list-group">
                                         <div
                                             v-for="(carrier, index) in budget.carriers"
-                                            :key="index"                                      
+                                            :key="index"
                                             :class="{ 'active': budget.selectedCarrier === index }"
                                             @click="budget.selectedCarrier = index"
                                             style="cursor: pointer;"
@@ -818,7 +820,7 @@ const budget = reactive({
 });
 
 const canEnableDropshipping = computed(() => {
-    return auth.hasRole(['admin', 'reseller']) || 
+    return auth.hasRole(['admin', 'reseller']) ||
            auth.user?.is_dropshipping === 1;
 });
 
