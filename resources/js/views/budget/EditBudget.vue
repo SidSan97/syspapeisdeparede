@@ -1,6 +1,6 @@
 <template>
     <section class="content">
-        <Page title="Editar orçamento" back-to="/budget">
+        <Page title="Editar orçamento" :back-to="{ name: 'BudgetList' }">
             <template #actions>
                 <button class="btn btn-primary me-3" type="button" @click="updateBudget" :disabled="saving">
                     {{ saving ? 'Salvando...' : 'Salvar Orçamento' }}
@@ -779,7 +779,7 @@ function updateBudget() {
             updateOriginalBudget();
             // Redirecionar para a lista de orçamentos
             setTimeout(() => {
-                router.push('/budget');
+                router.push({ name: 'BudgetList' });
             }, 1500);
         })
         .catch(error => {

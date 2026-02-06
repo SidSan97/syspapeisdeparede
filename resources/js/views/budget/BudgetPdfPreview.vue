@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <Page title="Preview PDF - Orçamento" :back-to="{ name: 'ShowBudgetDetails', params: { id: route.params.id } }">
+    <Page title="Preview PDF - Orçamento" :back-to="{ name: 'BudgetDetail', params: { id: route.params.id } }">
       <template #actions>
         <button
           type="button"

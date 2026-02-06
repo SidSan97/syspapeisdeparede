@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <page title="Editar usuário" back-to="/settings/usuarios" v-if="auth.hasPermission('edit user')">
+    <page title="Editar usuário" :back-to="{ name: 'UserList' }" v-if="auth.hasPermission('edit user')">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="updateUser()">
@@ -12,7 +12,7 @@
             <hr>
             <div class="mt-4">
               <button type="submit" class="btn btn-primary me-2" :disabled="saving || loading">Salvar as alterações</button>
-              <router-link :to="{ name: 'UsersList' }" class="btn btn-subtle">Cancelar</router-link>
+              <router-link :to="{ name: 'UserList' }" class="btn btn-subtle">Cancelar</router-link>
             </div>
           </form>
         </div>
@@ -82,7 +82,7 @@ async function fetchUser() {
       title: error.response?.data?.message || 'Erro ao carregar usuário'
     })
 
-    $router.push({ name: 'UsersList' })
+    $router.push({ name: 'UserList' })
   } finally {
     loading.value = false
   }
@@ -102,7 +102,7 @@ async function updateUser() {
 
     Toast.fire({ icon: 'success', title: response.data.message })
 
-    $router.push({ name: 'UsersList' })
+    $router.push({ name: 'UserList' })
   } catch (error) {
     Toast.fire({
       icon: 'error',

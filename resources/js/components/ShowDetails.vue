@@ -109,7 +109,7 @@ const pageTitle = computed(() => {
 });
 
 const backTo = computed(() => {
-    return isOrder.value ? '/pedidos' : '/budget';
+    return isOrder.value ? '/pedidos' : '/budgets';
 });
 
 const isDropshippingEnabled = computed(() => {

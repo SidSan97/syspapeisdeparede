@@ -82,7 +82,7 @@ export function useBudgetEditState(budget) {
                 icon: 'error',
                 confirmButtonText: 'Entendi!',
             });
-            router.push('/budget');
+            router.push({ name: 'BudgetList' });
             return;
         }
 
@@ -99,7 +99,7 @@ export function useBudgetEditState(budget) {
                     icon: 'error',
                     confirmButtonText: 'Entendi!',
                 });
-                router.push('/budget');
+                router.push({ name: 'BudgetList' });
                 return;
             }
 
@@ -127,7 +127,7 @@ export function useBudgetEditState(budget) {
                 icon: 'error',
                 confirmButtonText: 'Entendi!',
             });
-            router.push('/budget');
+            router.push({ name: 'BudgetList' });
             throw error;
         } finally {
             loadingBudget.value = false;

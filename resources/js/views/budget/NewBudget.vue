@@ -648,7 +648,7 @@ async function calculateFreight() {
     calculatingFreight.value = true;
     try {
         const carriers = await budgetService.calculateFreight(budget.cep, tinyErpProducts.value);
-        
+
         budget.carriers = carriers;
 
         if (budget.carriers.length === 0) {
@@ -733,7 +733,7 @@ function saveBudget() {
                 confirmButtonText: 'Entendi!',
             });
             setTimeout(() => {
-                router.push('/budget');
+                router.push({ name: 'BudgetList' });
             }, 1500);
         })
         .catch(error => {

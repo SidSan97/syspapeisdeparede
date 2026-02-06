@@ -1,72 +1,115 @@
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null,
-    roles: [],
-    permissions: [],
-    directPermissions: [],
-    ready: false,
-  }),
-  actions: {
-    setUser(payload) {
-      this.user = payload?.user || null;
-      this.roles = payload?.roles || [];
-      this.permissions = payload?.permissions || [];
-      this.directPermissions = payload?.direct_permissions || [];
-      this.ready = !!payload;
-    },
+export const useAuthStore = defineStore('auth', () => {
+  // state
+  const user = ref(null);
 
-    clearUser() {
-      this.user = null;
-      this.roles = [];
-      this.permissions = [];
-      this.directPermissions = [];
-      this.ready = false;
-    },
+  /** @type {import('vue').Ref<string[]>} */
+  const roles = ref([]);
+  const permissions = ref([]);
+  const directPermissions = ref([]);
+  const ready = ref(false);
 
-    async init() {
-      if (window.LaravelApp?.user) {
-        this.setUser({
-          user: window.LaravelApp.user,
-          roles: window.LaravelApp.roles || [],
-          permissions: window.LaravelApp.permissions || [],
-          direct_permissions: window.LaravelApp.direct_permissions || [],
-        });
-        this.ready = true;
-      }
-    },
+  // getters
+  const isAdmin = () => hasRole(['admin', 'super admin']);
 
-    isAdmin() {
-      return this.hasRole(['admin', 'super admin']);
-    },
+  const can = computed(() => (permission) => {
+    return hasPermission(permission);
+  });
 
-    hasPermission(name) {
-      if (!name) return false;
+  // actions
+  const setUser = (payload) => {
+    user.value = payload?.user || null;
+    roles.value = payload?.roles || [];
+    permissions.value = payload?.permissions || [];
+    directPermissions.value = payload?.direct_permissions || [];
+    ready.value = !!payload;
+  };
 
-      // Admin tem todas as permissões
-      if (this.isAdmin()) return true;
+  const clearUser = () => {
+    user.value = null;
+    roles.value = [];
+    permissions.value = [];
+    directPermissions.value = [];
+    ready.value = false;
+  };
 
-      if (Array.isArray(name)) {
-        return name.some((n) => this.permissions.includes(n));
-      }
+  const init = async () => {
+    if (window.LaravelApp?.user) {
+      setUser({
+        user: window.LaravelApp.user,
+        roles: window.LaravelApp.roles || [],
+        permissions: window.LaravelApp.permissions || [],
+        direct_permissions: window.LaravelApp.direct_permissions || [],
+      });
+      ready.value = true;
+    }
+  };
 
-      return this.permissions.includes(name);
-    },
+  const hasPermission = (name) => {
+    if (!name) return false;
 
-    hasAllPermissions(names) {
-      if (!Array.isArray(names)) return this.hasPermission(names);
+    // Admin tem todas as permissões
+    if (isAdmin()) return true;
 
-      // Admin tem todas as permissões
-      if (this.isAdmin()) return true;
+    if (Array.isArray(name)) {
+      return name.some((n) => permissions.value.includes(n));
+    }
 
-      return names.every((n) => this.permissions.includes(n));
-    },
+    return permissions.value.includes(name);
+  };
 
-    hasRole(name) {
-      if (!name) return false;
-      if (Array.isArray(name)) return name.some((n) => this.roles.includes(n));
-      return this.roles.includes(name);
-    },
-  },
+  const hasAllPermissions = (names) => {
+    if (!Array.isArray(names)) return hasPermission(names);
+
+    // Admin tem todas as permissões
+    if (isAdmin()) return true;
+
+    return names.every((n) => permissions.value.includes(n));
+  };
+
+  const hasRole = (name) => {
+    if (!name) return false;
+
+    if (Array.isArray(name)) {
+      return name.some((n) => roles.value.includes(n));
+    }
+
+    return roles.value.includes(name);
+  };
+
+  /**
+   * @param {string | string[]} requiredRoles
+   * @returns {boolean}
+   */
+  const hasAnyRole = (requiredRoles) => {
+    if (!requiredRoles) return false;
+
+    const rolesToCheck = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+
+    return rolesToCheck.some((role) => roles.value.includes(role));
+  };
+
+  return {
+    // state
+    user,
+    roles,
+    permissions,
+    directPermissions,
+    ready,
+
+    // getters / helpers
+    can,
+    isAdmin,
+    hasRole,
+    hasAnyRole,
+    hasPermission,
+    hasAllPermissions,
+
+    // actions
+    setUser,
+    clearUser,
+    init,
+  };
 });

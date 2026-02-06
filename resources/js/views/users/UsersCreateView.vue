@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <page title="Criar novo usuário" back-to="/settings/usuarios" v-if="auth.hasPermission('create user')">
+    <page title="Criar novo usuário" :back-to="{ name: 'UserList' }" v-if="auth.hasPermission('create user')">
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="createUser()">
@@ -12,7 +12,7 @@
             <hr>
             <div class="mt-4">
               <button type="submit" class="btn btn-primary me-2" :disabled="saving">Salvar</button>
-              <router-link :to="{ name: 'UsersList' }" class="btn btn-subtle">Cancelar</router-link>
+              <router-link :to="{ name: 'UserList' }" class="btn btn-subtle">Cancelar</router-link>
             </div>
           </form>
         </div>
@@ -50,7 +50,7 @@ async function createUser() {
 
     Toast.fire({ icon: 'success', title: response.data.message })
 
-    router.push({ name: 'UsersList' })
+    router.push({ name: 'UserList' })
   } catch (error) {
     Toast.fire({
       icon: 'error',

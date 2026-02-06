@@ -2,62 +2,59 @@
   <section class="content">
     <Page title="Orçamentos">
       <template #actions>
-        <button class="btn btn-primary" type="button" @click="goToCreateBudget">
+        <RouterLink class="btn btn-primary" :to="{ name: 'BudgetCreate' }">
           Criar orçamento
-        </button>
+        </RouterLink>
       </template>
 
       <div>
-                <BudgetFilters
-                    :is-admin="isAdmin"
-                    :loading="loading"
-                    :loading-users="loadingUsers"
-                    :users="users"
-                    :search-query="searchQuery"
-                    :status-filter="statusFilter"
-                    :date-from="dateFrom"
-                    :date-to="dateTo"
-                    :selected-user-id="selectedUserId"
-                    :status-options="statusOptions"
-                    :current-status-label="currentStatusLabel"
-                    @update:search-query="searchQuery = $event"
-                    @update:status-filter="setStatusFilter($event)"
-                    @update:date-from="dateFrom = $event"
-                    @update:date-to="dateTo = $event"
-                    @update:selected-user-id="selectedUserId = $event"
-                    @clear-filters="clearFilters"
-                />
+        <BudgetFilters
+          :is-admin="isAdmin"
+          :loading="loading"
+          :loading-users="loadingUsers"
+          :users="users"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
+          :date-from="dateFrom"
+          :date-to="dateTo"
+          :selected-user-id="selectedUserId"
+          :status-options="statusOptions"
+          :current-status-label="currentStatusLabel"
+          @update:search-query="searchQuery = $event"
+          @update:status-filter="setStatusFilter($event)"
+          @update:date-from="dateFrom = $event"
+          @update:date-to="dateTo = $event"
+          @update:selected-user-id="selectedUserId = $event"
+          @clear-filters="clearFilters"
+        />
 
-          <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
-            Carregando orçamentos...
-          </div>
+        <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
+          Carregando orçamentos...
+        </div>
 
-          <EmptyState
-            v-else-if="budgets.length === 0"
-            heading="Nenhum orçamento encontrado"
-            icon="file-alt"
-            class="p-5"
-          >
-            Ajuste os filtros ou crie um novo orçamento.
-          </EmptyState>
+        <EmptyState
+          v-else-if="budgets.length === 0"
+          heading="Nenhum orçamento encontrado"
+          icon="file-alt"
+          class="p-5"
+        >
+          Ajuste os filtros ou crie um novo orçamento.
+        </EmptyState>
 
-            <BudgetItemsTable
-                v-else
-                :budgets="budgets"
-                @view-details="openDetailsModal"
-                @generate-pdf="openPdfPreview"
-                @create-order="openOrderModal"
-                @edit="editBudget"
-                @cancel="openCancelModal"
-                @delete="openDeleteModal"
-            />
+        <BudgetItemsTable
+          v-else
+          :budgets="budgets"
+          @view-details="openDetailsModal"
+          @generate-pdf="openPdfPreview"
+          @create-order="openOrderModal"
+          @edit="editBudget"
+          @cancel="openCancelModal"
+          @delete="openDeleteModal"
+        />
 
-              <div
-                  v-if="!loading && budgets.length > 0 && paginationData.last_page > 1"
-                  class="p-3"
-              >
-                <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
-              </div>
+        <div v-if="!loading && budgets.length > 0 && paginationData.last_page > 1" class="p-3">
+          <pagination :data="paginationData" @pagination-change-page="handlePageChange" />
+        </div>
       </div>
     </Page>
 
@@ -74,14 +71,14 @@
       @updated="handleOrderUpdated"
     />
 
-        <BudgetCancelModal
-            :visible="showCancelModal"
-            :budget="budgetToCancel"
-            :cancelling="cancelling"
-            :error="cancelError"
-            @close="closeCancelModal"
-            @confirm="confirmCancelBudget"
-        />
+    <BudgetCancelModal
+      :visible="showCancelModal"
+      :budget="budgetToCancel"
+      :cancelling="cancelling"
+      :error="cancelError"
+      @close="closeCancelModal"
+      @confirm="confirmCancelBudget"
+    />
   </section>
 </template>
 
@@ -108,18 +105,18 @@ const budgetListService = useBudgetListService();
 const { budgets, loading, paginationData, fetchBudgets, normalizeBudget } = useBudgetList();
 
 const {
-    filters,
-    searchQuery,
-    statusFilter,
-    dateFrom,
-    dateTo,
-    selectedUserId,
-    statusOptions,
-    currentStatusLabel,
-    setStatusFilter,
-    clearFilters,
+  filters,
+  searchQuery,
+  statusFilter,
+  dateFrom,
+  dateTo,
+  selectedUserId,
+  statusOptions,
+  currentStatusLabel,
+  setStatusFilter,
+  clearFilters,
 } = useBudgetFilters(() => {
-    fetchBudgets(filters.value);
+  fetchBudgets(filters.value);
 });
 
 const users = ref([]);
@@ -139,31 +136,27 @@ const deleteError = ref('');
 const isAdmin = computed(() => auth.isAdmin());
 
 function handlePageChange(page) {
-    fetchBudgets(filters.value, page);
+  fetchBudgets(filters.value, page);
 }
 
 async function fetchUsers() {
-    if (!isAdmin.value) {
-        return;
-    }
+  if (!isAdmin.value) {
+    return;
+  }
 
-    try {
-        loadingUsers.value = true;
-        users.value = await budgetListService.getUsers();
+  try {
+    loadingUsers.value = true;
+    users.value = await budgetListService.getUsers();
   } catch (error) {
-        console.error('Erro ao buscar usuários:', error);
-        users.value = [];
+    console.error('Erro ao buscar usuários:', error);
+    users.value = [];
   } finally {
-        loadingUsers.value = false;
-    }
-}
-
-function goToCreateBudget() {
-  router.push('/budget/new-budget').catch(() => {});
+    loadingUsers.value = false;
+  }
 }
 
 function openDetailsModal(budget) {
-  router.push(`/budget/${budget.id}`);
+  router.push({ name: 'BudgetDetail', params: { id: budget.id } });
 }
 
 function closeDetailsModal() {
@@ -172,31 +165,31 @@ function closeDetailsModal() {
 }
 
 function editBudget(budget) {
-    router.push(`/budget/edit/${budget.id}`);
+  router.push({ name: 'BudgetEdit', params: { id: budget.id } });
 }
 
 function openPdfPreview(budget) {
-    router.push(`/budget/${budget.id}/pdf-preview`);
+  router.push({ name: 'BudgetPdfPreview', params: { id: budget.id } });
 }
 
 function openOrderModal(budget) {
-    orderBudget.value = normalizeBudget(budget);
-    showOrderModal.value = true;
+  orderBudget.value = normalizeBudget(budget);
+  showOrderModal.value = true;
 }
 
 function handleOrderClose() {
-    showOrderModal.value = false;
-    orderBudget.value = null;
+  showOrderModal.value = false;
+  orderBudget.value = null;
 }
 
 function handleOrderUpdated() {
-    fetchBudgets(filters.value, paginationData.value.current_page);
+  fetchBudgets(filters.value, paginationData.value.current_page);
 }
 
 function openCancelModal(budget) {
-    budgetToCancel.value = budget;
-    cancelError.value = '';
-    showCancelModal.value = true;
+  budgetToCancel.value = budget;
+  cancelError.value = '';
+  showCancelModal.value = true;
 }
 
 function closeCancelModal() {
@@ -217,65 +210,66 @@ async function confirmCancelBudget() {
   cancelError.value = '';
 
   try {
-        await budgetListService.cancelBudget(budgetToCancel.value.id);
+    await budgetListService.cancelBudget(budgetToCancel.value.id);
 
     showCancelModal.value = false;
     budgetToCancel.value = null;
 
-        fetchBudgets(filters.value, paginationData.value.current_page);
+    fetchBudgets(filters.value, paginationData.value.current_page);
   } catch (error) {
-        cancelError.value =
-            error?.response?.data?.message || 'Não foi possível cancelar o orçamento. Tente novamente.';
+    cancelError.value =
+      error?.response?.data?.message || 'Não foi possível cancelar o orçamento. Tente novamente.';
   } finally {
     cancelling.value = false;
   }
 }
 
 function openDeleteModal(budget) {
-    budgetToDelete.value = budget;
-    deleteError.value = '';
-    
-    swalConfirmation(
-        'Excluir orçamento?',
-        `Tem certeza que deseja excluir o orçamento "${budget.name}"? Esta ação não pode ser desfeita.`,
-        'warning',
-        'Sim, excluir',
-        'Cancelar'
-    ).then(async (result) => {
-        if (result.isConfirmed) {
-            await confirmDeleteBudget();
-        } else {
-            budgetToDelete.value = null;
-        }
-    });
+  budgetToDelete.value = budget;
+  deleteError.value = '';
+
+  swalConfirmation(
+    'Excluir orçamento?',
+    `Tem certeza que deseja excluir o orçamento "${budget.name}"? Esta ação não pode ser desfeita.`,
+    'warning',
+    'Sim, excluir',
+    'Cancelar',
+  ).then(async (result) => {
+    if (result.isConfirmed) {
+      await confirmDeleteBudget();
+    } else {
+      budgetToDelete.value = null;
+    }
+  });
 }
 
 async function confirmDeleteBudget() {
-    if (!budgetToDelete.value?.id) {
-        return;
-    }
+  if (!budgetToDelete.value?.id) {
+    return;
+  }
 
-    deleting.value = true;
-    deleteError.value = '';
+  deleting.value = true;
+  deleteError.value = '';
 
-    try {
-        await budgetListService.deleteBudget(budgetToDelete.value.id);
+  try {
+    await budgetListService.deleteBudget(budgetToDelete.value.id);
 
-        await swalSuccess('Orçamento excluído', 'O orçamento foi excluído com sucesso.');
+    await swalSuccess('Orçamento excluído', 'O orçamento foi excluído com sucesso.');
 
-        budgetToDelete.value = null;
-        fetchBudgets(filters.value, paginationData.value.current_page);
-    } catch (error) {
-        deleteError.value = error?.response?.data?.message || 'Não foi possível excluir o orçamento. Tente novamente.';
-        
-        await swalError('Erro ao excluir', deleteError.value);
-    } finally {
-        deleting.value = false;
-    }
+    budgetToDelete.value = null;
+    fetchBudgets(filters.value, paginationData.value.current_page);
+  } catch (error) {
+    deleteError.value =
+      error?.response?.data?.message || 'Não foi possível excluir o orçamento. Tente novamente.';
+
+    await swalError('Erro ao excluir', deleteError.value);
+  } finally {
+    deleting.value = false;
+  }
 }
 
 onMounted(() => {
-    fetchBudgets(filters.value, 1);
+  fetchBudgets(filters.value, 1);
   if (isAdmin.value) {
     fetchUsers();
   }

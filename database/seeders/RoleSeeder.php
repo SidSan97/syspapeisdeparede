@@ -30,10 +30,10 @@ class RoleSeeder extends Seeder
         $admin = Role::where('name', 'admin')->first();
         if ($admin) {
             $admin->givePermissionTo([
-                'create users',
-                'edit users',
-                'view users',
-                'delete users',
+                'users.create',
+                'users.edit',
+                'users.view',
+                'users.delete',
             ]);
         }
     }

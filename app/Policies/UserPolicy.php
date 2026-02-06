@@ -9,16 +9,16 @@ class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('view users');
+        return $user->can('users.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create users');
+        return $user->can('users.create');
     }
 
     public function update(User $user, User $model): bool
     {
-        return $user->can('edit users');
+        return $user->can('users.edit');
     }
 }

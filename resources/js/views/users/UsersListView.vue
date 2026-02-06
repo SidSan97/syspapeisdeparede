@@ -1,10 +1,10 @@
 <template>
   <section class="content">
-    <Page title="Usuários" back-to="/settings" v-if="auth.hasPermission('view users')">
+    <Page title="Usuários" back-to="/settings" v-if="auth.hasPermission('users.view')">
       <template #actions>
         <router-link
-          v-if="auth.hasPermission('view users')"
-          :to="{ name: 'UsersCreate' }"
+          v-if="auth.hasPermission('users.view')"
+          :to="{ name: 'UserCreate' }"
           class="btn btn-primary"
         >
           Adicionar usuário
@@ -125,7 +125,7 @@
                     <li>
                       <router-link
                         class="dropdown-item"
-                        :to="{ name: 'UsersEdit', params: { id: user.id } }"
+                        :to="{ name: 'UserEdit', params: { id: user.id } }"
                       >
                         Editar
                       </router-link>
@@ -222,7 +222,7 @@ const setRoleFilter = (roleName) => {
 };
 
 const fetchUsers = async (page = 1) => {
-  if (!auth.hasPermission('view users')) return;
+  if (!auth.hasPermission('users.view')) return;
 
   loading.value = true;
   try {
@@ -299,7 +299,7 @@ const fetchRoles = async () => {
 
 const confirmDelete = async (user) => {
 
-  if (!auth.hasPermission('delete users')) return;
+  if (!auth.hasPermission('users.delete')) return;
 
   const result = await swalConfirmation(
     'Excluir usuário?',

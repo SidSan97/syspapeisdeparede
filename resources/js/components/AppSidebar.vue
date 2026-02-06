@@ -18,7 +18,7 @@
             v-for="item in group.items"
             :key="item.to"
             :to="item.to"
-            class="list-group-item list-group-item-action bg-transparent"
+            class="list-group-item list-group-item-action"
           >
             <i :class="['me-3', item.icon]"></i>
 
@@ -49,7 +49,7 @@ const roles = {
 // FIXME: Usar permissões ao invés de papéis.
 const menuGroups = [
   {
-    visible: () => !roles.production.value,
+    visible: () => true,
     items: [
       {
         to: '/dashboard',
@@ -65,8 +65,8 @@ const menuGroups = [
       !roles.commercial.value &&
       !roles.production.value,
     items: [
-      { to: '/budget/new-budget', label: 'Novo orçamento', icon: 'fa fa-plus-circle' },
-      { to: '/budget', label: 'Orçamentos', icon: 'fa fa-file-alt' },
+      { to: { name: 'BudgetCreate' }, label: 'Novo orçamento', icon: 'fa fa-plus-circle' },
+      { to: { name: 'BudgetList' }, label: 'Orçamentos', icon: 'fa fa-file-alt' },
       { to: '/colecao-arts', label: 'Coleção Arts', icon: 'fa fa-images' },
       { to: '/pedidos', label: 'Pedidos', icon: 'fa fa-inbox' },
     ],
@@ -114,5 +114,9 @@ const visibleMenuGroups = computed(() => menuGroups.filter((group) => group.visi
   @media (min-width: 1200px) {
     width: 272px;
   }
+}
+
+.list-group-item {
+  --bs-list-group-bg: transparent;
 }
 </style>

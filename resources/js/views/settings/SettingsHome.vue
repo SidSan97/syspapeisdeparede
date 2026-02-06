@@ -45,13 +45,13 @@ const availableItems = [
   {
     label: 'Usuários',
     description: 'Gerencie contas, permissões e acesso à plataforma.',
-    to: { name: 'UsersList' },
+    to: { name: 'UserList' },
     icon: 'users',
   },
   {
     label: 'Modelos',
     description: 'Configure modelos e coleções utilizadas nos orçamentos.',
-    to: '/modelos',
+    to: { name: 'ModelList' },
     icon: 'shapes',
   },
   {
