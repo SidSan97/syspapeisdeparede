@@ -1,7 +1,10 @@
 <template>
   <section class="content">
-    <Page title="Catálogo de Imagens" subtitle="Gerencie as imagens associadas às coleções de arte." back-to="/settings">
-
+    <Page
+      title="Catálogo de Imagens"
+      subtitle="Gerencie as imagens associadas às coleções de arte."
+      back-to="/settings"
+    >
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h5 class="mb-3">Selecione uma coleção</h5>
@@ -12,16 +15,16 @@
             Nenhuma coleção cadastrada. Cadastre uma coleção antes de enviar imagens.
           </div>
           <div v-else class="collection-list">
-            <div
-              v-for="collection in collections"
-              :key="collection.id"
-              class="collection-group"
-            >
+            <div v-for="collection in collections" :key="collection.id" class="collection-group">
               <div class="collection-group__header">
                 <strong
                   class="collection-name-clickable"
                   @click="toggleCollection(collection.id)"
-                  :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
+                  :title="
+                    expandedCollections.has(collection.id)
+                      ? 'Ocultar subcategorias'
+                      : 'Mostrar subcategorias'
+                  "
                 >
                   {{ collection.name }}
                 </strong>
@@ -29,16 +32,33 @@
                   type="button"
                   class="btn btn-link btn-sm p-0"
                   @click="toggleCollection(collection.id)"
-                  :title="expandedCollections.has(collection.id) ? 'Ocultar subcategorias' : 'Mostrar subcategorias'"
+                  :title="
+                    expandedCollections.has(collection.id)
+                      ? 'Ocultar subcategorias'
+                      : 'Mostrar subcategorias'
+                  "
                 >
-                  <i :class="['fa', expandedCollections.has(collection.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                  <i
+                    :class="[
+                      'fa',
+                      expandedCollections.has(collection.id)
+                        ? 'fa-chevron-down'
+                        : 'fa-chevron-right',
+                    ]"
+                  ></i>
                 </button>
               </div>
-              <div v-if="expandedCollections.has(collection.id)" class="collection-group__subcategories">
+              <div
+                v-if="expandedCollections.has(collection.id)"
+                class="collection-group__subcategories"
+              >
                 <div v-if="loadingSubcategories[collection.id]" class="text-center text-muted py-2">
                   Carregando subcategorias...
                 </div>
-                <div v-else-if="!collectionSubcategories[collection.id]?.length" class="text-center text-muted py-2">
+                <div
+                  v-else-if="!collectionSubcategories[collection.id]?.length"
+                  class="text-center text-muted py-2"
+                >
                   Nenhuma subcategoria cadastrada.
                 </div>
                 <div v-else class="subcategories-list">
@@ -49,7 +69,7 @@
                     class="btn collection-button"
                     :class="{
                       'btn-primary': selectedSubcategoryId === subcategory.id,
-                      'btn-outline-primary': selectedSubcategoryId !== subcategory.id
+                      'btn-outline-primary': selectedSubcategoryId !== subcategory.id,
                     }"
                     :disabled="isUploading || currentLoading"
                     @click="handleSelectSubcategory(subcategory)"
@@ -68,7 +88,9 @@
 
       <section v-if="selectedSubcategoryId" ref="imagesSection" class="card shadow-sm">
         <div class="card-body">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+          <div
+            class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3"
+          >
             <div>
               <h5 class="mb-1">Subcategoria selecionada</h5>
               <strong>
@@ -108,14 +130,10 @@
               </div>
 
               <div v-if="selectedFiles.length" class="col-12">
-                <hr class="my-3">
+                <hr class="my-3" />
                 <h6 class="mb-3">Nome das imagens</h6>
                 <div class="row g-3">
-                  <div
-                    v-for="fileItem in selectedFiles"
-                    :key="fileItem.id"
-                    class="col-12 col-md-6"
-                  >
+                  <div v-for="fileItem in selectedFiles" :key="fileItem.id" class="col-12 col-md-6">
                     <label :for="`imageName_${fileItem.id}`" class="form-label">
                       Nome para: <small class="text-muted">{{ fileItem.file.name }}</small>
                     </label>
@@ -158,7 +176,7 @@
             </div>
           </form>
 
-          <hr class="my-4">
+          <hr class="my-4" />
 
           <div v-if="currentLoading" class="text-center text-muted py-4">
             Carregando imagens da coleção...
@@ -253,10 +271,12 @@ const normalizeSubcategory = (item = {}) => ({
   name: (item.name ?? '').toString(),
   parent_id: Number(item.parent_id ?? 0),
   images_count: Number(item.images_count ?? 0),
-  parent: item.parent ? {
-    id: Number(item.parent.id ?? 0),
-    name: (item.parent.name ?? '').toString(),
-  } : null,
+  parent: item.parent
+    ? {
+        id: Number(item.parent.id ?? 0),
+        name: (item.parent.name ?? '').toString(),
+      }
+    : null,
 });
 
 const buildStorageUrl = (path) => {
@@ -294,8 +314,10 @@ const fetchCollections = async () => {
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
     // Filtrar apenas categorias raiz
-    const rootCategories = items.filter(item => !item.parent_id);
-    collections.value = Array.isArray(rootCategories) ? rootCategories.map(normalizeCollectionOption) : [];
+    const rootCategories = items.filter((item) => !item.parent_id);
+    collections.value = Array.isArray(rootCategories)
+      ? rootCategories.map(normalizeCollectionOption)
+      : [];
 
     // Inicializar subcategorias
     collections.value.forEach((collection) => {
@@ -398,9 +420,7 @@ const handleFileChange = (event) => {
     // Extrair o nome do arquivo sem a extensão
     const fileName = file.name;
     const lastDotIndex = fileName.lastIndexOf('.');
-    const nameWithoutExtension = lastDotIndex > 0
-      ? fileName.substring(0, lastDotIndex)
-      : fileName;
+    const nameWithoutExtension = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
 
     return {
       id: ++fileIdCounter,
@@ -418,7 +438,6 @@ const resetForm = () => {
     fileInput.value.value = '';
   }
 };
-
 
 const handleUpload = async () => {
   if (isUploading.value || currentLoading.value) {
@@ -474,11 +493,7 @@ const handleUpload = async () => {
 
     const savedCollections = response?.data?.data ?? [];
 
-    if (
-      Array.isArray(savedCollections) &&
-      savedCollections.length &&
-      savedCollections[0]?.images
-    ) {
+    if (Array.isArray(savedCollections) && savedCollections.length && savedCollections[0]?.images) {
       collectionImages[selectedSubcategoryId.value] = savedCollections[0].images.map((image) => ({
         id: Number(image.id ?? 0),
         name: image.name ?? '',
@@ -527,7 +542,7 @@ const confirmDelete = async (image) => {
     'Essa ação é <strong>irreversível!</strong>',
     'warning',
     'Remover',
-    'Cancelar'
+    'Cancelar',
   );
 
   if (result.isConfirmed) {
@@ -546,9 +561,9 @@ const destroyImage = async (image) => {
     await axios.delete(`v1/collection-images/${image.id}`);
 
     if (selectedSubcategoryId.value) {
-      collectionImages[selectedSubcategoryId.value] = (collectionImages[selectedSubcategoryId.value] ?? []).filter(
-        (item) => item.id !== image.id
-      );
+      collectionImages[selectedSubcategoryId.value] = (
+        collectionImages[selectedSubcategoryId.value] ?? []
+      ).filter((item) => item.id !== image.id);
 
       // Atualizar contagem na subcategoria
       const subcategory = selectedSubcategory.value;
@@ -564,8 +579,7 @@ const destroyImage = async (image) => {
     });
   } catch (error) {
     const message =
-      error?.response?.data?.message ??
-      'Não foi possível remover a imagem. Tente novamente.';
+      error?.response?.data?.message ?? 'Não foi possível remover a imagem. Tente novamente.';
     window.Swal.fire({
       title: 'Erro!',
       text: message,
@@ -731,4 +745,3 @@ onMounted(() => {
   color: var(--bs-primary);
 }
 </style>
-

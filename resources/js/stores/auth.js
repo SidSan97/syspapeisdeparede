@@ -4,11 +4,6 @@ import { ref, computed } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
   // state
   const user = ref(null);
-
-  /** @type {import('vue').Ref<string[]>} */
-  const roles = ref([]);
-  const permissions = ref([]);
-  const directPermissions = ref([]);
   const ready = ref(false);
 
   // getters
@@ -18,20 +13,22 @@ export const useAuthStore = defineStore('auth', () => {
     return hasPermission(permission);
   });
 
+  const roles = computed(() => {
+    return user.value?.roles || [];
+  });
+
+  const permissions = computed(() => {
+    return user.value?.permissions || [];
+  });
+
   // actions
   const setUser = (payload) => {
     user.value = payload?.user || null;
-    roles.value = payload?.roles || [];
-    permissions.value = payload?.permissions || [];
-    directPermissions.value = payload?.direct_permissions || [];
     ready.value = !!payload;
   };
 
   const clearUser = () => {
     user.value = null;
-    roles.value = [];
-    permissions.value = [];
-    directPermissions.value = [];
     ready.value = false;
   };
 
@@ -39,9 +36,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (window.LaravelApp?.user) {
       setUser({
         user: window.LaravelApp.user,
-        roles: window.LaravelApp.roles || [],
-        permissions: window.LaravelApp.permissions || [],
-        direct_permissions: window.LaravelApp.direct_permissions || [],
       });
       ready.value = true;
     }
@@ -54,10 +48,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (isAdmin()) return true;
 
     if (Array.isArray(name)) {
-      return name.some((n) => permissions.value.includes(n));
+      return name.some((n) => user.value.permissions.includes(n));
     }
 
-    return permissions.value.includes(name);
+    return user.value.permissions.includes(name);
   };
 
   const hasAllPermissions = (names) => {
@@ -66,17 +60,17 @@ export const useAuthStore = defineStore('auth', () => {
     // Admin tem todas as permissões
     if (isAdmin()) return true;
 
-    return names.every((n) => permissions.value.includes(n));
+    return names.every((n) => user.value.permissions.includes(n));
   };
 
   const hasRole = (name) => {
     if (!name) return false;
 
     if (Array.isArray(name)) {
-      return name.some((n) => roles.value.includes(n));
+      return name.some((n) => user.value.roles.includes(n));
     }
 
-    return roles.value.includes(name);
+    return user.value.roles.includes(name);
   };
 
   /**
@@ -88,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const rolesToCheck = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
 
-    return rolesToCheck.some((role) => roles.value.includes(role));
+    return rolesToCheck.some((role) => user.value.roles.includes(role));
   };
 
   return {
@@ -96,7 +90,6 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     roles,
     permissions,
-    directPermissions,
     ready,
 
     // getters / helpers

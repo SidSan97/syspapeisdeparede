@@ -1,61 +1,57 @@
 <template>
   <section class="content">
     <Page :title="subcategoryName || 'Imagens'" back-to="/colecao-arts">
-     <div class="container py-4">
+      <template #actions>
+        <CollectionActions />
+      </template>
 
-      <div v-if="loading" class="text-center text-muted py-5">
-        Carregando imagens...
-      </div>
-      <div v-else-if="!images.length" class="text-center text-muted py-5">
-        Nenhuma imagem cadastrada nesta categoria.
-      </div>
-      <div v-else class="image-gallery">
-        <figure
-          v-for="image in images"
-          :key="image.id"
-          class="image-gallery__item"
-        >
-          <div class="image-gallery__image-wrapper">
-            <img
-              :src="image.url"
-              :alt="image.name || image.path_name"
-              :title="image.name || image.path_name"
-              loading="lazy"
-              @error="handleImageError($event)"
-              @click="openModal(image)"
-            />
-            <button
-              type="button"
-              class="image-gallery__favorite-btn"
-              :class="{ 'is-favorited': image.is_favorited }"
-              @click.stop="toggleFavorite(image)"
-              :title="image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
-            >
-              <i class="fa fa-heart"></i>
-            </button>
-          </div>
-          <figcaption v-if="image.name" class="image-gallery__caption">
-            {{ image.name }}
-          </figcaption>
-        </figure>
-      </div>
-
-      <Teleport to="body">
-        <div v-if="modalImage" class="image-modal" @click.self="closeModal">
-          <div class="image-modal__content">
-            <button type="button" class="image-modal__close" @click="closeModal">
-              <i class="fa fa-times"></i>
-            </button>
-            <img
-              :src="modalImage.url"
-              :alt="modalImage.name || modalImage.path_name"
-              @error="handleImageError($event)"
-            />
+      <div class="container py-4">
+        <div v-if="loading" class="text-center text-muted py-5">Carregando imagens...</div>
+        <div v-else-if="!images.length" class="text-center text-muted py-5">
+          Nenhuma imagem cadastrada nesta categoria.
+        </div>
+        <div v-else>
+          <div class="row">
+            <div v-for="image in images" :key="image.id" class="col-12 col-sm-6 col-md-4">
+              <CollectionCard
+                :src="image.url"
+                :title="image.name || image.path_name"
+                @on-cover-click="openModal(image)"
+              >
+                <template #actions>
+                  <button
+                    type="button"
+                    class="image-gallery__favorite-btn"
+                    :class="{ 'is-favorited': image.is_favorited }"
+                    @click.stop="toggleFavorite(image)"
+                    :title="
+                      image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+                    "
+                  >
+                    <i class="fa fa-heart"></i>
+                  </button>
+                </template>
+              </CollectionCard>
+            </div>
           </div>
         </div>
-      </Teleport>
-    </div>
-   </Page>
+
+        <Teleport to="body">
+          <div v-if="modalImage" class="image-modal" @click.self="closeModal">
+            <div class="image-modal__content">
+              <button type="button" class="image-modal__close" @click="closeModal">
+                <i class="fa fa-times"></i>
+              </button>
+              <img
+                :src="modalImage.url"
+                :alt="modalImage.name || modalImage.path_name"
+                @error="handleImageError($event)"
+              />
+            </div>
+          </div>
+        </Teleport>
+      </div>
+    </Page>
   </section>
 </template>
 
@@ -65,9 +61,10 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 // Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
+import CollectionCard from './components/CollectionCard.vue';
+import CollectionActions from './components/CollectionActions.vue';
 
-const DEFAULT_COVER =
-  'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
+const DEFAULT_COVER = 'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
 
 const route = useRoute();
 const router = useRouter();
@@ -136,13 +133,13 @@ const fetchSubcategoryImages = async (categoryId) => {
       normalizedImages.map(async (image) => {
         try {
           const { data: favoriteData } = await axios.get(
-            `v1/collection-images/${image.id}/check-favorite`
+            `v1/collection-images/${image.id}/check-favorite`,
           );
           image.is_favorited = favoriteData?.data?.is_favorited ?? false;
         } catch (error) {
           image.is_favorited = false;
         }
-      })
+      }),
     );
 
     images.value = normalizedImages;
@@ -346,4 +343,3 @@ onMounted(() => {
   opacity: 0.85;
 }
 </style>
-

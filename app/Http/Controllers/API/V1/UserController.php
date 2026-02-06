@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Requests\Users\UserRequest;
+use App\Http\Resources\V1\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\TypeUser;
@@ -23,10 +24,7 @@ class UserController extends BaseController
 
     public function index(Request $request)
     {
-        $query = $this->user->with('roles:id,name');
-
-        // Filtro por busca (nome ou email)
-        $query->search($request->input('search'));
+        $query = User::with('roles:id,name')->search($request->input('search'));
 
         // Filtro por role (papel)
         if ($request->filled('role')) {
@@ -35,12 +33,12 @@ class UserController extends BaseController
 
         $users = $query->latest()->paginate();
 
-        return $this->sendResponse($users, 'Lista de usuários');
+        return UserResource::collection($users);
     }
 
     public function list()
     {
-        $users = $this->user->with('roles:id,name')->get();
+        $users = User::with('roles:id,name')->get();
 
         return $this->sendResponse($users, 'Lista de usuários');
     }
@@ -51,27 +49,27 @@ class UserController extends BaseController
      */
     public function listResellers()
     {
-        $users = $this->user->with('roles')->role(['reseller','admin'])->get();
+        $users = User::with('roles')->role(['reseller', 'admin'])->get();
 
-        return $this->sendResponse($users, 'Lista de revendedores');
+        return UserResource::collection($users);
     }
 
     public function listDesigners()
     {
-        $users = $this->user->with('roles')->role(['designer'])->get();
+        $users = User::with('roles')->role(['designer'])->get();
 
-        return $this->sendResponse($users, 'Lista de designers');
+        return UserResource::collection($users);
     }
 
     public function store(UserRequest $request)
     {
         $validated = $request->validated();
         $role = $validated['role'];
-        
+
         // Remover 'role' do array antes de criar o usuário
         unset($validated['role']);
-        
-        $user = $this->user->create($validated);
+
+        $user = User::create($validated);
 
         // Atribuir role ao usuário
         $user->assignRole($role);
@@ -84,21 +82,21 @@ class UserController extends BaseController
         return $this->sendResponse($user, 'Usuário criado com sucesso');
     }
 
-    public function show($id)
+    public function show(User $user)
     {
-        $user = $this->user->with(['roles:id,name', 'permissions'])->findOrFail($id);
+        $user->load(['roles:id,name', 'permissions']);
 
-        return $this->sendResponse($user, 'Dados do usuário');
+        return new UserResource($user);
     }
 
     public function update(User $user, UserRequest $request)
     {
         $validated = $request->validated();
         $role = $validated['role'];
-        
+
         // Remover 'role' do array antes de atualizar o usuário
         unset($validated['role']);
-        
+
         $user->update($validated);
 
         // Sincronizar roles (remove todas e adiciona a nova)
@@ -112,42 +110,12 @@ class UserController extends BaseController
             $user->update(['is_dropshipping' => 0]);
         }
 
-        return $this->sendResponse($user, 'Dados do usuário atualizados com sucesso');
+        return new UserResource($user);
     }
 
     public function destroy(User $user)
     {
         $user->delete();
         return $this->sendResponse(null, 'Usuário removido.');
-    }
-
-    protected function handleUserPermissions(User $user, array $data)
-    {
-        $permissions = [
-            'manage_goals_corporative' => 'manage goals corporative',
-            'manage_goals_operational' => 'manage goals operational',
-        ];
-
-        foreach ($permissions as $field => $permission) {
-            if (isset($data[$field])) {
-                $data[$field]
-                    ? $user->givePermissionTo($permission)
-                    : $user->revokePermissionTo($permission);
-            }
-        }
-    }
-
-    public function activity($id)
-    {
-        // Validate if user exists.
-        $user = $this->user->findOrFail($id, ['id']);
-
-        // $activity = Activity::where('causer_id', $id)
-        //     ->where('causer_type', User::class)
-        //     ->latest()
-        //     ->paginate();
-        $activity = collect([]);
-
-        return $this->sendResponse($activity, 'Atividades do usuário');
     }
 }

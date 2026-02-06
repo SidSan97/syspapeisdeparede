@@ -7,16 +7,21 @@
           :to="{ name: 'UserCreate' }"
           class="btn btn-primary"
         >
-          Adicionar usuário
+          <i class="fa fa-plus"></i>
+
+          Criar usuário
         </router-link>
       </template>
 
       <div class="row g-3 mt-1">
         <div class="col-lg-4">
           <div class="input-group input-group-prefix">
-            <input type="search" class="form-control" placeholder="Pesquisar usuário"
-             v-model="searchQuery"
-            >
+            <input
+              type="search"
+              class="form-control"
+              placeholder="Pesquisar usuário"
+              v-model="searchQuery"
+            />
             <span class="input-group-text">
               <i class="fa fa-search"></i>
             </span>
@@ -26,35 +31,35 @@
         <div class="col-lg-3">
           <div class="dropdown">
             <button
-                class="btn btn-outline-default d-flex align-items-center gap-2"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
+              class="btn btn-outline-default d-flex align-items-center gap-2"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
             >
-                {{ selectedRoleLabel }}
-                <i class="fa fa-chevron-down small"></i>
+              {{ selectedRoleLabel }}
+              <i class="fa fa-chevron-down small"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                <li>
-                    <button
-                        class="dropdown-item"
-                        type="button"
-                        :class="{ active: selectedRoleName === null }"
-                        @click="setRoleFilter(null)"
-                    >
-                        Todos os papéis
-                    </button>
-                </li>
-                <li v-for="role in roles" :key="role.id">
-                    <button
-                        class="dropdown-item"
-                        type="button"
-                        :class="{ active: selectedRoleName === role.name }"
-                        @click="setRoleFilter(role.name)"
-                    >
-                        {{ translateRole(role.name) }}
-                    </button>
-                </li>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  :class="{ active: selectedRoleName === null }"
+                  @click="setRoleFilter(null)"
+                >
+                  Todos os papéis
+                </button>
+              </li>
+              <li v-for="role in roles" :key="role.id">
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  :class="{ active: selectedRoleName === role.name }"
+                  @click="setRoleFilter(role.name)"
+                >
+                  {{ translateRole(role.name) }}
+                </button>
+              </li>
             </ul>
           </div>
         </div>
@@ -84,22 +89,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(user) in users" :key="user.id">
+            <tr v-for="user in users" :key="user.id">
               <th scope="row">{{ user.id }}</th>
               <td>
                 <div class="d-flex align-items-center gap-3">
-                  <div
-                    v-if="!user.avatar"
-                    class="avatar text-bg-primary"
-                  >
+                  <div v-if="!user.avatar" class="avatar text-bg-primary">
                     {{ getUserInitial(user.name) }}
                   </div>
-                  <img
-                    v-else
-                    :src="getAvatarUrl(user.avatar)"
-                    :alt="user.name"
-                    class="avatar"
-                  />
+                  <img v-else :src="getAvatarUrl(user.avatar)" :alt="user.name" class="avatar" />
                   <div>
                     <div class="fw-semibold">{{ user.name }}</div>
                     <div class="text-muted small">{{ user.email }}</div>
@@ -119,9 +116,9 @@
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <i class="fa fa-ellipsis-v"></i>
+                    <i class="fa fa-ellipsis-v fa-fw"></i>
                   </button>
-                  <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                       <router-link
                         class="dropdown-item"
@@ -148,10 +145,7 @@
       </div>
 
       <div v-if="!loading && users.length > 0 && paginationData.last_page > 1" class="mt-3">
-        <pagination
-          :data="paginationData"
-          @pagination-change-page="fetchUsers"
-        />
+        <pagination :data="paginationData" @pagination-change-page="fetchUsers" />
       </div>
     </Page>
     <NotFound v-else />
@@ -168,7 +162,7 @@ import NotFound from '@/components/NotFound.vue';
 import { useAuthStore } from '@/stores/auth';
 import { swalConfirmation } from '../../../utils/alerts';
 import { translateRole } from '@/utils/roleTranslations';
-import debounce from 'lodash/debounce'
+import debounce from 'lodash/debounce';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -211,7 +205,7 @@ const getAvatarUrl = (avatarPath) => {
 
 const getUserRole = (user) => {
   if (user.roles && user.roles.length > 0) {
-    return translateRole(user.roles[0].name);
+    return translateRole(user.roles[0]);
   }
   return '—';
 };
@@ -242,30 +236,17 @@ const fetchUsers = async (page = 1) => {
 
     const { data } = await axios.get('v1/users', { params });
 
-    if (data?.success && data?.data) {
-      const items = Array.isArray(data.data.data) ? data.data.data : [];
-      users.value = items;
+    users.value = data.data;
 
-      // Atualizar dados de paginação
-      paginationData.value = {
-        current_page: data.data.current_page || 1,
-        last_page: data.data.last_page || 1,
-        per_page: data.data.per_page || 15,
-        total: data.data.total || 0,
-        from: data.data.from || 0,
-        to: data.data.to || 0,
-      };
-    } else {
-      users.value = [];
-      paginationData.value = {
-        current_page: 1,
-        last_page: 1,
-        per_page: 15,
-        total: 0,
-        from: 0,
-        to: 0,
-      };
-    }
+    // Atualizar dados de paginação
+    paginationData.value = {
+      current_page: data.meta.current_page || 1,
+      last_page: data.meta.last_page || 1,
+      per_page: data.meta.per_page || 15,
+      total: data.meta.total || 0,
+      from: data.meta.from || 0,
+      to: data.meta.to || 0,
+    };
   } catch (error) {
     window.Swal.fire({
       title: 'Erro!',
@@ -298,7 +279,6 @@ const fetchRoles = async () => {
 };
 
 const confirmDelete = async (user) => {
-
   if (!auth.hasPermission('users.delete')) return;
 
   const result = await swalConfirmation(
@@ -306,7 +286,7 @@ const confirmDelete = async (user) => {
     'Essa ação é <strong>irreversível!</strong>',
     'warning',
     'Excluir',
-    'Cancelar'
+    'Cancelar',
   );
 
   if (result.isConfirmed) {
@@ -349,6 +329,4 @@ watch(searchQuery, () => {
 });
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

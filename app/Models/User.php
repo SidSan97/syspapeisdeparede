@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -47,6 +48,13 @@ class User extends Authenticatable implements Commentator //implements MustVerif
             'password' => 'hashed',
             'is_dropshipping' => 'integer',
         ];
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        return $this->avatar
+            ? Storage::url($this->avatar)
+            : asset('images/avatar.svg');
     }
 
     /**

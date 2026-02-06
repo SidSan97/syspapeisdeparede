@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\V1\UserResource;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -25,15 +26,13 @@ class HomeController extends Controller
     {
 
         $user = auth()->user();
+        $user->load(['roles', 'permissions']);
 
         $scriptVariables = [
             'appName' => config('app.name'),
-            'user' => $user,
+            'user' => new UserResource($user),
             'appUrl' => config('app.url'),
             'baseUrl' => url(''),
-            'roles' => $user ? $user->getRoleNames()->toArray() : [],
-            'permissions' => $user ? $user->getAllPermissions()->pluck('name')->toArray() : [],
-            'direct_permissions' => $user ? $user->getDirectPermissions()->pluck('name')->toArray() : [],
             'assetUrl' => asset(''),
         ];
 

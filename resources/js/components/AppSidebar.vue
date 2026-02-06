@@ -23,6 +23,8 @@
             <i :class="['me-3', item.icon]"></i>
 
             {{ item.label }}
+
+            <span v-if="item.debug" class="badge text-bg-warning">debug</span>
           </RouterLink>
         </div>
       </div>
@@ -81,7 +83,7 @@ const menuGroups = [
   },
   {
     visible: () => roles.admin.value || roles.commercial.value,
-    items: [{ to: '/pedidos-producao', label: 'Pedidos', icon: 'fa fa-inbox' }],
+    items: [{ to: '/pedidos-producao', label: 'Pedidos', icon: 'fa fa-inbox', debug: true }],
   },
   {
     visible: () => roles.admin.value || roles.expedition.value,

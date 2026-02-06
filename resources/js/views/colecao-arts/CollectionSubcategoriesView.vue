@@ -1,192 +1,36 @@
 <template>
   <section class="content">
-    <Page :title="collectionName || 'Subcategorias'" back-to="/colecao-arts">
-        <template #actions>
-            <button class="btn btn-primary" type="button" @click="openAddModal">
-                Adicionar
-            </button>
+    <Page :title="collectionName || 'Subcategorias'" :back-to="{ name: 'CollectionModels' }">
+      <template #actions>
+        <CollectionActions />
+      </template>
 
-            <button class="btn btn-default" type="button"  @click="goToFavorites">
-                Meus favoritos
-            </button>
-            <div class="dropdown" v-if="isAdmin">
-                <button class="btn btn-subtle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fa fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <RouterLink to="/settings/colecoes" class="dropdown-item">
-                          Categorias
-                        </RouterLink>
-                    </li>
-                </ul>
-            </div>
-        </template>
-        <div class="container py-4">
+      <div class="container py-4">
         <!-- Loading State -->
         <div v-if="loading" class="text-center text-muted py-5">
-            <div class="spinner-border" role="status">
+          <div class="spinner-border" role="status">
             <span class="visually-hidden">Carregando...</span>
-            </div>
+          </div>
         </div>
 
         <!-- Empty State -->
         <div v-else-if="!subcategories.length" class="text-center text-muted py-5">
-            <p class="mb-0">Nenhuma subcategoria cadastrada nesta coleção.</p>
+          <p class="mb-0">Nenhuma subcategoria cadastrada nesta coleção.</p>
         </div>
 
         <!-- Subcategories Grid -->
         <div v-else class="row g-3">
-            <div
+          <div
             v-for="subcategory in subcategories"
             :key="subcategory.id"
-            class="col-12 col-sm-6 col-md-4 col-lg-3"
-            >
-            <div
-                class="card border h-100 subcategory-card"
-                style="cursor: pointer;"
-                @click="viewSubcategoryImages(subcategory)"
-            >
-                <div class="position-relative ratio ratio-4x3 category-cover">
-                <div
-                    class="position-absolute top-0 start-0 w-100 h-100"
-                    :style="getSubcategoryBackground(subcategory)"
-                    style="background-size: cover; background-position: center; background-repeat: no-repeat;"
-                ></div>
-                <div
-                    class="position-absolute bottom-0 start-0 w-100 text-white p-3"
-                    style="background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%);"
-                >
-                    <h5 class="mb-0 fw-semibold">{{ subcategory.name }}</h5>
-                </div>
-                </div>
-            </div>
-            </div>
-        </div>
-        </div>
-
-        <!-- Modal Adicionar Subcategoria -->
-        <div
-        class="modal fade"
-        id="add-subcategory-modal"
-        tabindex="-1"
-        aria-labelledby="add-subcategory-modal-label"
-        aria-hidden="true"
-        ref="addModalRef"
-        >
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="add-subcategory-modal-label">Adicionar item</h5>
-                <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-                ></button>
-            </div>
-            <div class="modal-body">
-                <form @submit.prevent="saveSubcategory">
-                <!-- Nome -->
-                <div class="mb-3">
-                    <label for="subcategory-name" class="form-label">Nome</label>
-                    <input
-                    type="text"
-                    class="form-control"
-                    id="subcategory-name"
-                    v-model="formData.name"
-                    placeholder="Digite o nome"
-                    required
-                    />
-                </div>
-
-                <!-- Imagem -->
-                <div class="mb-3">
-                    <label for="subcategory-image" class="form-label">Imagem</label>
-                    <div class="d-flex align-items-center gap-2">
-                    <input
-                        type="file"
-                        class="form-control d-none"
-                        id="subcategory-image"
-                        accept="image/*"
-                        @change="handleImageChange"
-                        ref="fileInputRef"
-                    />
-                    <label
-                        for="subcategory-image"
-                        class="btn btn-outline-secondary mb-0"
-                        style="cursor: pointer;"
-                    >
-                        Escolher Arquivo
-                    </label>
-                    <span class="text-muted">{{ selectedFileName || 'Nenhum arquivo escolhido' }}</span>
-                    </div>
-                </div>
-
-                <!-- Categoria -->
-                <div class="mb-3">
-                    <label for="subcategory-category" class="form-label">Categoria</label>
-                    <select
-                    class="form-select"
-                    id="subcategory-category"
-                    v-model="formData.parent_id"
-                    @change="fetchSubcategoriesForCollection(formData.parent_id)"
-                    required
-                    >
-                    <option value="">Selecionar categoria</option>
-                    <option
-                        v-for="collection in collections"
-                        :key="collection.id"
-                        :value="collection.id"
-                    >
-                        {{ collection.name }}
-                    </option>
-                    </select>
-                </div>
-
-                <!-- Subcategoria -->
-                <div class="mb-3">
-                    <label for="subcategory-subcategory" class="form-label">Subcategoria</label>
-                    <div v-if="loadingSubcategories" class="form-select d-flex align-items-center justify-content-center" style="min-height: 38px;">
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span>Carregando...</span>
-                    </div>
-                    <select
-                    v-else
-                    class="form-select"
-                    id="subcategory-subcategory"
-                    v-model="formData.parent_subcategory_id"
-                    >
-                    <option value="">Selecionar categoria</option>
-                    <option
-                        v-for="subcategory in availableSubcategories"
-                        :key="subcategory.id"
-                        :value="subcategory.id"
-                    >
-                        {{ subcategory.name }}
-                    </option>
-                    </select>
-                </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-                >
-                Cancelar
-                </button>
-                <button
-                type="button"
-                class="btn btn-primary"
-                @click="saveSubcategory"
-                :disabled="saving"
-                >
-                {{ saving ? 'Salvando...' : 'Salvar' }}
-                </button>
-            </div>
-            </div>
+            class="col-12 col-sm-6 col-md-4"
+          >
+            <CollectionCard
+              @click="viewSubcategoryImages(subcategory)"
+              :src="subcategory.image_cover_url"
+              :title="subcategory.name"
+            />
+          </div>
         </div>
       </div>
     </Page>
@@ -198,36 +42,21 @@ import { onMounted, ref, useTemplateRef, computed } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import axios from 'axios';
 import Page from '@/components/page/Page.vue';
+
 // Alerts agora usam window.Swal.fire diretamente
 import { useAuthStore } from '@/stores/auth';
+import CollectionActions from './components/CollectionActions.vue';
+import CollectionCard from './components/CollectionCard.vue';
 
 const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
-const isAdmin = computed(() => auth.isAdmin());
 const loading = ref(true);
 const subcategories = ref([]);
 const collectionName = ref('');
 const collections = ref([]);
-const availableSubcategories = ref([]);
-const loadingSubcategories = ref(false);
-const addModalRef = useTemplateRef('addModalRef');
-const fileInputRef = useTemplateRef('fileInputRef');
-const addModal = ref(null);
-const saving = ref(false);
-const formData = ref({
-  name: '',
-  image: null,
-  parent_id: '',
-  parent_subcategory_id: '',
-});
-const selectedFileName = ref('');
-
-const goToFavorites = () => {
-  router.push('/colecao-arts/favoritos');
-};
 
 const normalizeSubcategory = (item = {}) => {
   return {
@@ -294,162 +123,15 @@ const fetchCollections = async () => {
     const payload = data?.data ?? data ?? {};
     const items = Array.isArray(payload) ? payload : (payload.items ?? []);
     // Filtrar apenas categorias raiz
-    const rootCategories = items.filter(item => !item.parent_id);
-    collections.value = Array.isArray(rootCategories) ? rootCategories.map((item) => ({
-      id: Number(item.id ?? 0),
-      name: (item.name ?? '').toString(),
-    })) : [];
-  } catch (error) {
-    collections.value = [];
-  }
-};
-
-const fetchSubcategoriesForCollection = async (categoryId) => {
-  if (!categoryId) {
-    availableSubcategories.value = [];
-    loadingSubcategories.value = false;
-    return;
-  }
-  loadingSubcategories.value = true;
-  availableSubcategories.value = [];
-  formData.value.parent_subcategory_id = '';
-  try {
-    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
-    const payload = data?.data ?? data ?? [];
-    availableSubcategories.value = Array.isArray(payload)
-      ? payload.map((item) => ({
+    const rootCategories = items.filter((item) => !item.parent_id);
+    collections.value = Array.isArray(rootCategories)
+      ? rootCategories.map((item) => ({
           id: Number(item.id ?? 0),
           name: (item.name ?? '').toString(),
         }))
       : [];
   } catch (error) {
-    availableSubcategories.value = [];
-  } finally {
-    loadingSubcategories.value = false;
-  }
-};
-
-const openAddModal = () => {
-  if (addModal.value) {
-    formData.value = {
-      name: '',
-      image: null,
-      parent_id: route.params.id ? Number(route.params.id) : '',
-      parent_subcategory_id: '',
-    };
-    selectedFileName.value = '';
-    availableSubcategories.value = [];
-    loadingSubcategories.value = false;
-    if (fileInputRef.value) {
-      fileInputRef.value.value = '';
-    }
-    if (formData.value.parent_id) {
-      fetchSubcategoriesForCollection(formData.value.parent_id);
-    }
-    addModal.value.show();
-  }
-};
-
-const handleImageChange = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    formData.value.image = file;
-    selectedFileName.value = file.name;
-  } else {
-    formData.value.image = null;
-    selectedFileName.value = '';
-  }
-};
-
-const saveSubcategory = async () => {
-  if (!formData.value.name.trim()) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Por favor, preencha o nome da subcategoria.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-    return;
-  }
-
-  if (!formData.value.parent_id) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Por favor, selecione uma categoria.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-    return;
-  }
-
-  // Se uma subcategoria foi selecionada, usar ela. Caso contrário, criar nova subcategoria
-  const subcategoryId = formData.value.parent_subcategory_id
-    ? Number(formData.value.parent_subcategory_id)
-    : null;
-
-  saving.value = true;
-  try {
-    let finalSubcategoryId = subcategoryId;
-
-    // Se não há subcategoria selecionada, criar uma nova
-    if (!finalSubcategoryId) {
-      const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.value.name.trim());
-      formDataToSend.append('parent_id', Number(formData.value.parent_id));
-
-      // Se há imagem, adicionar ao criar a categoria
-      if (formData.value.image) {
-        formDataToSend.append('image_cover', formData.value.image);
-      }
-
-      const response = await axios.post('v1/collection-categories', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      finalSubcategoryId = response.data?.data?.id || response.data?.id;
-    }
-
-    // Se há imagem e ainda não foi enviada (se criou nova categoria sem imagem)
-    if (formData.value.image && finalSubcategoryId) {
-      const formDataToSend = new FormData();
-      formDataToSend.append('collection_category_id', finalSubcategoryId);
-      formDataToSend.append('images[]', formData.value.image);
-
-      if (formData.value.name.trim()) {
-        formDataToSend.append('names[]', formData.value.name.trim());
-      }
-
-      await axios.post('v1/collection-images', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    }
-
-    window.Swal.fire({
-      title: 'Subcategoria adicionada!',
-      text: 'Subcategoria adicionada com sucesso!',
-      confirmButtonText: 'Entendi!',
-    });
-    addModal.value?.hide();
-
-    // Recarregar a lista
-    const categoryId = route.params.id || formData.value.parent_id;
-    await fetchSubcategories(Number(categoryId));
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      'Não foi possível adicionar a subcategoria.';
-    window.Swal.fire({
-      title: 'Erro!',
-      text: errorMessage,
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  } finally {
-    saving.value = false;
+    collections.value = [];
   }
 };
 
@@ -464,17 +146,14 @@ onMounted(async () => {
   } else {
     router.push('/colecao-arts');
   }
-
-  // Inicializar modal Bootstrap
-  if (addModalRef.value) {
-    addModal.value = new window.bootstrap.Modal(addModalRef.value);
-  }
 });
 </script>
 
 <style scoped>
 .subcategory-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   border-radius: 5px;
 }
 
@@ -488,4 +167,3 @@ onMounted(async () => {
   border-radius: 8px;
 }
 </style>
-

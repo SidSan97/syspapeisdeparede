@@ -1,17 +1,28 @@
 <template>
   <section class="content">
-    <page title="Editar usuário" :back-to="{ name: 'UserList' }" v-if="auth.hasPermission('edit user')">
+    <page
+      title="Editar usuário"
+      :back-to="{ name: 'UserList' }"
+      v-if="auth.hasPermission('edit user')"
+    >
       <div class="card">
         <div class="card-body">
           <form @submit.prevent="updateUser()">
             <div class="row">
               <div class="col-lg-12">
-                <UsersForm ref="formRef" :roles="roles" :is-edit="true" :loading="loading"></UsersForm>
+                <UsersForm
+                  ref="formRef"
+                  :roles="roles"
+                  :is-edit="true"
+                  :loading="loading"
+                ></UsersForm>
               </div>
             </div>
-            <hr>
+            <hr />
             <div class="mt-4">
-              <button type="submit" class="btn btn-primary me-2" :disabled="saving || loading">Salvar as alterações</button>
+              <button type="submit" class="btn btn-primary me-2" :disabled="saving || loading">
+                Salvar as alterações
+              </button>
               <router-link :to="{ name: 'UserList' }" class="btn btn-subtle">Cancelar</router-link>
             </div>
           </form>
@@ -25,47 +36,47 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-import UsersForm from './components/UsersForm.vue'
-import Page from '@/components/page/Page.vue'
-import EmptyState from '@/components/empty-state/EmptyState.vue'
+import UsersForm from './components/UsersForm.vue';
+import Page from '@/components/page/Page.vue';
+import EmptyState from '@/components/empty-state/EmptyState.vue';
 
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth';
 
-const $router = useRouter()
-const $route = useRoute()
-const auth = useAuthStore()
+const $router = useRouter();
+const $route = useRoute();
+const auth = useAuthStore();
 
-const Toast = window.Toast
-const formRef = ref()
-const roles = ref([])
-const saving = ref(false)
-const loading = ref(true)
+const Toast = window.Toast;
+const formRef = ref();
+const roles = ref([]);
+const saving = ref(false);
+const loading = ref(true);
 
 async function fetchUser() {
   if (!auth.hasPermission('edit user')) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     const { data } = await axios.get('v1/users/' + $route.params.id);
 
-    const user = data.data
+    const user = data.data;
 
     // Aguardar o componente estar disponível
     if (!formRef.value) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     if (formRef.value) {
-      formRef.value.form.reset()
+      formRef.value.form.reset();
 
       // Garantir que is_dropshipping seja número (0 ou 1)
-      const isDropshipping = Number(user.is_dropshipping) || 0
+      const isDropshipping = Number(user.is_dropshipping) || 0;
 
-      const userRole = user.roles && user.roles.length > 0 ? user.roles[0].name : ''
+      const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : '';
 
       formRef.value.form.fill({
         id: user.id,
@@ -74,54 +85,54 @@ async function fetchUser() {
         role: userRole,
         is_dropshipping: isDropshipping,
         email_verified_at: user.email_verified_at,
-      })
+      });
     }
   } catch (error) {
     Toast.fire({
       icon: 'error',
-      title: error.response?.data?.message || 'Erro ao carregar usuário'
-    })
+      title: error.response?.data?.message || 'Erro ao carregar usuário',
+    });
 
-    $router.push({ name: 'UserList' })
+    $router.push({ name: 'UserList' });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function updateUser() {
   // Bloquear submissão enquanto está carregando os dados
   if (loading.value) {
-    return
+    return;
   }
 
   try {
-    saving.value = true
-    const userId = formRef.value.form.id
+    saving.value = true;
+    const userId = formRef.value.form.id;
 
-    const response = await formRef.value.form.put(`v1/users/${userId}`)
+    const response = await formRef.value.form.put(`v1/users/${userId}`);
 
-    Toast.fire({ icon: 'success', title: response.data.message })
+    Toast.fire({ icon: 'success', title: 'Usuário atualizado com sucesso' });
 
-    $router.push({ name: 'UserList' })
+    $router.push({ name: 'UserList' });
   } catch (error) {
     Toast.fire({
       icon: 'error',
-      title: error.response?.data?.message || 'Erro ao atualizar usuário'
-    })
+      title: error.response?.data?.message || 'Erro ao atualizar usuário',
+    });
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 function fetchRoles() {
   return axios.get('v1/roles/list').then(({ data }) => {
-    const payload = data?.data ?? data ?? []
-    roles.value = Array.isArray(payload) ? payload : []
-  })
+    const payload = data?.data ?? data ?? [];
+    roles.value = Array.isArray(payload) ? payload : [];
+  });
 }
 
 onMounted(async () => {
-  await fetchRoles()
-  await fetchUser()
-})
+  await fetchRoles();
+  await fetchUser();
+});
 </script>
