@@ -1,50 +1,38 @@
-<template>
-  <AppHeader></AppHeader>
-  <!--div class="bd-layout">
-    <AppSidebar ref="sidebarRef"></AppSidebar>
-    <main class="bd-main-content">
-
-    </main>
-  </div-->
-    <div class="d-flex">
-        <AppSidebar ref="sidebarRef"></AppSidebar>
-
-        <main>
-            <router-view :key="route.fullPath"></router-view>
-        </main>
-    </div>
-</template>
-
 <script setup>
-import { ref, provide } from 'vue';
-import { useRoute } from 'vue-router';
 import AppSidebar from '../components/AppSidebar.vue';
 import AppHeader from '../components/AppHeader.vue';
-
-const route = useRoute();
-const sidebarRef = ref(null);
-
-const toggleSidebar = () => {
-  if (sidebarRef.value) {
-    sidebarRef.value.toggleSidebar();
-  }
-};
-
-// Expor toggleSidebar para componentes filhos via provide
-provide('toggleSidebar', toggleSidebar);
 </script>
 
-<style scoped lang="scss">
-    main {
-        padding-top: 15px;
-        margin-left: 250px;
-        width: 80%;
-    }
+<template>
+  <AppHeader />
+  <div class="bd-layout">
+    <AppSidebar />
+    <main class="bd-main">
+      <router-view />
+    </main>
+  </div>
+</template>
 
-    @media (max-width: 992px) {
-        main {
-            margin-left: 0px;
-            width: 100%;
-        }
-    }
+<style scoped lang="scss">
+.bd-layout {
+  display: flex;
+  flex-direction: column;
+
+  @media (min-width: 992px) {
+    display: grid;
+    grid-template-areas: 'sidebar main';
+    grid-template-columns: min-content 1fr;
+    gap: 0;
+  }
+}
+
+.bd-main {
+  grid-area: main;
+  display: grid;
+  grid-template-areas:
+    'intro'
+    'content'
+    'footer';
+  grid-template-rows: auto 1fr;
+}
 </style>

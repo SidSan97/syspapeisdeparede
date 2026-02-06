@@ -1,349 +1,118 @@
 <template>
-  <aside class="bd-sidebar" :class="{ 'bd-sidebar-collapsed': isCollapsed }">
-    <nav class="bd-sidebar-nav">
-      <div v-if="!isProductionUser" class="bd-sidebar-group">
-        <RouterLink
-          to="/dashboard"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/dashboard') || isActiveRoute('/') }"
-        >
-          <i class="fa fa-home"></i>
-          <span class="bd-sidebar-text">Início</span>
-        </RouterLink>
+  <aside class="bd-sidebar border-end">
+    <div class="sidebar">
+      <div class="offcanvas-lg offcanvas-end d-lg-block py-3 py-lg-4" id="sidebar-nav">
+        <div class="offcanvas-header p-3 d-sm-none">
+          <button
+            type="button"
+            class="btn-close ms-auto"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#sidebar-nav"
+            aria-controls="sidebar-nav"
+            aria-label="Close"
+          />
+        </div>
+
+        <div v-for="(group, index) in visibleMenuGroups" :key="index" class="list-group border-0">
+          <RouterLink
+            v-for="item in group.items"
+            :key="item.to"
+            :to="item.to"
+            class="list-group-item list-group-item-action bg-transparent"
+          >
+            <i :class="['me-3', item.icon]"></i>
+
+            {{ item.label }}
+          </RouterLink>
+        </div>
       </div>
-
-      <hr v-if="!isDesigner && !isExpeditionUser && !isCommercialUser && !isProductionUser" class="bd-sidebar-divider">
-
-      <!-- Grupo 2: Orçamentos e Pedidos -->
-      <div v-if="!isDesigner && !isExpeditionUser && !isCommercialUser && !isProductionUser" class="bd-sidebar-group">
-        <RouterLink
-          to="/budget/new-budget"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/budget/new-budget') }"
-        >
-          <i class="fa fa-plus-circle"></i>
-          <span class="bd-sidebar-text">Novo orçamento</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/budget"
-          class="bd-sidebar-item"
-          :class="{ 'active': isBudgetListActive }"
-        >
-          <i class="fa fa-file-alt"></i>
-          <span class="bd-sidebar-text">Orçamentos</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/colecao-arts"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/colecao-arts') }"
-        >
-          <i class="fa fa-images"></i>
-          <span class="bd-sidebar-text">Coleção Arts</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/pedidos"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/pedidos') }"
-        >
-          <i class="fa-lg me-3 fa fa-inbox"></i>
-          <span class="bd-sidebar-text">Pedidos</span>
-        </RouterLink>
-      </div>
-
-      <hr v-if="isAdmin || isDesigner" class="bd-sidebar-divider">
-
-      <div v-if="isAdmin || isDesigner" class="bd-sidebar-group">
-        <RouterLink
-          to="/layouts"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/layouts') }"
-        >
-          <i class="fa fa-paint-brush"></i>
-          <span class="bd-sidebar-text">Layouts</span>
-        </RouterLink>
-      </div>
-
-      <hr v-if="isAdmin || isProductionUser" class="bd-sidebar-divider">
-
-      <!-- Grupo 4: Produção (único menu visível para usuário production) -->
-      <div v-if="isAdmin || isProductionUser" class="bd-sidebar-group">
-        <RouterLink
-          to="/products"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/products') }"
-        >
-          <i class="fa fa-folder"></i>
-          <span class="bd-sidebar-text">Produção</span>
-        </RouterLink>
-      </div>
-
-      <div v-if="isCommercialUser || isAdmin" class="bd-sidebar-group">
-        <RouterLink
-          to="/pedidos-producao"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/pedidos-producao') }"
-        >
-          <i class="fa-lg me-3 fa fa-inbox"></i>
-          <span class="bd-sidebar-text">Pedidos</span>
-        </RouterLink>
-      </div>
-
-      <hr v-if="isExpeditionUser || isAdmin" class="bd-sidebar-divider">
-
-      <!-- Grupo 5: Expedição -->
-      <div v-if="isExpeditionUser || isAdmin" class="bd-sidebar-group">
-        <RouterLink
-          to="/expedicao"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/expedicao') }"
-        >
-          <i class="fa fa-truck"></i>
-          <span class="bd-sidebar-text">Expedição</span>
-        </RouterLink>
-      </div>
-
-      <hr v-if="isAdmin" class="bd-sidebar-divider">
-
-      <!-- Grupo 6: Configurações -->
-      <div v-if="isAdmin" class="bd-sidebar-group">
-        <RouterLink
-          to="/settings"
-          class="bd-sidebar-item"
-          :class="{ 'active': isActiveRoute('/settings') }"
-        >
-          <i class="fa fa-cog"></i>
-          <span class="bd-sidebar-text">Configurações</span>
-        </RouterLink>
-      </div>
-    </nav>
-
-    <!-- Botão para colapsar/expandir em mobile -->
-    <button
-      class="bd-sidebar-toggle d-lg-none"
-      @click="toggleSidebar"
-      type="button"
-    >
-      <i class="fa" :class="isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-    </button>
+    </div>
   </aside>
-
-  <!-- Overlay para mobile -->
-  <div
-    v-if="!isCollapsed"
-    class="bd-sidebar-overlay d-lg-none"
-    @click="toggleSidebar"
-  ></div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
-const isCollapsed = ref(true); // Começar como true para evitar flash
-const route = useRoute();
 
-const isAdmin = computed(() => auth.isAdmin());
-const isTenant = computed(() => auth.hasRole('reseller'));
-const isProductionUser = computed(() => auth.hasRole('production'));
-const isDesigner = computed(() => auth.hasRole('designer'));
-const isExpeditionUser = computed(() => auth.hasRole('expedition'));
-const isCommercialUser = computed(() => auth.hasRole('commercial'));
-
-const toggleSidebar = () => {
-  isCollapsed.value = !isCollapsed.value;
+// Roles
+const roles = {
+  admin: computed(() => auth.isAdmin()),
+  production: computed(() => auth.hasRole('production')),
+  designer: computed(() => auth.hasRole('designer')),
+  expedition: computed(() => auth.hasRole('expedition')),
+  commercial: computed(() => auth.hasRole('commercial')),
 };
 
-// Expor método para acesso externo
-defineExpose({
-  toggleSidebar
-});
+// Configuração do menu
+// FIXME: Usar permissões ao invés de papéis.
+const menuGroups = [
+  {
+    visible: () => !roles.production.value,
+    items: [
+      {
+        to: '/dashboard',
+        label: 'Início',
+        icon: 'fa fa-home',
+      },
+    ],
+  },
+  {
+    visible: () =>
+      !roles.designer.value &&
+      !roles.expedition.value &&
+      !roles.commercial.value &&
+      !roles.production.value,
+    items: [
+      { to: '/budget/new-budget', label: 'Novo orçamento', icon: 'fa fa-plus-circle' },
+      { to: '/budget', label: 'Orçamentos', icon: 'fa fa-file-alt' },
+      { to: '/colecao-arts', label: 'Coleção Arts', icon: 'fa fa-images' },
+      { to: '/pedidos', label: 'Pedidos', icon: 'fa fa-inbox' },
+    ],
+  },
+  {
+    visible: () => roles.admin.value || roles.designer.value,
+    items: [{ to: '/layouts', label: 'Layouts', icon: 'fa fa-paint-brush' }],
+  },
+  {
+    visible: () => roles.admin.value || roles.production.value,
+    items: [{ to: '/products', label: 'Produção', icon: 'fa fa-folder' }],
+  },
+  {
+    visible: () => roles.admin.value || roles.commercial.value,
+    items: [{ to: '/pedidos-producao', label: 'Pedidos', icon: 'fa fa-inbox' }],
+  },
+  {
+    visible: () => roles.admin.value || roles.expedition.value,
+    items: [{ to: '/expedicao', label: 'Expedição', icon: 'fa fa-truck' }],
+  },
+  {
+    visible: () => roles.admin.value,
+    items: [{ to: '/settings', label: 'Configurações', icon: 'fa fa-cog' }],
+  },
+];
 
-const handleResize = () => {
-  if (window.innerWidth >= 992) {
-    isCollapsed.value = false;
-  } else {
-    isCollapsed.value = true;
-  }
-};
-
-// Fechar sidebar em mobile quando a rota mudar
-watch(() => route.path, () => {
-  if (window.innerWidth < 992) {
-    isCollapsed.value = true;
-  }
-});
-
-const isActiveRoute = (path) => {
-  return route.path === path || route.path.startsWith(path + '/');
-};
-
-const isBudgetListActive = computed(() => {
-  const path = route.path;
-  return path === '/budget' || (path.startsWith('/budget/') && !path.startsWith('/budget/new-budget') && !path.startsWith('/budget/edit/'));
-});
-
-onMounted(() => {
-  handleResize();
-  window.addEventListener('resize', handleResize);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
-});
+const visibleMenuGroups = computed(() => menuGroups.filter((group) => group.visible()));
 </script>
 
 <style lang="scss" scoped>
-.bd-sidebar {
-  position: fixed;
-  top: 56px;
-  left: 0;
-  height: calc(100vh - 56px);
-  width: 250px;
-  background-color: var(--bs-body-bg);
-  border-right: 1px solid var(--bs-border-color);
-  z-index: 1020;
-  transition: transform 0.3s ease-in-out, background-color 0.2s ease, border-color 0.2s ease;
-  overflow-y: auto;
-  overflow-x: hidden;
+.sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
 
-  &-collapsed {
-    transform: translateX(-100%);
-  }
-
-  &-nav {
-    padding: 1rem 0;
-  }
-
-  &-group {
-    padding: 0.25rem 0;
-  }
-
-  &-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    color: var(--bs-body-color);
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border-left: 3px solid transparent;
-    font-size: 0.95rem;
-
-    i {
-      width: 20px;
-      margin-right: 0.75rem;
-      font-size: 1.1rem;
-      color: var(--bs-secondary-color);
-      transition: color 0.2s ease;
-    }
-
-    &-text {
-      white-space: nowrap;
-    }
-
-    &:hover {
-      background-color: var(--bs-tertiary-bg);
-      color: var(--bs-emphasis-color);
-      border-left-color: var(--bs-border-color);
-
-      i {
-        color: var(--bs-body-color);
-      }
-    }
-
-    &.active {
-      background-color: var(--bs-primary-bg-subtle);
-      color: var(--bs-primary);
-      border-left-color: var(--bs-primary);
-      font-weight: 500;
-
-      i {
-        color: var(--bs-primary);
-      }
-    }
-  }
-
-  &-divider {
-    margin: 0.5rem 1rem;
-    border: 0;
-    border-top: 1px solid var(--bs-border-color);
-    opacity: 1;
-  }
-
-  &-toggle {
-    position: absolute;
-    top: 10px;
-    right: -40px;
-    width: 40px;
-    height: 40px;
-    background-color: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-left: none;
-    border-radius: 0 0.375rem 0.375rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1001;
-    color: var(--bs-body-color);
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: var(--bs-tertiary-bg);
-      color: var(--bs-emphasis-color);
-    }
-  }
-}
-
-.bd-sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  transition: opacity 0.3s ease;
-}
-
-// Responsividade
-@media (max-width: 991.98px) {
-  .bd-sidebar {
+  @media (min-width: 992px) {
+    position: sticky;
+    height: calc(100vh - 56px);
+    width: 242px;
     top: 56px;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  }
-}
-
-@media (min-width: 992px) {
-  .bd-sidebar {
-    transform: translateX(0) !important;
+    overflow-y: auto;
   }
 
-  .bd-sidebar-toggle,
-  .bd-sidebar-overlay {
-    display: none !important;
-  }
-}
-
-// Scrollbar personalizada
-.bd-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.bd-sidebar::-webkit-scrollbar-track {
-  background: var(--bs-secondary-bg);
-}
-
-.bd-sidebar::-webkit-scrollbar-thumb {
-  background: var(--bs-border-color);
-  border-radius: 3px;
-
-  &:hover {
-    background: var(--bs-secondary-color);
+  @media (min-width: 1200px) {
+    width: 272px;
   }
 }
 </style>

@@ -9,7 +9,6 @@ export const useAuthStore = defineStore('auth', {
     ready: false,
   }),
   actions: {
-
     setUser(payload) {
       this.user = payload?.user || null;
       this.roles = payload?.roles || [];
@@ -26,31 +25,15 @@ export const useAuthStore = defineStore('auth', {
       this.ready = false;
     },
 
-    async fetchUser() {
-      try {
-        const response = await window.axios.get('/api/user');
-        if (response.data && response.data.user) {
-            console.log(response.data);
-          this.setUser({
-            user: response.data.user,
-            roles: response.data.roles || [],
-            permissions: response.data.permissions || [],
-            direct_permissions: response.data.direct_permissions || [],
-          });
-          return true;
-        }
-      } catch (error) {
-        console.error('Erro ao buscar dados do usuário:', error);
-        // Se falhar, tenta usar os dados do window.LaravelApp
-        if (window.LaravelApp?.user) {
-          this.setUser({
-            user: window.LaravelApp.user,
-            roles: window.LaravelApp.roles || [],
-            permissions: window.LaravelApp.permissions || [],
-            direct_permissions: window.LaravelApp.direct_permissions || [],
-          });
-        }
-        return false;
+    async init() {
+      if (window.LaravelApp?.user) {
+        this.setUser({
+          user: window.LaravelApp.user,
+          roles: window.LaravelApp.roles || [],
+          permissions: window.LaravelApp.permissions || [],
+          direct_permissions: window.LaravelApp.direct_permissions || [],
+        });
+        this.ready = true;
       }
     },
 
@@ -65,7 +48,7 @@ export const useAuthStore = defineStore('auth', {
       if (this.isAdmin()) return true;
 
       if (Array.isArray(name)) {
-        return name.some(n => this.permissions.includes(n));
+        return name.some((n) => this.permissions.includes(n));
       }
 
       return this.permissions.includes(name);
@@ -77,13 +60,13 @@ export const useAuthStore = defineStore('auth', {
       // Admin tem todas as permissões
       if (this.isAdmin()) return true;
 
-      return names.every(n => this.permissions.includes(n));
+      return names.every((n) => this.permissions.includes(n));
     },
 
     hasRole(name) {
       if (!name) return false;
-      if (Array.isArray(name)) return name.some(n => this.roles.includes(n));
+      if (Array.isArray(name)) return name.some((n) => this.roles.includes(n));
       return this.roles.includes(name);
-    }
-  }
+    },
+  },
 });
