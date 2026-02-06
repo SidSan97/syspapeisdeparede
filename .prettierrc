@@ -4,7 +4,7 @@
     "singleAttributePerLine": false,
     "htmlWhitespaceSensitivity": "css",
     "printWidth": 100,
-    "tabWidth": 4,
+    "tabWidth": 2,
     "overrides": [
         {
             "files": "**/*.yml",
