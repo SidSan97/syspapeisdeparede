@@ -1,9 +1,9 @@
 <template>
   <section class="content">
-    <Page title="Usuários" back-to="/settings" v-if="auth.hasPermission('users.view')">
+    <Page title="Usuários" back-to="/settings" v-if="auth.can('users.view')">
       <template #actions>
         <router-link
-          v-if="auth.hasPermission('users.view')"
+          v-if="auth.can('users.view')"
           :to="{ name: 'UserCreate' }"
           class="btn btn-primary"
         >
@@ -31,13 +31,12 @@
         <div class="col-lg-3">
           <div class="dropdown">
             <button
-              class="btn btn-outline-default d-flex align-items-center gap-2"
+              class="btn btn-outline-default dropdown-toggle"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
               {{ selectedRoleLabel }}
-              <i class="fa fa-chevron-down small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
@@ -70,7 +69,7 @@
       </div>
 
       <EmptyState
-        v-else-if="users.length === 0"
+        v-else-if="users.data.length === 0"
         heading="Nenhum usuário encontrado"
         icon="user"
         class="p-5 mt-3"
@@ -89,14 +88,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="user in users" :key="user.id">
+            <tr v-for="user in users.data" :key="user.id">
               <th scope="row">{{ user.id }}</th>
               <td>
                 <div class="d-flex align-items-center gap-3">
-                  <div v-if="!user.avatar" class="avatar text-bg-primary">
-                    {{ getUserInitial(user.name) }}
-                  </div>
-                  <img v-else :src="getAvatarUrl(user.avatar)" :alt="user.name" class="avatar" />
+                  <img :src="user.avatar_url" :alt="user.name" class="avatar" />
                   <div>
                     <div class="fw-semibold">{{ user.name }}</div>
                     <div class="text-muted small">{{ user.email }}</div>
@@ -143,10 +139,11 @@
           </tbody>
         </table>
       </div>
-
-      <div v-if="!loading && users.length > 0 && paginationData.last_page > 1" class="mt-3">
-        <pagination :data="paginationData" @pagination-change-page="fetchUsers" />
-      </div>
+      <Bootstrap5Pagination
+        :data="users"
+        @pagination-change-page="fetchUsers"
+        class="justify-content-center mt-3"
+      />
     </Page>
     <NotFound v-else />
   </section>
@@ -154,132 +151,87 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import axios from 'axios';
+import debounce from 'lodash/debounce';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import NotFound from '@/components/NotFound.vue';
+import { Bootstrap5Pagination } from 'laravel-vue-pagination';
 import { useAuthStore } from '@/stores/auth';
-import { swalConfirmation } from '../../../utils/alerts';
+import { swalConfirmation } from '@/utils/alerts';
 import { translateRole } from '@/utils/roleTranslations';
-import debounce from 'lodash/debounce';
 
-const router = useRouter();
 const auth = useAuthStore();
 
-const users = ref([]);
+const users = ref({ data: [] });
 const roles = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const selectedRoleName = ref(null);
-const paginationData = ref({
-  current_page: 1,
-  last_page: 1,
-  per_page: 15,
-  total: 0,
-  from: 0,
-  to: 0,
-});
 
-const debouncedFetch = debounce(() => {
-  fetchUsers(1);
-}, 500);
+// ------------------ Computed ------------------
+const selectedRoleLabel = computed(() =>
+  selectedRoleName.value ? translateRole(selectedRoleName.value) : 'Filtrar por papel...',
+);
 
-const selectedRoleLabel = computed(() => {
-  if (selectedRoleName.value === null) {
-    return 'Filtrar por papel...';
+// ------------------ Utilities ------------------
+const showError = (title = 'Erro!', text = 'Ocorreu um erro.') => {
+  window.Swal.fire({ title, text, icon: 'error', confirmButtonText: 'Entendi!' });
+};
+
+const showSuccess = (title = 'Sucesso!', text = '') => {
+  window.Swal.fire({ title, text, confirmButtonText: 'Entendi!' });
+};
+
+const getUserRole = (user) => (user.roles?.[0] ? translateRole(user.roles[0]) : '—');
+
+// ------------------ API Calls ------------------
+const fetchRoles = async () => {
+  try {
+    const { data } = await axios.get('v1/roles/list');
+    roles.value = Array.isArray(data?.data ?? data) ? (data?.data ?? data) : [];
+  } catch {
+    roles.value = [];
   }
-  return translateRole(selectedRoleName.value);
-});
-
-const getUserInitial = (name) => {
-  if (!name) return '?';
-  return name.charAt(0).toUpperCase();
-};
-
-const getAvatarUrl = (avatarPath) => {
-  if (!avatarPath) return '';
-  const baseUrl = window.location.origin.replace(/\/$/, '');
-  return `${baseUrl}/storage/${avatarPath.replace(/^\//, '')}`;
-};
-
-const getUserRole = (user) => {
-  if (user.roles && user.roles.length > 0) {
-    return translateRole(user.roles[0]);
-  }
-  return '—';
-};
-
-const setRoleFilter = (roleName) => {
-  selectedRoleName.value = roleName;
-  fetchUsers(1);
 };
 
 const fetchUsers = async (page = 1) => {
-  if (!auth.hasPermission('users.view')) return;
+  if (!auth.can('users.view')) return;
 
   loading.value = true;
   try {
-    const params = {
-      page,
-    };
-
-    // Adicionar filtro de busca
-    if (searchQuery.value.trim()) {
-      params.search = searchQuery.value.trim();
-    }
-
-    // Adicionar filtro de role (papel)
-    if (selectedRoleName.value !== null) {
-      params.role = selectedRoleName.value;
-    }
-
+    const params = { page, role: selectedRoleName.value, search: searchQuery.value.trim() };
     const { data } = await axios.get('v1/users', { params });
-
-    users.value = data.data;
-
-    // Atualizar dados de paginação
-    paginationData.value = {
-      current_page: data.meta.current_page || 1,
-      last_page: data.meta.last_page || 1,
-      per_page: data.meta.per_page || 15,
-      total: data.meta.total || 0,
-      from: data.meta.from || 0,
-      to: data.meta.to || 0,
-    };
-  } catch (error) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Não foi possível carregar os usuários. Tente novamente.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-    users.value = [];
-    paginationData.value = {
-      current_page: 1,
-      last_page: 1,
-      per_page: 15,
-      total: 0,
-      from: 0,
-      to: 0,
-    };
+    users.value = data;
+  } catch {
+    showError('Não foi possível carregar os usuários. Tente novamente.');
+    users.value = { data: [] };
   } finally {
     loading.value = false;
   }
 };
 
-const fetchRoles = async () => {
+// ------------------ Actions ------------------
+const setRoleFilter = (roleName) => {
+  selectedRoleName.value = roleName;
+  fetchUsers(1);
+};
+
+const deleteUser = async (user) => {
+  if (!user?.id) return;
+
   try {
-    const { data } = await axios.get('v1/roles/list');
-    const payload = data?.data ?? data ?? [];
-    roles.value = Array.isArray(payload) ? payload : [];
+    await axios.delete(`v1/users/${user.id}`);
+    await fetchUsers(1);
+    showSuccess('Usuário excluído!', 'Usuário excluído com sucesso.');
   } catch (error) {
-    roles.value = [];
+    const message = error?.response?.data?.message ?? 'Erro ao excluir o usuário. Tente novamente.';
+    showError('Erro!', message);
   }
 };
 
 const confirmDelete = async (user) => {
-  if (!auth.hasPermission('users.delete')) return;
+  if (!auth.can('users.delete')) return;
 
   const result = await swalConfirmation(
     'Excluir usuário?',
@@ -289,44 +241,18 @@ const confirmDelete = async (user) => {
     'Cancelar',
   );
 
-  if (result.isConfirmed) {
-    await deleteUser(user);
-  }
+  if (result.isConfirmed) deleteUser(user);
 };
 
-const deleteUser = async (user) => {
-  if (!user?.id) return;
+// ------------------ Debounced Search ------------------
+const debouncedFetch = debounce(() => fetchUsers(1), 500);
 
-  try {
-    await axios.delete(`v1/users/${user.id}`);
-    // Recarregar a página atual após exclusão
-    fetchUsers(paginationData.value.current_page);
-    window.Swal.fire({
-      title: 'Usuário excluído!',
-      text: 'Usuário excluído com sucesso.',
-      confirmButtonText: 'Entendi!',
-    });
-  } catch (error) {
-    const message =
-      error?.response?.data?.message ?? 'Não foi possível excluir o usuário. Tente novamente.';
-    window.Swal.fire({
-      title: 'Erro!',
-      text: message,
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  }
-};
+watch(searchQuery, debouncedFetch);
 
+// ------------------ Lifecycle ------------------
 onMounted(async () => {
   document.title = 'Usuários';
   await fetchRoles();
   fetchUsers(1);
 });
-
-watch(searchQuery, () => {
-  debouncedFetch();
-});
 </script>
-
-<style scoped></style>

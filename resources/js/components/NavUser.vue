@@ -3,16 +3,6 @@ import { useAuthStore } from '@/stores/auth';
 
 const { user } = useAuthStore();
 
-const getAvatarUrl = () => {
-  if (!user) return '';
-
-  const assetUrl = window.LaravelApp?.assetUrl || '';
-  if (user.avatar) {
-    return `${assetUrl}storage/${user.avatar}`;
-  }
-  return `${assetUrl}assets/img/avatar.svg`;
-};
-
 const handleLogout = () => {
   // Criar formulário de logout
   const form = document.createElement('form');
@@ -45,14 +35,14 @@ const handleLogout = () => {
       aria-haspopup="true"
       aria-expanded="false"
     >
-      <img class="avatar avatar-sm rounded-circle me-2" :src="getAvatarUrl()" :alt="user.name" />
+      <img class="avatar avatar-sm rounded-circle me-2" :src="user.avatar_url" :alt="user.name" />
       <span class="d-none d-md-inline">{{ user.name }}</span>
     </a>
 
     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
       <div class="dropdown-item-text">
         <div class="d-flex gap-3">
-          <img class="avatar avatar-lg rounded-circle" :src="getAvatarUrl()" :alt="user.name" />
+          <img class="avatar avatar-lg rounded-circle" :src="user.avatar_url" :alt="user.name" />
           <div>
             <strong class="text-truncate">{{ user.name }}</strong>
             <p class="text-muted m-0 small">{{ user.email }}</p>

@@ -59,4 +59,21 @@ class UserRequest extends FormRequest
             'is_dropshipping' => ['nullable', 'integer', 'in:0,1'],
         ];
     }
+
+    protected function prepareForValidation(): void
+    {
+        // Padroniza is_dropshipping para 0 se não vier
+        $isDropshipping = $this->input('is_dropshipping', 0);
+
+        // Se a role não for reseller, sempre garante 0
+
+        // TODO: Substituir 'reseller' por Enum de roles para tornar a manutenção mais segura.
+        if ($this->input('role') !== 'reseller') {
+            $isDropshipping = 0;
+        }
+
+        $this->merge([
+            'is_dropshipping' => $isDropshipping,
+        ]);
+    }
 }

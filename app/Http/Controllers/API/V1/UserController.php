@@ -6,32 +6,21 @@ use App\Http\Requests\Users\UserRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\TypeUser;
-
-// use Spatie\Activitylog\Models\Activity;
 
 class UserController extends BaseController
 {
-    protected $user;
-    protected $userType;
-
-    public function __construct(User $user, TypeUser $userType)
+    public function __construct()
     {
-        $this->middleware('auth:api');
-        $this->user = $user;
-        $this->userType = $userType;
+        $this->authorizeResource(User::class, 'user');
     }
 
     public function index(Request $request)
     {
-        $query = User::with('roles:id,name')->search($request->input('search'));
-
-        // Filtro por role (papel)
-        if ($request->filled('role')) {
-            $query->role($request->role);
-        }
-
-        $users = $query->latest()->paginate();
+        $users = User::with('roles:id,name')
+            ->search($request->search)
+            ->when($request->filled('role'), fn($query) => $query->role($request->role))
+            ->latest()
+            ->paginate();
 
         return UserResource::collection($users);
     }
@@ -63,23 +52,13 @@ class UserController extends BaseController
 
     public function store(UserRequest $request)
     {
-        $validated = $request->validated();
-        $role = $validated['role'];
+        $data = $request->safe()->except('role');
 
-        // Remover 'role' do array antes de criar o usuário
-        unset($validated['role']);
+        $user = User::create($data);
 
-        $user = User::create($validated);
+        $user->assignRole($request->validated('role'));
 
-        // Atribuir role ao usuário
-        $user->assignRole($role);
-
-        // Se for revendedor, atualizar is_dropshipping
-        if ($role === 'reseller') {
-            $user->update(['is_dropshipping' => $request->is_dropshipping ?? 0]);
-        }
-
-        return $this->sendResponse($user, 'Usuário criado com sucesso');
+        return new UserResource($user);
     }
 
     public function show(User $user)
@@ -91,24 +70,11 @@ class UserController extends BaseController
 
     public function update(User $user, UserRequest $request)
     {
-        $validated = $request->validated();
-        $role = $validated['role'];
+        $data = $request->safe()->except('role');
+        $role = $request->validated('role');
 
-        // Remover 'role' do array antes de atualizar o usuário
-        unset($validated['role']);
-
-        $user->update($validated);
-
-        // Sincronizar roles (remove todas e adiciona a nova)
+        $user->update($data);
         $user->syncRoles([$role]);
-
-        // Se for revendedor, atualizar is_dropshipping
-        if ($role === 'reseller') {
-            $user->update(['is_dropshipping' => $request->is_dropshipping ?? 0]);
-        } else {
-            // Se não for revendedor, garantir que is_dropshipping seja 0
-            $user->update(['is_dropshipping' => 0]);
-        }
 
         return new UserResource($user);
     }
@@ -116,6 +82,7 @@ class UserController extends BaseController
     public function destroy(User $user)
     {
         $user->delete();
-        return $this->sendResponse(null, 'Usuário removido.');
+
+        return response()->noContent();
     }
 }
