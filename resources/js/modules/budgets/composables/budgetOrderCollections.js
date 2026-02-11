@@ -19,6 +19,9 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
   // Estado de seleções de parede
   const wallSelections = reactive({});
 
+  // Termo de busca por parede (para filtrar artes pelo nome)
+  const wallSearchTerms = reactive({});
+
   // Computed: paredes que requerem seleção de coleção
   const wallsRequiringCollection = computed(() => {
     if (!budget.value || !Array.isArray(budget.value.rooms)) {
@@ -145,10 +148,17 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
 
     const finalUrl = !resolvedUrl || resolvedUrl === '#' ? COLLECTION_IMAGE_PLACEHOLDER : resolvedUrl;
 
+    const nameStr = image.name != null ? String(image.name).trim() : '';
+    const displayName =
+      nameStr ||
+      (image.path_name != null ? image.path_name : image.pathName) ||
+      `Imagem #${image.id != null ? image.id : ''}`;
+
     return {
       id: finalId,
       url: finalUrl,
-      title: image.path_name ?? image.pathName ?? `Imagem #${image.id ?? ''}`,
+      title: displayName,
+      name: displayName,
     };
   }
 
@@ -225,6 +235,27 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     }
   }
 
+  function getFilteredCollectionItems(wallKey) {
+    const selection = wallSelections[wallKey];
+    if (!selection?.collectionId) {
+      return [];
+    }
+    const state = getCollectionState(selection.collectionId);
+    const items = state.items ?? [];
+    const term = (wallSearchTerms[wallKey] ?? '').toString().trim().toLowerCase();
+    if (!term) {
+      return items;
+    }
+    return items.filter(
+      (img) =>
+        (img.name ?? img.title ?? '').toLowerCase().includes(term)
+    );
+  }
+
+  function setWallSearchTerm(wallKey, value) {
+    wallSearchTerms[wallKey] = value;
+  }
+
   /**
    * Manipula a mudança de seleção de coleção para uma parede
    */
@@ -236,6 +267,7 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     }
 
     selection.imageId = null;
+    wallSearchTerms[wallKey] = '';
 
     if (selection.collectionId) {
       ensureCollectionAssets(selection.collectionId);
@@ -269,6 +301,9 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     Object.keys(wallSelections).forEach((key) => {
       delete wallSelections[key];
     });
+    Object.keys(wallSearchTerms).forEach((key) => {
+      delete wallSearchTerms[key];
+    });
   }
 
   // Watchers
@@ -300,6 +335,7 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     collectionLoading,
     collectionError,
     wallSelections,
+    wallSearchTerms,
 
     // Computed
     wallsRequiringCollection,
@@ -307,6 +343,8 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     // Funções
     syncWallSelections,
     getCollectionState,
+    getFilteredCollectionItems,
+    setWallSearchTerm,
     ensureCollectionsLoaded,
     ensureCollectionAssets,
     handleCollectionSelectionChange,

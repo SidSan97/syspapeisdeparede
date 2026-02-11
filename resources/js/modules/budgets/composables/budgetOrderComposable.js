@@ -163,9 +163,12 @@ export function useBudgetOrderComposable(budget) {
     collectionLoading,
     collectionError,
     wallSelections,
+    wallSearchTerms,
     wallsRequiringCollection,
     syncWallSelections,
     getCollectionState,
+    getFilteredCollectionItems,
+    setWallSearchTerm,
     ensureCollectionsLoaded,
     ensureCollectionAssets,
     handleCollectionSelectionChange,
@@ -389,14 +392,9 @@ export function useBudgetOrderComposable(budget) {
     resetWallSelections();
   }
 
-  // Validação customizada para formulários por parede
-  function validateOrder() {
-    if (!orderForm.termsAccepted) {
-      orderError.value = 'É necessário aceitar os termos para continuar.';
-      return false;
-    }
+  function validateFormRequirements() {
+    orderError.value = '';
 
-    // Validar cada parede
     for (const wall of wallsWithRequirements.value) {
       const form = wallForms[wall.key];
 
@@ -426,6 +424,20 @@ export function useBudgetOrderComposable(budget) {
           return false;
         }
       }
+    }
+
+    return true;
+  }
+
+  // Validação customizada para formulários por parede
+  function validateOrder() {
+    if (!orderForm.termsAccepted) {
+      orderError.value = 'É necessário concluir a revisão para continuar.';
+      return false;
+    }
+
+    if (!validateFormRequirements()) {
+      return false;
     }
 
     return true;
@@ -523,6 +535,7 @@ export function useBudgetOrderComposable(budget) {
     collectionLoading,
     collectionError,
     wallSelections,
+    wallSearchTerms,
 
     // Computed
     orderSummary,
@@ -544,11 +557,14 @@ export function useBudgetOrderComposable(budget) {
     resolveStorageUrl,
     extractFileName,
     getCollectionState,
+    getFilteredCollectionItems,
+    setWallSearchTerm,
     ensureCollectionsLoaded,
     ensureCollectionAssets,
     handleCollectionSelectionChange,
     selectCollectionImage,
     handleCollectionImageError,
+    validateFormRequirements,
     validateOrder,
     submitOrder,
   };

@@ -15,10 +15,31 @@
             <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
           </div>
             <div class="modal-body">
+              <template v-if="orderStep === 'review'">
+                <div class="alert alert-info mb-0">
+                  <p class="mb-0">
+                    Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.
+                  </p>
+                </div>
+                <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary mt-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small">Orçamento</span>
+                    <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
+                  </div>
+                  <div class="fw-semibold">{{ orderSummary.name }}</div>
+                  <div class="text-muted small mt-2">
+                    Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
+                  </div>
+                  <div class="text-muted small">
+                    Prazo de entrega: {{ orderSummary.deliveryTime }}
+                  </div>
+                </div>
+              </template>
+              <template v-else>
               <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-muted small">Orçamento</span>
-                  <span class="badge bg-secondary">#{{ orderSummary.id }}</span>
+                  <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
                 </div>
                 <div class="fw-semibold">{{ orderSummary.name }}</div>
                 <div class="text-muted small mt-2">
@@ -199,26 +220,48 @@
                           >
                             Nenhuma imagem disponível nesta coleção.
                           </div>
-                          <div v-else class="collection-images-grid">
-                            <button
-                              v-for="image in getCollectionState(wallSelections[wall.key].collectionId).items"
-                              :key="image.id ?? `image-${wall.key}`"
-                              type="button"
-                              class="collection-image-button"
-                              :class="{
-                                selected: wallSelections[wall.key].imageId === image.id,
-                              }"
-                              @click="selectCollectionImage(wall.key, image.id)"
+                          <div v-else>
+                            <label :for="`search-art-${wall.key}`" class="form-label small">
+                              Buscar arte pelo nome
+                            </label>
+                            <input
+                              :id="`search-art-${wall.key}`"
+                              type="text"
+                              class="form-control form-control-sm mb-2"
+                              placeholder="Digite para filtrar..."
+                              :value="wallSearchTerms[wall.key] ?? ''"
                               :disabled="orderSubmitting"
+                              @input="setWallSearchTerm(wall.key, $event.target.value)"
                             >
-                              <img
-                                :src="image.url"
-                                :alt="image.title"
-                                class="collection-image-thumb"
-                                @error="handleCollectionImageError"
+                            <div
+                              v-if="!getFilteredCollectionItems(wall.key).length"
+                              class="text-muted small"
+                            >
+                              Nenhuma arte encontrada para essa busca.
+                            </div>
+                            <div v-else class="collection-images-grid">
+                              <button
+                                v-for="image in getFilteredCollectionItems(wall.key)"
+                                :key="image.id ?? `image-${wall.key}`"
+                                type="button"
+                                class="collection-image-button"
+                                :class="{
+                                  selected: wallSelections[wall.key].imageId === image.id,
+                                }"
+                                @click="selectCollectionImage(wall.key, image.id)"
+                                :disabled="orderSubmitting"
                               >
-
-                            </button>
+                                <img
+                                  :src="image.url"
+                                  :alt="image.name ?? image.title"
+                                  class="collection-image-thumb"
+                                  @error="handleCollectionImageError"
+                                >
+                                <span class="collection-image-name text-truncate d-block w-100">
+                                  {{ image.name ?? image.title }}
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div v-else class="text-muted small">
@@ -230,45 +273,49 @@
                 </div>
 
                 <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
-                  Nenhuma informação adicional é necessária para este orçamento. Confirme para continuar com o pedido.
+                  Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
                 </div>
               </div>
 
-              <div class="form-check mt-4">
-                <input
-                  id="orderTerms"
-                  v-model="orderForm.termsAccepted"
-                  class="form-check-input"
-                  type="checkbox"
-                  :disabled="orderSubmitting"
-                >
-                <label class="form-check-label" for="orderTerms">
-                  Estou de acordo com os termos do pedido.
-                </label>
-              </div>
+              </template>
 
               <p v-if="orderError" class="text-danger small mt-3 mb-0">
                 {{ orderError }}
               </p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-subtle" :disabled="orderSubmitting" @click="handleClose">
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                :disabled="orderSubmitting || !orderForm.termsAccepted"
-                @click="submitOrder"
-              >
-                <span
-                  v-if="orderSubmitting"
-                  class="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Confirmar pedido
-              </button>
+              <template v-if="orderStep === 'review'">
+                <button type="button" class="btn btn-subtle" :disabled="orderSubmitting" @click="goBackToForm">
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  :disabled="orderSubmitting"
+                  @click="submitOrder"
+                >
+                  <span
+                    v-if="orderSubmitting"
+                    class="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  Confirmar pedido
+                </button>
+              </template>
+              <template v-else>
+                <button type="button" class="btn btn-subtle" :disabled="orderSubmitting" @click="handleClose">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  :disabled="orderSubmitting"
+                  @click="goToReview"
+                >
+                  Revisar pedido
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -311,6 +358,7 @@ const {
   collectionLoading,
   collectionError,
   wallSelections,
+  wallSearchTerms,
   // Computed
   orderSummary,
   orderCollectionModels,
@@ -330,11 +378,29 @@ const {
   resolveStorageUrl,
   extractFileName,
   getCollectionState,
+  getFilteredCollectionItems,
+  setWallSearchTerm,
   handleCollectionSelectionChange,
   selectCollectionImage,
   handleCollectionImageError,
+  validateFormRequirements,
   submitOrder: submitOrderFromComposable,
 } = useBudgetOrderComposable(budgetRef);
+
+const orderStep = ref('form');
+
+function goToReview() {
+  if (validateFormRequirements()) {
+    orderForm.termsAccepted = true;
+    orderStep.value = 'review';
+    orderError.value = '';
+  }
+}
+
+function goBackToForm() {
+  orderStep.value = 'form';
+  orderForm.termsAccepted = false;
+}
 
 // Estado específico do modal Bootstrap
 const modalElement = ref(null);
@@ -346,12 +412,14 @@ watch(
   (visible) => {
     if (visible) {
       initializeForm();
+      orderStep.value = 'form';
       nextTick(() => {
         showModalInstance();
       });
     } else {
       hideModal();
       resetForm();
+      orderStep.value = 'form';
     }
   },
 );
