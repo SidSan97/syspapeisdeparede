@@ -21,262 +21,54 @@
                     Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.
                   </p>
                 </div>
-                <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary mt-3">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small">Orçamento</span>
-                    <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
-                  </div>
-                  <div class="fw-semibold">{{ orderSummary.name }}</div>
-                  <div class="text-muted small mt-2">
-                    Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
-                  </div>
-                  <div class="text-muted small">
-                    Prazo de entrega: {{ orderSummary.deliveryTime }}
-                  </div>
+                <div class="review-scroll-container mt-3">
+                  <ShowOrderSummary :order-summary="orderSummary" />
+                  <ShowRoomDetails :budget="budget" :get-wall-review-data="getWallReviewData" />
+                  <ShowDropshippingInfo :budget="budget" />
                 </div>
               </template>
               <template v-else>
-              <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="text-muted small">Orçamento</span>
-                  <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
-                </div>
-                <div class="fw-semibold">{{ orderSummary.name }}</div>
-                <div class="text-muted small mt-2">
-                  Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
-                </div>
-                <div class="text-muted small">
-                  Prazo de entrega: {{ orderSummary.deliveryTime }}
-                </div>
-                <div v-if="orderSummary.status" class="text-muted small">
-                  Status atual: {{ orderSummary.status }}
-                </div>
-              </div>
+                <ShowOrderSummary :order-summary="orderSummary" :show-status="true" />
 
-              <div v-if="orderCollectionModels.length" class="mt-3">
-                <div class="text-muted small mb-1">Modelos associados</div>
-                <div class="fw-semibold">
-                  {{ orderCollectionModels.map((item) => item.name).join(', ') }}
-                </div>
-              </div>
-
-              <div class="mt-4">
-                <template v-for="wall in wallsWithRequirements" :key="wall.key">
-                  <div class="border rounded p-3 mb-3">
-                    <div class="mb-3">
-                      <div class="fw-semibold">{{ wall.roomName }}</div>
-                      <div class="text-muted small">{{ wall.wallName }}</div>
-                      <div class="text-muted small">Modelo: {{ wall.collectionModel?.name ?? 'N/A' }}</div>
-                    </div>
-
-                    <div v-if="wall.requiresComment" class="mb-3">
-                      <label :for="`orderComment-${wall.key}`" class="form-label">
-                        Descrição do modelo
-                      </label>
-                      <textarea
-                        :id="`orderComment-${wall.key}`"
-                        v-model.trim="wallForms[wall.key].comment"
-                        class="form-control"
-                        rows="3"
-                        maxlength="500"
-                        placeholder="Descreva o que deve ser produzido com base neste orçamento"
-                        :disabled="orderSubmitting"
-                      ></textarea>
-                      <small class="text-muted">Máximo de 500 caracteres.</small>
-                    </div>
-
-                    <div v-if="wall.requiresFiles" class="mb-3">
-                      <label :for="`orderFiles-${wall.key}`" class="form-label">
-                        Uploads de referência
-                      </label>
-                      <input
-                        :id="`orderFiles-${wall.key}`"
-                        :ref="(el) => { if (el) orderFileInputs[wall.key] = el }"
-                        class="form-control"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        :disabled="orderSubmitting"
-                        @change="(e) => handleOrderFilesChange(wall.key, e)"
-                      >
-                      <small class="text-muted">Envie imagens em formatos JPG, PNG ou WEBP (máx. 5MB cada).</small>
-
-                      <div v-if="wall.existingFiles && wall.existingFiles.length" class="mt-2">
-                        <div class="text-muted small mb-1">Arquivos enviados anteriormente</div>
-                        <ul class="list-unstyled small mb-0">
-                          <li v-for="(file, index) in wall.existingFiles" :key="`existing-file-${wall.key}-${index}`">
-                            <a :href="resolveStorageUrl(file)" target="_blank" rel="noopener">
-                              {{ extractFileName(file) }}
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div v-if="getWallNewFiles(wall.key).length" class="mt-2">
-                        <div class="text-muted small mb-1">Arquivos selecionados</div>
-                        <ul class="list-unstyled small mb-0">
-                          <li
-                            v-for="(file, index) in getWallNewFiles(wall.key)"
-                            :key="`new-file-${wall.key}-${index}`"
-                            class="d-flex align-items-center gap-2"
-                          >
-                            <span>{{ file.name }}</span>
-                            <button
-                              class="btn btn-link btn-sm text-danger p-0"
-                              type="button"
-                              :disabled="orderSubmitting"
-                              @click="removeNewFile(wall.key, index)"
-                            >
-                              Remover
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div v-if="wall.requiresLink" class="mb-3">
-                      <label :for="`orderLink-${wall.key}`" class="form-label">
-                        Link de referência
-                      </label>
-                      <input
-                        :id="`orderLink-${wall.key}`"
-                        v-model.trim="wallForms[wall.key].link"
-                        type="url"
-                        class="form-control"
-                        placeholder="https://exemplo.com/referencia"
-                        :disabled="orderSubmitting"
-                      >
-                    </div>
-                  </div>
-                </template>
-
-                <div v-if="requiresCollection" class="mb-4">
-                  <h6 class="fw-semibold mb-3">Selecione uma arte da coleção para a parede</h6>
-                  <div v-if="collectionLoading" class="alert alert-warning mb-0">
-                    Carregando coleções disponíveis...
-                  </div>
-                  <div v-else-if="collectionError" class="alert alert-danger mb-0">
-                    {{ collectionError }}
-                  </div>
-                  <div v-else-if="!collectionList.length" class="alert alert-info mb-0">
-                    Nenhuma coleção disponível. Entre em contato com o suporte para prosseguir.
-                  </div>
-                  <div v-else class="d-flex flex-column gap-3">
-                    <template
-                      v-for="wall in wallsWithRequirements.filter((w) => w.requiresCollection)"
-                      :key="wall.key"
-                    >
-                      <div v-if="wallSelections[wall.key]" class="collection-selection">
-                        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
-                          <div>
-                            <div class="fw-semibold">{{ wall.roomName }}</div>
-                            <div class="text-muted small">{{ wall.wallName }}</div>
-                          </div>
-                          <div class="w-100 w-md-50">
-                            <label :for="`collection-select-${wall.key}`" class="form-label">
-                              Coleção
-                            </label>
-                            <select
-                              :id="`collection-select-${wall.key}`"
-                              class="form-select"
-                              v-model="wallSelections[wall.key].collectionId"
-                              :disabled="orderSubmitting || collectionLoading"
-                              @change="handleCollectionSelectionChange(wall.key)"
-                            >
-                              <option :value="null">Selecione uma coleção</option>
-                              <option
-                                v-for="collection in collectionList"
-                                :key="collection.id"
-                                :value="collection.id"
-                              >
-                                {{ collection.name }}
-                              </option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div v-if="wallSelections[wall.key].collectionId">
-                          <div
-                            v-if="
-                              getCollectionState(wallSelections[wall.key].collectionId).loading
-                            "
-                            class="text-muted small"
-                          >
-                            Carregando imagens...
-                          </div>
-                          <div
-                            v-else-if="
-                              getCollectionState(wallSelections[wall.key].collectionId).error
-                            "
-                            class="text-danger small"
-                          >
-                            {{ getCollectionState(wallSelections[wall.key].collectionId).error }}
-                          </div>
-                          <div
-                            v-else-if="
-                              !getCollectionState(wallSelections[wall.key].collectionId).items.length
-                            "
-                            class="text-muted small"
-                          >
-                            Nenhuma imagem disponível nesta coleção.
-                          </div>
-                          <div v-else>
-                            <label :for="`search-art-${wall.key}`" class="form-label small">
-                              Buscar arte pelo nome
-                            </label>
-                            <input
-                              :id="`search-art-${wall.key}`"
-                              type="text"
-                              class="form-control form-control-sm mb-2"
-                              placeholder="Digite para filtrar..."
-                              :value="wallSearchTerms[wall.key] ?? ''"
-                              :disabled="orderSubmitting"
-                              @input="setWallSearchTerm(wall.key, $event.target.value)"
-                            >
-                            <div
-                              v-if="!getFilteredCollectionItems(wall.key).length"
-                              class="text-muted small"
-                            >
-                              Nenhuma arte encontrada para essa busca.
-                            </div>
-                            <div v-else class="collection-images-grid">
-                              <button
-                                v-for="image in getFilteredCollectionItems(wall.key)"
-                                :key="image.id ?? `image-${wall.key}`"
-                                type="button"
-                                class="collection-image-button"
-                                :class="{
-                                  selected: wallSelections[wall.key].imageId === image.id,
-                                }"
-                                @click="selectCollectionImage(wall.key, image.id)"
-                                :disabled="orderSubmitting"
-                              >
-                                <img
-                                  :src="image.url"
-                                  :alt="image.name ?? image.title"
-                                  class="collection-image-thumb"
-                                  @error="handleCollectionImageError"
-                                >
-                                <span class="collection-image-name text-truncate d-block w-100">
-                                  {{ image.name ?? image.title }}
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div v-else class="text-muted small">
-                          Escolha uma coleção para visualizar as artes disponíveis.
-                        </div>
-                      </div>
-                    </template>
+                <div v-if="orderCollectionModels.length" class="mt-3">
+                  <div class="text-muted small mb-1">Modelos associados</div>
+                  <div class="fw-semibold">
+                    {{ orderCollectionModels.map((item) => item.name).join(', ') }}
                   </div>
                 </div>
 
-                <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
-                  Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
+                <div class="mt-4">
+                  <ShowWallRequirementsForm
+                    :walls-with-requirements="wallsWithRequirements"
+                    :wall-forms="wallForms"
+                    :order-submitting="orderSubmitting"
+                    :set-file-input-ref="setFileInputRef"
+                    :handle-order-files-change="handleOrderFilesChange"
+                    :remove-new-file="removeNewFile"
+                    :get-wall-new-files="getWallNewFiles"
+                    :resolve-storage-url="resolveStorageUrl"
+                    :extract-file-name="extractFileName"
+                  />
+                  <ShowCollectionSelection
+                    :requires-collection="requiresCollection"
+                    :collection-loading="collectionLoading"
+                    :collection-error="collectionError"
+                    :collection-list="collectionList"
+                    :wall-selections="wallSelections"
+                    :walls-with-requirements="wallsWithRequirements"
+                    :wall-search-terms="wallSearchTerms"
+                    :order-submitting="orderSubmitting"
+                    :get-collection-state="getCollectionState"
+                    :handle-collection-selection-change="handleCollectionSelectionChange"
+                    :set-wall-search-term="setWallSearchTerm"
+                    :get-filtered-collection-items="getFilteredCollectionItems"
+                    :select-collection-image="selectCollectionImage"
+                    :handle-collection-image-error="handleCollectionImageError"
+                  />
+                  <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
+                    Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
+                  </div>
                 </div>
-              </div>
-
               </template>
 
               <p v-if="orderError" class="text-danger small mt-3 mb-0">
@@ -327,6 +119,11 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBudgetOrderComposable } from '@/modules/budgets/composables/budgetOrderComposable';
+import ShowRoomDetails from '@/components/budget/ShowRoomDetails.vue';
+import ShowDropshippingInfo from '@/components/budget/ShowDropshippingInfo.vue';
+import ShowOrderSummary from '@/components/budget/ShowOrderSummary.vue';
+import ShowWallRequirementsForm from '@/components/budget/ShowWallRequirementsForm.vue';
+import ShowCollectionSelection from '@/components/budget/ShowCollectionSelection.vue';
 // Swal importado via window.Swal do plugin
 
 const props = defineProps({
@@ -400,6 +197,34 @@ function goToReview() {
 function goBackToForm() {
   orderStep.value = 'form';
   orderForm.termsAccepted = false;
+}
+
+function buildWallKey(room, roomIdx, wall, wallIdx) {
+  const roomId = room?.id != null ? room.id : `room-${roomIdx}`;
+  const wallId = wall?.id != null ? wall.id : `wall-${wallIdx}`;
+  return `${roomId}-${wallId}`;
+}
+
+function setFileInputRef(wallKey, el) {
+  if (el) orderFileInputs[wallKey] = el;
+}
+
+function getWallReviewData(wall, room, roomIdx, wallIdx) {
+  const key = buildWallKey(room, roomIdx, wall, wallIdx);
+  const form = wallForms[key];
+  const selection = wallSelections[key];
+  let artName = '';
+  if (selection?.collectionId && selection?.imageId) {
+    const state = getCollectionState(selection.collectionId);
+    const items = state?.items || [];
+    const img = items.find((i) => i.id === selection.imageId);
+    artName = img ? (img.name || img.title || '') : '';
+  }
+  return {
+    comment: form?.comment || wall?.comment_referring_model || wall?.commentReferringModel || '',
+    link: form?.link || wall?.link_referring_model || wall?.linkReferringModel || '',
+    artName: artName || '',
+  };
 }
 
 // Estado específico do modal Bootstrap
@@ -531,54 +356,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.collection-selection {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  background-color: var(--bs-body-bg);
-  box-shadow: 0 0.5rem 1.25rem rgba(15, 15, 15, 0.06);
-}
-
-.collection-images-grid {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-}
-
-.collection-image-button {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  background-color: var(--bs-body-bg);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.collection-image-button:hover,
-.collection-image-button:focus {
-  border-color: var(--bs-primary);
-  box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
-}
-
-.collection-image-button.selected {
-  border-color: var(--bs-success);
-  box-shadow: 0 0.5rem 1rem rgba(25, 135, 84, 0.2);
-}
-
-.collection-image-thumb {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 0.35rem;
-}
-
-.collection-image-name {
-  font-size: 0.8rem;
-  text-align: center;
-  color: var(--bs-body-color);
+.review-scroll-container {
+  max-height: 50vh;
+  overflow-y: auto;
 }
 </style>
 
