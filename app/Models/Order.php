@@ -39,6 +39,7 @@ class Order extends Model
         'paid',
         'nf_sent',
         'nf_id',
+        'flags',
     ];
 
     protected $casts = [
@@ -53,6 +54,7 @@ class Order extends Model
         'carriers_snapshot' => 'array',
         'primary_budget_room_id' => 'integer',
         'status' => 'string',
+        'flags' => 'string',
         'dropshipping_budget' => 'integer',
         'paid' => 'integer:0,1',
         'nf_sent' => 'integer:0,1',

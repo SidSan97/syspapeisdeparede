@@ -16,8 +16,8 @@ const props = defineProps({
 const statusOptions = [
     { label: 'Em aberto', value: 'em aberto' },
     { label: 'Aprovado', value: 'aprovado' },
-    { label: 'Aprovar layout', value: 'aprovar layout' },
-    { label: 'Pendente de revisão', value: 'pendente de revisão' },
+    { label: 'Em produção', value: 'Em produção' },
+    { label: 'Enviado', value: 'Enviado' },
     { label: 'Cancelado', value: 'cancelado' },
 ];
 

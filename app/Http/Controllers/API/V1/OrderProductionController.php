@@ -53,7 +53,7 @@ class OrderProductionController extends Controller
             $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
         }
 
-        $order->update(['status' => 'Aprovado']);
+        $order->update(['status' => 'Aprovado', 'flags' => 'Pagamento recebido']);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
@@ -77,6 +77,9 @@ class OrderProductionController extends Controller
             'product'
         );
 
+        $order = Order::findOrFail($orderBudget->order_id);
+        $order->update(['flags' => 'Produção concluída', 'status' => 'Enviado']);
+
         // Gerar relatório de produção
         $productionReportService = app(\App\Services\ProductionReportService::class);
         $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
@@ -98,6 +101,8 @@ class OrderProductionController extends Controller
             'product'
         );
 
+        $order = Order::findOrFail($orderBudget->order_id);
+
         if ($validated['production_percentage'] == 100) {
             // Gerar relatório de produção quando atinge 100%
             $productionReportService = app(\App\Services\ProductionReportService::class);
@@ -106,6 +111,9 @@ class OrderProductionController extends Controller
                 $user,
                 $validated['production_percentage']
             );
+            $order->update(['flags' => 'Produção concluída', 'status' => 'Enviado']);
+        } else {
+            $order->update(['flags' => 'Produção em andamento', 'status' => 'Em produção']);
         }
 
         return response()->json($orderBudget);

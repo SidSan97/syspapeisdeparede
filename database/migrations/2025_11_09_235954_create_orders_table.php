@@ -50,6 +50,7 @@ return new class extends Migration
 
             // Status and reference fields
             $table->string('status', 50)->nullable();
+            $table->string('flags', 100)->nullable();
 
             // Other fields
             $table->tinyInteger('dropshipping_budget')->default(0);

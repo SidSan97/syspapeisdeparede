@@ -14,8 +14,8 @@ export function useOrderFilters(onFilterChange) {
     const statusOptions = [
         { label: 'Em aberto', value: 'em aberto' },
         { label: 'Aprovado', value: 'aprovado' },
-        { label: 'Aprovar Layout', value: 'aprovar layout' },
-        { label: 'Pendente de Revisão', value: 'pendente de revisão' },
+        { label: 'Em produção', value: 'Em produção' },
+        { label: 'Enviado', value: 'Enviado' },
         { label: 'Cancelado', value: 'cancelado' },
     ];
 
