@@ -15,13 +15,24 @@
                       <span v-if="selectedIds.size > 0">({{ selectedIds.size }})</span>
                   </button>
                   <button
-                      v-if="selectedIds.size > 0"
                       type="button"
-                      class="btn btn-outline-default"
-                      @click="clearSelection"
+                      class="btn btn-outline-secondary btn-sm"
+                      :disabled="downloading"
+                      @click="selectAll"
+                      title="Marcar todas as fotos"
                   >
-                      <i class="fa fa-times fa-fw"></i>
-                      Limpar seleção
+                      <i class="fa fa-check-double"></i>
+                      Marcar todas
+                  </button>
+                  <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      :disabled="selectedIds.size === 0 || downloading"
+                      @click="clearSelection"
+                      title="Desmarcar todas as fotos"
+                  >
+                      <i class="fa fa-times"></i>
+                      Desmarcar todas
                   </button>
               </div>
               <div v-if="loading" class="text-center text-muted py-5">
@@ -117,6 +128,10 @@
       next.add(id);
     }
     selectedIds.value = next;
+  };
+
+  const selectAll = () => {
+    selectedIds.value = new Set(images.value.map((img) => img.id));
   };
 
   const clearSelection = () => {
