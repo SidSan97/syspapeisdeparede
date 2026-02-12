@@ -90,7 +90,7 @@ class BudgetAndOrderSeeder extends Seeder
                     $budget = Budget::factory()->create([
                         'user_id' => $user->id,
                         'tenant_id' => $user->id,
-                        'status' => fake()->randomElement(['Em aberto', 'Aprovado', 'Cancelado']),
+                        'status' => fake()->randomElement(['em aberto', 'aprovado', 'cancelado']),
                     ]);
 
                     // Criar rooms e walls para o Budget
@@ -105,6 +105,14 @@ class BudgetAndOrderSeeder extends Seeder
                     }
 
                     // Agora criar Order a partir do Budget (simulando o fluxo real)
+                    $orderStatusFlags = fake()->randomElement([
+                        ['status' => 'em aberto', 'flags' => null],
+                        ['status' => 'aprovado', 'flags' => 'Pagamento recebido'],
+                        ['status' => 'Em produção', 'flags' => 'Produção em andamento'],
+                        ['status' => 'Enviado', 'flags' => 'Produção concluída'],
+                        ['status' => 'cancelado', 'flags' => null],
+                    ]);
+
                     $order = Order::factory()->create([
                         'user_id' => $budget->user_id,
                         'tenant_id' => $budget->tenant_id,
@@ -122,7 +130,8 @@ class BudgetAndOrderSeeder extends Seeder
                         'selected_carrier_delivery_time' => $budget->selected_carrier_delivery_time,
                         'carriers_snapshot' => $budget->carriers_snapshot,
                         'primary_budget_room_id' => $budget->primary_budget_room_id,
-                        'status' => fake()->randomElement(['Em aberto', 'Aprovado', 'Aprovar layout', 'Pendente de revisão', 'Cancelado']),
+                        'status' => $orderStatusFlags['status'],
+                        'flags' => $orderStatusFlags['flags'],
                         'dropshipping_budget' => $budget->dropshipping_budget,
                     ]);
 

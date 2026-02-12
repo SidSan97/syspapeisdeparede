@@ -21,7 +21,7 @@ class BudgetFactory extends Factory
      */
     public function definition(): array
     {
-        $statuses = ['em aberto', 'aprovado', 'aprovar layout', 'pendente de revisão', 'cancelado'];
+        $statuses = ['em aberto', 'aprovado', 'cancelado'];
         $paymentMethods = ['dinheiro', 'cartão de crédito', 'cartão de débito', 'pix', 'boleto'];
         $carriers = ['Jadlog', 'Transportadora XYZ', 'Logística ABC', 'Express Delivery', 'Correios',
         'Total Express', 'Gateway logistico', 'Magalu Entregas', 'Magalu Fulfillment',

@@ -21,7 +21,14 @@ class OrderFactory extends Factory
      */
     public function definition(): array
     {
-        $statuses = ['em aberto', 'aprovado', 'aprovar layout', 'pendente de revisão', 'cancelado'];
+        $statuses = [
+            ['status' => 'em aberto', 'flags' => null],
+            ['status' => 'aprovado', 'flags' => 'Pagamento recebido'],
+            ['status' => 'Em produção', 'flags' => 'Produção em andamento'],
+            ['status' => 'Enviado', 'flags' => 'Produção concluída'],
+            ['status' => 'cancelado', 'flags' => null],
+        ];
+        $statusFlags = fake()->randomElement($statuses);
         $paymentMethods = ['dinheiro', 'cartão de crédito', 'cartão de débito', 'pix', 'boleto'];
         $carriers = ['Jadlog', 'Transportadora XYZ', 'Logística ABC', 'Express Delivery', 'Correios',
         'Total Express', 'Gateway logistico', 'Magalu Entregas', 'Magalu Fulfillment',
@@ -61,7 +68,8 @@ class OrderFactory extends Factory
                     'delivery_time' => fake()->numberBetween(5, 15),
                 ],
             ],
-            'status' => fake()->randomElement($statuses),
+            'status' => $statusFlags['status'],
+            'flags' => $statusFlags['flags'],
             'dropshipping_budget' => fake()->boolean(50) ? 1 : 0,
             'link_payment' => $hasPaymentLink ? fake()->url() : null,
             'payment_expiration_date' => $hasPaymentLink ? fake()->dateTimeBetween('now', '+7 days')->format('Y-m-d H:i:s') : null,
