@@ -6,12 +6,12 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "@vitejs/plugin-vue": "^4.6.2",
+        "@vitejs/plugin-vue": "^6.0.0",
         "@vojtechlanka/vue-simple-suggest": "^2.0.6",
         "axios": "^1.10.0",
-        "laravel-vite-plugin": "^1.0.5",
-        "sass": "^1.79.3",
-        "vite": "^5.4.8",
+        "laravel-vite-plugin": "^2.0.0",
+        "sass": "^1.97.3",
+        "vite": "^7.0.4",
         "vue": "^3.5.9",
         "vue-the-mask": "^0.11.1"
     },
