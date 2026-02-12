@@ -22,53 +22,86 @@
                   </p>
                 </div>
                 <div class="review-scroll-container mt-3">
-                  <ShowOrderSummary :order-summary="orderSummary" />
-                  <ShowRoomDetails :budget="budget" :get-wall-review-data="getWallReviewData" />
-                  <ShowDropshippingInfo :budget="budget" />
+                  <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small">Orçamento</span>
+                      <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
+                    </div>
+                    <div class="fw-semibold">{{ orderSummary.name }}</div>
+                    <div class="text-muted small mt-2">
+                      Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
+                    </div>
+                    <div class="text-muted small">
+                      Prazo de entrega: {{ orderSummary.deliveryTime }}
+                    </div>
+                  </div>
+
+                  <ShowDropshippingInfoOrderBudget :budget="budget" />
+
+                  <!-- Cômodos e medidas -->
+                  <ShowRoomDetailsOrderBudget :budget="budget" />
                 </div>
               </template>
               <template v-else>
-                <ShowOrderSummary :order-summary="orderSummary" :show-status="true" />
-
-                <div v-if="orderCollectionModels.length" class="mt-3">
-                  <div class="text-muted small mb-1">Modelos associados</div>
-                  <div class="fw-semibold">
-                    {{ orderCollectionModels.map((item) => item.name).join(', ') }}
-                  </div>
+              <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Orçamento</span>
+                  <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
                 </div>
-
-                <div class="mt-4">
-                  <ShowWallRequirementsForm
-                    :walls-with-requirements="wallsWithRequirements"
-                    :wall-forms="wallForms"
-                    :order-submitting="orderSubmitting"
-                    :set-file-input-ref="setFileInputRef"
-                    :handle-order-files-change="handleOrderFilesChange"
-                    :remove-new-file="removeNewFile"
-                    :get-wall-new-files="getWallNewFiles"
-                    :resolve-storage-url="resolveStorageUrl"
-                    :extract-file-name="extractFileName"
-                  />
-                  <ShowCollectionSelection
-                    :requires-collection="requiresCollection"
-                    :collection-loading="collectionLoading"
-                    :collection-error="collectionError"
-                    :collection-list="collectionList"
-                    :wall-selections="wallSelections"
-                    :walls-with-requirements="wallsWithRequirements"
-                    :wall-search-terms="wallSearchTerms"
-                    :order-submitting="orderSubmitting"
-                    :get-collection-state="getCollectionState"
-                    :handle-collection-selection-change="handleCollectionSelectionChange"
-                    :set-wall-search-term="setWallSearchTerm"
-                    :get-filtered-collection-items="getFilteredCollectionItems"
-                    :select-collection-image="selectCollectionImage"
-                    :handle-collection-image-error="handleCollectionImageError"
-                  />
-                  <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
-                    Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
-                  </div>
+                <div class="fw-semibold">{{ orderSummary.name }}</div>
+                <div class="text-muted small mt-2">
+                  Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
                 </div>
+                <div class="text-muted small">
+                  Prazo de entrega: {{ orderSummary.deliveryTime }}
+                </div>
+                <div v-if="orderSummary.status" class="text-muted small">
+                  Status atual: {{ orderSummary.status }}
+                </div>
+              </div>
+
+              <div v-if="orderCollectionModels.length" class="mt-3">
+                <div class="text-muted small mb-1">Modelos associados</div>
+                <div class="fw-semibold">
+                  {{ orderCollectionModels.map((item) => item.name).join(', ') }}
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <ShowWallRequirimentsOrderBudget
+                  :walls="wallsWithRequirements"
+                  :wall-forms="wallForms"
+                  :order-submitting="orderSubmitting"
+                  :set-file-input-ref="setFileInputRef"
+                  :handle-order-files-change="handleOrderFilesChange"
+                  :remove-new-file="removeNewFile"
+                  :get-wall-new-files="getWallNewFiles"
+                  :resolve-storage-url="resolveStorageUrl"
+                  :extract-file-name="extractFileName"
+                />
+                <ShowRequiresCollectionOrderBudget
+                  :requires-collection="requiresCollection"
+                  :walls="wallsWithRequirements"
+                  :collection-loading="collectionLoading"
+                  :collection-error="collectionError"
+                  :collection-list="collectionList"
+                  :wall-selections="wallSelections"
+                  :wall-search-terms="wallSearchTerms"
+                  :order-submitting="orderSubmitting"
+                  :get-collection-state="getCollectionState"
+                  :handle-collection-selection-change="handleCollectionSelectionChange"
+                  :set-wall-search-term="setWallSearchTerm"
+                  :get-filtered-collection-items="getFilteredCollectionItems"
+                  :select-collection-image="selectCollectionImage"
+                  :handle-collection-image-error="handleCollectionImageError"
+                />
+                
+
+                <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
+                  Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
+                </div>
+              </div>
+
               </template>
 
               <p v-if="orderError" class="text-danger small mt-3 mb-0">
@@ -119,12 +152,10 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBudgetOrderComposable } from '@/modules/budgets/composables/budgetOrderComposable';
-import ShowRoomDetails from '@/components/budget/ShowRoomDetails.vue';
-import ShowDropshippingInfo from '@/components/budget/ShowDropshippingInfo.vue';
-import ShowOrderSummary from '@/components/budget/ShowOrderSummary.vue';
-import ShowWallRequirementsForm from '@/components/budget/ShowWallRequirementsForm.vue';
-import ShowCollectionSelection from '@/components/budget/ShowCollectionSelection.vue';
-// Swal importado via window.Swal do plugin
+import ShowWallRequirimentsOrderBudget from '@/components/budget/ShowWallRequirimentsOrderBudget.vue';
+import ShowRequiresCollectionOrderBudget from '@/components/budget/ShowRequiresCollectionOrderBudget.vue';
+import ShowDropshippingInfoOrderBudget from '@/components/budget/ShowDropshippingInfoOrderBudget.vue';
+import ShowRoomDetailsOrderBudget from '@/components/budget/ShowRoomDetailsOrderBudget.vue';
 
 const props = defineProps({
   visible: {
@@ -199,32 +230,14 @@ function goBackToForm() {
   orderForm.termsAccepted = false;
 }
 
-function buildWallKey(room, roomIdx, wall, wallIdx) {
-  const roomId = room?.id != null ? room.id : `room-${roomIdx}`;
-  const wallId = wall?.id != null ? wall.id : `wall-${wallIdx}`;
-  return `${roomId}-${wallId}`;
-}
-
 function setFileInputRef(wallKey, el) {
   if (el) orderFileInputs[wallKey] = el;
 }
 
-function getWallReviewData(wall, room, roomIdx, wallIdx) {
-  const key = buildWallKey(room, roomIdx, wall, wallIdx);
-  const form = wallForms[key];
-  const selection = wallSelections[key];
-  let artName = '';
-  if (selection?.collectionId && selection?.imageId) {
-    const state = getCollectionState(selection.collectionId);
-    const items = state?.items || [];
-    const img = items.find((i) => i.id === selection.imageId);
-    artName = img ? (img.name || img.title || '') : '';
-  }
-  return {
-    comment: form?.comment || wall?.comment_referring_model || wall?.commentReferringModel || '',
-    link: form?.link || wall?.link_referring_model || wall?.linkReferringModel || '',
-    artName: artName || '',
-  };
+function formatMeasure(value) {
+  if (value == null || value === '') return '–';
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(value);
 }
 
 // Estado específico do modal Bootstrap

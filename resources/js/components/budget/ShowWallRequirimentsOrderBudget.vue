@@ -1,5 +1,6 @@
-<template v-for="(wall, idx) in (wallsWithRequirements || []).filter(Boolean)" :key="wall?.key ?? `wall-${idx}`">
-    <div v-if="wall" class="border rounded p-3 mb-3">
+<template>
+  <template v-for="wall in (walls || [])" :key="wall.key">
+    <div class="border rounded p-3 mb-3">
       <div class="mb-3">
         <div class="fw-semibold">{{ wall.roomName }}</div>
         <div class="text-muted small">{{ wall.wallName }}</div>
@@ -85,11 +86,12 @@
         >
       </div>
     </div>
+  </template>
 </template>
 
 <script setup>
 defineProps({
-  wallsWithRequirements: { type: Array, default: () => [] },
+  walls: { type: Array, default: () => [] },
   wallForms: { type: Object, default: () => ({}) },
   orderSubmitting: { type: Boolean, default: false },
   setFileInputRef: { type: Function, default: null },
