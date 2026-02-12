@@ -91,7 +91,7 @@
         @click="handleLeaveAsMember"
         :disabled="leavingAsMember"
       >
-        <i class="bi bi-x-circle fa-fw"></i>
+        <i class="fa-regular fa-circle-xmark fa-fw"></i>
         {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
       </button>
     </div>

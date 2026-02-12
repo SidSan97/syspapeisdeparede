@@ -22,24 +22,7 @@ export default defineConfig({
         }),
     ],
     build: {
-        rollupOptions: {
-            output: {
-                manualChunks: {
-                    vue: ['vue', 'vue-router', 'pinia'],
-                    lodash: ['lodash'],
-                    moment: ['moment'],
-                    chart: ['chart.js', 'chartjs-adapter-date-fns', 'chartjs-plugin-datalabels', 'vue-chartjs'],
-                    dateFns: ['date-fns'],
-                    sweetalert: ['sweetalert2'],
-                    vcalendar: ['v-calendar'],
-                    cropper: ['cropperjs'],
-                    money: ['v-money3'],
-                    vform: ['vform'],
-                    pagination: ['laravel-vue-pagination'],
-                    misc: ['@vuepic/vue-datepicker', '@aacassandra/vue3-progressbar'],
-                },
-            },
-        },
+        chunkSizeWarningLimit: 1000
     },
     css: {
         preprocessorOptions: {

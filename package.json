@@ -7,13 +7,9 @@
     },
     "devDependencies": {
         "@vitejs/plugin-vue": "^6.0.0",
-        "@vojtechlanka/vue-simple-suggest": "^2.0.6",
-        "axios": "^1.10.0",
         "laravel-vite-plugin": "^2.0.0",
         "sass": "^1.97.3",
-        "vite": "^7.0.4",
-        "vue": "^3.5.9",
-        "vue-the-mask": "^0.11.1"
+        "vite": "^7.0.4"
     },
     "dependencies": {
         "@aacassandra/vue3-progressbar": "^1.0.3",
@@ -34,6 +30,8 @@
         "v-calendar": "^3.1.2",
         "v-money3": "^3.24.1",
         "vform": "^2.1.2",
+        "vue": "^3.5.9",
+        "vue-the-mask": "^0.11.1",
         "vue-chartjs": "^5.3.2",
         "vue-router": "^4.4.5"
     }
