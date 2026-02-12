@@ -314,7 +314,7 @@
                                                                 <strong>{{ model.displayName }}</strong>
                                                             </div>
                                                             <div class="small text-muted">
-                                                                <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>
+                                                                <div><strong>Valor:</strong> {{ formatCurrency(model.value) }}</div>
                                                                 <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
                                                             </div>
                                                         </div>
@@ -377,7 +377,7 @@
                                                     <small class="text-muted">Prazo: {{ carrier.deliveryTime }} dias</small>
                                                 </div>
                                                 <div class="text-end">
-                                                    <strong class="text-primary">R$ {{ carrier.price.toFixed(2) }}</strong>
+                                                    <strong class="text-primary">{{ formatCurrency(carrier.price) }}</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -458,7 +458,7 @@
                                 </div>
                                 <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Frete:</span>
-                                    <strong>R$ {{ budget.carriers[budget.selectedCarrier]?.price.toFixed(2) }}</strong>
+                                    <strong>{{ formatCurrency(budget.carriers[budget.selectedCarrier]?.price) }}</strong>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Previsão de entrega:</span>
@@ -469,11 +469,11 @@
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-                                    <h5 class="mb-0 text-success">R$ {{ totalBudgetVista.toFixed(2) }}</h5>
+                                    <h5 class="mb-0 text-success">{{ formatCurrency(totalBudgetVista) }}</h5>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-                                    <h5 class="mb-0 text-primary">R$ {{ totalBudgetPrazo.toFixed(2) }}</h5>
+                                    <h5 class="mb-0 text-primary">{{ formatCurrency(totalBudgetPrazo) }}</h5>
                                 </div>
                             </div>
                         </div>
@@ -498,6 +498,7 @@ import { validateBudget } from '@/modules/budgets/composables/useBudgetValidatio
 import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStructure';
 import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
+import { useFormatting } from '@/composables/useFormatting';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -578,6 +579,7 @@ const {
 } = useBudgetStructure(budget);
 
 const { formatStripHeight, formatCEP: formatCEPValue } = useBudgetFormatters();
+const { formatCurrency } = useFormatting();
 
 // Wrapper para formatCEP que recebe event
 function formatCEP(event) {
