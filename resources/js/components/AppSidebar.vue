@@ -45,6 +45,7 @@ const roles = {
   designer: computed(() => auth.hasRole('designer')),
   expedition: computed(() => auth.hasRole('expedition')),
   commercial: computed(() => auth.hasRole('commercial')),
+  reseller: computed(() => auth.hasRole('reseller')),
 };
 
 // Configuração do menu
@@ -70,8 +71,15 @@ const menuGroups = [
       { to: { name: 'BudgetCreate' }, label: 'Novo orçamento', icon: 'fa fa-plus-circle' },
       { to: { name: 'BudgetList' }, label: 'Orçamentos', icon: 'fa fa-file-alt' },
       { to: '/colecao-arts', label: 'Coleção Arts', icon: 'fa fa-images' },
-      { to: '/pedidos', label: 'Pedidos', icon: 'fa fa-inbox' },
     ],
+  },
+  {
+    visible: () =>
+      roles.admin.value ||
+      roles.commercial.value ||
+      roles.production.value ||
+      roles.reseller.value,
+    items: [{ to: '/pedidos', label: 'Pedidos', icon: 'fa fa-inbox' }],
   },
   {
     visible: () => roles.admin.value || roles.designer.value,
@@ -80,10 +88,6 @@ const menuGroups = [
   {
     visible: () => roles.admin.value || roles.production.value,
     items: [{ to: '/products', label: 'Produção', icon: 'fa fa-folder' }],
-  },
-  {
-    visible: () => roles.admin.value || roles.commercial.value,
-    items: [{ to: '/pedidos-producao', label: 'Pedidos', icon: 'fa fa-inbox', debug: true }],
   },
   {
     visible: () => roles.admin.value || roles.expedition.value,

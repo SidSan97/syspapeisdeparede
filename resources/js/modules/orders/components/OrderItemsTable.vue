@@ -6,9 +6,9 @@
                     <th scope="col" style="width: 64px;">Número</th>
                     <th scope="col" style="width: 64px;">Data</th>
                     <th class="text-nowrap" scope="col">Pedido</th>
-                    <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
+                    <th v-if="showValuesColumn" class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
                     <th class="text-nowrap" scope="col">Situação</th>
-                    <th class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
+                    <th v-if="showActionsColumn" class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -17,19 +17,21 @@
                     <td>{{ formatDate(order.created_at || order.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button
+                            v-if="nameClickable"
                             class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
                             @click="$emit('view-details', order)"
                         >
                             {{ order.name }}
                         </button>
+                        <span v-else class="fw-semibold">{{ order.name }}</span>
                     </td>
-                    <td class="">
+                    <td v-if="showValuesColumn" class="">
                         <span class="fw-semibold">{{ formatCurrency(order.total_amount) }}</span>
                     </td>
                     <td class="text-nowrap">
                         <OrderStatusBadge :status="order.status" />
                     </td>
-                    <td>
+                    <td v-if="showActionsColumn">
                         <div class="dropdown">
                             <button
                                 class="btn btn-subtle btn-sm"
@@ -109,6 +111,21 @@ const props = defineProps({
     canRegisterPayment: {
         type: Boolean,
         default: false,
+    },
+    /** Exibir coluna "Valor total". Ocultar para perfil comercial. */
+    showValuesColumn: {
+        type: Boolean,
+        default: true,
+    },
+    /** Exibir coluna "Ações" (dropdown). Ocultar para perfil comercial. */
+    showActionsColumn: {
+        type: Boolean,
+        default: true,
+    },
+    /** Nome do pedido clicável (Ver detalhes). False para perfil comercial. */
+    nameClickable: {
+        type: Boolean,
+        default: true,
     },
 });
 

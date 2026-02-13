@@ -49,7 +49,7 @@ const routes = [
       {
         path: '/pedidos',
         name: 'Pedidos',
-        meta: { roles: ['super admin', 'admin', 'commercial', 'reseller'] },
+        meta: { roles: ['super admin', 'admin', 'production', 'commercial', 'reseller'] },
         component: () => import('../views/orders/OrdersView.vue'),
       },
       {
@@ -77,8 +77,7 @@ const routes = [
       {
         path: '/pedidos-producao',
         name: 'InternalOrders',
-        meta: { roles: ['super admin', 'admin', 'production', 'commercial'] },
-        component: () => import('../views/internal-orders/InternalOrders.vue'),
+        redirect: { name: 'Pedidos' },
       },
       {
         path: '/expedicao',
