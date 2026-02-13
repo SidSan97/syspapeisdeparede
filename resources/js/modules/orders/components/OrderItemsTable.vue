@@ -49,7 +49,7 @@
                                         Ver detalhes
                                     </button>
                                 </li>
-                                <li v-if="order.status !== 'Aprovado' && canRegisterPayment">
+                                <li v-if="order.status !== 'Aprovado' && canRegisterPayment && order.paid === 0">
                                     <button
                                         class="dropdown-item"
                                         type="button"
@@ -130,7 +130,7 @@ function formatCurrency(value) {
 
 function isCancelled(order) {
     const status = (order?.status ?? '').toString().toLowerCase();
-    return status === 'cancelled' || status == 'Cancelado';
+    return status == 'cancelado' || status == 'Cancelado';
 }
 </script>
 

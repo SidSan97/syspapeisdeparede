@@ -21,7 +21,7 @@
                     Pedido já está pago
                 </div>
             </div>
-            <div v-if="data.link_payment" class="mb-3">
+            <div v-if="data.link_payment && data.paid === 0" class="mb-3">
                 <div v-if="isPaymentLinkExpired(data.payment_expiration_date)" class="alert alert-warning mb-2">
                     <i class="fa fa-exclamation-triangle me-2"></i>
                     Link de pagamento expirado. Gerando novo link...
