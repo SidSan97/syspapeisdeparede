@@ -2,7 +2,7 @@
   <section class="content">
     <Page title="Coleção Arts">
       <template #actions>
-        <CollectionActions />
+        <CollectionActions @saved="fetchCollections" />
       </template>
 
       <!-- Loading State -->

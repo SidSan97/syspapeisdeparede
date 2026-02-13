@@ -2,7 +2,7 @@
   <section class="content">
     <Page :title="subcategoryName || 'Imagens'" back-to="/colecao-arts">
       <template #actions>
-        <CollectionActions />
+        <CollectionActions @saved="() => fetchSubcategoryImages(route.params.id)" />
       </template>
 
       <div class="container py-4">

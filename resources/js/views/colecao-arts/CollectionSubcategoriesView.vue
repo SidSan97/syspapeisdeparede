@@ -2,7 +2,7 @@
   <section class="content">
     <Page :title="collectionName || 'Subcategorias'" :back-to="{ name: 'CollectionModels' }">
       <template #actions>
-        <CollectionActions />
+        <CollectionActions @saved="() => { fetchSubcategories(route.params.id); fetchCollections(); }" />
       </template>
 
       <div class="container py-4">

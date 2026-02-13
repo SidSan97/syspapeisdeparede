@@ -1,7 +1,9 @@
 <script setup>
+import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { onMounted, ref, useTemplateRef } from 'vue';
 
+const emit = defineEmits(['saved']);
 const { isAdmin } = useAuthStore();
 
 const availableCollections = ref([]);
@@ -70,29 +72,32 @@ const saveCollection = async () => {
     formDataToSend.append('images[]', formData.value.image);
     formDataToSend.append('names[]', formData.value.name.trim());
 
-    await axios.post('v1/collection-images', formDataToSend, {
+    const res = await axios.post('v1/collection-images', formDataToSend, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
 
+    const body = res?.data ?? {};
+    const message = body?.message ?? 'Imagem adicionada com sucesso!';
+
+    if (body?.success === false) {
+      throw new Error(body?.message ?? 'Erro ao enviar imagens.');
+    }
+
     window.Swal.fire({
       title: 'Imagem adicionada!',
-      text: 'Imagem adicionada com sucesso!',
+      text: message,
       confirmButtonText: 'Entendi!',
     });
     addModal.value?.hide();
 
-    // Recarregar a lista
-    await fetchCollections();
+    emit('saved');
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      'Não foi possível adicionar a imagem.';
+    console.log(error);
     window.Swal.fire({
       title: 'Erro!',
-      text: errorMessage,
+      text: 'Não foi possível adicionar a imagem.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
