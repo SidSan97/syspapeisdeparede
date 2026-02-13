@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page title="Coleção Arts">
-      <template #actions>
+      <template #actions v-if="isAdmin">
         <CollectionActions @saved="fetchCollections" />
       </template>
 
@@ -53,7 +53,7 @@ const collections = ref([]);
 const loadingCollections = ref(true);
 
 const auth = useAuthStore();
-const isAdmin = computed(() => auth.isAdmin());
+const isAdmin = computed(() => auth.hasPermission('manage collections'));
 
 const normalizeCollection = (item = {}) => {
   let totalImages = 0;

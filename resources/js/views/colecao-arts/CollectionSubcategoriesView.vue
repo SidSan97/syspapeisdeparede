@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page :title="collectionName || 'Subcategorias'" :back-to="{ name: 'CollectionModels' }">
-      <template #actions>
+      <template #actions v-if="isAdmin">
         <CollectionActions @saved="() => { fetchSubcategories(route.params.id); fetchCollections(); }" />
       </template>
 
@@ -57,7 +57,7 @@ const loading = ref(true);
 const subcategories = ref([]);
 const collectionName = ref('');
 const collections = ref([]);
-
+const isAdmin = computed(() => auth.hasPermission('manage collections'));
 const normalizeSubcategory = (item = {}) => {
   return {
     id: Number(item.id ?? 0),

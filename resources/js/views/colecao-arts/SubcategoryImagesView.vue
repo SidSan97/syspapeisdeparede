@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page :title="subcategoryName || 'Imagens'" back-to="/colecao-arts">
-      <template #actions>
+      <template #actions v-if="isAdmin">
         <CollectionActions @saved="() => fetchSubcategoryImages(route.params.id)" />
       </template>
 
@@ -56,19 +56,20 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 // Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
 import CollectionCard from './components/CollectionCard.vue';
 import CollectionActions from './components/CollectionActions.vue';
-
-const DEFAULT_COVER = 'https://via.placeholder.com/600x400/adb5bd/212529?text=Sem+imagem';
+import { useAuthStore } from '@/stores/auth';
+const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 const route = useRoute();
 const router = useRouter();
-
+const auth = useAuthStore();
+const isAdmin = computed(() => auth.hasPermission('manage collections'));
 const loading = ref(false);
 const images = ref([]);
 const modalImage = ref(null);
