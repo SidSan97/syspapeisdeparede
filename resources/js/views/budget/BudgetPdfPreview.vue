@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <Page title="Preview PDF - Orçamento" :back-to="{ name: 'BudgetDetail', params: { id: route.params.id } }">
+    <Page title="Orçamento" :back-to="{ name: 'BudgetDetail', params: { id: route.params.id } }">
       <template #actions>
         <button
           type="button"
@@ -14,8 +14,7 @@
             role="status"
             aria-hidden="true"
           ></span>
-          <i v-else class="fa fa-file-pdf me-2"></i>
-          Gerar PDF
+          Salvar em PDF
         </button>
       </template>
 
@@ -39,14 +38,14 @@
           </div>
         </div>
         <div class="pdf-header-right">
-          <h1 class="pdf-title">Orçamento de venda Nº {{ budget?.id || '—' }}</h1>
+          <h1 class="pdf-title">Orçamento Nº {{ budget?.id || '—' }}</h1>
           <p class="pdf-subtitle">{{ budget?.name || '—' }}</p>
         </div>
       </div>
 
       <!-- Informações do Orçamento e Cliente -->
       <div class="pdf-info-section">
-        <table class="pdf-info-table">
+        <table class="pdf-info-table" v-if="dropshippingData">
           <tbody>
             <tr>
               <td class="pdf-info-label">Cliente</td>
@@ -72,12 +71,8 @@
         <table class="pdf-info-table">
           <tbody>
             <tr>
-              <td class="pdf-info-label">Número do pedido</td>
-              <td class="pdf-info-value">{{ budget?.id || '—' }}</td>
-            </tr>
-            <tr>
               <td class="pdf-info-label">Data</td>
-              <td class="pdf-info-value">{{ formatDate(budget?.created_at) }}</td>
+              <td class="pdf-info-value">{{ formatDateOnly(budget?.created_at) }}</td>
             </tr>
             <tr>
               <td class="pdf-info-label">Data prevista</td>
@@ -230,7 +225,8 @@ const router = useRouter();
 // Services e composables
 const budgetService = useBudgetService();
 const pdfService = useBudgetPdfService();
-const { formatCurrency, formatDeliveryTime, formatDate, formatPhone, formatAddressLine1, formatAddressLine2, formatEstimatedDate } = useFormatting();
+const { formatCurrency, formatDeliveryTime, formatDate, formatDateOnly, 
+  formatPhone, formatAddressLine1, formatAddressLine2, formatEstimatedDate } = useFormatting();
 
 // Estado do componente
 const budget = ref(null);

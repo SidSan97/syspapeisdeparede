@@ -51,6 +51,21 @@ export function useFormatting() {
         }
     }
 
+    function formatDateOnly(value) {
+        if (!value) {
+            return '-';
+        }
+        try {
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return typeof value === 'string' ? value : '-';
+            }
+            return date.toLocaleDateString('pt-BR');
+        } catch (error) {
+            return typeof value === 'string' ? value : '-';
+        }
+    }
+
     function formatDirection(direction) {
         const directions = {
             'left-to-right': 'Da esquerda para direita',
@@ -156,6 +171,7 @@ export function useFormatting() {
         formatDeliveryTime,
         formatPaymentMethod,
         formatDate,
+        formatDateOnly,
         formatDirection,
         resolveStorageUrl,
         extractFileName,
