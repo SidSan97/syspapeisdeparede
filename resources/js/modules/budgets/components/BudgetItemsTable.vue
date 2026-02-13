@@ -80,7 +80,7 @@
                                 </li>
                                 <li v-if="!isCancelled(budget)">
                                     <button
-                                        class="dropdown-item text-danger"
+                                        class="dropdown-item"
                                         type="button"
                                         @click="$emit('cancel', budget)"
                                     >

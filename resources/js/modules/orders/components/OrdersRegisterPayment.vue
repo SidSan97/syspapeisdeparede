@@ -53,7 +53,7 @@
           <div class="modal-footer">
               <button
                 type="button"
-                class="btn btn-outline-secondary"
+                class="btn btn-subtle"
                 @click="handleClose"
                 :disabled="uploading"
               >
@@ -71,8 +71,7 @@
                   role="status"
                   aria-hidden="true"
                 ></span>
-                <i v-else class="fa fa-upload me-2"></i>
-                {{ uploading ? 'Enviando...' : 'Enviar' }}
+                {{ uploading ? 'Enviando...' : 'Continuar' }}
               </button>
           </div>
         </div>
@@ -224,7 +223,7 @@ async function handleSubmit() {
       },
     });
 
-    if (response.data?.success) {
+    if (response.status === 200) {
       await window.Swal.fire({
         title: 'Sucesso',
         text: 'Pagamento registrado com sucesso! O pedido foi aprovado.',
@@ -232,7 +231,6 @@ async function handleSubmit() {
       });
 
       emit('success');
-      handleClose();
     } else {
       throw new Error(response.data?.message || 'Erro ao registrar pagamento');
     }
@@ -241,6 +239,7 @@ async function handleSubmit() {
     error.value = err?.response?.data?.message || err?.message || 'Não foi possível registrar o pagamento. Tente novamente.';
   } finally {
     uploading.value = false;
+    handleClose();
   }
 }
 

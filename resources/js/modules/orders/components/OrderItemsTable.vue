@@ -69,7 +69,7 @@
                                 </li>
                                 <li v-if="!isCancelled(order)">
                                     <button
-                                        class="dropdown-item text-danger"
+                                        class="dropdown-item"
                                         type="button"
                                         @click="$emit('cancel', order)"
                                     >
