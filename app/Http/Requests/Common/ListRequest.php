@@ -30,6 +30,7 @@ class ListRequest extends FormRequest
                 Rule::in([
                     'all',
                     'em aberto',
+                    'Em aberto',
                     'aprovado',
                     'cancelado',
                     'Em produção',

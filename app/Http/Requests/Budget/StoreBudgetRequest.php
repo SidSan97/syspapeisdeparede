@@ -25,6 +25,16 @@ class StoreBudgetRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'string', Rule::in([
+                'em aberto',
+                'Em aberto',
+                'aprovado',
+                'Aprovado',
+                'cancelado',
+                'Cancelado',
+                'Em produção',
+                'Enviado',
+            ])],
             'rooms' => ['required', 'array', 'min:1'],
             'rooms.*.name' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls' => ['required', 'array', 'min:1'],

@@ -37,9 +37,9 @@
                                 >
                                     <option :value="null">Sem status</option>
                                     <option value="Em aberto">Em aberto</option>
-                                    <option value="Pendente de revisão">Pendente de Revisão</option>
-                                    <option value="Aprovar layout">Aprovar layout</option>
                                     <option value="Aprovado">Aprovado</option>
+                                    <option value="Em produção">Em produção</option>
+                                    <option value="Enviado">Enviado</option>
                                     <option value="Cancelado">Cancelado</option>
                                 </select>
                             </div>
