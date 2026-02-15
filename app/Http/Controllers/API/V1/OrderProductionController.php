@@ -53,8 +53,9 @@ class OrderProductionController extends Controller
             $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
         }
 
-        $textFlag = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
-        $order->update(['status' => 'Aprovado', 'flags' => $textFlag]);
+        $textFlag   = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
+        $textStatus = $order->paid ? 'Aprovado' : 'Em aberto';
+        $order->update(['status' => $textStatus, 'flags' => $textFlag]);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
