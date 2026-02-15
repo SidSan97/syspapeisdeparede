@@ -21,26 +21,6 @@
                     Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.
                   </p>
                 </div>
-                <div class="review-scroll-container mt-3">
-                  <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <span class="text-muted small">Orçamento</span>
-                      <span class="badge bg-secondary text-white">#{{ orderSummary.id }}</span>
-                    </div>
-                    <div class="fw-semibold">{{ orderSummary.name }}</div>
-                    <div class="text-muted small mt-2">
-                      Valor total: <span class="fw-semibold">{{ orderSummary.formattedTotal }}</span>
-                    </div>
-                    <div class="text-muted small">
-                      Prazo de entrega: {{ orderSummary.deliveryTime }}
-                    </div>
-                  </div>
-
-                  <ShowDropshippingInfoOrderBudget :budget="budget" />
-
-                  <!-- Cômodos e medidas -->
-                  <ShowRoomDetailsOrderBudget :budget="budget" />
-                </div>
               </template>
               <template v-else>
               <div v-if="orderSummary" class="border rounded p-3 bg-body-secondary">
@@ -95,7 +75,7 @@
                   :select-collection-image="selectCollectionImage"
                   :handle-collection-image-error="handleCollectionImageError"
                 />
-                
+
 
                 <div v-if="!orderHasRequirements" class="alert alert-info mb-0">
                   Nenhuma informação adicional é necessária para este orçamento. Clique em Revisar pedido para continuar.
@@ -138,7 +118,7 @@
                   :disabled="orderSubmitting"
                   @click="goToReview"
                 >
-                  Revisar pedido
+                  Continuar
                 </button>
               </template>
             </div>
@@ -154,8 +134,6 @@ import { useRouter } from 'vue-router';
 import { useBudgetOrderComposable } from '@/modules/budgets/composables/budgetOrderComposable';
 import ShowWallRequirimentsOrderBudget from '@/components/budget/ShowWallRequirimentsOrderBudget.vue';
 import ShowRequiresCollectionOrderBudget from '@/components/budget/ShowRequiresCollectionOrderBudget.vue';
-import ShowDropshippingInfoOrderBudget from '@/components/budget/ShowDropshippingInfoOrderBudget.vue';
-import ShowRoomDetailsOrderBudget from '@/components/budget/ShowRoomDetailsOrderBudget.vue';
 
 const props = defineProps({
   visible: {
@@ -337,12 +315,13 @@ async function submitOrder() {
     emit('updated', payload);
     emit('close');
 
-    router.push({ name: 'ShowOrderDetails', params: { id: orderId } });
-
     window.Swal.fire({
       title: 'Pedido realizado',
       text: 'Pedido registrado com sucesso.',
       confirmButtonText: 'Entendi!',
+      willClose: () => {
+        router.push({ name: 'ShowOrderDetails', params: { id: orderId } });
+      }
     });
   } catch (error) {
     window.Swal.fire({

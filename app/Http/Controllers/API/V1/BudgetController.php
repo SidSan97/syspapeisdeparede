@@ -8,15 +8,13 @@ use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
 use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
+use App\Http\Requests\Budget\UpdateBudgetRequest;
 use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
-use App\Models\BudgetRoom;
-use App\Models\BudgetWall;
 use App\Models\Order;
-use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\BudgetWallRepository;
@@ -32,8 +30,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use App\Services\TinyErpService;
 
 class BudgetController extends Controller
@@ -137,7 +133,7 @@ class BudgetController extends Controller
         return (new BudgetResource($budget))->response()->setStatusCode(201);
     }
 
-    public function update(StoreBudgetRequest $request, int $id): JsonResponse
+    public function update(UpdateBudgetRequest $request, int $id): JsonResponse
     {
         $data = $request->validated();
 

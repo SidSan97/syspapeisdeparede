@@ -12,7 +12,8 @@ const defaultCustomClass = {
 
 // Criar uma instância do Swal com as classes customizadas aplicadas por padrão
 const SwalWithCustomClass = Swal.mixin({
-  customClass: defaultCustomClass
+  customClass: defaultCustomClass,
+  allowOutsideClick: false,
 })
 
 // Substituir window.Swal para usar a versão com classes customizadas

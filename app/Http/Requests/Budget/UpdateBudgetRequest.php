@@ -2,11 +2,10 @@
 
 namespace App\Http\Requests\Budget;
 
-use App\Support\Budget\BudgetCalculator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreBudgetRequest extends FormRequest
+class UpdateBudgetRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,6 +24,16 @@ class StoreBudgetRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'string', Rule::in([
+                'em aberto',
+                'Em aberto',
+                'aprovado',
+                'Aprovado',
+                'cancelado',
+                'Cancelado',
+                'Em produção',
+                'Enviado',
+            ])],
             'rooms' => ['required', 'array', 'min:1'],
             'rooms.*.name' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls' => ['required', 'array', 'min:1'],
