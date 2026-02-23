@@ -26,12 +26,7 @@ class BudgetAndOrderSeeder extends Seeder
         }
 
         // Perguntar quantos registros criar
-        $count = (int) $this->command->ask('Quantos orçamentos/pedidos criar? (500, 1000 ou 2000)', 500);
-
-        if (!in_array($count, [500, 1000, 2000])) {
-            $this->command->error('❌ Por favor, escolha 500, 1000 ou 2000');
-            return;
-        }
+        $count = 200;
 
         // Desabilitar eventos e queries log para melhor performance
         $this->command->info("📊 Criando {$count} orçamentos...");
