@@ -1,10 +1,11 @@
 <script setup>
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
-import { onMounted, ref, useTemplateRef } from 'vue';
+import { onMounted, ref, useTemplateRef, computed } from 'vue';
 
 const emit = defineEmits(['saved']);
-const { isAdmin } = useAuthStore();
+const auth = useAuthStore();
+const isAdmin = computed(() => auth.hasPermission('manage collections'));
 
 const availableCollections = ref([]);
 const availableSubcategories = ref([]);

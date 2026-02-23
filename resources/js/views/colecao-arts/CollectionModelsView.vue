@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page title="Coleção Arts">
-      <template #actions v-if="isAdmin">
+      <template #actions >
         <CollectionActions @saved="fetchCollections" />
       </template>
 
