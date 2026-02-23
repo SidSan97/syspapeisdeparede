@@ -41,13 +41,8 @@ export function useBudgetListService() {
         try {
             const response = await axios.get('v1/users/list-resellers');
 
-            if (response.data?.success && response.data?.data) {
-                // Se a resposta estiver paginada, pegar o array de dados
-                if (response.data.data.data && Array.isArray(response.data.data.data)) {
-                    return response.data.data.data;
-                } else if (Array.isArray(response.data.data)) {
-                    return response.data.data;
-                }
+            if (response.data?.data) {
+                return response.data.data;
             }
             return [];
         } catch (error) {

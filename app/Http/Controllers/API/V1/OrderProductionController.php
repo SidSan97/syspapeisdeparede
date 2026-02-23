@@ -54,8 +54,7 @@ class OrderProductionController extends Controller
         }
 
         $textFlag   = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
-        $textStatus = $order->paid ? 'Aprovado' : 'Em aberto';
-        $order->update(['status' => $textStatus, 'flags' => $textFlag]);
+        $order->update(['status' => 'Aprovado', 'flags' => $textFlag]);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();

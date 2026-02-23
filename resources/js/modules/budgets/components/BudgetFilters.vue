@@ -136,7 +136,7 @@ const props = defineProps({
         default: false,
     },
     users: {
-        type: Array,
+        type: Object,
         default: () => [],
     },
     searchQuery: {
