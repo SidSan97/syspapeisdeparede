@@ -47,11 +47,13 @@ export const useAuthStore = defineStore('auth', () => {
     // Admin tem todas as permissões
     if (isAdmin()) return true;
 
+    const userPermissions = user.value?.permissions || [];
+
     if (Array.isArray(name)) {
-      return name.some((n) => user.value.permissions.includes(n));
+      return name.some((n) => userPermissions.includes(n));
     }
 
-    return user.value.permissions.includes(name);
+    return userPermissions.includes(name);
   };
 
   const hasAllPermissions = (names) => {
@@ -60,17 +62,21 @@ export const useAuthStore = defineStore('auth', () => {
     // Admin tem todas as permissões
     if (isAdmin()) return true;
 
-    return names.every((n) => user.value.permissions.includes(n));
+    const userPermissions = user.value?.permissions || [];
+
+    return names.every((n) => userPermissions.includes(n));
   };
 
   const hasRole = (name) => {
     if (!name) return false;
 
+    const userRoles = user.value?.roles || [];
+
     if (Array.isArray(name)) {
-      return name.some((n) => user.value.roles.includes(n));
+      return name.some((n) => userRoles.includes(n));
     }
 
-    return user.value.roles.includes(name);
+    return userRoles.includes(name);
   };
 
   /**
@@ -82,7 +88,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     const rolesToCheck = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
 
-    return rolesToCheck.some((role) => user.value.roles.includes(role));
+    const userRoles = user.value?.roles || [];
+
+    return rolesToCheck.some((role) => userRoles.includes(role));
   };
 
   return {

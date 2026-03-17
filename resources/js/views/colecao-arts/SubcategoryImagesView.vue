@@ -6,20 +6,57 @@
       </template>
 
       <div class="container py-4">
+        <!-- Busca -->
+        <div v-if="!loading && images.length" class="row mb-4">
+          <div class="col-12 col-md-6 col-lg-4">
+            <label for="search-image" class="form-label small text-muted mb-1">
+              Buscar pelo nome do modelo
+            </label>
+            <input
+              id="search-image"
+              v-model.trim="searchTerm"
+              type="text"
+              class="form-control"
+              placeholder="Digite o nome do modelo"
+            />
+          </div>
+        </div>
+
         <div v-if="loading" class="text-center text-muted py-5">Carregando imagens...</div>
         <div v-else-if="!images.length" class="text-center text-muted py-5">
           Nenhuma imagem cadastrada nesta categoria.
         </div>
         <div v-else>
+          <div v-if="!filteredImages.length" class="text-center text-muted py-5">
+            <p class="mb-0">
+              Nenhuma imagem encontrada para
+              <strong v-if="searchTerm">"{{ searchTerm }}"</strong>
+              <span v-else>os filtros atuais.</span>
+            </p>
+          </div>
+
+          <div v-else>
           <div class="row">
-            <div v-for="image in images" :key="image.id" class="col-12 col-sm-6 col-md-4">
+            <div v-for="image in filteredImages" :key="image.id" class="col-12 col-sm-6 col-md-4">
               <CollectionCard
                 :src="image.url"
                 :title="image.name || image.path_name"
                 @on-cover-click="openModal(image)"
               >
                 <template #actions>
+                  <!-- Compartilhar via WhatsApp -->
                   <button
+                    type="button"
+                    class="image-gallery__share-btn me-2"
+                    @click.stop="shareOnWhatsApp(image)"
+                    :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
+                  >
+                    <i class="fa fa-whatsapp"></i>
+                  </button>
+
+                  <!-- Favorito (somente logado) -->
+                  <button
+                    v-if="isLoggedIn"
                     type="button"
                     class="image-gallery__favorite-btn"
                     :class="{ 'is-favorited': image.is_favorited }"
@@ -33,6 +70,7 @@
                 </template>
               </CollectionCard>
             </div>
+          </div>
           </div>
         </div>
 
@@ -70,11 +108,13 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const isAdmin = computed(() => auth.hasPermission('manage collections'));
+const isLoggedIn = computed(() => !!auth.user);
 const loading = ref(false);
 const images = ref([]);
 const modalImage = ref(null);
 const subcategoryName = ref('');
 const collectionName = ref('');
+const searchTerm = ref('');
 
 const buildStorageUrl = (path) => {
   if (!path) {
@@ -110,6 +150,19 @@ const normalizeImage = (image) => ({
   is_favorited: image.is_favorited ?? false,
 });
 
+const filteredImages = computed(() => {
+  const term = searchTerm.value.trim().toLowerCase();
+
+  if (!term) {
+    return images.value;
+  }
+
+  return images.value.filter((image) => {
+    const name = (image.name || image.path_name || '').toString().toLowerCase();
+    return name.includes(term);
+  });
+});
+
 const fetchSubcategoryImages = async (categoryId) => {
   if (!categoryId) {
     return;
@@ -129,19 +182,21 @@ const fetchSubcategoryImages = async (categoryId) => {
     const imagesList = Array.isArray(payload.images) ? payload.images : [];
     const normalizedImages = imagesList.map(normalizeImage);
 
-    // Check favorite status for each image
-    await Promise.all(
-      normalizedImages.map(async (image) => {
-        try {
-          const { data: favoriteData } = await axios.get(
-            `v1/collection-images/${image.id}/check-favorite`,
-          );
-          image.is_favorited = favoriteData?.data?.is_favorited ?? false;
-        } catch (error) {
-          image.is_favorited = false;
-        }
-      }),
-    );
+    // Check favorite status para usuários logados
+    if (isLoggedIn.value) {
+      await Promise.all(
+        normalizedImages.map(async (image) => {
+          try {
+            const { data: favoriteData } = await axios.get(
+              `v1/collection-images/${image.id}/check-favorite`,
+            );
+            image.is_favorited = favoriteData?.data?.is_favorited ?? false;
+          } catch (error) {
+            image.is_favorited = false;
+          }
+        }),
+      );
+    }
 
     images.value = normalizedImages;
   } catch (error) {
@@ -181,6 +236,27 @@ const toggleFavorite = async (image) => {
       confirmButtonText: 'Entendi!',
     });
   }
+};
+
+const shareOnWhatsApp = (image) => {
+  if (!image) {
+    return;
+  }
+
+  const modelName = image.name || image.path_name || 'Imagem';
+  const collectionLabel = collectionName.value ? `${collectionName.value} - ` : '';
+  const subcategoryLabel = subcategoryName.value ? `${subcategoryName.value} - ` : '';
+  const title = `${collectionLabel}${subcategoryLabel}${modelName}`;
+
+  const url = image.url || '';
+  const text = url
+    ? `${title}\n${url}`
+    : title;
+
+  const encoded = encodeURIComponent(text);
+  const whatsappUrl = `https://wa.me/?text=${encoded}`;
+
+  window.open(whatsappUrl, '_blank');
 };
 
 const goBack = () => {

@@ -219,7 +219,7 @@ onMounted(async () => {
   <button v-if="isAdmin" class="btn btn-outline-default" type="button" @click="openAddModal">
     Adicionar
   </button>
-  <RouterLink to="/colecao-arts/favoritos" class="btn btn-outline-default">
+  <RouterLink to="/colecao-arts/favoritos" class="btn btn-outline-default" v-if="auth.user">
     Meus favoritos
   </RouterLink>
   <div class="dropdown" v-if="isAdmin">

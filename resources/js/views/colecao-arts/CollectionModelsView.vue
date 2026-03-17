@@ -17,18 +17,43 @@
         <p class="mb-0">Nenhuma coleção disponível no momento.</p>
       </div>
 
-      <!-- Collections Grid -->
-      <div v-else class="row">
-        <div
-          v-for="collection in collections"
-          :key="collection.id"
-          class="col-12 col-sm-6 col-md-4"
-        >
-          <CollectionCard
-            @click="viewCollectionSubcategories(collection)"
-            :src="collection.image_cover_url"
-            :title="collection.name"
-          />
+      <!-- Search + Collections Grid -->
+      <div v-else>
+        <div class="row mb-4">
+          <div class="col-12 col-md-6 col-lg-4">
+            <label for="search-model" class="form-label small text-muted mb-1">
+              Buscar pelo nome do modelo
+            </label>
+            <input
+              id="search-model"
+              v-model.trim="searchTerm"
+              type="text"
+              class="form-control"
+              placeholder="Digite o nome do modelo"
+            />
+          </div>
+        </div>
+
+        <div v-if="!filteredCollections.length" class="text-center text-muted py-5">
+          <p class="mb-0">
+            Nenhum resultado encontrado para
+            <strong v-if="searchTerm">"{{ searchTerm }}"</strong>
+            <span v-else>os filtros atuais.</span>
+          </p>
+        </div>
+
+        <div v-else class="row">
+          <div
+            v-for="collection in filteredCollections"
+            :key="collection.id"
+            class="col-12 col-sm-6 col-md-4"
+          >
+            <CollectionCard
+              @click="viewCollectionSubcategories(collection)"
+              :src="collection.image_cover_url"
+              :title="collection.name"
+            />
+          </div>
         </div>
       </div>
     </Page>
@@ -36,7 +61,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, useTemplateRef, computed } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 // Alerts agora usam window.Swal.fire diretamente
@@ -50,6 +75,7 @@ const DEFAULT_COVER = '/assets/img/no-image.jpg';
 const router = useRouter();
 
 const collections = ref([]);
+const searchTerm = ref('');
 const loadingCollections = ref(true);
 
 const auth = useAuthStore();
@@ -86,6 +112,18 @@ const getCollectionBackground = (collection) => {
 
   return cover;
 };
+
+const filteredCollections = computed(() => {
+  const term = searchTerm.value.trim().toLowerCase();
+
+  if (!term) {
+    return collections.value;
+  }
+
+  return collections.value.filter((collection) =>
+    collection.name.toLowerCase().includes(term),
+  );
+});
 
 const fetchCollections = async () => {
   loadingCollections.value = true;

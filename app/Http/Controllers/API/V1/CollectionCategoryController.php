@@ -14,7 +14,9 @@ class CollectionCategoryController extends BaseController
     public function __construct(
         protected CollectionCategoryRepository $repository
     ) {
-        $this->middleware('auth:api');
+        // Deixar listagem e visualização públicas para uso externo (catálogo),
+        // mantendo autenticação para operações de escrita.
+        $this->middleware('auth:api')->except(['index', 'show', 'children']);
     }
 
     public function index(Request $request): JsonResponse

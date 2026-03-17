@@ -52,11 +52,13 @@ Route::middleware('auth:api')->get('/user-api', function (Request $request) {
 // --------------------------------------
 
 Route::prefix('v1')->group(function () {
-    // Rotas autenticadas
+    // Rotas públicas
+    require __DIR__ . '/v1/collections-api.php';
+
+    // Demais rotas autenticadas
     Route::middleware('auth:api')->group(function () {
         require __DIR__ . '/v1/profile-api.php';
         require __DIR__ . '/v1/users-api.php';
-        require __DIR__ . '/v1/collections-api.php';
         require __DIR__ . '/v1/budgets-api.php';
         require __DIR__ . '/v1/orders-api.php';
         require __DIR__ . '/v1/layout-column-names-api.php';

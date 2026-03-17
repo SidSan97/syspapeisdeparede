@@ -1,5 +1,5 @@
 <template>
-  <aside class="bd-sidebar border-end">
+  <aside class="bd-sidebar border-end" v-if="auth.user">
     <div class="sidebar">
       <div class="offcanvas-lg offcanvas-end d-lg-block py-3 py-lg-4" id="sidebar-nav">
         <div class="offcanvas-header p-3 d-sm-none">

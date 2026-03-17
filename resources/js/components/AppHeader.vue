@@ -19,7 +19,7 @@
       <div class="d-flex align-items-center ms-auto gap-3 me-2 me-lg-3">
         <NavTheme />
 
-        <RouterLink :to="'/settings'" class="btn btn-subtle px-2">
+        <RouterLink :to="'/settings'" class="btn btn-subtle px-2" v-if="auth.user">
           <i class="fa fa-cog"></i>
         </RouterLink>
 
@@ -44,8 +44,11 @@
 import { RouterLink } from 'vue-router';
 import NavUser from './NavUser.vue';
 import NavTheme from './NavTheme.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const mainNavItems = [
   // Adicione itens de navegação aqui se necessário
 ];
+
+const auth = useAuthStore();
 </script>

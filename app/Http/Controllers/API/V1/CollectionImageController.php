@@ -16,7 +16,9 @@ class CollectionImageController extends BaseController
     public function __construct(
         protected CollectionImageRepository $repository
     ) {
-        $this->middleware('auth:api');
+        // Deixar listagem pública para uso externo (catálogo),
+        // mantendo autenticação para criação/remoção.
+        $this->middleware('auth:api')->except(['index']);
     }
 
     public function index(): JsonResponse
