@@ -156,9 +156,11 @@ const moneyConfig = {
   thousands: '.',
   precision: 2,
   prefix: '',
-  allowBlank: true,
+  allowBlank: false,
   min: 0,
+  max: null,
   disableNegative: true,
+  minimumNumberOfCharacters: 0,
 };
 
 function handleSubmit() {
