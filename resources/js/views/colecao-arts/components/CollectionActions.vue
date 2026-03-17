@@ -8,8 +8,10 @@ const auth = useAuthStore();
 const isAdmin = computed(() => auth.hasPermission('manage collections'));
 
 const availableCollections = ref([]);
-const availableSubcategories = ref([]);
-const loadingSubcategories = ref(false);
+const selectedRootCategoryIds = ref([]);
+const subcategoriesByRoot = ref({});
+const loadingSubcategoriesForRoot = ref({});
+const selectedSubcategoryIds = ref([]);
 const addModalRef = useTemplateRef('addModalRef');
 const fileInputRef = useTemplateRef('fileInputRef');
 const addModal = ref(null);
@@ -17,8 +19,6 @@ const saving = ref(false);
 const formData = ref({
   name: '',
   image: null,
-  collection_art_id: '',
-  subcategory_id: '',
 });
 const selectedFileName = ref('');
 
@@ -33,21 +33,10 @@ const saveCollection = async () => {
     return;
   }
 
-  // Validar se há categoria selecionada
-  if (!formData.value.collection_art_id) {
+  if (!selectedSubcategoryIds.value.length) {
     window.Swal.fire({
       title: 'Erro!',
-      text: 'Por favor, selecione uma categoria.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-    return;
-  }
-
-  if (!formData.value.subcategory_id) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Por favor, selecione uma subcategoria.',
+      text: 'Por favor, selecione ao menos uma subcategoria.',
       icon: 'error',
       confirmButtonText: 'Entendi!',
     });
@@ -66,10 +55,10 @@ const saveCollection = async () => {
 
   saving.value = true;
   try {
-    const categoryId = Number(formData.value.subcategory_id);
-
     const formDataToSend = new FormData();
-    formDataToSend.append('collection_category_id', categoryId);
+    selectedSubcategoryIds.value.forEach((id) => {
+      formDataToSend.append('collection_category_ids[]', id);
+    });
     formDataToSend.append('images[]', formData.value.image);
     formDataToSend.append('names[]', formData.value.name.trim());
 
@@ -80,7 +69,6 @@ const saveCollection = async () => {
     });
 
     const body = res?.data ?? {};
-    const message = body?.message ?? 'Imagem adicionada com sucesso!';
 
     if (body?.success === false) {
       throw new Error(body?.message ?? 'Erro ao enviar imagens.');
@@ -88,7 +76,7 @@ const saveCollection = async () => {
 
     window.Swal.fire({
       title: 'Imagem adicionada!',
-      text: message,
+      text: 'Imagem adicionada com sucesso nas subcategorias selecionadas!',
       confirmButtonText: 'Entendi!',
     });
     addModal.value?.hide();
@@ -118,29 +106,66 @@ const handleImageChange = (event) => {
   }
 };
 
-const fetchSubcategoriesForCollection = async (categoryId) => {
-  if (!categoryId) {
-    availableSubcategories.value = [];
-    loadingSubcategories.value = false;
+const fetchSubcategoriesForRoot = async (rootId) => {
+  if (!rootId) {
     return;
   }
-  loadingSubcategories.value = true;
-  availableSubcategories.value = [];
-  formData.value.subcategory_id = '';
+
+  loadingSubcategoriesForRoot.value = {
+    ...loadingSubcategoriesForRoot.value,
+    [rootId]: true,
+  };
+
   try {
-    // Buscar filhos da categoria selecionada
-    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const { data } = await axios.get(`v1/collection-categories/children/${rootId}`);
     const payload = data?.data ?? data ?? [];
-    availableSubcategories.value = Array.isArray(payload)
+    const items = Array.isArray(payload)
       ? payload.map((item) => ({
           id: Number(item.id ?? 0),
           name: (item.name ?? '').toString(),
         }))
       : [];
+
+    subcategoriesByRoot.value = {
+      ...subcategoriesByRoot.value,
+      [rootId]: items,
+    };
   } catch (error) {
-    availableSubcategories.value = [];
+    subcategoriesByRoot.value = {
+      ...subcategoriesByRoot.value,
+      [rootId]: [],
+    };
   } finally {
-    loadingSubcategories.value = false;
+    loadingSubcategoriesForRoot.value = {
+      ...loadingSubcategoriesForRoot.value,
+      [rootId]: false,
+    };
+  }
+};
+
+const toggleRootCategory = async (rootId) => {
+  const current = [...selectedRootCategoryIds.value];
+  const index = current.indexOf(rootId);
+
+  if (index >= 0) {
+    current.splice(index, 1);
+    selectedRootCategoryIds.value = current;
+
+    const subcategories = subcategoriesByRoot.value[rootId] || [];
+    if (subcategories.length) {
+      const idsToRemove = subcategories.map((s) => s.id);
+      selectedSubcategoryIds.value = selectedSubcategoryIds.value.filter(
+        (id) => !idsToRemove.includes(id),
+      );
+    }
+    return;
+  }
+
+  current.push(rootId);
+  selectedRootCategoryIds.value = current;
+
+  if (!subcategoriesByRoot.value[rootId]) {
+    await fetchSubcategoriesForRoot(rootId);
   }
 };
 
@@ -168,12 +193,12 @@ const openAddModal = () => {
     formData.value = {
       name: '',
       image: null,
-      collection_art_id: '',
-      subcategory_id: '',
     };
+    selectedRootCategoryIds.value = [];
+    selectedSubcategoryIds.value = [];
+    subcategoriesByRoot.value = {};
+    loadingSubcategoriesForRoot.value = {};
     selectedFileName.value = '';
-    availableSubcategories.value = [];
-    loadingSubcategories.value = false;
     if (fileInputRef.value) {
       fileInputRef.value.value = '';
     }
@@ -272,75 +297,96 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Categoria -->
+              <!-- Categorias raiz -->
               <div class="mb-3">
-                <label for="collection-category" class="form-label">Categoria</label>
-                <select
-                  class="form-select"
-                  id="collection-category"
-                  v-model="formData.collection_art_id"
-                  @change="fetchSubcategoriesForCollection(formData.collection_art_id)"
-                >
-                  <option value="">Selecionar categoria</option>
-                  <option
+                <label class="form-label">Categorias</label>
+                <div class="d-flex flex-wrap gap-2">
+                  <button
                     v-for="collection in availableCollections"
                     :key="collection.id"
-                    :value="collection.id"
+                    type="button"
+                    class="btn btn-sm"
+                    :class="
+                      selectedRootCategoryIds.includes(collection.id)
+                        ? 'btn-primary'
+                        : 'btn-outline-secondary'
+                    "
+                    @click="toggleRootCategory(collection.id)"
                   >
                     {{ collection.name }}
-                  </option>
-                </select>
+                  </button>
+                </div>
               </div>
 
-              <!-- Subcategoria -->
+              <!-- Subcategorias por categoria selecionada -->
               <div class="mb-3">
-                <label for="collection-subcategory" class="form-label"
-                  >Subcategoria <span class="text-danger">*</span></label
-                >
-                <div
-                  v-if="loadingSubcategories"
-                  class="form-select d-flex align-items-center justify-content-center"
-                  style="min-height: 38px"
-                >
-                  <span
-                    class="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  <span>Carregando...</span>
+                <label class="form-label">Subcategorias <span class="text-danger">*</span></label>
+
+                <div v-if="!selectedRootCategoryIds.length" class="text-muted small">
+                  Selecione pelo menos uma categoria para ver as subcategorias.
                 </div>
-                <select
-                  v-else
-                  class="form-select"
-                  id="collection-subcategory"
-                  v-model="formData.subcategory_id"
-                  :disabled="!formData.collection_art_id || !availableSubcategories.length"
-                  required
+
+                <div
+                  v-for="rootId in selectedRootCategoryIds"
+                  :key="`root-${rootId}`"
+                  class="mb-2"
                 >
-                  <option value="">
+                  <div class="fw-semibold mb-1">
                     {{
-                      formData.collection_art_id && !availableSubcategories.length
-                        ? 'Esta categoria não possui subcategorias'
-                        : 'Selecionar subcategoria'
+                      availableCollections.find((c) => c.id === rootId)?.name ||
+                      'Categoria'
                     }}
-                  </option>
-                  <option
-                    v-for="subcategory in availableSubcategories"
-                    :key="subcategory.id"
-                    :value="subcategory.id"
+                  </div>
+
+                  <div
+                    v-if="loadingSubcategoriesForRoot[rootId]"
+                    class="d-flex align-items-center gap-2 text-muted small"
                   >
-                    {{ subcategory.name }}
-                  </option>
-                </select>
+                    <span
+                      class="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    <span>Carregando subcategorias...</span>
+                  </div>
+
+                  <div v-else>
+                    <div
+                      v-if="(subcategoriesByRoot[rootId] || []).length"
+                      class="d-flex flex-wrap gap-2"
+                    >
+                      <button
+                        v-for="subcategory in subcategoriesByRoot[rootId]"
+                        :key="subcategory.id"
+                        type="button"
+                        class="btn btn-sm"
+                        :class="
+                          selectedSubcategoryIds.includes(subcategory.id)
+                            ? 'btn-primary'
+                            : 'btn-outline-secondary'
+                        "
+                        @click="
+                          selectedSubcategoryIds = selectedSubcategoryIds.includes(
+                            subcategory.id,
+                          )
+                            ? selectedSubcategoryIds.filter((id) => id !== subcategory.id)
+                            : [...selectedSubcategoryIds, subcategory.id]
+                        "
+                      >
+                        {{ subcategory.name }}
+                      </button>
+                    </div>
+                    <div v-else class="text-muted small">
+                      Esta categoria não possui subcategorias.
+                    </div>
+                  </div>
+                </div>
+
                 <small
-                  v-if="
-                    formData.collection_art_id &&
-                    !availableSubcategories.length &&
-                    !loadingSubcategories
-                  "
+                  v-if="selectedSubcategoryIds.length"
                   class="form-text text-muted"
                 >
-                  Selecione outra categoria que possua subcategorias.
+                  A imagem será adicionada em todas as subcategorias selecionadas.
                 </small>
               </div>
             </form>

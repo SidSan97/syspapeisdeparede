@@ -56,6 +56,23 @@ class CollectionImageRepository
         return $stored;
     }
 
+    public function storeManyForCategories($categories, array $files, array $names = []): Collection
+    {
+        $categoriesCollection = $categories instanceof Collection ? $categories : collect($categories);
+        $stored = collect();
+
+        foreach ($categoriesCollection as $category) {
+            if (!$category instanceof CollectionCategory) {
+                continue;
+            }
+
+            $storedForCategory = $this->storeMany($category, $files, $names);
+            $stored = $stored->merge($storedForCategory);
+        }
+
+        return $stored;
+    }
+
     public function delete(CollectionImage $collectionImage): bool
     {
         $this->deletePhysicalFile($collectionImage->path_name);

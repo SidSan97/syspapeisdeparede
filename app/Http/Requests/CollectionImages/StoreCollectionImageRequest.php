@@ -16,7 +16,12 @@ class StoreCollectionImageRequest extends FormRequest
     {
         return [
             'collection_category_id' => [
-                'required',
+                'sometimes',
+                'integer',
+                Rule::exists('collection_categories', 'id')->whereNotNull('parent_id'),
+            ],
+            'collection_category_ids' => ['sometimes', 'array', 'min:1'],
+            'collection_category_ids.*' => [
                 'integer',
                 Rule::exists('collection_categories', 'id')->whereNotNull('parent_id'),
             ],
