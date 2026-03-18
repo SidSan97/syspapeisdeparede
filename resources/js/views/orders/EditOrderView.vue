@@ -640,45 +640,18 @@
                         </div>
                     </div>
 
-                     <!-- Seção: Resumo -->
-                     <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Resumo</h5>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Ambientes:</span>
-                                    <strong>{{ budget.rooms.length }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Paredes:</span>
-                                    <strong>{{ totalWalls }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Metros:</span>
-                                    <strong>{{ totalArea.toFixed(2) }}</strong>
-                                </div>
-                                <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Frete:</span>
-                                    <strong>R$ {{ budget.carriers[budget.selectedCarrier]?.price.toFixed(2) }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Previsão de entrega:</span>
-                                    <strong>{{ calculateDeliveryTime(budget) }} dias</strong>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-                                    <h5 class="mb-0 text-success">R$ {{ totalBudgetVista.toFixed(2) }}</h5>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-                                    <h5 class="mb-0 text-primary">R$ {{ totalBudgetPrazo.toFixed(2) }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Seção: Resumo -->
+                    <ResumeProductCard
+                      :total-rooms="budget.rooms.length"
+                      :total-walls="totalWalls"
+                      :total-area="totalArea.toFixed(2)"
+                      :freight="budget.selectedCarrier !== null
+                        ? `R$ ${budget.carriers[budget.selectedCarrier]?.price.toFixed(2)}`
+                        : ''"
+                      :delivery-time="`${calculateDeliveryTime(budget)} dias`"
+                      :total-vista="`R$ ${totalBudgetVista.toFixed(2)}`"
+                      :total-prazo="`R$ ${totalBudgetPrazo.toFixed(2)}`"
+                    />
                 </div>
             </div>
         </div>
@@ -693,6 +666,7 @@ import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
+import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
 
 const router = useRouter();
 const route = useRoute();

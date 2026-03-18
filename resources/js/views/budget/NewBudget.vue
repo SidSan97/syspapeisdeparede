@@ -459,44 +459,17 @@
                     </div>
 
                     <!-- Seção: Resumo -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Resumo</h5>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Ambientes:</span>
-                                    <strong>{{ budget.rooms.length }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Paredes:</span>
-                                    <strong>{{ totalWalls }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Metros:</span>
-                                    <strong>{{ totalArea.toFixed(2) }}</strong>
-                                </div>
-                                <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Frete:</span>
-                                    <strong>{{ formatCurrency(budget.carriers[budget.selectedCarrier]?.price) }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Previsão de entrega:</span>
-                                    <strong>{{ deliveryTimeDisplay }} dias</strong>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-                                    <h5 class="mb-0 text-success">{{ formatCurrency(totalBudgetVista) }}</h5>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-                                    <h5 class="mb-0 text-primary">{{ formatCurrency(totalBudgetPrazo) }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <ResumeProductCard
+                      :total-rooms="budget.rooms.length"
+                      :total-walls="totalWalls"
+                      :total-area="totalArea.toFixed(2)"
+                      :freight="budget.selectedCarrier !== null
+                        ? formatCurrency(budget.carriers[budget.selectedCarrier]?.price)
+                        : ''"
+                      :delivery-time="`${deliveryTimeDisplay} dias`"
+                      :total-vista="formatCurrency(totalBudgetVista)"
+                      :total-prazo="formatCurrency(totalBudgetPrazo)"
+                    />
                 </div>
             </div>
         </div>
@@ -510,6 +483,7 @@ import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
+import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
 import { useBudgetService } from '@/modules/budgets/services/budgetService';
 import { createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
 import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
