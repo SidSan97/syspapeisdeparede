@@ -648,6 +648,8 @@
                       :freight="budget.selectedCarrier !== null
                         ? `R$ ${budget.carriers[budget.selectedCarrier]?.price.toFixed(2)}`
                         : ''"
+                      :artwork-days="artworkDays"
+                      :transport-days="transportDays"
                       :delivery-time="`${calculateDeliveryTime(budget)} dias`"
                       :total-vista="`R$ ${totalBudgetVista.toFixed(2)}`"
                       :total-prazo="`R$ ${totalBudgetPrazo.toFixed(2)}`"
@@ -667,6 +669,7 @@ import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import { sumArtworkDays } from '@/utils/artWorkDaysSum';
 
 const router = useRouter();
 const route = useRoute();
@@ -902,6 +905,23 @@ const productModelsMap = computed(() => {
 });
 
 const getModelById = (id) => productModelsMap.value.get(id);
+
+const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+
+const transportDays = computed(() => {
+    if (
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+    ) {
+        return Math.max(
+            0,
+            Number(budget.carriers[budget.selectedCarrier]?.deliveryTime ?? 0)
+        );
+    }
+
+    return '';
+});
 
 // Função auxiliar para normalizar valores para comparação
 function normalizeForComparison(value) {

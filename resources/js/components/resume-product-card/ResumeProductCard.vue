@@ -27,6 +27,26 @@
           <strong>{{ freight }}</strong>
         </div>
 
+        <hr />
+
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Produção:</span>
+          <strong>3 a 5 dias úteis</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Nova Arte:</span>
+          <strong>{{ artworkDays }} dias úteis</strong>
+        </div>
+
+        <div
+          v-if="transportDays !== '' && transportDays !== null"
+          class="d-flex justify-content-between mb-2"
+        >
+          <span class="text-muted">Transporte:</span>
+          <strong>{{ transportDays }} dias úteis</strong>
+        </div>
+
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Prazo total:</span>
           <strong>{{ deliveryTime }}</strong>
@@ -71,6 +91,14 @@ const props = defineProps({
   deliveryTime: {
     type: [Number, String],
     required: true,
+  },
+  artworkDays: {
+    type: [Number, String],
+    required: true,
+  },
+  transportDays: {
+    type: [Number, String],
+    default: '',
   },
   totalVista: {
     type: [Number, String],

@@ -466,6 +466,8 @@
                       :freight="budget.selectedCarrier !== null
                         ? formatCurrency(budget.carriers[budget.selectedCarrier]?.price)
                         : ''"
+                      :artwork-days="artworkDays"
+                      :transport-days="transportDays"
                       :delivery-time="`${deliveryTimeDisplay} dias`"
                       :total-vista="formatCurrency(totalBudgetVista)"
                       :total-prazo="formatCurrency(totalBudgetPrazo)"
@@ -492,6 +494,7 @@ import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStruc
 import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 import { useFormatting } from '@/composables/useFormatting';
+import { sumArtworkDays } from '@/utils/artWorkDaysSum';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -546,6 +549,20 @@ const {
     getModelById,
     fetchCollectionModels
 } = useBudgetModels(budget);
+
+const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+
+const transportDays = computed(() => {
+    if (
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+    ) {
+        return Math.max(0, Number(budget.carriers[budget.selectedCarrier]?.deliveryTime ?? 0));
+    }
+
+    return '';
+});
 
 const {
     totalWalls,
