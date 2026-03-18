@@ -10,7 +10,7 @@
         <div v-if="!loading && images.length" class="row mb-4">
           <div class="col-12 col-md-6 col-lg-4">
             <label for="search-image" class="form-label small text-muted mb-1">
-              Buscar pelo nome do modelo
+              Buscar pelo nome do modelo 
             </label>
             <input
               id="search-image"
@@ -44,29 +44,31 @@
                 @on-cover-click="openModal(image)"
               >
                 <template #actions>
-                  <!-- Compartilhar via WhatsApp -->
-                  <button
-                    type="button"
-                    class="image-gallery__share-btn me-2"
-                    @click.stop="shareOnWhatsApp(image)"
-                    :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
-                  >
-                    <i class="fa fa-whatsapp"></i>
-                  </button>
+                  <div class="d-flex justify-content-between w-100">
+                    <!-- Compartilhar via WhatsApp -->
+                    <button
+                      type="button"
+                      class="btn btn-success"
+                      @click.stop="shareOnWhatsApp(image)"
+                      :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
+                    >
+                      Compartilhar <i class="bi bi-whatsapp ms-2"></i>
+                    </button>
 
-                  <!-- Favorito (somente logado) -->
-                  <button
-                    v-if="isLoggedIn"
-                    type="button"
-                    class="image-gallery__favorite-btn"
-                    :class="{ 'is-favorited': image.is_favorited }"
-                    @click.stop="toggleFavorite(image)"
-                    :title="
-                      image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
-                    "
-                  >
-                    <i class="fa fa-heart"></i>
-                  </button>
+                    <!-- Favorito (somente logado) -->
+                    <button
+                      v-if="isLoggedIn"
+                      type="button"
+                      class="image-gallery__favorite-btn"
+                      :class="{ 'is-favorited': image.is_favorited }"
+                      @click.stop="toggleFavorite(image)"
+                      :title="
+                        image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+                      "
+                    >
+                      <i class="fa fa-heart"></i>
+                    </button>
+                  </div>
                 </template>
               </CollectionCard>
             </div>
@@ -245,8 +247,8 @@ const shareOnWhatsApp = (image) => {
 
   const modelName = image.name || image.path_name || 'Imagem';
   const collectionLabel = collectionName.value ? `${collectionName.value} - ` : '';
-  const subcategoryLabel = subcategoryName.value ? `${subcategoryName.value} - ` : '';
-  const title = `${collectionLabel}${subcategoryLabel}${modelName}`;
+  const subcategoryLabel = subcategoryName.value ? `${subcategoryName.value} | ` : '';
+  const title = `*${collectionLabel}*${subcategoryLabel}${modelName}`;
 
   const url = image.url || '';
   const text = url

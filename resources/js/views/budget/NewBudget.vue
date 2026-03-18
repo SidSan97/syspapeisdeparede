@@ -187,7 +187,7 @@
                                                         >
                                                             <div class="card-body">
                                                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                                                    <h6 class="mb-0">Continuação {{ continuationIndex + 1 }}</h6>
+                                                                    <h6 class="mb-0">Continuação {{ continuationIndex + 1 }} {{ continuation.name }}</h6>
                                                                     <button
                                                                         type="button"
                                                                         class="btn btn-sm btn-outline-danger"
@@ -196,6 +196,19 @@
                                                                         <i class="fa fa-trash"></i>
                                                                     </button>
                                                                 </div>
+
+                                                        <div class="mb-3">
+                                                                    <label :for="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
+                                                                        Nome da continuação
+                                                                    </label>
+                                                                <input
+                                                                    v-model="continuation.name"
+                                                                    type="text"
+                                                                    :id="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                                                    class="form-control"
+                                                                    placeholder="Ex: Armário"
+                                                                />
+                                                        </div>
 
                                                         <div class="mb-3">
                                                                     <label :for="`continuation-direction-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
@@ -240,6 +253,14 @@
                                                                 />
                                                             </div>
                                                         </div>
+
+                                                        <p
+                                                            v-if="(continuation.width || 0) > 6 || (continuation.height || 0) > 6"
+                                                            class="mb-0 text-danger small"
+                                                        >
+                                                            Obs.:<br />
+                                                            Faixas maiores que 6 metros são vendidas apenas em pares.
+                                                        </p>
 
                                                             </div>
                                                         </div>

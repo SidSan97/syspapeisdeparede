@@ -47,6 +47,11 @@ class UpdateBudgetRequest extends FormRequest
                 'array',
                 'required_if:rooms.*.walls.*.continueSameArt,true',
             ],
+            'rooms.*.walls.*.continuations.*.name' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'rooms.*.walls.*.continuations.*.direction' => [
                 'required_with:rooms.*.walls.*.continuations',
                 'string',

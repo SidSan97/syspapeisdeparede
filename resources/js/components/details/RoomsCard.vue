@@ -88,6 +88,10 @@
                                         <div class="text-muted small mb-2">Continuações</div>
                                         <div v-for="(continuation, contIndex) in wall.continuations" :key="contIndex" class="border-start border-primary ps-3 ms-2 mb-2">
                                             <div class="row">
+                                                <div class="col-md-4" v-if="continuation.name">
+                                                    <div class="text-muted small">Nome</div>
+                                                    <div class="fw-semibold">{{ continuation.name }}</div>
+                                                </div>
                                                 <div class="col-md-4">
                                                     <div class="text-muted small">Direção</div>
                                                     <div class="fw-semibold">{{ formatDirection(continuation.direction) }}</div>

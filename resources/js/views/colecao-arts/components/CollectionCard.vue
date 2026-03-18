@@ -32,7 +32,7 @@ const handleCoverClick = () => {
       class="card-img-overlay d-flex flex-column justify-content-end text-white"
       @click="handleCoverClick"
     >
-      <div class="position-absolute top-0 end-0 p-3">
+      <div class="position-absolute top-0 start-0 end-0 p-3">
         <slot name="actions"></slot>
       </div>
 
