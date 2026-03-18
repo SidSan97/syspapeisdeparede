@@ -277,14 +277,6 @@
                                                             </div>
                                                         </div>
 
-                                                        <p
-                                                            v-if="(continuation.width || 0) > 6 || (continuation.height || 0) > 6"
-                                                            class="mb-0 text-danger small"
-                                                        >
-                                                            Obs.:<br />
-                                                            Faixas maiores que 6 metros são vendidas apenas em pares.
-                                                        </p>
-
                                                             </div>
                                                         </div>
                                                     </div>
@@ -297,6 +289,13 @@
                                                         <br>
                                                         <strong>Tamanho da faixa:</strong> {{ formatStripHeight(wall) }} m
                                                     </div>
+                                                    <p
+                                                        v-if="formatStripHeight(wall) > 6"
+                                                        class="mb-0 text-danger small"
+                                                    >
+                                                        Obs.:<br />
+                                                        Faixas maiores que 6 metros são vendidas apenas em pares.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
