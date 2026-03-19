@@ -63,6 +63,9 @@ class TinyErpController extends Controller
 
         $response = TinyErpProductResource::makeTinyErpData($data);
 
+        Setting::set('tiny_erp_price_payment', $response['precoPromocionalVista'], 'float');
+        Setting::set('tiny_erp_price_installment', $response['precoPromocionalPrazo'], 'float');
+
         Cache::put($cacheKey, $response, now()->addHours(24));
 
         return $response;
