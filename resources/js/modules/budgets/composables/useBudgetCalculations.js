@@ -1,5 +1,11 @@
 import { computed } from 'vue';
 import { createDefaultWall } from './useBudgetUtils';
+import {
+    calculateWallsSequence,
+    getWallArea as getWallAreaUtils,
+    calculateStrips as calculateStripsUtils,
+    calculateStripHeight as calculateStripHeightUtils,
+} from '@/utils/calculateStripsUtils.js';
 
 /**
  * Composable para cálculos relacionados a orçamentos
@@ -75,28 +81,21 @@ function getStripCalculation(wall) {
  * Calcula o número de strips de uma parede
  */
 export function calculateStrips(wall) {
-    return getStripCalculation(wall).numberOfStrips;
+    return calculateStripsUtils(wall);
 }
 
 /**
  * Calcula a altura do strip de uma parede
  */
 export function calculateStripHeight(wall) {
-    return getStripCalculation(wall).stripHeight;
+    return calculateStripHeightUtils(wall);
 }
 
 /**
  * Calcula a área de uma parede
  */
 export function getWallArea(wall) {
-    const strips = calculateStrips(wall);
-    const stripHeight = calculateStripHeight(wall);
-
-    if (strips > 0 && stripHeight) {
-        return strips * stripHeight;
-    }
-
-    return 0;
+    return getWallAreaUtils(wall);
 }
 
 /**
@@ -135,11 +134,44 @@ export function useBudgetCalculations(budget, getModelById, precoVista, precoPra
         return budget.rooms.reduce((total, room) => total + room.walls.length, 0);
     });
 
+    const wallMetricsMap = computed(() => {
+        const map = new WeakMap();
+
+        budget.rooms.forEach((room) => {
+            const seq = calculateWallsSequence(room.walls);
+            room.walls.forEach((wall, idx) => {
+                const m = seq.perWall?.[idx] ?? { meters: 0, strips: 0, stripHeight: null };
+                map.set(wall, {
+                    meters: m.meters ?? 0,
+                    strips: m.strips ?? 0,
+                    stripHeight: m.stripHeight ?? null,
+                });
+            });
+        });
+
+        return map;
+    });
+
+    const getWallAreaSeq = (wall) => {
+        const m = wallMetricsMap.value.get(wall);
+        return m?.meters ?? 0;
+    };
+
+    const calculateStripsSeq = (wall) => {
+        const m = wallMetricsMap.value.get(wall);
+        return m?.strips ?? 0;
+    };
+
+    const calculateStripHeightSeq = (wall) => {
+        const m = wallMetricsMap.value.get(wall);
+        return m?.stripHeight ?? calculateStripHeightUtils(wall);
+    };
+
     const totalArea = computed(() => {
         let area = 0;
         budget.rooms.forEach(room => {
             room.walls.forEach(wall => {
-                area += getWallArea(wall);
+                area += getWallAreaSeq(wall);
             });
         });
         return area;
@@ -208,9 +240,9 @@ export function useBudgetCalculations(budget, getModelById, precoVista, precoPra
         totalBudgetVista,
         totalBudgetPrazo,
         totalBudget,
-        getWallArea,
-        calculateStrips,
-        calculateStripHeight,
+        getWallArea: getWallAreaSeq,
+        calculateStrips: calculateStripsSeq,
+        calculateStripHeight: calculateStripHeightSeq,
         calculateDeliveryTime: () => calculateDeliveryTime(budget, getModelById)
     };
 }

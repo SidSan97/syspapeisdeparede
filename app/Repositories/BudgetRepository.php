@@ -132,11 +132,15 @@ class BudgetRepository {
                     'raw_payload' => $roomData,
                 ]);
 
+                $wallsSequence = BudgetCalculator::calculateWallsSequence($roomData['walls'] ?? []);
+
                 foreach ($roomData['walls'] as $wallIndex => $wallData) {
                     $collectionModelId = $wallData['model'] ?? null;
-                    $totalAreaWall = BudgetCalculator::calculateWallArea($wallData);
-                    $stripCount = BudgetCalculator::calculateStripCount($wallData);
-                    $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
+                    $wallMetrics = $wallsSequence['perWall'][$wallIndex] ?? null;
+
+                    $totalAreaWall = (float) ($wallMetrics['total_area'] ?? 0);
+                    $stripCount = (int) ($wallMetrics['strip_count'] ?? 0);
+                    $stripHeight = $wallMetrics['strip_height'] ?? null;
 
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
@@ -243,11 +247,15 @@ class BudgetRepository {
                     'raw_payload' => $roomData,
                 ]);
 
+                $wallsSequence = BudgetCalculator::calculateWallsSequence($roomData['walls'] ?? []);
+
                 foreach ($roomData['walls'] as $wallIndex => $wallData) {
                     $collectionModelId = $wallData['model'] ?? null;
-                    $totalAreaWall = BudgetCalculator::calculateWallArea($wallData);
-                    $stripCount = BudgetCalculator::calculateStripCount($wallData);
-                    $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
+                    $wallMetrics = $wallsSequence['perWall'][$wallIndex] ?? null;
+
+                    $totalAreaWall = (float) ($wallMetrics['total_area'] ?? 0);
+                    $stripCount = (int) ($wallMetrics['strip_count'] ?? 0);
+                    $stripHeight = $wallMetrics['strip_height'] ?? null;
 
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
