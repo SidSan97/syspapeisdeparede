@@ -154,13 +154,13 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
-                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                        'link_referring_model' => $data['linkReferringModel'] ?? null,
-                        'files_referring_model' => isset($data['filesReferringModel'])
-                            ? (array) $data['filesReferringModel']
+                        'comment_referring_model' => $wallData['comment_referring_model'] ?? null,
+                        'link_referring_model' => $wallData['link_referring_model'] ?? null,
+                        'files_referring_model' => isset($wallData['files_referring_model'])
+                            ? (array) $wallData['files_referring_model']
                             : null,
                         'collection_referring_model' => $this->formatCollectionReferringModel(
-                            $data['collectionReferringModel'] ?? null
+                            $wallData['collection_referring_model'] ?? null
                         ),
                     ]);
                 }
@@ -269,13 +269,13 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
-                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                        'link_referring_model' => $data['linkReferringModel'] ?? null,
-                        'files_referring_model' => isset($data['filesReferringModel'])
-                            ? (array) $data['filesReferringModel']
+                        'comment_referring_model' => $wallData['comment_referring_model'] ?? null,
+                        'link_referring_model' => $wallData['link_referring_model'] ?? null,
+                        'files_referring_model' => isset($wallData['files_referring_model'])
+                            ? (array) $wallData['files_referring_model']
                             : null,
                         'collection_referring_model' => $this->formatCollectionReferringModel(
-                            $data['collectionReferringModel'] ?? null
+                            $wallData['collection_referring_model'] ?? null
                         ),
                     ]);
                 }

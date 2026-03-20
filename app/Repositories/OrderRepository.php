@@ -135,6 +135,43 @@ class OrderRepository
 
     public function update(Order $order, array $data): Order
     {
+        if (!empty($data['rooms']) && is_array($data['rooms'])) {
+            $order->loadMissing(['rooms.walls']);
+            $existingRooms = $order->rooms()->orderBy('position')->with('walls')->get();
+
+            foreach ($data['rooms'] as $roomIndex => $roomData) {
+                $room = $existingRooms->get($roomIndex);
+                if (!$room) {
+                    continue;
+                }
+
+                $room->update([
+                    'name' => $roomData['name'] ?? $room->name,
+                ]);
+
+                $existingWalls = $room->walls()->orderBy('position')->get();
+                foreach (($roomData['walls'] ?? []) as $wallIndex => $wallData) {
+                    $wall = $existingWalls->get($wallIndex);
+                    if (!$wall) {
+                        continue;
+                    }
+
+                    $wall->update([
+                        'name' => $wallData['name'] ?? $wall->name,
+                        'width' => $wallData['width'] ?? $wall->width,
+                        'height' => $wallData['height'] ?? $wall->height,
+                        'collection_model_id' => $wallData['model'] ?? $wall->collection_model_id,
+                        'continue_same_art' => (bool) ($wallData['continueSameArt'] ?? $wall->continue_same_art),
+                        'continuations' => $wallData['continuations'] ?? $wall->continuations,
+                        'comment_referring_model' => $wallData['comment_referring_model'] ?? $wall->comment_referring_model,
+                        'link_referring_model' => $wallData['link_referring_model'] ?? $wall->link_referring_model,
+                        'files_referring_model' => $wallData['files_referring_model'] ?? $wall->files_referring_model,
+                        'collection_referring_model' => $wallData['collection_referring_model'] ?? $wall->collection_referring_model,
+                    ]);
+                }
+            }
+        }
+
         $order->update($data);
 
         return $order->fresh(['user', 'tenant', 'primaryRoom']);

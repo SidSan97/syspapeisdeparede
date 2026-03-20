@@ -340,6 +340,12 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <BudgetModelRequeriments
+                                                v-if="wall.model"
+                                                :wall="wall"
+                                                :model="getModelById(wall.model)"
+                                                :disabled="saving"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -486,6 +492,7 @@ import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import { useBudgetService } from '@/modules/budgets/services/budgetService';
 import { createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
 import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
@@ -693,7 +700,7 @@ const deliveryTimeDisplay = computed(() => {
 });
 
 function saveBudget() {
-    if (!validateBudget(budget, modelsLoading, productModels, showWarning)) {
+    if (!validateBudget(budget, modelsLoading, productModels, showWarning, getModelById)) {
         return;
     }
 

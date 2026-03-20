@@ -5,7 +5,7 @@
 /**
  * Valida um orçamento
  */
-export function validateBudget(budget, modelsLoading, productModels, showWarning) {
+export function validateBudget(budget, modelsLoading, productModels, showWarning, getModelById = null) {
     if (!budget.name) {
         showWarning('Por favor, informe o nome do orçamento');
         return false;
@@ -75,6 +75,39 @@ export function validateBudget(budget, modelsLoading, productModels, showWarning
             if (!wall.model) {
                 showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
                 return false;
+            }
+
+            if (typeof getModelById === 'function') {
+                const model = getModelById(wall.model);
+                const requests = model?.requests ?? {};
+
+                const needComment = Boolean(requests.comment);
+                const needLink = Boolean(requests.link);
+                const needFile = Boolean(requests.file);
+                const needCollection = Boolean(requests.collection);
+
+                if (needComment && !String(wall.comment_referring_model ?? '').trim()) {
+                    showWarning(`Informe a descrição do modelo para ${wallLabel} em ${roomLabel}.`);
+                    return false;
+                }
+
+                if (needLink && !String(wall.link_referring_model ?? '').trim()) {
+                    showWarning(`Informe o link de referência para ${wallLabel} em ${roomLabel}.`);
+                    return false;
+                }
+
+                if (needFile) {
+                    const files = Array.isArray(wall.files_referring_model) ? wall.files_referring_model : [];
+                    if (!files.length) {
+                        showWarning(`Informe ao menos um arquivo de referência para ${wallLabel} em ${roomLabel}.`);
+                        return false;
+                    }
+                }
+
+                if (needCollection && !String(wall.collection_referring_model ?? '').trim()) {
+                    showWarning(`Selecione uma arte da coleção para ${wallLabel} em ${roomLabel}.`);
+                    return false;
+                }
             }
         }
     }

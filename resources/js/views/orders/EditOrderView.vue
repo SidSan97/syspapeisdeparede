@@ -370,6 +370,12 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <BudgetModelRequeriments
+                                                v-if="wall.model"
+                                                :wall="wall"
+                                                :model="getModelById(wall.model)"
+                                                :disabled="saving"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -671,6 +677,7 @@ import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
 
 const router = useRouter();
@@ -721,12 +728,17 @@ const createDefaultContinuation = () => ({
 });
 
 const createDefaultWall = () => ({
+    id: null,
     name: '',
     width: null,
     height: null,
     model: null,
     continueSameArt: false,
-    continuations: []
+    continuations: [],
+    comment_referring_model: '',
+    link_referring_model: '',
+    files_referring_model: [],
+    collection_referring_model: ''
 });
 
 const showWarning = (message) =>
@@ -792,7 +804,12 @@ const normalizeCollectionModel = (model = {}) => {
         requests: {
             link: Boolean(model?.requests?.link),
             comment: Boolean(model?.requests?.comment),
-            file: Boolean(model?.requests?.file)
+            file: Boolean(model?.requests?.file),
+            collection: Boolean(
+                model?.requests?.collection ??
+                model?.request_collection ??
+                model?.requestCollection
+            )
         },
         link: model.link ?? '',
         comment: model.comment ?? '',
@@ -986,12 +1003,17 @@ function normalizeOrderFromAPI(orderData) {
             if (room.walls && Array.isArray(room.walls)) {
                 room.walls.forEach((wall) => {
                     const wallData = {
+                        id: wall.id ?? null,
                         name: wall.name || '',
                         width: wall.width ? Number(wall.width) : null,
                         height: wall.height ? Number(wall.height) : null,
                         model: (wall.collection_model_id || wall.collection_model?.id) ? Number(wall.collection_model_id || wall.collection_model?.id) : null,
                         continueSameArt: false,
-                        continuations: []
+                        continuations: [],
+                        comment_referring_model: wall.comment_referring_model ?? '',
+                        link_referring_model: wall.link_referring_model ?? '',
+                        files_referring_model: Array.isArray(wall.files_referring_model) ? wall.files_referring_model : [],
+                        collection_referring_model: wall.collection_referring_model ?? ''
                     };
 
                     // Processar continuações se existirem
@@ -1402,6 +1424,36 @@ function validateBudget() {
 
             if (!wall.model) {
                 showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
+                return false;
+            }
+
+            const model = getModelById(wall.model);
+            const requests = model?.requests ?? {};
+            const needComment = Boolean(requests.comment);
+            const needLink = Boolean(requests.link);
+            const needFile = Boolean(requests.file);
+            const needCollection = Boolean(requests.collection);
+
+            if (needComment && !String(wall.comment_referring_model ?? '').trim()) {
+                showWarning(`Informe a descrição do modelo para ${wallLabel} em ${roomLabel}.`);
+                return false;
+            }
+
+            if (needLink && !String(wall.link_referring_model ?? '').trim()) {
+                showWarning(`Informe o link de referência para ${wallLabel} em ${roomLabel}.`);
+                return false;
+            }
+
+            if (needFile) {
+                const files = Array.isArray(wall.files_referring_model) ? wall.files_referring_model : [];
+                if (!files.length) {
+                    showWarning(`Informe ao menos um arquivo de referência para ${wallLabel} em ${roomLabel}.`);
+                    return false;
+                }
+            }
+
+            if (needCollection && !String(wall.collection_referring_model ?? '').trim()) {
+                showWarning(`Selecione uma arte da coleção para ${wallLabel} em ${roomLabel}.`);
                 return false;
             }
         }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Budget\GeneratePdfRequest;
 use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
-use App\Http\Requests\Budget\PlaceOrderRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UpdateBudgetRequest;
@@ -208,48 +207,6 @@ class BudgetController extends Controller
                 'message' => 'Erro ao excluir orçamento: ' . $e->getMessage(),
             ], 500);
         }
-    }
-
-    public function placeOrder(PlaceOrderRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-
-        $budget = $this->repository->getAllById($data['id']);
-        $budgetRoom = $budget->primaryRoom;
-
-        // Buscar walls do budget room
-        $walls = $this->budgetWallRepository->getByBudgetRoom($budgetRoom);
-
-        // Atualizar walls com os dados da requisição
-        if (isset($data['walls']) && is_array($data['walls'])) {
-            $this->budgetWallRepository->updateFromRequestData($walls, $data['walls']);
-        }
-
-        // Criar Order a partir do Budget
-        $order = $this->orderRepository->createFromBudget($budget, $data);
-
-        if($budget->dropshipping_budget === 1) {
-            $this->dropshippingRepository->updateOrderId($budget->id, $order->id);
-        }
-
-        // Atualizar order_id em todas as rooms do budget
-        $budget->rooms()->update([
-            'order_id' => $order->id,
-        ]);
-
-        // Criar OrderBudgets usando o Order criado
-        $this->createLayoutOrder($order, $budget);
-
-        $budgetResource = new BudgetResource($budget);
-        $response = $budgetResource->response();
-        $responseData = $response->getData(true);
-        $responseData['order_id'] = $order->id;
-
-        if (isset($responseData['data']) && is_array($responseData['data'])) {
-            $responseData['data']['order_id'] = $order->id;
-        }
-
-        return response()->json($responseData);
     }
 
     public function createLayoutOrder(Order $order, Budget $budget)
