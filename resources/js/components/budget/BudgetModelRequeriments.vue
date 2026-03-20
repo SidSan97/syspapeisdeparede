@@ -66,8 +66,8 @@
 
         <div
           v-show="showSearchResults"
-          class="list-group position-absolute w-100 shadow-sm collection-search-results"
-          style="z-index: 1050; max-height: 220px; overflow-y: auto;"
+          class="list-group position-absolute w-100 shadow overflow-auto"
+          style="z-index: 1050; max-height: 220px;"
         >
           <template v-if="loadingCollections">
             <div class="list-group-item list-group-item-secondary">Buscando...</div>
@@ -100,18 +100,40 @@
         <div v-if="loadingImages" class="text-muted small">Carregando artes...</div>
         <div v-else-if="imagesError" class="text-danger small">{{ imagesError }}</div>
         <div v-else-if="!images.length" class="text-muted small">Nenhuma arte disponível.</div>
-        <div v-else class="d-flex flex-wrap gap-2">
-          <button
+        <div v-else class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2">
+          <div
             v-for="image in images"
             :key="image.id"
-            type="button"
-            class="btn btn-sm"
-            :class="wall.collection_referring_model == image.id ? 'btn-success' : 'btn-outline-secondary'"
-            :disabled="disabled"
-            @click="wall.collection_referring_model = String(image.id)"
+            class="col"
           >
-            {{ image.name || image.title || `Arte ${image.id}` }}
-          </button>
+            <div
+              role="button"
+              tabindex="0"
+              class="card h-100 w-100 p-0 text-start border overflow-hidden"
+              :class="[
+                wall.collection_referring_model == image.id ? 'border-success border-2' : '',
+                disabled ? 'opacity-75 pe-none' : ''
+              ]"
+              :style="{ cursor: disabled ? 'not-allowed' : 'pointer' }"
+              :aria-disabled="disabled"
+              @click="!disabled && (wall.collection_referring_model = String(image.id))"
+              @keydown.enter.prevent="!disabled && (wall.collection_referring_model = String(image.id))"
+            >
+              <div class="ratio ratio-1x1">
+                <img
+                  :src="getImageUrl(image)"
+                  :alt="image.name || image.title"
+                  class="card-img-top object-fit-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div class="card-body p-2">
+                <span class="small text-truncate d-block" :title="image.name || image.title || `Arte ${image.id}`">
+                  {{ image.name || image.title || `Arte ${image.id}` }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -181,6 +203,15 @@ watch(
   },
   { immediate: true }
 );
+
+const DEFAULT_COVER = '/assets/img/no-image.jpg';
+
+function getImageUrl(image) {
+  const url = image?.url ?? image?.path_name ?? image?.pathName;
+  if (url && (url.startsWith('/') || /^https?:\/\//i.test(url))) return url;
+  if (url) return `${window.location.origin.replace(/\/$/, '')}/storage/${String(url).replace(/^storage\//, '')}`;
+  return DEFAULT_COVER;
+}
 
 function handleFilesInput(value) {
   const normalized = String(value || '')
@@ -271,13 +302,7 @@ async function loadImagesForCollection(categoryId) {
 </script>
 
 <style scoped>
-.collection-search-results {
-  background-color: var(--bs-body-bg);
-}
-
-.collection-search-item:hover,
-.collection-search-item:focus {
-  background-color: var(--bs-tertiary-bg) !important;
-  color: inherit;
+.collection-search-item:hover {
+  background-color: var(--bs-tertiary-bg, var(--bs-secondary-bg, #e9ecef)) !important;
 }
 </style>
