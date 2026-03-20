@@ -188,7 +188,8 @@ export function normalizeBudgetFromAPI(budgetData) {
         total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
         total_amount_installments: budgetData.total_amount_installments ? Number(budgetData.total_amount_installments) : 0,
         dropshipping_budget: budgetData.dropshipping_budget || 0,
-        dropshipping_data: budgetData.dropshipping_data || null
+        dropshipping_data: budgetData.dropshipping_data || null,
+        reseller_name: budgetData.reseller_name ?? null
     };
 }
 

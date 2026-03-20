@@ -15,6 +15,8 @@
         <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
+                    <p class="ms-1"><strong>Revendedor: </strong> {{ budget.reseller_name }}</p>
+
                     <!-- Seção: Informações Básicas -->
                     <div class="card mb-4">
                         <div class="card-body">
@@ -1068,7 +1070,8 @@ function normalizeOrderFromAPI(orderData) {
         total_amount: orderData.total_amount ? Number(orderData.total_amount) : 0,
         total_amount_installments: orderData.total_amount_installments ? Number(orderData.total_amount_installments) : 0,
         dropshipping_budget: orderData.dropshipping_budget || 0,
-        dropshipping_data: orderData.dropshipping_data || null
+        dropshipping_data: orderData.dropshipping_data || null,
+        reseller_name: orderData.reseller_name ?? null
     };
 }
 

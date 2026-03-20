@@ -62,6 +62,7 @@ class OrderResource extends JsonResource
 
         // Normalizar método de pagamento
         $data['payment_method'] = $this->normalizePaymentMethod($data['payment_method'] ?? null);
+        $data['reseller_name'] = $this->resource->tenant?->name ?? null;
 
         // Incluir informações do usuário
         if ($this->resource->relationLoaded('user') && $this->resource->user) {

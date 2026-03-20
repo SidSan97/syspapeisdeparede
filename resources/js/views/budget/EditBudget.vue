@@ -15,6 +15,8 @@
         <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
+                    <p class="ms-1"><strong>Revendedor: </strong> {{ budget.reseller_name }}</p>
+
                     <!-- Seção: Informações Básicas -->
                     <div class="card mb-4">
                         <div class="card-body">

@@ -70,6 +70,7 @@ class BudgetResource extends JsonResource
         }
 
         $data['payment_method'] = self::normalizePaymentMethod($data['payment_method'] ?? null);
+        $data['reseller_name'] = $this->resource->tenant?->name ?? null;
 
         return $data;
     }

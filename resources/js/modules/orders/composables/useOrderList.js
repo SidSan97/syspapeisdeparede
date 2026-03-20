@@ -33,6 +33,7 @@ export function useOrderList() {
             total_amount: Number(order.total_amount ?? order.totalAmount ?? 0),
             delivery_time: order.delivery_time ?? order.deliveryTime ?? null,
             status: order.status ?? null,
+            reseller_name: order.reseller_name ?? order.resellerName ?? null,
         };
     }
 
