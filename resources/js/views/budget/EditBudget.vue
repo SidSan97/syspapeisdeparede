@@ -298,6 +298,45 @@
                                                         Obs.:<br />
                                                         Faixas maiores que 6 metros são vendidas apenas em pares.
                                                     </p>
+
+                                                    <div class="mt-4">
+                                                        <h6 class="mb-3">Definir modelo da parede</h6>
+                                                        <div v-if="modelsLoading" class="text-center text-muted py-3">
+                                                            Carregando modelos...
+                                                        </div>
+                                                        <div v-else-if="modelsError" class="alert alert-danger" role="alert">
+                                                            {{ modelsError }}
+                                                        </div>
+                                                        <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
+                                                            Nenhum modelo disponível. Tente novamente mais tarde.
+                                                        </div>
+                                                        <div v-else class="row">
+                                                            <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
+                                                                <div
+                                                                    class="card h-100 model-card"
+                                                                    :class="{ 'border-primary': wall.model === model.id }"
+                                                                    @click="wall.model = model.id"
+                                                                    style="cursor: pointer;"
+                                                                >
+                                                                    <div class="card-body d-flex flex-column">
+                                                                        <div class="mb-2">
+                                                                            <strong>{{ model.displayName }}</strong>
+                                                                        </div>
+                                                                        <div class="small text-muted">
+                                                                            <div><strong>Valor:</strong> {{ formatCurrency(model.value) }}</div>
+                                                                            <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <BudgetModelRequeriments
+                                                            v-if="wall.model"
+                                                            :wall="wall"
+                                                            :model="getModelById(wall.model)"
+                                                            :disabled="saving"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -323,61 +362,6 @@
                         </div>
                     </div>
 
-                    <!-- Seção: Definir Modelos -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Definir Modelos</h5>
-                            <div class="alert alert-info mb-4">
-                                <strong>Cada parede deve conter um modelo:</strong>
-                            </div>
-
-                                <div v-for="(room, roomIndex) in budget.rooms" :key="roomIndex" class="card mb-3">
-                                    <div class="card-header">
-                                        <strong>{{ room.name || `Ambiente ${roomIndex + 1}` }}</strong>
-                                    </div>
-                                    <div class="card-body">
-                                        <div v-for="(wall, wallIndex) in room.walls" :key="wallIndex" class="mb-4 pb-3 border-bottom">
-                                            <h6 class="mb-3">{{ wall.name || `Parede ${wallIndex + 1}` }}</h6>
-                                            <div v-if="modelsLoading" class="text-center text-muted py-4">
-                                                Carregando modelos...
-                                            </div>
-                                            <div v-else-if="modelsError" class="alert alert-danger" role="alert">
-                                                {{ modelsError }}
-                                            </div>
-                                            <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
-                                                Nenhum modelo disponível. Tente novamente mais tarde.
-                                            </div>
-                                            <div v-else class="row">
-                                                <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
-                                                    <div
-                                                        class="card h-100 model-card"
-                                                        :class="{ 'border-primary': wall.model === model.id }"
-                                                        @click="wall.model = model.id"
-                                                        style="cursor: pointer;"
-                                                    >
-                                                        <div class="card-body d-flex flex-column">
-                                                            <div class="mb-2">
-                                                                <strong>{{ model.displayName }}</strong>
-                                                            </div>
-                                                            <div class="small text-muted">
-                                                                <div><strong>Valor:</strong> {{ formatCurrency(model.value) }}</div>
-                                                                <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <BudgetModelRequeriments
-                                                v-if="wall.model"
-                                                :wall="wall"
-                                                :model="getModelById(wall.model)"
-                                                :disabled="saving"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Sidebar: Frete e Pagamento -->
