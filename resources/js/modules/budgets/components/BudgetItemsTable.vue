@@ -6,6 +6,7 @@
                     <th scope="col" style="width: 64px;">Número</th>
                     <th scope="col" style="width: 64px;">Data</th>
                     <th class="text-nowrap" scope="col">Orçamento</th>
+                    <th class="text-nowrap" scope="col">Valor da venda</th>
                     <th class="text-nowrap" scope="col">Situação</th>
                     <th class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
                 </tr>
@@ -21,6 +22,13 @@
                         >
                             {{ budget.name }}
                         </button>
+                    </td>
+                    <td class="text-nowrap">
+                        {{
+                            markupInstallmentsValue(budget) != null
+                                ? formatCurrency(markupInstallmentsValue(budget))
+                                : '—'
+                        }}
                     </td>
                     <td class="text-nowrap">
                         <BudgetStatusBadge :status="budget.status" />
@@ -110,7 +118,10 @@
 
 <script setup>
 import { formatDate } from '@/utils/dateUtils';
+import { useFormatting } from '@/composables/useFormatting';
 import BudgetStatusBadge from './BudgetStatusBadge.vue';
+
+const { formatCurrency } = useFormatting();
 
 const props = defineProps({
     budgets: {
@@ -124,6 +135,17 @@ defineEmits(['view-details', 'generate-pdf', 'create-order', 'edit', 'cancel', '
 function isCancelled(budget) {
     const status = (budget?.status ?? '').toString().toLowerCase();
     return status === 'cancelled' || status === 'cancelado';
+}
+
+function markupInstallmentsValue(budget) {
+    const raw =
+        budget?.total_amount_installments_markup ??
+        budget?.totalAmountInstallmentsMarkup;
+    if (raw === null || raw === undefined || raw === '') {
+        return null;
+    }
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
 }
 </script>
 

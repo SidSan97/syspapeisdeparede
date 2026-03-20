@@ -293,6 +293,16 @@ class BudgetRepository {
         return $budget;
     }
 
+    public function updateMarkup(Budget $budget, float $markup): Budget
+    {
+        $budget->update([
+            'total_amount_markup' => $budget['total_amount'] * $markup,
+            'total_amount_installments_markup' => $budget['total_amount_installments'] * $markup,
+        ]);
+
+        return $budget->fresh(['rooms.walls.collectionModel']);
+    }
+
     public function cancel(Budget $budget): Budget
     {
         $budget->update([

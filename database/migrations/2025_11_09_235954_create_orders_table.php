@@ -33,6 +33,8 @@ return new class extends Migration
             $table->decimal('total_area', 10, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->decimal('total_amount_installments', 12, 2)->default(0);
+            $table->decimal('total_amount_markup', 12, 2)->nullable();
+            $table->decimal('total_amount_installments_markup', 12, 2)->nullable();
             $table->unsignedInteger('delivery_time')->default(0);
 
             // Payment fields

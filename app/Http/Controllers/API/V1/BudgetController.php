@@ -299,6 +299,8 @@ class BudgetController extends Controller
         $installmentValue = $validated['total_amount_installments'] ?? $validated['installment_value'] ?? null;
         $mockupPercentage = $validated['mockup_percentage'] ?? $validated['percentage'] ?? null;
 
+        $this->repository->updateMarkup($budget, $mockupPercentage);
+
         return $this->generatePdfService->generateBudgetPdf(
             $budget,
             $mockupPercentage,

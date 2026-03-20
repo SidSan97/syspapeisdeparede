@@ -56,12 +56,6 @@
             color: #000;
         }
 
-        .pdf-subtitle {
-            font-size: 14px;
-            color: #000;
-            margin: 0;
-        }
-
         /* Seção de Informações */
         .pdf-info-section {
             width: 100%;
@@ -394,8 +388,7 @@
             </div>
         </div>
         <div class="pdf-header-right">
-            <h1 class="pdf-title">Orçamento de venda Nº {{ $budget->id ?? '—' }}</h1>
-            <p class="pdf-subtitle">{{ $budget->name ?? '—' }}</p>
+            <h1 class="pdf-title">Nº {{ $budget->id ?? '—' }} - {{ $budget->name ?? '—' }}</h1>
         </div>
     </div>
 
@@ -461,7 +454,6 @@
                 <tr>
                     <th>Item</th>
                     <th>Modelo</th>
-                    <th>Quantidade de Paredes</th>
                     <th>Metros</th>
                 </tr>
             </thead>
@@ -485,7 +477,6 @@
                                 </div>
                             @endforeach
                         </td>
-                        <td>{{ $room->walls ? $room->walls->count() : 0 }}</td>
                         <td>
                             @php
                                 $roomMeters = 0;
@@ -524,11 +515,6 @@
             <p class="pdf-total-cash"><strong>Total à Vista:</strong> {{ $financial['cash_total_formatted'] }}</p>
             @if($financial['installment_total_formatted'] !== null)
                 <p class="pdf-total-installment"><strong>Total a Prazo:</strong> {{ $financial['installment_total_formatted'] }}</p>
-            @endif
-            @if(isset($financial['mockup_percentage']) && $financial['mockup_percentage'] > 0)
-                <p class="pdf-mockup-info">
-                    <strong>Mockup:</strong> {{ number_format($financial['mockup_percentage'], 2, ',', '.') }}%
-                </p>
             @endif
         </div>
     </div>
