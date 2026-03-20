@@ -17,6 +17,23 @@ export function useBudgetOrderService() {
     return rootCategories;
   }
 
+  /**
+   * Busca categorias cujo nome contenha o termo informado.
+   * @param {string} searchTerm
+   * @returns {Promise<Array>}
+   */
+  async function searchCollectionCategories(searchTerm) {
+    const term = String(searchTerm || '').trim();
+    if (!term) return [];
+
+    const { data } = await axios.get('v1/collection-categories', {
+      params: { q: term },
+    });
+
+    const payload = data?.data ?? data ?? {};
+    return Array.isArray(payload) ? payload : payload.items ?? [];
+  }
+
   async function getCollectionCategoryImages(categoryId) {
     const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
     const payload = data?.data ?? data ?? {};
@@ -37,6 +54,7 @@ export function useBudgetOrderService() {
 
   return {
     getCollectionCategories,
+    searchCollectionCategories,
     getCollectionCategoryImages,
     placeOrder,
   };

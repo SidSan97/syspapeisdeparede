@@ -38,23 +38,63 @@
     </div>
 
     <div v-if="requiresCollection" class="mb-2">
-      <div class="mb-2">
+      <div class="mb-2 position-relative">
         <label class="form-label">Coleção</label>
-        <select
-          v-model="selectedCollectionId"
-          class="form-select"
-          :disabled="disabled || loadingCollections"
-          @change="onCollectionChange"
-        >
-          <option :value="null">Selecione uma coleção</option>
-          <option v-for="item in collections" :key="item.id" :value="item.id">
-            {{ item.name }}
-          </option>
-        </select>
-      </div>
+        <div class="input-group">
+          <input
+            v-model="collectionSearchQuery"
+            type="text"
+            class="form-control"
+            placeholder="Digite para buscar uma coleção..."
+            autocomplete="off"
+            :disabled="disabled"
+            @focus="onSearchFocus"
+            @blur="onSearchBlur"
+            @input="onSearchInput"
+          />
+          <button
+            v-if="selectedCollectionId"
+            type="button"
+            class="btn btn-outline-secondary"
+            :disabled="disabled"
+            title="Limpar seleção"
+            @mousedown.prevent="clearCollectionSelection"
+          >
+            ×
+          </button>
+        </div>
 
-      <div v-if="loadingCollections" class="text-muted small">Carregando coleções...</div>
-      <div v-else-if="collectionError" class="text-danger small">{{ collectionError }}</div>
+        <div
+          v-show="showSearchResults"
+          class="list-group position-absolute w-100 shadow-sm collection-search-results"
+          style="z-index: 1050; max-height: 220px; overflow-y: auto;"
+        >
+          <template v-if="loadingCollections">
+            <div class="list-group-item list-group-item-secondary">Buscando...</div>
+          </template>
+          <template v-else-if="collectionError">
+            <div class="list-group-item list-group-item-danger">{{ collectionError }}</div>
+          </template>
+          <template v-else-if="collectionSearchQuery.length < 1 && searchResults.length === 0">
+            <div class="list-group-item list-group-item-secondary">Digite para buscar coleções</div>
+          </template>
+          <template v-else-if="searchResults.length === 0">
+            <div class="list-group-item list-group-item-secondary">Nenhuma coleção encontrada</div>
+          </template>
+          <button
+            v-for="item in searchResults"
+            v-else
+            :key="item.id"
+            type="button"
+            class="list-group-item list-group-item-action text-start collection-search-item"
+            :class="{ active: selectedCollectionId === item.id }"
+            @mousedown.prevent="selectCollection(item)"
+          >
+            {{ item.name }}
+            <span v-if="item.parent?.name" class="text-muted small ms-1">({{ item.parent.name }})</span>
+          </button>
+        </div>
+      </div>
 
       <div v-if="selectedCollectionId" class="mt-2">
         <div v-if="loadingImages" class="text-muted small">Carregando artes...</div>
@@ -80,6 +120,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 import { useBudgetOrderService } from '@/modules/budgets/services/budgetOrderService';
 
 const props = defineProps({
@@ -89,9 +130,12 @@ const props = defineProps({
 });
 
 const budgetOrderService = useBudgetOrderService();
-const collections = ref([]);
-const images = ref([]);
+const collectionSearchQuery = ref('');
+const searchResults = ref([]);
 const selectedCollectionId = ref(null);
+const selectedCollectionName = ref('');
+const showSearchResults = ref(false);
+const images = ref([]);
 const loadingCollections = ref(false);
 const loadingImages = ref(false);
 const collectionError = ref('');
@@ -126,11 +170,12 @@ watch(
 
 watch(
   () => props.model?.id,
-  async () => {
-    if (requiresCollection.value) {
-      await ensureCollectionsLoaded();
-    } else {
+  () => {
+    if (!requiresCollection.value) {
       selectedCollectionId.value = null;
+      selectedCollectionName.value = '';
+      collectionSearchQuery.value = '';
+      searchResults.value = [];
       images.value = [];
     }
   },
@@ -145,26 +190,78 @@ function handleFilesInput(value) {
   props.wall.files_referring_model = normalized;
 }
 
-async function ensureCollectionsLoaded() {
-  if (collections.value.length || loadingCollections.value) return;
+async function runSearch() {
+  const term = collectionSearchQuery.value.trim();
+  if (!term) {
+    searchResults.value = [];
+    collectionError.value = '';
+    return;
+  }
   loadingCollections.value = true;
   collectionError.value = '';
   try {
-    collections.value = await budgetOrderService.getCollectionCategories();
+    searchResults.value = await budgetOrderService.searchCollectionCategories(term);
   } catch (error) {
-    collectionError.value = error?.response?.data?.message || 'Erro ao carregar coleções.';
+    collectionError.value = error?.response?.data?.message || 'Erro ao buscar coleções.';
+    searchResults.value = [];
   } finally {
     loadingCollections.value = false;
   }
 }
 
-async function onCollectionChange() {
+const performSearch = debounce(runSearch, 300);
+
+function onSearchFocus() {
+  showSearchResults.value = true;
+  const term = collectionSearchQuery.value.trim();
+  if (term) {
+    performSearch.cancel();
+    runSearch();
+  }
+}
+
+function onSearchInput() {
+  if (
+    selectedCollectionId.value &&
+    collectionSearchQuery.value.trim() !== selectedCollectionName.value
+  ) {
+    selectedCollectionId.value = null;
+    selectedCollectionName.value = '';
+    images.value = [];
+  }
+  performSearch();
+}
+
+function onSearchBlur() {
+  setTimeout(() => {
+    showSearchResults.value = false;
+  }, 200);
+}
+
+function selectCollection(item) {
+  selectedCollectionId.value = item.id;
+  selectedCollectionName.value = item.name || '';
+  collectionSearchQuery.value = item.name || '';
+  showSearchResults.value = false;
+  searchResults.value = [];
+  loadImagesForCollection(item.id);
+}
+
+function clearCollectionSelection() {
+  selectedCollectionId.value = null;
+  selectedCollectionName.value = '';
+  collectionSearchQuery.value = '';
   images.value = [];
   imagesError.value = '';
-  if (!selectedCollectionId.value) return;
+}
+
+async function loadImagesForCollection(categoryId) {
+  images.value = [];
+  imagesError.value = '';
+  if (!categoryId) return;
   loadingImages.value = true;
   try {
-    images.value = await budgetOrderService.getCollectionCategoryImages(selectedCollectionId.value);
+    images.value = await budgetOrderService.getCollectionCategoryImages(categoryId);
   } catch (error) {
     imagesError.value = error?.response?.data?.message || 'Erro ao carregar artes da coleção.';
   } finally {
@@ -172,3 +269,15 @@ async function onCollectionChange() {
   }
 }
 </script>
+
+<style scoped>
+.collection-search-results {
+  background-color: var(--bs-body-bg);
+}
+
+.collection-search-item:hover,
+.collection-search-item:focus {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: inherit;
+}
+</style>

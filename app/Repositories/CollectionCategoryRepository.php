@@ -57,6 +57,25 @@ class CollectionCategoryRepository
             ->get();
     }
 
+    /**
+     * Busca categorias cujo nome contenha o termo (parcial ou total).
+     */
+    public function search(string $query): Collection
+    {
+        $term = trim($query);
+        if ($term === '') {
+            return collect();
+        }
+
+        return CollectionCategory::query()
+            ->where('name', 'like', '%' . $term . '%')
+            ->withCount('images')
+            ->with('parent:id,name')
+            ->orderBy('name')
+            ->limit(50)
+            ->get();
+    }
+
     public function create(array $attributes): CollectionCategory
     {
         if (isset($attributes['image_cover']) && $attributes['image_cover'] instanceof UploadedFile) {

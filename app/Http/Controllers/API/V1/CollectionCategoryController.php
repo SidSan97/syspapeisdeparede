@@ -21,7 +21,16 @@ class CollectionCategoryController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
+        $query = trim((string) $request->get('q', ''));
         $tree = $request->get('tree', false);
+
+        if ($query !== '') {
+            $collection = $this->repository->search($query);
+            return $this->sendResponse(
+                CollectionCategoryResource::collection($collection),
+                'Categorias encontradas'
+            );
+        }
 
         if ($tree) {
             $collection = $this->repository->getTree();
