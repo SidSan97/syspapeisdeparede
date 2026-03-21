@@ -472,6 +472,14 @@
                                         <option v-for="n in budget.installmentLimit" :key="n" :value="n">{{ n }}x</option>
                                     </select>
                                 </div>
+
+                                <br> 
+
+                                <span class="budget-attention-info">
+                                    ATENÇÃO! OS PREÇOS DO
+                                    ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS CORRIDOS, APÓS ESSE
+                                    PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -854,6 +862,11 @@ function updateBudget() {
     &.border-primary {
         box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
     }
+}
+
+.budget-attention-info {
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>
 

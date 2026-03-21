@@ -66,14 +66,6 @@
           <h5 class="mb-0 text-primary">{{ totalPrazo }}</h5>
         </div>
       </div>
-
-        <br>
-
-        <span class="budget-attention-info">
-            ATENÇÃO! OS PREÇOS DO
-            ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS CORRIDOS, APÓS ESSE
-            PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
-        </span>
     </div>
   </div>
 </template>
@@ -120,8 +112,5 @@ const props = defineProps({
 </script>
 
 <style scoped>
-.budget-attention-info {
-  font-size: 12px;
-  font-weight: 600;
-}
+
 </style>
