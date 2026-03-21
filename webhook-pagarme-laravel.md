@@ -104,8 +104,3 @@ Para detectar pagamento de link, selecione pelo menos:
 
 ---
 
-## Próximos Passos Recomendados
-
-- **Validar a autenticidade do payload** — garantir que a requisição veio de fato do Pagar.me
-- **Tratar idempotência** — evitar processar o mesmo evento duas vezes caso haja reenvio
-- **Usar filas (queues)** — processar o webhook de forma assíncrona para responder o `200` rapidamente
