@@ -18,11 +18,20 @@
                     <td>{{ formatDate(budget.created_at || budget.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button
+                            v-if="canEditBudget(budget)"
+                            type="button"
                             class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
                             @click="$emit('edit', budget)"
                         >
                             {{ budget.name }}
                         </button>
+                        <span
+                            v-else
+                            class="fw-semibold text-body"
+                            :title="editBlockedTitle"
+                        >
+                            {{ budget.name }}
+                        </span>
                     </td>
                     <td class="text-nowrap">
                         {{
@@ -65,7 +74,10 @@
                                     <button
                                         class="dropdown-item"
                                         type="button"
-                                        @click="$emit('edit', budget)"
+                                        :class="{ disabled: !canEditBudget(budget) }"
+                                        :disabled="!canEditBudget(budget)"
+                                        :title="canEditBudget(budget) ? '' : editBlockedTitle"
+                                        @click="canEditBudget(budget) && $emit('edit', budget)"
                                     >
                                         Editar
                                     </button>
@@ -139,6 +151,30 @@ const props = defineProps({
 });
 
 defineEmits(['view-details', 'generate-pdf', 'create-order', 'edit', 'cancel', 'delete']);
+
+const editBlockedTitle =
+    'Orçamento aprovado com pedido vinculado não pode ser editado.';
+
+function isApprovedBudget(budget) {
+    const s = (budget?.status ?? '').toString().toLowerCase().trim();
+    return s === 'aprovado';
+}
+
+function hasLinkedOrder(budget) {
+    const oid = budget?.order_id ?? budget?.orderId;
+    if (oid === null || oid === undefined || oid === '') {
+        return false;
+    }
+    const n = Number(oid);
+    return Number.isFinite(n) && n > 0;
+}
+
+function canEditBudget(budget) {
+    if (isApprovedBudget(budget) && hasLinkedOrder(budget)) {
+        return false;
+    }
+    return true;
+}
 
 function isCancelled(budget) {
     const status = (budget?.status ?? '').toString().toLowerCase();

@@ -7,6 +7,8 @@ use App\Http\Requests\Common\ListRequest;
 use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
+use App\Models\Budget;
+use App\Models\BudgetRoom;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
@@ -191,15 +193,12 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
 
-            $hasOrders = $order->rooms()
-                ->whereNotNull('order_id')
-                ->exists();
+            $orderId = $order->id;
 
-            if ($hasOrders) {
-                $order->delete();
-            } else {
-                $order->delete();
-            }
+            Budget::query()->where('order_id', $orderId)->update(['order_id' => null]);
+            BudgetRoom::query()->where('order_id', $orderId)->update(['order_id' => null]);
+
+            $order->delete();
 
             DB::commit();
 

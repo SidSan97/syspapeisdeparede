@@ -140,6 +140,12 @@ class BudgetController extends Controller
 
         $budget = DB::transaction(function () use ($id, $data) {
             $budget = \App\Models\Budget::findOrFail($id);
+
+            $statusLower = strtolower(trim((string) ($budget->status ?? '')));
+            if ($statusLower === 'aprovado' && $budget->order_id) {
+                abort(422, 'Orçamento aprovado com pedido vinculado não pode ser editado.');
+            }
+
             $budget = $this->repository->update($budget, $data);
 
             if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
