@@ -12,6 +12,7 @@ Route::get('budgets/orders', [BudgetController::class, 'orders']);
 Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts']);
 Route::post('budgets/cancel', [BudgetController::class, 'cancel']);
 Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf']);
+Route::post('budgets/place-order', [BudgetController::class, 'placeOrder']);
 Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment']);
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);
 Route::post('budgets/upload-referring-file', [BudgetController::class, 'uploadReferringFile']);

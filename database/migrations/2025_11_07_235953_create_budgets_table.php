@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('budgets', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('order_id')
+                ->nullable()
+                ->constrained('orders')
+                ->nullOnDelete();
             $table->foreignId('user_id')
                 ->nullable()
                 ->constrained()

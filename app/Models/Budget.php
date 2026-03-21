@@ -16,6 +16,7 @@ class Budget extends Model
 
     protected $fillable = [
         'user_id',
+        'order_id',
         'tenant_id',
         'name',
         'total_area',
@@ -66,6 +67,11 @@ class Budget extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(User::class, 'tenant_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function rooms(): HasMany

@@ -6,10 +6,8 @@ use App\Models\Budget;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class OrderRepository
 {
@@ -232,38 +230,20 @@ class OrderRepository
             });
     }
 
-    public function createFromBudget(Budget $budget, array $additionalData = []): Order
+    /**
+     * Colunas compartilhadas entre budgets e orders (exceto order_id no budget).
+     */
+    protected function sharedAttributesFromBudget(Budget $budget): array
     {
-        $primaryRoom = $budget->rooms()->orderBy('position')->first();
-        $primaryWall = $primaryRoom ? $primaryRoom->walls()->orderBy('position')->first() : null;
-
-        $filesReferringModel = $additionalData['files_referring_model'] ?? ($primaryWall ? $primaryWall->files_referring_model : null);
-
-        if (!empty($filesReferringModel) && is_array($filesReferringModel)) {
-            $processedFiles = [];
-            $existingFiles = is_array($primaryWall?->files_referring_model) ? $primaryWall->files_referring_model : [];
-
-            foreach ($filesReferringModel as $file) {
-                if ($file instanceof UploadedFile) {
-                    $processedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
-                } elseif (is_string($file)) {
-                    $processedFiles[] = $file;
-                }
-            }
-
-            $filesReferringModel = array_values(array_filter(array_unique(array_merge($existingFiles, $processedFiles))));
-        } elseif (empty($filesReferringModel) && $primaryWall) {
-            // Se não houver arquivos novos, usar os da wall
-            $filesReferringModel = $primaryWall->files_referring_model;
-        }
-
-        $orderData = [
+        return [
             'user_id' => $budget->user_id,
             'tenant_id' => $budget->tenant_id,
             'name' => $budget->name,
             'total_area' => $budget->total_area,
             'total_amount' => $budget->total_amount,
             'total_amount_installments' => $budget->total_amount_installments,
+            'total_amount_markup' => $budget->total_amount_markup,
+            'total_amount_installments_markup' => $budget->total_amount_installments_markup,
             'delivery_time' => $budget->delivery_time,
             'payment_method' => $budget->payment_method,
             'installment_limit' => $budget->installment_limit,
@@ -274,12 +254,30 @@ class OrderRepository
             'selected_carrier_delivery_time' => $budget->selected_carrier_delivery_time,
             'carriers_snapshot' => $budget->carriers_snapshot,
             'primary_budget_room_id' => $budget->primary_budget_room_id,
-            'status' => $additionalData['status'] ?? $budget->status ?? 'Pendente de Revisão',
+            'status' => $budget->status,
             'payment_file' => $budget->payment_file,
             'dropshipping_budget' => $budget->dropshipping_budget,
         ];
+    }
 
-        return $this->create($orderData);
+    public function createFromBudget(Budget $budget, array $additionalData = []): Order
+    {
+        $attributes = $this->sharedAttributesFromBudget($budget);
+
+        if (array_key_exists('status', $additionalData) && $additionalData['status'] !== null) {
+            $attributes['status'] = $additionalData['status'];
+        } elseif ($attributes['status'] === null) {
+            $attributes['status'] = 'Pendente de Revisão';
+        }
+
+        return $this->create($attributes);
+    }
+
+    public function syncFromBudget(Order $order, Budget $budget): Order
+    {
+        $order->update($this->sharedAttributesFromBudget($budget));
+
+        return $order->fresh();
     }
 
     public function updateNfSent(int $orderId): void

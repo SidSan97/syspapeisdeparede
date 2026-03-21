@@ -211,6 +211,26 @@ class BudgetController extends Controller
         }
     }
 
+    public function placeOrder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'exists:budgets,id'],
+        ]);
+
+        $budget = $this->repository->getAllById($validated['id']);
+
+        if (!$budget) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orçamento não encontrado.',
+            ], 404);
+        }
+
+        $budget = $this->repository->placeOrder($budget, $request->all());
+
+        return (new BudgetResource($budget))->response();
+    }
+
     public function createLayoutOrder(Order $order, Budget $budget)
     {
         // Atualizar status do orçamento
