@@ -46,7 +46,72 @@ O `WebhookController` em `app/Http/Controllers/WebhookController.php`:
 
 ---
 
-## 4. Configure o Webhook no Painel do Pagar.me
+## 4. Testar localmente via Postman
+
+Para simular o webhook no ambiente local:
+
+1. **URL:** `POST http://seudominio/api/webhook/pagarme`
+2. **Headers:** `Content-Type: application/json`
+3. **Body (raw JSON):** use a estrutura abaixo, ajustando `data.metadata.order_id` ou `data.items[0].description` com o ID de um pedido existente no banco (`paid = 0`):
+
+```json
+{
+  "id": "hook_RyEKQO789TRpZjv5",
+  "account": {
+    "id": "acc_jZkdN857et650oNv",
+    "name": "Lojinha"
+  },
+  "type": "order.paid",
+  "created_at": "2017-06-29T20:23:47",
+  "data": {
+    "id": "or_ZdnB5BBCmYhk534R",
+    "code": "1303724",
+    "amount": 12356,
+    "currency": "BRL",
+    "closed": true,
+    "status": "paid",
+    "metadata": {
+      "order_id": "1"
+    },
+    "items": [
+      {
+        "id": "oi_EqnMMrbFgBf0MaN1",
+        "description": "Produto [order_ref:1]",
+        "amount": 10166,
+        "quantity": 1,
+        "status": "active"
+      }
+    ],
+    "customer": {
+      "id": "cus_oy23JRQCM1cvzlmD",
+      "name": "FABIO",
+      "email": "abc@teste.com"
+    },
+    "charges": [
+      {
+        "id": "ch_d22356Jf4WuGr8no",
+        "status": "paid",
+        "payment_method": "credit_card"
+      }
+    ]
+  }
+}
+```
+## OBS: Itens, customer e charges são opcionais.
+
+### Se tudo ocorrer bem, o json de retorno esperado é:
+
+```json
+{
+  "received": true
+}
+```
+
+> Troque `"1"` em `metadata.order_id` e `[order_ref:1]` pelo ID real de um pedido na tabela `orders` com `paid = 0` para ver a atualização.
+
+---
+
+## 5. Configurar o Webhook no Painel do Pagar.me
 
 No painel, vá em **Configurações → Webhooks → Criar Webhook**, informe a URL para onde as notificações serão enviadas e selecione os eventos desejados.
 
@@ -62,7 +127,7 @@ Para detectar pagamento de link, selecione pelo menos:
 
 ---
 
-## 5. Estrutura do Payload Recebido
+## 6. Estrutura do Payload Recebido
 
 ```json
 {
@@ -87,7 +152,7 @@ Para detectar pagamento de link, selecione pelo menos:
 
 ---
 
-## 6. Atributos do Objeto Webhook
+## 7. Atributos do Objeto Webhook
 
 | Atributo | Tipo | Descrição |
 |---|---|---|
