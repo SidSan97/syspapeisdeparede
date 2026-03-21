@@ -65,12 +65,31 @@
           <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
           <h5 class="mb-0 text-primary">{{ totalPrazo }}</h5>
         </div>
+
+        <hr>
+
+        <div
+          v-if="stripSummary"
+          class="mt-3 small text-muted"
+        >
+          <strong class="text-body">Resumo de Faixas:</strong>
+          {{ stripSummary }}
+        </div>
+
+        <button class="btn btn-primary mt-4" @click="copyStripSummary">
+          Copiar Resumo
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import {
+  buildBudgetSummaryText,
+  copyBudgetSummaryText,
+} from '@/utils/copyBudgetSummaryUtils';
+
 const props = defineProps({
   totalRooms: {
     type: [Number, String],
@@ -108,7 +127,34 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  stripSummary: {
+    type: String,
+    default: '',
+  },
 });
+
+async function copyStripSummary() {
+  const text = buildBudgetSummaryText({
+    totalWalls: props.totalWalls,
+    totalArea: props.totalArea,
+    totalVista: props.totalVista,
+    totalPrazo: props.totalPrazo,
+    stripSummary: props.stripSummary,
+  });
+
+  const ok = await copyBudgetSummaryText(text);
+  if (ok) {
+    window.Toast.fire({
+      icon: 'success',
+      title: 'Resumo copiado para a área de transferência',
+    });
+  } else {
+    window.Toast.fire({
+      icon: 'error',
+      title: 'Não foi possível copiar o resumo.',
+    });
+  }
+}
 </script>
 
 <style scoped>

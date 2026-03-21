@@ -652,6 +652,7 @@
                       :delivery-time="`${calculateDeliveryTime(budget)} dias`"
                       :total-vista="`R$ ${totalBudgetVista.toFixed(2)}`"
                       :total-prazo="`R$ ${totalBudgetPrazo.toFixed(2)}`"
+                      :strip-summary="stripSummary"
                     />
                 </div>
             </div>
@@ -670,6 +671,7 @@ import { useAuthStore } from '@/stores/auth';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
 import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
+import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const router = useRouter();
 const route = useRoute();
@@ -917,6 +919,7 @@ const productModelsMap = computed(() => {
 const getModelById = (id) => productModelsMap.value.get(id);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
 
 const transportDays = computed(() => {
     if (

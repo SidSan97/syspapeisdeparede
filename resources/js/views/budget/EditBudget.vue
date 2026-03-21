@@ -497,6 +497,7 @@
                       :delivery-time="`${calculateDeliveryTime(budget)} dias`"
                       :total-vista="formatCurrency(totalBudgetVista)"
                       :total-prazo="formatCurrency(totalBudgetPrazo)"
+                      :strip-summary="stripSummary"
                     />
                 </div>
             </div>
@@ -523,6 +524,7 @@ import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 import { useBudgetEditState } from '@/modules/budgets/composables/useBudgetEditState';
 import { useFormatting } from '@/composables/useFormatting';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
+import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -582,6 +584,7 @@ const {
 } = useBudgetModels(budget);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
 
 const transportDays = computed(() => {
     if (
