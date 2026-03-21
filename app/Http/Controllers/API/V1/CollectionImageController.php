@@ -18,7 +18,17 @@ class CollectionImageController extends BaseController
     ) {
         // Deixar listagem pública para uso externo (catálogo),
         // mantendo autenticação para criação/remoção.
-        $this->middleware('auth:api')->except(['index']);
+        $this->middleware('auth:api')->except(['index', 'show']);
+    }
+
+    public function show(CollectionImage $collectionImage): JsonResponse
+    {
+        $collectionImage->load(['category.parent']);
+
+        return $this->sendResponse(
+            new CollectionImageResource($collectionImage),
+            'Imagem recuperada com sucesso'
+        );
     }
 
     public function index(): JsonResponse

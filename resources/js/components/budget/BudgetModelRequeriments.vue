@@ -65,6 +65,39 @@
 
     <div v-if="requiresCollection" class="mb-2">
       <div class="mb-2 position-relative">
+        <!-- Resumo da arte escolhida (edição / após selecionar na grade) -->
+        <div
+          v-if="loadingSelectionSummary"
+          class="mt-2 text-muted small"
+        >
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+          Carregando seleção da coleção...
+        </div>
+        <div
+          v-else-if="selectionSummary"
+          class="mt-2 rounded border p-2 d-flex align-items-start gap-3 bg-body-secondary"
+        >
+          <img
+            :src="selectionSummary.imageUrl"
+            alt=""
+            class="rounded flex-shrink-0 border"
+            style="width: 72px; height: 72px; object-fit: cover;"
+            loading="lazy"
+            @error="handleSummaryImageError"
+          />
+          <div class="small min-w-0 flex-grow-1">
+            <div
+              v-if="selectionSummary.categoryLine"
+              class="text-muted mb-1 text-break"
+            >
+              {{ selectionSummary.categoryLine }}
+            </div>
+            <div class="fw-semibold text-break">
+              {{ selectionSummary.imageName }}
+            </div>
+          </div>
+        </div> <br>
+
         <label class="form-label">Coleção</label>
         <div class="input-group">
           <input
@@ -192,6 +225,9 @@ const loadingCollections = ref(false);
 const loadingImages = ref(false);
 const collectionError = ref('');
 const imagesError = ref('');
+const selectionSummary = ref(null);
+const loadingSelectionSummary = ref(false);
+const selectedCategoryContext = ref(null);
 
 const requiresComment = computed(() => Boolean(props.model?.requests?.comment));
 const requiresLink = computed(() => Boolean(props.model?.requests?.link));
@@ -226,9 +262,44 @@ watch(
     if (!requiresCollection.value) {
       selectedCollectionId.value = null;
       selectedCollectionName.value = '';
+      selectedCategoryContext.value = null;
+      selectionSummary.value = null;
       collectionSearchQuery.value = '';
       searchResults.value = [];
       images.value = [];
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  [requiresCollection, () => props.wall?.collection_referring_model],
+  async ([needCollection, newId]) => {
+    if (!needCollection) {
+      selectionSummary.value = null;
+      return;
+    }
+    const sid =
+      newId != null && String(newId).trim() !== '' ? String(newId).trim() : '';
+    if (!sid) {
+      selectionSummary.value = null;
+      return;
+    }
+
+    const local = images.value.find((img) => String(img.id) === sid);
+    if (local && selectedCollectionId.value) {
+      syncSummaryFromLocalImage(local);
+      return;
+    }
+
+    loadingSelectionSummary.value = true;
+    try {
+      await hydrateSelectionSummaryFromApi(sid);
+    } catch (e) {
+      console.error(e);
+      selectionSummary.value = null;
+    } finally {
+      loadingSelectionSummary.value = false;
     }
   },
   { immediate: true }
@@ -252,6 +323,58 @@ function resolveStorageUrl(path) {
 
 function handleImageError(event) {
   event.target.style.display = 'none';
+}
+
+function handleSummaryImageError(event) {
+  event.target.src = DEFAULT_COVER;
+}
+
+function syncSummaryFromLocalImage(image) {
+  const ctx = selectedCategoryContext.value;
+  const categoryLine = ctx?.parentName
+    ? `${ctx.parentName} › ${ctx.name || ''}`.trim()
+    : (ctx?.name || '');
+  selectionSummary.value = {
+    imageUrl: getImageUrl(image),
+    imageName: image.name || image.title || `Arte ${image.id}`,
+    categoryLine,
+  };
+}
+
+function selectReferringImage(image) {
+  props.wall.collection_referring_model = String(image.id);
+  syncSummaryFromLocalImage(image);
+}
+
+async function hydrateSelectionSummaryFromApi(imageId) {
+  const payload = await budgetOrderService.getCollectionImage(imageId);
+  if (!payload?.id) {
+    selectionSummary.value = null;
+    return;
+  }
+
+  const cat = payload.category;
+  const categoryLine = cat?.parent?.name
+    ? `${cat.parent.name} › ${cat.name || ''}`.trim()
+    : (cat?.name || '');
+
+  selectionSummary.value = {
+    imageUrl: payload.url || getImageUrl(payload),
+    imageName: payload.name || `Arte ${payload.id}`,
+    categoryLine,
+  };
+
+  if (cat?.id) {
+    selectedCollectionId.value = cat.id;
+    selectedCollectionName.value = cat.name || '';
+    collectionSearchQuery.value = cat.name || '';
+    selectedCategoryContext.value = {
+      categoryId: cat.id,
+      name: cat.name || '',
+      parentName: cat.parent?.name || null,
+    };
+    await loadImagesForCollection(cat.id);
+  }
 }
 
 async function handleFileChange(event) {
@@ -337,6 +460,11 @@ function onSearchBlur() {
 function selectCollection(item) {
   selectedCollectionId.value = item.id;
   selectedCollectionName.value = item.name || '';
+  selectedCategoryContext.value = {
+    categoryId: item.id,
+    name: item.name || '',
+    parentName: item.parent?.name || null,
+  };
   collectionSearchQuery.value = item.name || '';
   showSearchResults.value = false;
   searchResults.value = [];
@@ -346,6 +474,7 @@ function selectCollection(item) {
 function clearCollectionSelection() {
   selectedCollectionId.value = null;
   selectedCollectionName.value = '';
+  selectedCategoryContext.value = null;
   collectionSearchQuery.value = '';
   images.value = [];
   imagesError.value = '';
@@ -358,6 +487,13 @@ async function loadImagesForCollection(categoryId) {
   loadingImages.value = true;
   try {
     images.value = await budgetOrderService.getCollectionCategoryImages(categoryId);
+    const sid = String(props.wall.collection_referring_model || '').trim();
+    if (sid) {
+      const local = images.value.find((img) => String(img.id) === sid);
+      if (local) {
+        syncSummaryFromLocalImage(local);
+      }
+    }
   } catch (error) {
     imagesError.value = error?.response?.data?.message || 'Erro ao carregar artes da coleção.';
   } finally {

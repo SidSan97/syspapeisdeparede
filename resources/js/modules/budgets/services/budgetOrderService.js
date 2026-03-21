@@ -42,6 +42,14 @@ export function useBudgetOrderService() {
     return images;
   }
 
+  /**
+   * Detalhe de uma arte da coleção (categoria + imagem), para exibir na edição de orçamento/pedido.
+   */
+  async function getCollectionImage(imageId) {
+    const { data } = await axios.get(`v1/collection-images/${imageId}`);
+    return data?.data ?? data ?? null;
+  }
+
   async function placeOrder(formData) {
     const response = await axios.post('v1/budgets/place-order', formData, {
       headers: {
@@ -56,6 +64,7 @@ export function useBudgetOrderService() {
     getCollectionCategories,
     searchCollectionCategories,
     getCollectionCategoryImages,
+    getCollectionImage,
     placeOrder,
   };
 }
