@@ -414,7 +414,7 @@ class BudgetRepository {
                 $order = Order::query()->findOrFail($budget->order_id);
                 $this->orderRepository->syncFromBudget($order, $budget);
             } else {
-                $order = $this->orderRepository->createFromBudget($budget, $data);
+                $order = $this->orderRepository->createFromBudget($budget);
                 // Persiste o vínculo: budgets.order_id = id do pedido recém-criado
                 $budget->update(['order_id' => $order->getKey()]);
             }

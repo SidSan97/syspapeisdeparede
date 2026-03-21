@@ -263,17 +263,7 @@ class OrderRepository
     public function createFromBudget(Budget $budget, array $additionalData = []): Order
     {
         $attributes = $this->sharedAttributesFromBudget($budget);
-
-        $isPaid = ! empty($budget->payment_file)
-            || filter_var($additionalData['paid'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
-        if (array_key_exists('status', $additionalData) && $additionalData['status'] !== null) {
-            $attributes['status'] = $additionalData['status'];
-        } else {
-            $attributes['status'] = $isPaid ? 'Em produção' : 'Em aberto';
-        }
-
-        $attributes['paid'] = $isPaid ? 1 : 0;
+        $attributes['status'] = 'Em aberto';
 
         return $this->create($attributes);
     }
