@@ -6,6 +6,7 @@
                     <th scope="col" style="width: 64px;">Número</th>
                     <th scope="col" style="width: 64px;">Data</th>
                     <th class="text-nowrap" scope="col">Orçamento</th>
+                    <th class="text-nowrap" scope="col">Custo do orçamento</th>
                     <th class="text-nowrap" scope="col">Valor da venda</th>
                     <th class="text-nowrap" scope="col">Situação</th>
                     <th class="text-nowrap" scope="col" style="width: 64px;">Ações</th>
@@ -25,8 +26,15 @@
                     </td>
                     <td class="text-nowrap">
                         {{
-                            markupInstallmentsValue(budget) != null
-                                ? formatCurrency(markupInstallmentsValue(budget))
+                            budgetCostValue(budget) != null
+                                ? formatCurrency(budgetCostValue(budget))
+                                : '—'
+                        }}
+                    </td>
+                    <td class="text-nowrap">
+                        {{
+                            markupSaleValue(budget) != null
+                                ? formatCurrency(markupSaleValue(budget))
                                 : '—'
                         }}
                     </td>
@@ -137,10 +145,29 @@ function isCancelled(budget) {
     return status === 'cancelled' || status === 'cancelado';
 }
 
-function markupInstallmentsValue(budget) {
-    const raw =
-        budget?.total_amount_installments_markup ??
-        budget?.totalAmountInstallmentsMarkup;
+function isPixPayment(budget) {
+    const method = (budget?.payment_method ?? budget?.paymentMethod ?? '')
+        .toString()
+        .toLowerCase();
+    return method === 'pix';
+}
+
+function budgetCostValue(budget) {
+    const raw = isPixPayment(budget)
+        ? (budget?.total_amount ?? budget?.totalAmount)
+        : (budget?.total_amount_installments ?? budget?.totalAmountInstallments);
+    if (raw === null || raw === undefined || raw === '') {
+        return null;
+    }
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
+}
+
+function markupSaleValue(budget) {
+    const raw = isPixPayment(budget)
+        ? (budget?.total_amount_markup ?? budget?.totalAmountMarkup)
+        : (budget?.total_amount_installments_markup ??
+            budget?.totalAmountInstallmentsMarkup);
     if (raw === null || raw === undefined || raw === '') {
         return null;
     }
