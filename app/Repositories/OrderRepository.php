@@ -264,11 +264,16 @@ class OrderRepository
     {
         $attributes = $this->sharedAttributesFromBudget($budget);
 
+        $isPaid = ! empty($budget->payment_file)
+            || filter_var($additionalData['paid'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
         if (array_key_exists('status', $additionalData) && $additionalData['status'] !== null) {
             $attributes['status'] = $additionalData['status'];
-        } elseif ($attributes['status'] === null) {
-            $attributes['status'] = 'Pendente de Revisão';
+        } else {
+            $attributes['status'] = $isPaid ? 'Em produção' : 'Em aberto';
         }
+
+        $attributes['paid'] = $isPaid ? 1 : 0;
 
         return $this->create($attributes);
     }

@@ -321,7 +321,7 @@ class BudgetRepository {
             $budget->loadMissing(['rooms.walls.collectionModel']);
 
             $budget->update([
-                'status' => 'Pendente de Revisão',
+                'status' => 'Aprovado',
             ]);
 
             // Processar dados mapeados por parede
@@ -414,7 +414,7 @@ class BudgetRepository {
                 $order = Order::query()->findOrFail($budget->order_id);
                 $this->orderRepository->syncFromBudget($order, $budget);
             } else {
-                $order = $this->orderRepository->createFromBudget($budget);
+                $order = $this->orderRepository->createFromBudget($budget, $data);
                 // Persiste o vínculo: budgets.order_id = id do pedido recém-criado
                 $budget->update(['order_id' => $order->getKey()]);
             }
