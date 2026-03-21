@@ -39,6 +39,7 @@ class OrderFactory extends Factory
 
         $totalAmount = fake()->randomFloat(2, 500, 50000);
         $totalAmountInstallments = fake()->boolean(70) ? round($totalAmount * 1.1, 2) : 0;
+        $markupFactor = fake()->boolean(60) ? round(fake()->randomFloat(2, 1.02, 1.15), 2) : null;
 
         $isPaid = fake()->boolean(30);
         $hasPaymentLink = fake()->boolean(40) && !$isPaid;
@@ -53,6 +54,10 @@ class OrderFactory extends Factory
             'total_area' => fake()->randomFloat(2, 10, 500),
             'total_amount' => $totalAmount,
             'total_amount_installments' => $totalAmountInstallments,
+            'total_amount_markup' => $markupFactor !== null ? round($totalAmount * $markupFactor, 2) : null,
+            'total_amount_installments_markup' => $markupFactor !== null && $totalAmountInstallments > 0
+                ? round($totalAmountInstallments * $markupFactor, 2)
+                : null,
             'delivery_time' => fake()->numberBetween(7, 45),
             'payment_method' => fake()->randomElement($paymentMethods),
             'installment_limit' => fake()->numberBetween(1, 12),
