@@ -91,11 +91,12 @@ class GeneratePaymentService
                         "name" => "Papel de parede / " . $budget['name'],
                         "amount" => intval($budget['total_amount'] * 100), //valor do item em centavos
                         "default_quantity" => 1,
-                        "description" => $budget['comments'] ?? ''
+                        "description" => $this->buildItemDescription($budget)
                     ]
                 ],
                 "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
             ],
+            "metadata" => $this->buildMetadata($budget),
             "type" => "order",
             "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
@@ -130,15 +131,36 @@ class GeneratePaymentService
                     [
                         "name" => "Papel de parede / " . $budget['name'],
                         "amount" => intval(($budget['total_amount_installments'] ?? 0) * 100), //valor do item em centavos
-                        "description" => $budget['comments'] ?? '',
+                        "description" => $this->buildItemDescription($budget),
                         "default_quantity" => 1
                     ]
                 ],
                 "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
             ],
+            "metadata" => $this->buildMetadata($budget),
             "name" => "Papel de parede",
             "type" => "order",
             "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
+    }
+
+    protected function buildItemDescription(array $budget): string
+    {
+        $comments = trim((string) ($budget['comments'] ?? ''));
+        $ref = isset($budget['id']) ? " [order_ref:{$budget['id']}]" : '';
+
+        return $comments !== '' ? $comments . $ref : ltrim($ref);
+    }
+
+    /**
+     * Metadata para vincular o pedido Pagar.me ao nosso Order (usado no webhook).
+     */
+    protected function buildMetadata(array $budget): array
+    {
+        if (! isset($budget['id'])) {
+            return [];
+        }
+
+        return ['order_id' => (string) $budget['id']];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppVersionController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 // ----------------------------------
 
 Route::get('version', AppVersionController::class);
+
+// Webhook Pagar.me (público, sem autenticação)
+Route::post('webhook/pagarme', [WebhookController::class, 'handlePagarme']);
 
 // Rota para obter dados completos do usuário autenticado (sessão web)
 Route::middleware('auth:web')->get('/user', function (Request $request) {
