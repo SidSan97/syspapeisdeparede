@@ -54,6 +54,20 @@ export function useBudgetService() {
     }
 
     /**
+     * Faz upload de uma imagem de referência do modelo (uma por vez)
+     */
+    async function uploadReferringFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const { data } = await axios.post('v1/budgets/upload-referring-file', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        return data?.path ?? data;
+    }
+
+    /**
      * Calcula frete usando Frenet
      */
     async function calculateFreight(cep, productData) {
@@ -82,6 +96,7 @@ export function useBudgetService() {
         updateBudget,
         getCollectionModels,
         getTinyErpProducts,
-        calculateFreight
+        calculateFreight,
+        uploadReferringFile,
     };
 }

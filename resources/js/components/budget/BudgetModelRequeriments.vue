@@ -25,16 +25,42 @@
     </div>
 
     <div v-if="requiresFiles" class="mb-3">
-      <label class="form-label">Arquivos de referência (um por linha)</label>
-      <textarea
-        :value="filesAsText"
+      <label class="form-label">Imagem de referência</label>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept="image/*"
         class="form-control"
-        rows="3"
-        placeholder="https://... ou caminho do arquivo"
-        :disabled="disabled"
-        @input="handleFilesInput($event.target.value)"
-      ></textarea>
-      <small class="text-muted">Você pode informar URLs/caminhos para referência da arte.</small>
+        :disabled="disabled || uploadingFile"
+        @change="handleFileChange"
+      />
+      <small class="text-muted">Envie uma imagem em formato JPG, PNG ou WEBP (máx. 10MB).</small>
+
+      <div v-if="uploadingFile" class="mt-2 text-muted small">
+        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+        Enviando...
+      </div>
+
+      <div v-if="uploadedImagePath" class="mt-2 d-flex align-items-center gap-2">
+        <img
+          :src="resolveStorageUrl(uploadedImagePath)"
+          alt="Imagem de referência"
+          class="rounded"
+          style="max-height: 80px; max-width: 120px; object-fit: contain;"
+          @error="handleImageError"
+        />
+        <div class="flex-grow-1 small">
+          <span class="text-muted">Imagem enviada</span>
+          <button
+            type="button"
+            class="btn btn-link btn-sm text-danger p-0 ms-2"
+            :disabled="disabled"
+            @click="removeUploadedImage"
+          >
+            Remover
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="requiresCollection" class="mb-2">
@@ -104,7 +130,7 @@
           <div
             v-for="image in images"
             :key="image.id"
-            class="col"
+            class="col show-collection-images"
           >
             <div
               role="button"
@@ -128,7 +154,7 @@
                 />
               </div>
               <div class="card-body p-2">
-                <span class="small text-truncate d-block" :title="image.name || image.title || `Arte ${image.id}`">
+                <span class="small d-block" :title="image.name || image.title || `Arte ${image.id}`">
                   {{ image.name || image.title || `Arte ${image.id}` }}
                 </span>
               </div>
@@ -144,6 +170,7 @@
 import { computed, ref, watch } from 'vue';
 import debounce from 'lodash/debounce';
 import { useBudgetOrderService } from '@/modules/budgets/services/budgetOrderService';
+import { useBudgetService } from '@/modules/budgets/services/budgetService';
 
 const props = defineProps({
   wall: { type: Object, required: true },
@@ -152,6 +179,9 @@ const props = defineProps({
 });
 
 const budgetOrderService = useBudgetOrderService();
+const budgetService = useBudgetService();
+const fileInputRef = ref(null);
+const uploadingFile = ref(false);
 const collectionSearchQuery = ref('');
 const searchResults = ref([]);
 const selectedCollectionId = ref(null);
@@ -172,9 +202,9 @@ const hasRequirements = computed(
   () => requiresComment.value || requiresLink.value || requiresFiles.value || requiresCollection.value
 );
 
-const filesAsText = computed(() => {
+const uploadedImagePath = computed(() => {
   const files = Array.isArray(props.wall?.files_referring_model) ? props.wall.files_referring_model : [];
-  return files.join('\n');
+  return files[0] ?? null;
 });
 
 watch(
@@ -213,12 +243,47 @@ function getImageUrl(image) {
   return DEFAULT_COVER;
 }
 
-function handleFilesInput(value) {
-  const normalized = String(value || '')
-    .split('\n')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-  props.wall.files_referring_model = normalized;
+function resolveStorageUrl(path) {
+  if (!path) return '/assets/img/no-image.jpg';
+  if (path.startsWith('/') || /^https?:\/\//i.test(path)) return path;
+  const base = window.location.origin.replace(/\/$/, '');
+  return `${base}/storage/${String(path).replace(/^storage\//, '')}`;
+}
+
+function handleImageError(event) {
+  event.target.style.display = 'none';
+}
+
+async function handleFileChange(event) {
+  const input = event.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+
+  uploadingFile.value = true;
+  try {
+    const path = await budgetService.uploadReferringFile(file);
+    if (path) {
+      props.wall.files_referring_model = [path];
+    }
+  } catch (err) {
+    console.error('Erro ao enviar imagem:', err);
+    if (window.Toast) {
+      window.Toast.fire({
+        icon: 'error',
+        title: err?.response?.data?.message || 'Não foi possível enviar a imagem.',
+      });
+    }
+  } finally {
+    uploadingFile.value = false;
+    input.value = '';
+  }
+}
+
+function removeUploadedImage() {
+  props.wall.files_referring_model = [];
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
 }
 
 async function runSearch() {
@@ -304,5 +369,9 @@ async function loadImagesForCollection(categoryId) {
 <style scoped>
 .collection-search-item:hover {
   background-color: var(--bs-tertiary-bg, var(--bs-secondary-bg, #e9ecef)) !important;
+}
+
+.show-collection-images {
+  width: 167px;
 }
 </style>

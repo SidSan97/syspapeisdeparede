@@ -10,6 +10,7 @@ use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UpdateBudgetRequest;
 use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
+use App\Http\Requests\Budget\UploadReferringFileRequest;
 use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
@@ -29,6 +30,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Services\TinyErpService;
 
 class BudgetController extends Controller
@@ -306,6 +308,14 @@ class BudgetController extends Controller
         );
 
         return response()->json($data, 201);
+    }
+
+    public function uploadReferringFile(UploadReferringFileRequest $request): JsonResponse
+    {
+        $file = $request->file('file');
+        $path = Storage::disk('public')->putFile('budgets/referring-models', $file);
+
+        return response()->json(['path' => $path], 201);
     }
 
     /**

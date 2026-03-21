@@ -14,6 +14,7 @@ Route::post('budgets/cancel', [BudgetController::class, 'cancel']);
 Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf']);
 Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment']);
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);
+Route::post('budgets/upload-referring-file', [BudgetController::class, 'uploadReferringFile']);
 Route::put('budgets/{id}', [BudgetController::class, 'update']);
 Route::get('budgets/{budget}', [BudgetController::class, 'show']);
 Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
