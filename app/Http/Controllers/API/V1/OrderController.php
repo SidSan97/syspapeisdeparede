@@ -193,12 +193,7 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
 
-            $orderId = $order->id;
-
-            Budget::query()->where('order_id', $orderId)->update(['order_id' => null]);
-            BudgetRoom::query()->where('order_id', $orderId)->update(['order_id' => null]);
-
-            $order->delete();
+            $order->delete(); // OrderObserver cuida da limpeza de budget_rooms e budgets
 
             DB::commit();
 
@@ -208,7 +203,7 @@ class OrderController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao excluir pedido: ' . $e->getMessage(),
