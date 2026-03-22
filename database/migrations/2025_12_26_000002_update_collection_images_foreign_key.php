@@ -9,16 +9,12 @@ return new class extends Migration {
     {
         Schema::table('collection_images', function (Blueprint $table) {
             $table->dropForeign(['collection_arts_id']);
-            
+
             $table->dropColumn('collection_arts_id');
-            
-            $table->foreign('collection_category_id')
-                ->references('id')
-                ->on('collection_categories')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
-            
-            $table->unsignedBigInteger('collection_category_id')->nullable(false)->change();
+            $table->foreignId('collection_category_id')
+                ->constrained('collection_categories')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
         });
     }
 
@@ -26,9 +22,9 @@ return new class extends Migration {
     {
         Schema::table('collection_images', function (Blueprint $table) {
             $table->dropForeign(['collection_category_id']);
-            
+
             $table->unsignedBigInteger('collection_arts_id')->nullable()->after('id');
-            
+
             $table->foreign('collection_arts_id')
                 ->references('id')
                 ->on('collection_arts_subcategories')

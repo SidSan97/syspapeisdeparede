@@ -13,10 +13,7 @@ return new class extends Migration
     {
         Schema::create('budgets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')
-                ->nullable()
-                ->constrained('orders')
-                ->nullOnDelete();
+            $table->unsignedBigInteger('order_id')->nullable();
             $table->foreignId('user_id')
                 ->nullable()
                 ->constrained()
