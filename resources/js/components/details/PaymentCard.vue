@@ -1,30 +1,13 @@
 <template>
-    <div class="card mb-4" :class="{ 'border-success border-2': data.link_payment || data.paid }">
-        <div class="card-header bg-transparent" :class="{ 'bg-success-subtle': data.link_payment || data.paid }">
+    <div class="card mb-4" :class="cardBorderClass">
+        <div class="card-header bg-transparent" :class="cardHeaderClass">
             <h5 class="mb-0 fw-semibold">
-                <i v-if="data.link_payment || data.paid" class="fa fa-check-circle text-success me-2"></i>
+                <i v-if="data.payment_status === 'paid'" class="fa fa-check-circle text-success me-2"></i>
+                <i v-else-if="data.payment_status === 'partial'" class="fa fa-exclamation-circle text-warning me-2"></i>
                 Pagamento
             </h5>
         </div>
         <div class="card-body">
-            <div v-if="data.payment_breakdown" class="mb-3">
-                <div class="text-muted small mb-2">Saldo por componente</div>
-                <div class="small">
-                    <div class="d-flex justify-content-between">
-                        <span>ARTES</span>
-                        <span>{{ formatMoney(data.payment_breakdown.remaining?.ARTES || 0) }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>PRODUTOS</span>
-                        <span>{{ formatMoney(remainingProductsValue) }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>FRETE</span>
-                        <span>{{ formatMoney(data.payment_breakdown.remaining?.FRETE || 0) }}</span>
-                    </div>
-                </div>
-            </div>
-
             <div class="mb-3">
                 <div class="text-muted small">Método de Pagamento</div>
                 <div class="fw-semibold">{{ formatPaymentMethod(data.payment_method) }}</div>
@@ -39,19 +22,19 @@
                     Pedido já está pago
                 </div>
             </div>
-            <div v-if="data.link_payment && data.paid == 0" class="mb-3">
-                <div v-if="isPaymentLinkExpired(data.payment_expiration_date)" class="alert alert-warning mb-2">
+            <div v-if="activePaymentLinkUrl && data.paid == 0" class="mb-3">
+                <div v-if="isPaymentLinkExpired(activePaymentLinkExpirationDate)" class="alert alert-warning mb-2">
                     <i class="fa fa-exclamation-triangle me-2"></i>
                     Link de pagamento expirado. Gerando novo link...
                 </div>
                 <div class="text-muted small mb-2">Link de Pagamento</div>
                 <div>
                     <a
-                        :href="data.link_payment"
+                        :href="activePaymentLinkUrl"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="btn btn-primary btn-sm"
-                        :class="{ 'disabled': isPaymentLinkExpired(data.payment_expiration_date) }"
+                        :class="{ 'disabled': isPaymentLinkExpired(activePaymentLinkExpirationDate) }"
                     >
                         <i class="fa fa-external-link fa-fw me-2"></i>
                         Acessar Link de Pagamento
@@ -61,26 +44,55 @@
                         class="btn btn-outline-secondary btn-sm ms-2"
                         @click="copyPaymentUrl"
                         title="Copiar link"
-                        :disabled="isPaymentLinkExpired(data.payment_expiration_date)"
+                        :disabled="isPaymentLinkExpired(activePaymentLinkExpirationDate)"
                     >
                         <i class="fa fa-copy fa-fw"></i>
                     </button>
                 </div>
-                <div v-if="data.payment_expiration_date" class="text-muted small mt-2">
+                <div v-if="activePaymentLinkExpirationDate" class="text-muted small mt-2">
                     <i class="fa fa-clock me-1"></i>
-                    <span :class="{ 'text-danger': isPaymentLinkExpired(data.payment_expiration_date) }">
-                        {{ isPaymentLinkExpired(data.payment_expiration_date) ? 'Expirado em: ' : 'Expira em: ' }}
-                        {{ formatDate(data.payment_expiration_date) }}
+                    <span :class="{ 'text-danger': isPaymentLinkExpired(activePaymentLinkExpirationDate) }">
+                        {{ isPaymentLinkExpired(activePaymentLinkExpirationDate) ? 'Expirado em: ' : 'Expira em: ' }}
+                        {{ formatDate(activePaymentLinkExpirationDate) }}
                     </span>
                 </div>
             </div>
-            <div v-if="hasPaymentLinks" class="mb-3">
-                <div class="text-muted small mb-2">Links gerados</div>
-                <div class="small text-muted">
-                    {{ paidLinksCount }} pago(s) de {{ data.payment_links.length }} link(s)
+
+            <div v-if="hasPaymentTableData" class="mb-3">
+                <div class="text-muted small mb-2">Histórico de pagamentos</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 small">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Valor</th>
+                                <th>Método</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in paymentLinksRows" :key="row.item">
+                                <td>{{ row.item }}</td>
+                                <td>{{ formatMoney(row.amount_total) }}</td>
+                                <td>{{ row.payment_method ? formatPaymentMethod(row.payment_method) : '-' }}</td>
+                                <td>
+                                    <span class="badge" :class="row.status === 'paid' ? 'text-bg-success' : 'text-bg-warning'">
+                                        {{ row.statusLabel }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div v-else-if="isOrder && !data.paid" class="mb-0">
+
+            <div v-if="hasPaymentTableData" class="mb-3">
+                <div class="text-muted small mb-2">Links gerados</div>
+                <div class="small text-muted">
+                    {{ paidStatusText }}
+                </div>
+            </div>
+            <div v-if="isOrder && !data.paid" class="mb-0">
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -125,14 +137,105 @@ const emit = defineEmits(['generate-payment-link']);
 const { formatPaymentMethod, formatDate } = useFormatting();
 const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const hasPaymentLinks = computed(() => Array.isArray(props.data?.payment_links) && props.data.payment_links.length > 0);
 const paidLinksCount = computed(() => (props.data?.payment_links || []).filter((link) => link.status === 'paid').length);
-const remainingProductsValue = computed(() => {
-    if (props.data?.payment_method === 'pix') {
-        return props.data?.payment_breakdown?.remaining?.PRODUTOS_PIX || 0;
+const pendingPaymentLink = computed(() => {
+    const links = Array.isArray(props.data?.payment_links) ? props.data.payment_links : [];
+    const pending = [...links]
+        .reverse()
+        .find((link) => link.status !== 'paid');
+
+    return pending || null;
+});
+const activePaymentLinkUrl = computed(() => {
+    if (pendingPaymentLink.value?.payment_url) {
+        return pendingPaymentLink.value.payment_url;
+    }
+    return null;
+});
+const activePaymentLinkExpirationDate = computed(() => {
+    if (pendingPaymentLink.value?.expires_at) {
+        return pendingPaymentLink.value.expires_at;
     }
 
-    return props.data?.payment_breakdown?.remaining?.PRODUTOS_CREDIT_CARD || 0;
+    if (!Array.isArray(props.data?.payment_links) || props.data.payment_links.length === 0) {
+        return props.data?.payment_expiration_date || null;
+    }
+
+    return null;
+});
+const hasPaymentTableData = computed(() => Boolean(props.data?.payment_breakdown?.base));
+const paymentLinksRows = computed(() => {
+    const links = props.data?.payment_links || [];
+    const breakdown = props.data?.payment_breakdown || {};
+    const base = breakdown.base || {};
+    const remaining = breakdown.remaining || {};
+
+    const productsAmount = props.data?.payment_method === 'pix'
+        ? Number(base.PRODUTOS_PIX || 0)
+        : Number(base.PRODUTOS_CREDIT_CARD || 0);
+    const productsRemaining = props.data?.payment_method === 'pix'
+        ? Number(remaining.PRODUTOS_PIX || 0)
+        : Number(remaining.PRODUTOS_CREDIT_CARD || 0);
+
+    const resolveMethod = (componentName) => {
+        const match = [...links].reverse().find((link) => Array.isArray(link.components) && link.components.includes(componentName));
+        return match?.payment_method || null;
+    };
+
+    return [
+        {
+            item: 'Artes',
+            amount_total: Number(base.ARTES || 0),
+            payment_method: resolveMethod('ARTES'),
+            status: Number(remaining.ARTES || 0) <= 0 ? 'paid' : 'pending',
+            statusLabel: Number(remaining.ARTES || 0) <= 0 ? 'Pago' : 'Pendente',
+        },
+        {
+            item: 'Produtos',
+            amount_total: productsAmount,
+            payment_method: resolveMethod('PRODUTOS'),
+            status: productsRemaining <= 0 ? 'paid' : 'pending',
+            statusLabel: productsRemaining <= 0 ? 'Pago' : 'Pendente',
+        },
+        {
+            item: 'Frete',
+            amount_total: Number(base.FRETE || 0),
+            payment_method: resolveMethod('FRETE'),
+            status: Number(remaining.FRETE || 0) <= 0 ? 'paid' : 'pending',
+            statusLabel: Number(remaining.FRETE || 0) <= 0 ? 'Pago' : 'Pendente',
+        },
+    ];
+});
+
+const tableHasRowsWithMethod = computed(() => paymentLinksRows.value.some((row) => row.payment_method));
+const paidStatusText = computed(() => {
+    if (!tableHasRowsWithMethod.value) {
+        return 'Nenhum link gerado ainda';
+    }
+    return `${paidLinksCount.value} pago(s) de ${dataLinksCount.value} link(s)`;
+});
+const dataLinksCount = computed(() => (props.data?.payment_links || []).length);
+const cardBorderClass = computed(() => {
+    if (props.data?.payment_status === 'paid') {
+        return 'border-success border-2';
+    }
+
+    if (props.data?.payment_status === 'partial') {
+        return 'border-warning border-2';
+    }
+
+    return '';
+});
+const cardHeaderClass = computed(() => {
+    if (props.data?.payment_status === 'paid') {
+        return 'bg-success-subtle';
+    }
+
+    if (props.data?.payment_status === 'partial') {
+        return 'bg-warning-subtle';
+    }
+
+    return '';
 });
 
 function formatMoney(value) {
@@ -155,13 +258,13 @@ function isPaymentLinkExpired(expirationDate) {
 }
 
 function copyPaymentUrl() {
-    if (!props.data?.link_payment) {
+    if (!activePaymentLinkUrl.value) {
         return;
     }
 
     try {
         const textArea = document.createElement('textarea');
-        textArea.value = props.data.link_payment;
+        textArea.value = activePaymentLinkUrl.value;
         textArea.style.position = 'fixed';
         textArea.style.left = '-999999px';
         textArea.style.top = '-999999px';
@@ -197,6 +300,11 @@ async function handleGeneratePaymentLink() {
 .card.border-success.border-2 {
     box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
     border-color: var(--bs-success) !important;
+}
+
+.card.border-warning.border-2 {
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.2);
+    border-color: var(--bs-warning) !important;
 }
 </style>
 

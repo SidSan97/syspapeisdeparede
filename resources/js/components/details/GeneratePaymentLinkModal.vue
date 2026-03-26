@@ -25,17 +25,31 @@
             <div class="mb-3">
               <label class="form-label mb-1">Componentes</label>
               <div class="form-check">
-                <input id="component-artes" v-model="form.artes" class="form-check-input" type="checkbox" />
+                <input
+                  id="component-artes"
+                  v-model="form.artes"
+                  class="form-check-input"
+                  type="checkbox"
+                  :disabled="componentState.artes.paid"
+                />
                 <label class="form-check-label" for="component-artes">
                   ARTES
                   <span class="text-muted">({{ formatMoney(componentValues.artes) }})</span>
+                  <span v-if="componentState.artes.paid" class="badge text-bg-success ms-1">Pago</span>
                 </label>
               </div>
               <div class="form-check">
-                <input id="component-produtos" v-model="form.produtos" class="form-check-input" type="checkbox" />
+                <input
+                  id="component-produtos"
+                  v-model="form.produtos"
+                  class="form-check-input"
+                  type="checkbox"
+                  :disabled="componentState.produtos.paid"
+                />
                 <label class="form-check-label" for="component-produtos">
                   PRODUTOS
                   <span class="text-muted">({{ formatMoney(componentValues.produtos) }})</span>
+                  <span v-if="componentState.produtos.paid" class="badge text-bg-success ms-1">Pago</span>
                 </label>
               </div>
               <div class="form-check">
@@ -44,11 +58,12 @@
                   v-model="form.frete"
                   class="form-check-input"
                   type="checkbox"
-                  :disabled="form.payment_method !== 'pix'"
+                  :disabled="form.payment_method !== 'pix' || componentState.frete.paid"
                 />
                 <label class="form-check-label" for="component-frete">
                   FRETE
                   <span class="text-muted">({{ formatMoney(componentValues.frete) }})</span>
+                  <span v-if="componentState.frete.paid" class="badge text-bg-success ms-1">Pago</span>
                 </label>
               </div>
               <div v-if="form.payment_method !== 'pix'" class="small text-muted mt-1">
@@ -188,6 +203,17 @@ const selectedTotal = computed(() => {
   if (form.frete) total += componentValues.value.frete;
   return Number(total.toFixed(2));
 });
+const componentState = computed(() => ({
+  artes: {
+    paid: componentValues.value.artes <= 0,
+  },
+  produtos: {
+    paid: componentValues.value.produtos <= 0,
+  },
+  frete: {
+    paid: componentValues.value.frete <= 0,
+  },
+}));
 
 const error = ref('');
 const modalElement = ref(null);
@@ -199,12 +225,16 @@ function formatMoney(value) {
 }
 
 function resetForm() {
-  form.artes = true;
-  form.produtos = true;
-  form.frete = true;
   form.payment_method = 'pix';
   form.installments = props.defaultInstallments || 1;
+  applyComponentSelectionDefaults();
   error.value = '';
+}
+
+function applyComponentSelectionDefaults() {
+  form.artes = !componentState.value.artes.paid;
+  form.produtos = !componentState.value.produtos.paid;
+  form.frete = !componentState.value.frete.paid;
 }
 
 function getComponents() {
@@ -278,6 +308,16 @@ function handleSubmit() {
   }
 
   const components = getComponents();
+  const paidComponents = [];
+  if (form.artes && componentState.value.artes.paid) paidComponents.push('ARTES');
+  if (form.produtos && componentState.value.produtos.paid) paidComponents.push('PRODUTOS');
+  if (form.frete && componentState.value.frete.paid) paidComponents.push('FRETE');
+
+  if (paidComponents.length) {
+    error.value = `Os itens ${paidComponents.join(', ')} ja estao pagos e nao podem ser cobrados novamente.`;
+    return;
+  }
+
   if (!components.length) {
     error.value = 'Selecione ao menos um componente.';
     return;
@@ -314,6 +354,16 @@ watch(() => props.defaultInstallments, (value) => {
 
 watch(() => form.payment_method, (method) => {
   if (method !== 'pix') {
+    form.frete = false;
+  }
+
+  if (componentState.value.produtos.paid) {
+    form.produtos = false;
+  }
+  if (componentState.value.artes.paid) {
+    form.artes = false;
+  }
+  if (componentState.value.frete.paid) {
     form.frete = false;
   }
 });
