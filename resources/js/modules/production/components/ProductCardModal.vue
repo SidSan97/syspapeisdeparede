@@ -18,14 +18,21 @@
 
             <div class="col-md-7 overflow-y-auto h-100">
                 <main class="p-4">
-                    <header class="d-flex align-items-center gap-3 mb-4">
+                    <header class="d-flex align-items-center gap-3 mb-4 flex-wrap">
                         <button class="btn btn-sm btn-subtle rounded-pill p-2" @click="markAsProduced" :disabled="markingAsProduced"
                         v-if="card.production_column_names_id < 2">
                         <i class="far fa-circle fa-lg"></i>
                       </button>
                       <i v-else class="fa fa-lg" :class="{ 'fa-check-circle text-success' : card.production_percentage == 100, 'fa-adjust text-secondary' : card.production_percentage != 100 }"></i>
 
-                        <h3 class="fw-semibold m-0">{{ getCardDisplayName(card) }}</h3>
+                        <div class="gap-2">
+                          <h3 class="fw-semibold m-0">{{ getCardDisplayName(card) }}</h3>
+                          <span
+                            v-if="card.status"
+                            class="badge"
+                            :class="getOrderBudgetStatusBadgeClass(card.status)"
+                          >{{ card.status }}</span>
+                        </div>
                     </header>
                   <div class="row">
                     <div class="col col-md-auto">
@@ -90,7 +97,7 @@
 import { computed, ref, watch, toRef } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useProductionReportsStore } from '@/stores/productionReports';
-import { getCardDisplayName } from '@/utils/cardUtils';
+import { getCardDisplayName, getOrderBudgetStatusBadgeClass } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
 import MembersSection from '@/components/card-modal/MembersSection.vue';
 import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';

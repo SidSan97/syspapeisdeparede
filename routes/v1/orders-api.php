@@ -15,7 +15,8 @@ Route::get('orders/ready-for-invoice', [OrderExpeditionController::class, 'ready
 Route::get('orders/{id}', [OrderController::class, 'show']);
 Route::post('orders/approve', [OrderProductionController::class, 'approve']);
 Route::post('orders/cancel', [OrderController::class, 'cancel']);
-Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generatePaymentLink']);
+Route::post('orders/{id}/payment-links', [OrderController::class, 'generatePaymentLink']);
+Route::post('orders/{id}/generate-payment-link', [OrderController::class, 'generateLegacyPaymentLink']);
 Route::put('orders/{id}', [OrderController::class, 'update']);
 Route::delete('orders/{order}', [OrderController::class, 'destroy']);
 

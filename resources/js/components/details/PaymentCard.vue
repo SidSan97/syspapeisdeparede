@@ -7,6 +7,24 @@
             </h5>
         </div>
         <div class="card-body">
+            <div v-if="data.payment_breakdown" class="mb-3">
+                <div class="text-muted small mb-2">Saldo por componente</div>
+                <div class="small">
+                    <div class="d-flex justify-content-between">
+                        <span>ARTES</span>
+                        <span>{{ formatMoney(data.payment_breakdown.remaining?.ARTES || 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>PRODUTOS</span>
+                        <span>{{ formatMoney(remainingProductsValue) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>FRETE</span>
+                        <span>{{ formatMoney(data.payment_breakdown.remaining?.FRETE || 0) }}</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-3">
                 <div class="text-muted small">Método de Pagamento</div>
                 <div class="fw-semibold">{{ formatPaymentMethod(data.payment_method) }}</div>
@@ -56,6 +74,12 @@
                     </span>
                 </div>
             </div>
+            <div v-if="hasPaymentLinks" class="mb-3">
+                <div class="text-muted small mb-2">Links gerados</div>
+                <div class="small text-muted">
+                    {{ paidLinksCount }} pago(s) de {{ data.payment_links.length }} link(s)
+                </div>
+            </div>
             <div v-else-if="isOrder && !data.paid" class="mb-0">
                 <button
                     type="button"
@@ -99,6 +123,21 @@ const props = defineProps({
 const emit = defineEmits(['generate-payment-link']);
 
 const { formatPaymentMethod, formatDate } = useFormatting();
+const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const hasPaymentLinks = computed(() => Array.isArray(props.data?.payment_links) && props.data.payment_links.length > 0);
+const paidLinksCount = computed(() => (props.data?.payment_links || []).filter((link) => link.status === 'paid').length);
+const remainingProductsValue = computed(() => {
+    if (props.data?.payment_method === 'pix') {
+        return props.data?.payment_breakdown?.remaining?.PRODUTOS_PIX || 0;
+    }
+
+    return props.data?.payment_breakdown?.remaining?.PRODUTOS_CREDIT_CARD || 0;
+});
+
+function formatMoney(value) {
+    return moneyFormatter.format(Number(value || 0));
+}
 
 function isPaymentLinkExpired(expirationDate) {
     if (!expirationDate) {

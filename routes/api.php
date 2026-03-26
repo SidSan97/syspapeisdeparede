@@ -68,7 +68,6 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/v1/layout-column-names-api.php';
         require __DIR__ . '/v1/production-column-names-api.php';
         require __DIR__ . '/v1/expedition-api.php';
-        require __DIR__ . '/v1/payments-api.php';
         require __DIR__ . '/v1/frenet-api.php';
         require __DIR__ . '/v1/tiny-erp-api.php';
     });

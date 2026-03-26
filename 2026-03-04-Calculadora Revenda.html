@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora do Revendedor</title>
+  <style>
+    :root{
+      --bg:#343532;
+      --text:#bfbaba;
+      --card:#444;
+      --card2:#555;
+      --btn:#7ab5b2;
+      --white:#fff;
+      --border:#6a6a6a;
+      --danger:#8b4a4a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      padding:20px;
+      font-family: Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; }
+    .header{
+      text-align:center;
+      margin-bottom:14px;
+    }
+    h1{
+      margin:0;
+      font-size:20px;
+      font-weight:700;
+      color:var(--text);
+    }
+    .card{
+      background:var(--card);
+      border-radius:10px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    .pill{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:12px;
+      margin-right:6px;
+      opacity:.95;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap:10px;
+      align-items:end;
+    }
+    .field label{
+      display:block;
+      font-weight:700;
+      margin-bottom:6px;
+      font-size:13px;
+    }
+    .field input{
+      width:100%;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #999;
+      background:#f7f7f7;
+      color:#222;
+      outline:none;
+    }
+    .row-actions{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    button{
+      background:var(--btn);
+      color:var(--white);
+      font-weight:700;
+      border:none;
+      border-radius:8px;
+      padding:10px 12px;
+      cursor:pointer;
+      min-width:140px;
+    }
+    button.secondary{
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--text);
+      font-weight:700;
+      min-width:auto;
+      padding:8px 10px;
+    }
+    button.danger{
+      background:var(--danger);
+      min-width:auto;
+      padding:8px 10px;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:12px;
+    }
+    .result{
+      background:var(--card2);
+      border-radius:10px;
+      padding:14px;
+      margin-top:12px;
+      color:var(--white);
+      font-weight:700;
+      line-height:1.45;
+    }
+    .result .line{ margin:6px 0; }
+    .result .strong{ color:var(--white); font-weight:800; }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      overflow:hidden;
+      border-radius:10px;
+    }
+    th,td{
+      text-align:left;
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.12);
+      font-size:13px;
+    }
+    th{
+      background:rgba(0,0,0,.18);
+      color:var(--white);
+      font-weight:800;
+    }
+    tr:last-child td{border-bottom:none}
+    .note{
+      font-size:12px;
+      opacity:.95;
+      margin-top:10px;
+      line-height:1.4;
+      font-weight:700;
+    }
+    .copy-area{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-start;
+      margin-top:10px;
+    }
+    .copy-status{
+      font-size:12px;
+      opacity:.95;
+      font-weight:700;
+    }
+    @media (max-width: 720px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+      .row-actions{ grid-column: 1 / -1; justify-content:stretch; }
+      .row-actions button{ flex:1; }
+      .controls{ flex-direction:column; align-items:stretch; }
+      button{ width:100%; min-width:unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Calculadora do Revendedor</h1>
+    </div>
+
+    <div class="card" id="wallsCard">
+      <h2 style="margin:0 0 10px 0; font-size:16px; color:var(--text);">Paredes em sequência</h2>
+      <div id="wallsList"></div>
+
+      <!-- BOTÕES AGORA FICAM AQUI (embaixo das paredes) -->
+      <div class="controls">
+        <button id="addWallBtn">Adicionar parede</button>
+        <button id="calcBtn">Calcular</button>
+        <button class="secondary" id="clearBtn">Limpar</button>
+      </div>
+    </div>
+
+    <div class="result" id="resultado" style="display:none;"></div>
+  </div>
+
+  <script>
+    // =========================
+    // PREÇOS FIXOS (sem campo de configurações)
+    // =========================
+    const precoVista = 41.70;
+    const precoPrazo = 47.90;
+
+    // =========================
+    // Helpers
+    // =========================
+    function toNumberBR(v){
+      if (v === null || v === undefined) return NaN;
+      // aceita "1.234,56" e "1234,56" e "1234.56"
+      const s = String(v).trim();
+      // remove espaços
+      const cleaned = s.replace(/\s/g,'');
+      // caso tenha vírgula, assume pt-BR: remove pontos de milhar e troca vírgula por ponto
+      if (cleaned.includes(',')){
+        return parseFloat(cleaned.replace(/\./g,'').replace(',', '.').replace(/[^0-9.\-]/g,''));
+      }
+      // sem vírgula: tenta parse direto (ponto como decimal)
+      return parseFloat(cleaned.replace(/[^0-9.\-]/g,''));
+    }
+
+    function formatBR(num, decimals=2){
+      const n = Number(num);
+      if (!isFinite(n)) return '0,00';
+      // pt-BR já vem com '.' milhar e ',' decimal. NÃO aplicar replace aqui.
+      return n.toLocaleString('pt-BR', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+    }
+
+    const W = 0.60;
+    const MAX_H = 12.00;
+    const EXTRA = 0.07;
+
+    // Alturas disponíveis: mantém base + gera 5.60..12.00 de 0.10
+    function buildAlturas(){
+      const base = [
+        1.00,1.20,1.50,1.70,2.00,2.20,2.50,2.70,3.00,3.20,3.30,3.40,3.50,3.60,3.70,3.80,3.90,
+        4.00,4.10,4.20,4.30,4.40,4.50,4.60,4.70,4.80,4.90,5.00,5.10,5.20,5.30,5.40,5.50
+      ];
+      const out = [...base];
+      for (let x = 5.60; x <= 12.0001; x += 0.10){
+        out.push(Math.round(x*100)/100);
+      }
+      return Array.from(new Set(out)).sort((a,b)=>a-b);
+    }
+    const ALTURAS = buildAlturas();
+
+    function getAlturaFaixa(alturaParede){
+      const target = alturaParede + EXTRA;
+      if (target > MAX_H + 1e-9) return { ok:false, error:`Altura exige faixa acima de 12,00m (${formatBR(target)}m).` };
+      const h = ALTURAS.find(v => v + 1e-9 >= target);
+      if (h === undefined) return { ok:false, error:`Não foi possível encontrar faixa para ${formatBR(target)}m.` };
+      return { ok:true, value: h };
+    }
+
+    // =========================
+    // UI - paredes
+    // =========================
+    let walls = [
+      {L:'0,98', A:'2,25'},
+      {L:'1,52', A:'2,75'},
+      {L:'2,54', A:'1,25'},
+      {L:'4,54', A:'2,54'},
+      {L:'3,25', A:'1,98'}
+    ];
+
+    const wallsListEl = document.getElementById('wallsList');
+    const addWallBtn = document.getElementById('addWallBtn');
+    const calcBtn = document.getElementById('calcBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultEl = document.getElementById('resultado');
+
+    function renderWalls(){
+      wallsListEl.innerHTML = '';
+      walls.forEach((w, idx) => {
+        const row = document.createElement('div');
+        row.className = 'card';
+        row.style.marginBottom = '10px';
+
+        row.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div>
+              <span class="pill">Parede ${idx+1}</span>
+              <span class="pill">Sequência</span>
+            </div>
+            <div class="row-actions">
+              <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
+              <button class="secondary" data-action="down" data-idx="${idx}">↓</button>
+              <button class="danger" data-action="remove" data-idx="${idx}">Remover</button>
+            </div>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
+            <div class="field">
+              <label>Largura (m)</label>
+              <input type="text" value="${w.L}" data-field="L" data-idx="${idx}" placeholder="Ex.: 1,52" />
+            </div>
+            <div class="field">
+              <label>Altura (m)</label>
+              <input type="text" value="${w.A}" data-field="A" data-idx="${idx}" placeholder="Ex.: 2,75" />
+            </div>
+            <div class="field" style="grid-column: span 2;">
+              <label style="opacity:.9;font-weight:700;">&nbsp;</label>
+              <div style="opacity:.85;font-size:12px; font-weight:700;">Preencha as medidas e clique em Calcular.</div>
+            </div>
+          </div>
+        `;
+
+        wallsListEl.appendChild(row);
+      });
+
+      wallsListEl.querySelectorAll('input[data-field]').forEach(inp => {
+        inp.addEventListener('input', (e)=>{
+          const i = parseInt(e.target.getAttribute('data-idx'),10);
+          const f = e.target.getAttribute('data-field');
+          walls[i][f] = e.target.value;
+        });
+      });
+
+      wallsListEl.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', ()=>{
+          const action = btn.getAttribute('data-action');
+          const i = parseInt(btn.getAttribute('data-idx'),10);
+          if (action === 'remove'){
+            walls.splice(i,1);
+            renderWalls();
+          } else if (action === 'up' && i>0){
+            [walls[i-1], walls[i]] = [walls[i], walls[i-1]];
+            renderWalls();
+          } else if (action === 'down' && i<walls.length-1){
+            [walls[i+1], walls[i]] = [walls[i], walls[i+1]];
+            renderWalls();
+          }
+        });
+      });
+    }
+
+    addWallBtn.addEventListener('click', ()=>{
+      walls.push({L:'', A:''});
+      renderWalls();
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      walls = [];
+      renderWalls();
+      resultEl.style.display='none';
+      resultEl.innerHTML='';
+    });
+
+    // =========================
+    // Núcleo do algoritmo
+    // =========================
+
+    function mergeConsecutive(groups){
+      const out = [];
+      for (const g of groups){
+        if (!g || g.q <= 0) continue;
+        if (out.length && Math.abs(out[out.length-1].h - g.h) < 1e-9){
+          out[out.length-1].q += g.q;
+        } else {
+          out.push({h:g.h, q:g.q});
+        }
+      }
+      return out;
+    }
+
+    // Passo A: paredes -> (q,h) por parede, com carry e subida de altura
+    function computePerWall(wallsNumeric){
+      const n = wallsNumeric.length;
+      const H = [];
+      for (let i=0;i<n;i++){
+        const r = getAlturaFaixa(wallsNumeric[i].A);
+        if (!r.ok) return { ok:false, error:`Parede ${i+1}: ${r.error}` };
+        H.push(r.value);
+      }
+
+      let carry = 0.0; // sobra (+) ou dívida (-)
+      const perWall = [];
+
+      for (let i=0;i<n;i++){
+        const Li = wallsNumeric[i].L;
+        const Hi = H[i];
+        const nextH = (i<n-1) ? H[i+1] : null;
+
+        let LiEfetiva = Li - carry;
+
+        if (LiEfetiva <= 1e-12){
+          carry = -LiEfetiva;
+          perWall.push({ q:0, h:Hi });
+          continue;
+        }
+
+        let qBruto = Math.ceil(LiEfetiva / W);
+        let cobertura = qBruto * W;
+        let novoCarry = cobertura - LiEfetiva;
+
+        if (i < n-1 && nextH > Hi + 1e-9 && qBruto > 0){
+          // subida: remove 1 faixa do conjunto atual e cria "dívida" p/ próxima
+          const q = qBruto - 1;
+          const cobAgora = q * W;
+          const faltou = LiEfetiva - cobAgora; // >0
+          carry = -faltou;
+          perWall.push({ q, h:Hi });
+        } else {
+          carry = novoCarry;
+          perWall.push({ q:qBruto, h:Hi });
+        }
+      }
+
+      return { ok:true, perWall };
+    }
+
+    // Paridade:
+    // - conjuntos do meio precisam ser pares
+    // - h > 6,00: SEMPRE par (inclusive se for último/primeiro)
+    function mustBeEven(groups, k){
+      const last = groups.length - 1;
+      const middleRule = (k !== 0 && k !== last);
+      const heightRule = (groups[k].h > 6.0 + 1e-9);
+      return middleRule || heightRule;
+    }
+
+    // Ajuste correto:
+    // Se o grupo k precisa ser par e está ímpar:
+    // - Se existe grupo à direita com altura >= hk: movemos 1 faixa de k para o primeiro desses (promoção)
+    // - Caso contrário (altura caiu e só tem menores à direita): puxamos 1 faixa do grupo imediatamente à direita (menor) e promovemos para hk (reduz o menor, aumenta o hk) => mantém total de faixas
+    // - Só em último caso adiciona 1 faixa (fallback raro).
+    function rebalanceParity(groups){
+      let changed = true;
+      let safety = 0;
+
+      function findNextGE(k){
+        const hk = groups[k].h;
+        for (let j=k+1;j<groups.length;j++){
+          if (groups[j].h + 1e-9 >= hk) return j;
+        }
+        return -1;
+      }
+
+      while (changed && safety < 800){
+        safety++;
+        changed = false;
+        groups = mergeConsecutive(groups);
+
+        for (let k=0;k<groups.length;k++){
+          if (groups[k].q <= 0) continue;
+
+          if (mustBeEven(groups, k) && (groups[k].q % 2 !== 0)){
+            const hk = groups[k].h;
+            const last = groups.length - 1;
+
+            // 1) Tenta mover 1 faixa de k para a direita (para altura >= hk)
+            const j = findNextGE(k);
+            if (j !== -1){
+              groups[k].q -= 1;
+              groups[j].q += 1;
+              groups = mergeConsecutive(groups);
+              changed = true;
+              break;
+            }
+
+            // 2) Se não tem altura >= à direita, então todos à direita são menores.
+            // Correção mínima: puxar 1 faixa do próximo grupo (k+1) e promover para hk.
+            if (k < last && groups[k+1].q > 0){
+              // remove 1 do próximo (menor), adiciona 1 ao atual (hk)
+              groups[k+1].q -= 1;
+              groups[k].q += 1;
+
+              // se o próximo zerou, será removido no merge
+              groups = mergeConsecutive(groups);
+              changed = true;
+              break;
+            }
+
+            // 3) Fallback: adiciona 1 faixa (evitar, mas garante paridade)
+            groups[k].q += 1;
+            groups = mergeConsecutive(groups);
+            changed = true;
+            break;
+          }
+        }
+      }
+
+      return { groups, safetyExceeded: safety >= 800 };
+    }
+
+    // Monta string "Resumo: 1F de 2,50m + ..."
+    function buildResumoLinha(groups){
+      return groups.map(g => `${g.q}F de ${formatBR(g.h,2)}m`).join(' + ');
+    }
+
+    // Texto otimizado para WhatsApp (sem tabela)
+    function buildWhatsAppText(totalFaixas, totalMetros, valorVista, valorPrazo, resumoLinha){
+      return [
+        `Orçamento Papel de Parede Sob Medida:`,
+        ``,
+        `Total: ${totalFaixas} faixas • ${formatBR(totalMetros,2)} m`,
+        `À vista: R$ ${formatBR(valorVista,2)}`,
+        `A prazo: R$ ${formatBR(valorPrazo,2)}`,
+        ``,
+        `Resumo: ${resumoLinha}`,
+        ``,
+        `*Não estão inclusos os valores de frete e de artes.`
+      ].join('\n');
+    }
+
+    async function copyToClipboard(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch(e){
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let ok = false;
+        try{ ok = document.execCommand('copy'); }catch(err){ ok=false; }
+        document.body.removeChild(ta);
+        return ok;
+      }
+    }
+
+    function calcularTudo(){
+      const wallsNumeric = [];
+      for (let i=0;i<walls.length;i++){
+        const L = toNumberBR(walls[i].L);
+        const A = toNumberBR(walls[i].A);
+        if (!isFinite(L) || !isFinite(A) || L<=0 || A<=0){
+          return { ok:false, error:`Parede ${i+1}: preencha largura e altura com valores válidos (> 0).` };
+        }
+        wallsNumeric.push({L, A});
+      }
+      if (wallsNumeric.length === 0){
+        return { ok:false, error:'Adicione ao menos 1 parede.' };
+      }
+
+      const Ares = computePerWall(wallsNumeric);
+      if (!Ares.ok) return { ok:false, error:Ares.error };
+
+      let groups = mergeConsecutive(Ares.perWall);
+
+      const Bres = rebalanceParity(groups);
+      groups = Bres.groups;
+
+      // após reequilíbrio, merge final
+      groups = mergeConsecutive(groups);
+
+      const totalFaixas = groups.reduce((s,g)=>s+g.q,0);
+      const totalMetros = groups.reduce((s,g)=>s+(g.q*g.h),0);
+
+      const valorVista = totalMetros * precoVista;
+      const valorPrazo = totalMetros * precoPrazo;
+
+      return {
+        ok:true,
+        groups,
+        totalFaixas,
+        totalMetros,
+        valorVista,
+        valorPrazo,
+        safetyExceeded: Bres.safetyExceeded
+      };
+    }
+
+    function renderResult(res){
+      if (!res.ok){
+        resultEl.style.display='block';
+        resultEl.innerHTML = `<div class="line">${res.error}</div>`;
+        return;
+      }
+
+      const groupsHtml = res.groups.map((g, idx)=>`
+        <tr>
+          <td>${idx+1}</td>
+          <td><span class="strong">${g.q}</span></td>
+          <td><span class="strong">${formatBR(g.h,2)} m</span></td>
+          <td>${formatBR(g.q*g.h,2)} m</td>
+        </tr>
+      `).join('');
+
+      const resumoLinha = buildResumoLinha(res.groups);
+      const whatsappText = buildWhatsAppText(
+        res.totalFaixas,
+        res.totalMetros,
+        res.valorVista,
+        res.valorPrazo,
+        resumoLinha
+      );
+
+      resultEl.style.display='block';
+      resultEl.innerHTML = `
+        <div class="line">
+          Total: <span class="strong">${res.totalFaixas}</span> faixas •
+          <span class="strong">${formatBR(res.totalMetros,2)} m</span>
+        </div>
+
+        <div class="line">
+          Valor total <span class="strong">à vista</span>: <span class="strong">R$ ${formatBR(res.valorVista,2)}</span>
+          &nbsp;|&nbsp;
+          <span class="strong">a prazo</span>: <span class="strong">R$ ${formatBR(res.valorPrazo,2)}</span>
+        </div>
+
+        <div class="copy-area">
+          <button id="copyBtn">COPIAR</button>
+          <div class="copy-status" id="copyStatus"></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Qtd. faixas</th>
+              <th>Altura faixa</th>
+              <th>Metros</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${groupsHtml}
+          </tbody>
+        </table>
+
+        <div class="note">*Não estão inclusos os valores de frete e de artes.</div>
+        <div class="note">Resumo de Faixas: ${resumoLinha}</div>
+      `;
+
+      // botão copiar (formatação WhatsApp)
+      const copyBtn = document.getElementById('copyBtn');
+      const copyStatus = document.getElementById('copyStatus');
+
+      copyBtn.addEventListener('click', async ()=>{
+        const ok = await copyToClipboard(whatsappText);
+        copyStatus.textContent = ok ? 'Copiado! Agora é só colar no WhatsApp.' : 'Não foi possível copiar. Tente novamente.';
+        setTimeout(()=>{ copyStatus.textContent=''; }, 3500);
+      });
+    }
+
+    calcBtn.addEventListener('click', ()=>{
+      const res = calcularTudo();
+      renderResult(res);
+    });
+
+    // init
+    renderWalls();
+  </script>
+</body>
+</html>

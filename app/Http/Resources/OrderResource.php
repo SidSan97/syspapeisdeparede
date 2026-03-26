@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\OrderPaymentCompositionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +16,7 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['rooms.walls.collectionModel.files', 'user', 'tenant', 'primaryRoom', 'dropshippingData']);
+        $this->resource->loadMissing(['rooms.walls.collectionModel.files', 'user', 'tenant', 'primaryRoom', 'dropshippingData', 'paymentLinks']);
 
         $data = $this->resource->toArray();
 
@@ -202,6 +203,47 @@ class OrderResource extends JsonResource
             }
             unset($room);
         }
+
+        $data['payment_links'] = collect($this->resource->paymentLinks ?? [])
+            ->map(function ($link) {
+                return [
+                    'id' => $link->id,
+                    'components' => $link->components ?? [],
+                    'payment_method' => $link->payment_method,
+                    'installments' => $link->installments,
+                    'amount_artes' => (float) $link->amount_artes,
+                    'amount_produtos' => (float) $link->amount_produtos,
+                    'amount_frete' => (float) $link->amount_frete,
+                    'amount_total' => (float) $link->amount_total,
+                    'status' => $link->status,
+                    'payment_url' => $link->payment_url,
+                    'expires_at' => $link->expires_at,
+                    'paid_at' => $link->paid_at,
+                    'created_at' => $link->created_at,
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        $composition = app(OrderPaymentCompositionService::class)->getOrderComposition($this->resource);
+        $paidLinks = collect($this->resource->paymentLinks ?? [])->where('status', 'paid');
+        $paidByComponent = [
+            'ARTES' => (float) $paidLinks->sum('amount_artes'),
+            'PRODUTOS' => (float) $paidLinks->sum('amount_produtos'),
+            'FRETE' => (float) $paidLinks->sum('amount_frete'),
+        ];
+        $remainingByComponent = [
+            'ARTES' => round(max(0, (float) $composition['ARTES'] - $paidByComponent['ARTES']), 2),
+            'PRODUTOS_PIX' => round(max(0, (float) $composition['PRODUTOS_PIX'] - $paidByComponent['PRODUTOS']), 2),
+            'PRODUTOS_CREDIT_CARD' => round(max(0, (float) $composition['PRODUTOS_CREDIT_CARD'] - $paidByComponent['PRODUTOS']), 2),
+            'FRETE' => round(max(0, (float) $composition['FRETE'] - $paidByComponent['FRETE']), 2),
+        ];
+
+        $data['payment_breakdown'] = [
+            'base' => $composition,
+            'paid' => $paidByComponent,
+            'remaining' => $remainingByComponent,
+        ];
 
         return $data;
     }

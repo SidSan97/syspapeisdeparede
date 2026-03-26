@@ -478,6 +478,7 @@ class BudgetRepository {
             $order->payment_file = $path;
             $order->status = 'Aprovado';
             $order->paid = 1;
+            $order->payment_status = 'paid';
             $order->save();
 
             // Atualizar todos os order_budgets associados para 'Aprovado'

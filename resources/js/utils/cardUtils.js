@@ -239,3 +239,25 @@ export function getProductionTimerClass(card, currentTime, prefix = 'production-
   return `${prefix}-normal`;
 }
 
+/**
+ * Classe Bootstrap para badge do status do order budget (layout de produção).
+ * @param {string|null|undefined} status
+ * @returns {string}
+ */
+export function getOrderBudgetStatusBadgeClass(status) {
+  if (!status) {
+    return 'bg-secondary';
+  }
+  const s = String(status).toLowerCase();
+  if (s.includes('aprovar layout')) {
+    return 'bg-warning text-dark';
+  }
+  if (s.includes('pendente')) {
+    return 'bg-info';
+  }
+  if (s.includes('aprovad') || s.includes('conclu')) {
+    return 'bg-success';
+  }
+  return 'bg-secondary';
+}
+

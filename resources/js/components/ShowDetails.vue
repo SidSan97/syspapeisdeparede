@@ -66,6 +66,15 @@
                 </div>
             </div>
         </Page>
+
+        <GeneratePaymentLinkModal
+            :visible="paymentLinkModalVisible"
+            :submitting="generatingPaymentLink"
+            :default-installments="Number(data?.installments || 1)"
+            :payment-breakdown="data?.payment_breakdown || null"
+            @close="paymentLinkModalVisible = false"
+            @submit="submitGeneratePaymentLink"
+        />
     </section>
 </template>
 
@@ -87,6 +96,7 @@ import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
 import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
+import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -98,6 +108,7 @@ const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
+const paymentLinkModalVisible = ref(false);
 
 const orderService = useOrderService();
 
@@ -138,7 +149,7 @@ async function loadData() {
         // Verificar se o link de pagamento está expirado e gerar novo se necessário
         if (isOrder.value && responseData.link_payment && responseData.payment_expiration_date) {
             if (orderService.isPaymentLinkExpired(responseData.payment_expiration_date)) {
-                await generatePaymentLink(false);
+                await generatePaymentLinkLegacy(false);
             }
         }
 
@@ -212,7 +223,46 @@ async function handleApprove() {
     }
 }
 
-async function generatePaymentLink(showSuccessMessage = true) {
+async function generatePaymentLink() {
+    if (!data.value?.id || !isOrder.value) {
+        return;
+    }
+
+    paymentLinkModalVisible.value = true;
+}
+
+async function submitGeneratePaymentLink(formValues) {
+    generatingPaymentLink.value = true;
+
+    try {
+        const responseData = await orderService.generatePaymentLinkByComponents(data.value.id, formValues);
+
+        if (responseData) {
+            data.value = responseData;
+        }
+
+        await window.Swal.fire({
+            title: 'Link gerado!',
+            text: 'Link de pagamento gerado com sucesso.',
+            icon: 'success',
+            confirmButtonText: 'OK',
+        });
+        paymentLinkModalVisible.value = false;
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível gerar o link de pagamento.';
+
+        await window.Swal.fire({
+            title: 'Erro',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'OK',
+        });
+    } finally {
+        generatingPaymentLink.value = false;
+    }
+}
+
+async function generatePaymentLinkLegacy(showSuccessMessage = true) {
     if (!data.value?.id || !isOrder.value) {
         return;
     }

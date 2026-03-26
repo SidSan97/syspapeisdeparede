@@ -16,7 +16,7 @@ class OrderRepository
     {
         $user = Auth::user();
 
-        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom'])
+        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom', 'paymentLinks'])
             ->orderByDesc('created_at');
 
         if (!$user->isAdmin() && !$user->isCommercial()) {
@@ -33,7 +33,7 @@ class OrderRepository
     {
         $user = Auth::user();
 
-        $query = Order::with(['user', 'tenant', 'primaryRoom'])
+        $query = Order::with(['user', 'tenant', 'primaryRoom', 'paymentLinks'])
             ->orderByDesc('created_at')
             ->forUser($user)
             ->search($filters['search'] ?? null)
@@ -106,7 +106,7 @@ class OrderRepository
     {
         $user = Auth::user();
 
-        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom']);
+        $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom', 'paymentLinks']);
 
         if (!$user->isAdmin()) {
             $query->where(function ($q) use ($user) {

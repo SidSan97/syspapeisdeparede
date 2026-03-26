@@ -37,9 +37,16 @@ URL do webhook: `POST https://seudominio.com/api/webhook/pagarme`
 O `WebhookController` em `app/Http/Controllers/WebhookController.php`:
 
 - Escuta o evento `order.paid`
-- Identifica o nosso Order via `metadata.order_id` ou `[order_ref:ID]` na descrição do item
-- Atualiza `orders.paid = 1` quando o pagamento é confirmado
-- Implementa idempotência (não reprocessa se já pago)
+- Identifica o nosso `Order` via `metadata.order_id` (ou fallback por `[order_ref:ID]` em `items[].description`)
+- Tenta localizar o link de pagamento em `order_payment_links` por `data.id` (campo `external_order_id`)
+- Se nao localizar por `data.id`, tenta por `metadata.internal_payment_link_id`
+- Se ainda nao localizar, usa fallback para o ultimo link `pending` do pedido
+- Atualiza o link encontrado para `status = paid` e preenche `paid_at`
+- Recalcula o status do pedido:
+  - `payment_status = unpaid` (nada pago)
+  - `payment_status = partial` (pagamento parcial)
+  - `payment_status = paid` (pedido quitado)
+- Mantem `orders.paid` como flag de compatibilidade (`1` apenas quando quitado)
 - Retorna sempre `200` para o Pagar.me
 
 > ⚠️ **Importante:** retornar `200` é obrigatório. Se o seu serviço não conseguir receber o webhook, o Pagar.me tentará reenviar conforme o número de tentativas configurado. Se você retornar 500 ou não responder, ele vai retentar automaticamente.
@@ -52,7 +59,12 @@ Para simular o webhook no ambiente local:
 
 1. **URL:** `POST http://seudominio/api/webhook/pagarme`
 2. **Headers:** `Content-Type: application/json`
-3. **Body (raw JSON):** use a estrutura abaixo, ajustando `data.metadata.order_id` ou `data.items[0].description` com o ID de um pedido existente no banco (`paid = 0`):
+3. **Body (raw JSON):** use a estrutura abaixo, ajustando `data.metadata.order_id` com o ID de um pedido existente no banco.
+
+> Importante no fluxo atual: idealmente o pedido ja deve ter ao menos 1 registro em `order_payment_links` (gerado pela tela/endpoint de link).
+> 
+> O webhook tenta primeiro casar `data.id` com `order_payment_links.external_order_id`.
+> Se nao encontrar, aplica fallback automatico (ultimo `pending` do pedido).
 
 ```json
 {
@@ -107,11 +119,41 @@ Para simular o webhook no ambiente local:
 }
 ```
 
-> Troque `"1"` em `metadata.order_id` e `[order_ref:1]` pelo ID real de um pedido na tabela `orders` com `paid = 0` para ver a atualização.
+> Troque `"1"` em `metadata.order_id` pelo ID real do pedido.
+> 
+> Dica: se quiser testar o "casamento direto" do link, envie em `data.id` o valor salvo em `order_payment_links.external_order_id`.
+
+### Exemplo minimo (funciona para testes locais)
+
+```json
+{
+  "type": "order.paid",
+  "data": {
+    "id": "or_teste_postman_123",
+    "status": "paid",
+    "amount": 12356,
+    "metadata": {
+      "order_id": "303"
+    }
+  }
+}
+```
 
 ---
 
-## 5. Configurar o Webhook no Painel do Pagar.me
+## 5. O que validar no banco depois do webhook
+
+1. Em `order_payment_links`:
+   - `status = paid`
+   - `paid_at` preenchido
+2. Em `orders`:
+   - `payment_status = partial` quando pagamento parcial
+   - `payment_status = paid` quando quitado total
+   - `paid = 1` somente quando quitado total
+
+---
+
+## 6. Configurar o Webhook no Painel do Pagar.me
 
 No painel, vá em **Configurações → Webhooks → Criar Webhook**, informe a URL para onde as notificações serão enviadas e selecione os eventos desejados.
 
@@ -127,7 +169,7 @@ Para detectar pagamento de link, selecione pelo menos:
 
 ---
 
-## 6. Estrutura do Payload Recebido
+## 7. Estrutura do Payload Recebido
 
 ```json
 {
@@ -152,7 +194,7 @@ Para detectar pagamento de link, selecione pelo menos:
 
 ---
 
-## 7. Atributos do Objeto Webhook
+## 8. Atributos do Objeto Webhook
 
 | Atributo | Tipo | Descrição |
 |---|---|---|

@@ -68,6 +68,17 @@ export function useOrderService() {
     }
 
     /**
+     * Gera um link de pagamento com componentes selecionados
+     * @param {number|string} orderId - ID do pedido
+     * @param {Object} payload - Componentes e forma de pagamento
+     * @returns {Promise<Object>} Dados atualizados do pedido
+     */
+    async function generatePaymentLinkByComponents(orderId, payload) {
+        const { data } = await axios.post(`v1/orders/${orderId}/payment-links`, payload);
+        return data?.data || data;
+    }
+
+    /**
      * Busca solicitações de artes de layout
      * @param {Object} params - Parâmetros da busca
      * @param {number|string} [params.order_id] - ID do pedido
@@ -131,6 +142,7 @@ export function useOrderService() {
         getDetails,
         approveOrder,
         generatePaymentLink,
+        generatePaymentLinkByComponents,
         getRequestLayoutArts,
         uploadArt,
         isPaymentLinkExpired,

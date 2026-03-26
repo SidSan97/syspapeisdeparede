@@ -201,17 +201,12 @@ async function fetchMembers() {
     loadingMembers.value = true;
     const response = await memberService.searchDesigners();
 
-    if (response.success && response.data) {
-      // Se a resposta estiver paginada, pegar o array de dados
-      if (response.data.data && Array.isArray(response.data.data)) {
-        availableMembers.value = response.data.data;
-      } else if (Array.isArray(response.data)) {
-        availableMembers.value = response.data;
-      } else if (Array.isArray(response)) {
-        availableMembers.value = response;
-      } else {
-        availableMembers.value = [];
-      }
+    if (Array.isArray(response)) {
+      availableMembers.value = response;
+    } else if (response?.data && Array.isArray(response.data)) {
+      availableMembers.value = response.data;
+    } else if (response?.success && response?.data) {
+      availableMembers.value = Array.isArray(response.data.data) ? response.data.data : (Array.isArray(response.data) ? response.data : []);
     } else {
       availableMembers.value = [];
     }

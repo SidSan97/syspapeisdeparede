@@ -5,7 +5,15 @@
             <img :src="coverImage" :alt="card.name" class="production-card-image card-img-top bg-light" />
         </div>
         <div class="card-body px-3 pt-3 pb-2">
-            <p class="fs-sm mb-2">{{ displayName }}</p>
+            <div class="gap-2 mb-2">
+                <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
+
+                <span
+                    v-if="card.status"
+                    class="badge text-wrap align-self-start flex-shrink-0"
+                    :class="getOrderBudgetStatusBadgeClass(card.status)"
+                >{{ card.status }}</span>
+            </div>
             <div class="d-flex gap-3">
                 <div class="fa-xs text-body-secondary">
                     <i class="far fa-clock me-2"></i>
@@ -39,6 +47,8 @@
 </template>
 
 <script setup>
+import { getOrderBudgetStatusBadgeClass } from '@/utils/cardUtils';
+
 const props = defineProps({
     card: {
         type: Object,

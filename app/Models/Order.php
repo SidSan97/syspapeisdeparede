@@ -39,6 +39,7 @@ class Order extends Model
         'link_payment',
         'payment_expiration_date',
         'paid',
+        'payment_status',
         'nf_sent',
         'nf_id',
         'flags',
@@ -61,6 +62,7 @@ class Order extends Model
         'flags' => 'string',
         'dropshipping_budget' => 'integer',
         'paid' => 'integer:0,1',
+        'payment_status' => 'string',
         'nf_sent' => 'integer:0,1',
         'nf_id' => 'string',
         'link_payment' => 'string',
@@ -104,6 +106,11 @@ class Order extends Model
     public function orderBudgets(): HasMany
     {
         return $this->hasMany(OrderBudget::class);
+    }
+
+    public function paymentLinks(): HasMany
+    {
+        return $this->hasMany(OrderPaymentLink::class);
     }
 }
 

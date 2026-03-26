@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Common\ListRequest;
+use App\Http\Requests\Orders\GenerateOrderPaymentLinkRequest;
 use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
@@ -11,12 +12,14 @@ use App\Models\Budget;
 use App\Models\BudgetRoom;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use App\Models\OrderPaymentLink;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
+use App\Services\OrderPaymentCompositionService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
 use Illuminate\Support\Facades\Auth;
@@ -31,10 +34,12 @@ class OrderController extends Controller
     protected $orderBudgetRepository;
     protected $dropshippingRepository;
     protected $tinyErpService;
+    protected $paymentCompositionService;
 
     public function __construct(OrderRepository $repository,
         LayoutService $layoutService,
         GeneratePaymentService $generatePaymentService,
+        OrderPaymentCompositionService $paymentCompositionService,
         OrderBudgetRepository $orderBudgetRepository,
         OrderBudget $orderBudget,
         DropshippingRepository $dropshippingRepository,
@@ -45,6 +50,7 @@ class OrderController extends Controller
         $this->repository = $repository;
         $this->layoutService = $layoutService;
         $this->generatePaymentService = $generatePaymentService;
+        $this->paymentCompositionService = $paymentCompositionService;
         $this->orderBudget = $orderBudget;
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->dropshippingRepository = $dropshippingRepository;
@@ -133,34 +139,102 @@ class OrderController extends Controller
         return OrderResource::collection($orders)->response();
     }
 
-    public function generatePaymentLink(int $id): JsonResponse
+    public function generatePaymentLink(GenerateOrderPaymentLinkRequest $request, int $id): JsonResponse
     {
         $order = Order::findOrFail($id);
+        $validated = $request->validated();
 
-        // Gerar link de pagamento
-        $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($order->toArray());
+        $paymentMethod = $validated['payment_method'];
+        $installments = $paymentMethod === 'credit_card'
+            ? (int) ($validated['installments'] ?? ($order->installments ?? 1))
+            : null;
+
+        $this->createPaymentLinkForOrder($order, $validated['components'], $paymentMethod, $installments);
+
+        return (new OrderResource($order->refresh()))->response();
+    }
+
+    public function generateLegacyPaymentLink(int $id): JsonResponse
+    {
+        $order = Order::findOrFail($id);
+        $paymentMethod = $order->payment_method === 'pix' ? 'pix' : 'credit_card';
+        $installments = $paymentMethod === 'credit_card' ? (int) ($order->installments ?? 1) : null;
+        $this->createPaymentLinkForOrder($order, ['ARTES', 'PRODUTOS', 'FRETE'], $paymentMethod, $installments);
+
+        return (new OrderResource($order->refresh()))->response();
+    }
+
+    protected function createPaymentLinkForOrder(
+        Order $order,
+        array $components,
+        string $paymentMethod,
+        ?int $installments
+    ): void {
+        $calculation = $this->paymentCompositionService->calculateSelectedAmount(
+            $order,
+            $components,
+            $paymentMethod
+        );
+
+        if (($calculation['amount_total'] ?? 0) <= 0) {
+            abort(422, 'O valor total do link deve ser maior que zero.');
+        }
+
+        $payload = [
+            'id' => $order->id,
+            'name' => $order->name,
+            'payment_method' => $paymentMethod,
+            'installments' => $installments,
+            'item_name' => 'Pedido #' . $order->id . ' - ' . implode(' + ', $calculation['components']),
+            'item_description' => 'Componentes: ' . implode(', ', $calculation['components']),
+            'item_amount' => (int) round($calculation['amount_total'] * 100),
+            'installment_total' => (int) round($calculation['amount_total'] * 100),
+            'shipping_cost' => 0,
+            'metadata' => [
+                'order_id' => (string) $order->id,
+                'components' => implode(',', $calculation['components']),
+            ],
+        ];
+
+        $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($payload);
         $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
 
         if (!($paymentLinkData['success'] ?? false)) {
             abort(500, 'Erro ao gerar link de pagamento: ' . ($paymentLinkData['message'] ?? 'Erro desconhecido'));
         }
 
-        // Extrair URL e data de expiração
         $apiResponse = $paymentLinkData['data'] ?? [];
         $paymentUrl = $apiResponse['url'] ?? null;
         $expirationDate = $apiResponse['expiration_date'] ?? $apiResponse['expires_at'] ?? null;
+        $pagarmeOrderId = $apiResponse['id'] ?? null;
+        $paymentLinkExternalId = $apiResponse['payment_link']['id'] ?? ($apiResponse['id'] ?? null);
 
         if (!$paymentUrl) {
             abort(500, 'URL de pagamento não encontrada na resposta');
         }
 
-        // Salvar URL e data de expiração no pedido
         $order->update([
             'link_payment' => $paymentUrl,
             'payment_expiration_date' => $expirationDate,
+            'payment_status' => $order->payment_status ?: 'unpaid',
         ]);
 
-        return (new OrderResource($order->refresh()))->response();
+        OrderPaymentLink::create([
+            'order_id' => $order->id,
+            'components' => $calculation['components'],
+            'payment_method' => $paymentMethod,
+            'installments' => $installments,
+            'amount_artes' => $calculation['amount_artes'],
+            'amount_produtos' => $calculation['amount_produtos'],
+            'amount_frete' => $calculation['amount_frete'],
+            'amount_total' => $calculation['amount_total'],
+            'external_payment_link_id' => $paymentLinkExternalId,
+            'external_order_id' => $pagarmeOrderId,
+            'payment_url' => $paymentUrl,
+            'status' => 'pending',
+            'expires_at' => $expirationDate,
+            'provider_payload' => $apiResponse,
+        ]);
     }
 
     public function productionLayouts(): JsonResponse

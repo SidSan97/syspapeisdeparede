@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderPaymentLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -56,15 +57,22 @@ class WebhookController extends Controller
             return;
         }
 
-        if ($order->paid) {
-            return; // Idempotência: já processado
+        $paymentLink = $this->resolvePaymentLink($order->id, $data);
+
+        if ($paymentLink && $paymentLink->status !== 'paid') {
+            $paymentLink->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'provider_payload' => $data,
+            ]);
         }
 
-        $order->update(['paid' => 1]);
+        $this->refreshOrderPaymentStatus($order);
 
         Log::info('Webhook Pagar.me: pedido marcado como pago', [
             'order_id' => $orderId,
             'pagarme_order_id' => $pagarmeOrderId,
+            'payment_link_id' => $paymentLink?->id,
         ]);
     }
 
@@ -88,5 +96,56 @@ class WebhookController extends Controller
         }
 
         return null;
+    }
+
+    protected function resolvePaymentLink(int $orderId, array $data): ?OrderPaymentLink
+    {
+        $externalOrderId = $data['id'] ?? null;
+        if ($externalOrderId) {
+            $link = OrderPaymentLink::query()
+                ->where('order_id', $orderId)
+                ->where('external_order_id', (string) $externalOrderId)
+                ->first();
+
+            if ($link) {
+                return $link;
+            }
+        }
+
+        $metadata = $data['metadata'] ?? [];
+        if (is_array($metadata) && ! empty($metadata['internal_payment_link_id'])) {
+            return OrderPaymentLink::query()
+                ->where('order_id', $orderId)
+                ->find((int) $metadata['internal_payment_link_id']);
+        }
+
+        return OrderPaymentLink::query()
+            ->where('order_id', $orderId)
+            ->where('status', 'pending')
+            ->latest('id')
+            ->first();
+    }
+
+    protected function refreshOrderPaymentStatus(Order $order): void
+    {
+        $composition = app(\App\Services\OrderPaymentCompositionService::class)
+            ->getOrderComposition($order);
+
+        $orderTotal = (float) ($order->payment_method === 'pix'
+            ? ($composition['TOTAL_PIX'] ?? 0)
+            : ($composition['TOTAL_CREDIT_CARD'] ?? 0));
+
+        $paidAmount = (float) OrderPaymentLink::query()
+            ->where('order_id', $order->id)
+            ->where('status', 'paid')
+            ->sum('amount_total');
+
+        $isPaid = $paidAmount >= $orderTotal && $orderTotal > 0;
+        $paymentStatus = $paidAmount <= 0 ? 'unpaid' : ($isPaid ? 'paid' : 'partial');
+
+        $order->update([
+            'paid' => $isPaid ? 1 : 0,
+            'payment_status' => $paymentStatus,
+        ]);
     }
 }
