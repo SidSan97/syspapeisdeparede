@@ -16,7 +16,15 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['rooms.walls.collectionModel.files', 'user', 'tenant', 'primaryRoom', 'dropshippingData', 'paymentLinks']);
+        $this->resource->loadMissing([
+            'rooms.walls.collectionModel.files',
+            'user',
+            'tenant',
+            'primaryRoom',
+            'dropshippingData',
+            'paymentLinks',
+            'orderBudgets',
+        ]);
 
         $data = $this->resource->toArray();
 
@@ -222,6 +230,19 @@ class OrderResource extends JsonResource
                     'created_at' => $link->created_at,
                 ];
             })
+            ->values()
+            ->toArray();
+
+        $data['order_budgets'] = collect($this->resource->orderBudgets ?? [])
+            ->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'budget_wall_id' => $card->budget_wall_id,
+                    'order_index' => $card->order_index,
+                    'status' => $card->status,
+                ];
+            })
+            ->sortBy('order_index')
             ->values()
             ->toArray();
 

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\OrderBudget;
 use App\Services\LayoutCardHistoryService;
+use App\Repositories\DropshippingRepository;
 
 class BudgetRepository {
 
@@ -20,6 +21,7 @@ class BudgetRepository {
     public function __construct(
         LayoutCardHistoryService $historyService,
         protected OrderRepository $orderRepository,
+        protected DropshippingRepository $dropshippingRepository,
     ) {
         $this->historyService = $historyService;
     }
@@ -435,6 +437,14 @@ class BudgetRepository {
                         $this->historyService->logFileAttachment($orderBudget->id, $user, $fileName, $fileUrl);
                     }
                 }
+            }
+
+            // Insere ID do pedido no dropshipping do orçamento associado
+            $dropshippingData = $this->dropshippingRepository->findDropshippingByBudgetId($budget->id);
+            if ($dropshippingData) {
+                $dropshippingData->update([
+                    'order_id' => $order->id,
+                ]);
             }
 
             return $budget->fresh(['rooms.walls.collectionModel', 'order']);

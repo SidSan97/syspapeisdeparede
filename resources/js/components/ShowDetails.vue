@@ -202,7 +202,7 @@ async function handleApprove() {
 
         await window.Swal.fire({
             title: 'Pedido aprovado',
-            text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
+            //text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
             icon: 'success',
             showCloseButton: true,
             confirmButtonText: 'Entendi!',

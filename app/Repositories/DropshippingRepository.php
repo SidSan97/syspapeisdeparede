@@ -91,4 +91,14 @@ class DropshippingRepository
 
         return $dropshippingData;
     }
+
+    public function findDropshippingByBudgetId(int $budgetId): ?DropshippingData
+    {
+        $dropshippingData = $this->dropshippingData->where('budget_id', $budgetId)->first();
+        if (!$dropshippingData) {
+            return null;
+        }
+
+        return $dropshippingData;
+    }
 }
