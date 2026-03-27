@@ -29,7 +29,7 @@ export function useFormatting() {
 
     function formatPaymentMethod(method) {
         const methods = {
-            credit_card: 'Cartão de Crédito',
+            credit_card: 'Cartão',
             pix: 'PIX',
             installment: 'Parcelado',
         };
