@@ -10,14 +10,14 @@
         <div v-if="!loading && images.length" class="row mb-4">
           <div class="col-12 col-md-6 col-lg-4">
             <label for="search-image" class="form-label small text-muted mb-1">
-              Buscar pelo nome do modelo 
+              Buscar pelo nome da imagem
             </label>
             <input
               id="search-image"
               v-model.trim="searchTerm"
               type="text"
               class="form-control"
-              placeholder="Digite o nome do modelo"
+              placeholder="Digite o nome da imagem"
             />
           </div>
         </div>
@@ -248,7 +248,7 @@ const shareOnWhatsApp = (image) => {
   const modelName = image.name || image.path_name || 'Imagem';
   const collectionLabel = collectionName.value ? `${collectionName.value} - ` : '';
   const subcategoryLabel = subcategoryName.value ? `${subcategoryName.value} | ` : '';
-  const title = `*${collectionLabel}*${subcategoryLabel}${modelName}`;
+  const title = `${collectionLabel}${subcategoryLabel} ${modelName} \n`;
 
   const url = image.url || '';
   const text = url

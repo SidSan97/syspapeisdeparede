@@ -22,14 +22,14 @@
         <div class="row mb-4">
           <div class="col-12 col-md-6 col-lg-4">
             <label for="search-model" class="form-label small text-muted mb-1">
-              Buscar pelo nome do modelo
+              Buscar pelo nome da coleção
             </label>
             <input
               id="search-model"
               v-model.trim="searchTerm"
               type="text"
               class="form-control"
-              placeholder="Digite o nome do modelo"
+              placeholder="Digite o nome da coleção"
             />
           </div>
         </div>

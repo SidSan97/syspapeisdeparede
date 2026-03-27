@@ -37,6 +37,21 @@
                     <h5 class="mb-0 text-primary">{{ formatCurrency(data.total_amount_installments) }}</h5>
                 </div>
             </div>
+
+            <hr>
+
+            <div
+            v-if="stripSummary"
+            class="mt-3 small text-muted"
+            >
+            <strong class="text-body">Resumo de Faixas:</strong>
+            {{ stripSummary }}
+            </div>
+
+
+            <button class="btn btn-primary mt-2" @click="copyStripSummary">
+                Copiar Resumo
+            </button>
         </div>
     </div>
 </template>
@@ -44,6 +59,11 @@
 <script setup>
 import { computed } from 'vue';
 import { useFormatting } from '@/composables/useFormatting';
+import {
+    buildBudgetSummaryText,
+    copyBudgetSummaryText,
+} from '@/utils/copyBudgetSummaryUtils';
+import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const props = defineProps({
     data: {
@@ -60,5 +80,29 @@ const totalWalls = computed(() => {
         return total + (room.walls?.length || 0);
     }, 0);
 });
+const stripSummary = computed(() => buildStripSummaryFromRooms(props.data?.rooms || []));
+
+async function copyStripSummary() {
+    const text = buildBudgetSummaryText({
+        totalWalls: totalWalls.value,
+        totalArea: formatNumber(props.data?.total_area || 0),
+        totalVista: formatCurrency(props.data?.total_amount || 0),
+        totalPrazo: formatCurrency(props.data?.total_amount_installments || 0),
+        stripSummary: stripSummary.value || '-',
+    });
+
+    const ok = await copyBudgetSummaryText(text);
+    if (ok) {
+        window.Toast.fire({
+            icon: 'success',
+            title: 'Resumo copiado para a area de transferencia',
+        });
+    } else {
+        window.Toast.fire({
+            icon: 'error',
+            title: 'Nao foi possivel copiar o resumo.',
+        });
+    }
+}
 </script>
 
