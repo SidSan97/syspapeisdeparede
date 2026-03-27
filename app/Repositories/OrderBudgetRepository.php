@@ -1,6 +1,9 @@
 <?php
 
 namespace App\Repositories;
+use App\Models\Budget;
+use App\Models\LayoutColumnName;
+use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\LayoutCardHistoryService;
 
@@ -247,5 +250,55 @@ class OrderBudgetRepository {
         ]);
 
         return $this->orderBudget->fresh();
+    }
+
+    /**
+     * Sincroniza os cards da tabela order_budgets com as paredes do orçamento.
+     * Mantém 1 card por parede (budget_wall_id) para o pedido informado.
+     */
+    public function syncFromBudget(Order $order, Budget $budget): void
+    {
+        $budget->loadMissing(['rooms.walls']);
+
+        $layoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $tenantId = $order->tenant_id ?? $budget->tenant_id;
+
+        $wallIds = [];
+        $orderIndex = 1;
+
+        $rooms = $budget->rooms->sortBy('position');
+        foreach ($rooms as $room) {
+            $walls = collect($room->walls)->sortBy('position');
+            foreach ($walls as $wall) {
+                $wallIds[] = $wall->id;
+
+                $orderBudget = OrderBudget::query()->firstOrNew([
+                    'order_id' => $order->id,
+                    'budget_wall_id' => $wall->id,
+                ]);
+
+                // Só define status padrão na criação para não sobrescrever fluxos já iniciados
+                if (!$orderBudget->exists) {
+                    $orderBudget->status = 'Aprovar Layout';
+                }
+
+                $orderBudget->tenant_id = $tenantId;
+                $orderBudget->layout_column_names_id = $layoutColumnId;
+                $orderBudget->description = $wall->comment_referring_model ?? null;
+                $orderBudget->order_index = $orderIndex++;
+                $orderBudget->save();
+            }
+        }
+
+        // Remove cards órfãos do pedido que não pertencem mais às paredes deste orçamento
+        OrderBudget::query()
+            ->where('order_id', $order->id)
+            ->whereNotNull('budget_wall_id')
+            ->when(!empty($wallIds), function ($query) use ($wallIds) {
+                $query->whereNotIn('budget_wall_id', $wallIds);
+            }, function ($query) {
+                $query->whereRaw('1 = 1');
+            })
+            ->delete();
     }
 }

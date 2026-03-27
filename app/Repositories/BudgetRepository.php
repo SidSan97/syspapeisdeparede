@@ -21,6 +21,7 @@ class BudgetRepository {
     public function __construct(
         LayoutCardHistoryService $historyService,
         protected OrderRepository $orderRepository,
+        protected OrderBudgetRepository $orderBudgetRepository,
         protected DropshippingRepository $dropshippingRepository,
     ) {
         $this->historyService = $historyService;
@@ -425,9 +426,12 @@ class BudgetRepository {
                 ->where('budget_id', $budget->id)
                 ->update(['order_id' => $order->id]);
 
+            // Garante um card (order_budget) por parede do orçamento no pedido
+            $this->orderBudgetRepository->syncFromBudget($order, $budget);
+
             if (!empty($allNewFiles) && Auth::check()) {
                 $user = Auth::user();
-                $orderBudgets = OrderBudget::where('budget_id', $budget->id)->get();
+                $orderBudgets = OrderBudget::where('order_id', $order->id)->get();
 
                 foreach ($allNewFiles as $filePath) {
                     $fileName = basename($filePath);
