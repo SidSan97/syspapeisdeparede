@@ -54,7 +54,12 @@ class OrderRepository
         return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
             ->whereNotNull('budget_wall_id')
             ->whereHas('order', function ($query) {
-                $query->where('paid', 0);
+                // Inclui tudo exceto pedido pago E aprovado ao mesmo tempo (pagamento parcial continua na fila)
+                $query->where(function ($q) {
+                    $q->where('paid', '!=', 1)
+                        ->orWhere('status', '!=', 'Aprovado')
+                        ->orWhereNull('status');
+                });
             })
             ->with([
                 'order' => function ($query) {
@@ -81,6 +86,7 @@ class OrderRepository
         return OrderBudget::whereNotNull('budget_wall_id')
             ->whereHas('order', function ($query) {
                 $query->where('paid', 1);
+                $query->where('status', 'Aprovado');
             })
             ->with([
                 'order' => function ($query) {
