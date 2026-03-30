@@ -109,7 +109,7 @@ class LayoutService
                 'image' => $wallImage,
                 'order' => $this->transformOrder($order),
                 'wall' => $this->transformWall($wall),
-                'uploaded_files' => $this->transformUploadedFiles($order->files_referring_model ?? []),
+                'uploaded_files' => $this->transformUploadedFiles($wall->files_referring_model ?? []),
                 'created_at' => $orderBudget->created_at,
                 'updated_at' => $orderBudget->updated_at,
             ];
