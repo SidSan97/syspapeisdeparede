@@ -112,17 +112,8 @@ export function useModels() {
         form.requests.link = model.requests.link;
         form.requests.comment = model.requests.comment;
         form.requests.file = model.requests.file;
-        form.requests.collection =
-            model.requests.collection ??
-            model.requestCollection ??
-            model.request_collection ??
-            false;
-        form.requests.layout =
-            model.requests.layout ??
-            model.requestLayout ??
-            model.request_layout ??
-            model.request_layout_referring_model ??
-            false;
+        form.requests.collection =model.requests.collection ?? false;
+        form.requests.layout = model.requests.layout ?? false;
     }
 
     /**
