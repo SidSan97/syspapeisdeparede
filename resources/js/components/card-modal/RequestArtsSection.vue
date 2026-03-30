@@ -51,7 +51,21 @@
                   </div>
                   <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
 
-                  <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid">
+                  <div class="d-flex justify-content-center">
+                    <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid img-request">
+                  </div>
+
+                    <div class="mt-2 text-center">
+                      <a
+                        :href="interaction.image_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-sm btn-outline-primary"
+                      >
+                        <i class="fa fa-external-link me-1"></i>
+                        Abrir em nova aba
+                      </a>
+                    </div>
                 </div>
                 <hr>
                 <div class="col-md-6">
@@ -74,12 +88,6 @@
                   <div class="text-muted small">Área</div>
                   <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
                 </div>
-              </div>
-            </div>
-            <div v-if="interaction.created_at" class="mb-3 p-2 border rounded">
-              <div class="text-muted small">
-                <i class="fa fa-calendar me-1"></i>
-                Interação criada em: {{ formatDate(interaction.created_at) }}
               </div>
             </div>
 
@@ -118,33 +126,6 @@
                           Enviado em: {{ formatDate(art.created_at) }}
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  <div v-if="art.comment" class="mb-3">
-                    <div class="text-muted small mb-1">Comentário</div>
-                    <div class="p-2 rounded border">{{ art.comment }}</div>
-                  </div>
-                  <div v-if="art.image_url" class="mb-3">
-                    <div class="text-muted small mb-2">Imagem da Arte</div>
-                    <div class="d-flex justify-content-center">
-                      <img
-                        :src="art.image_url"
-                        :alt="`Arte ${art.id}`"
-                        class="img-thumbnail"
-                        style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                        @error="handleImageError"
-                      />
-                    </div>
-                    <div class="mt-2 text-center">
-                      <a
-                        :href="art.image_url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="btn btn-sm btn-outline-primary"
-                      >
-                        <i class="fa fa-external-link me-1"></i>
-                        Abrir em nova aba
-                      </a>
                     </div>
                   </div>
                 </div>
@@ -233,6 +214,13 @@ function handleImageError(event) {
 .request-arts-section-empty {
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+.img-request {
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 5px;
 }
 </style>
 
