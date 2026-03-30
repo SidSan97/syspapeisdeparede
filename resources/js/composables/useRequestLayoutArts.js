@@ -62,12 +62,14 @@ export function useRequestLayoutArts(card) {
           return {
             id: art.id,
             comment: art.comment || null,
+            approval_status: art.approval_status ?? 'pending',
             image_url: imageUrl,
             created_at: art.created_at || null,
             wall_info: art.wall_info || null,
             arts: [{
               id: art.id,
               comment: art.comment || null,
+              approval_status: art.approval_status ?? 'pending',
               path_file: art.path_file || null,
               image_url: imageUrl,
               created_at: art.created_at || null,

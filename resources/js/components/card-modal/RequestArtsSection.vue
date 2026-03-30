@@ -126,6 +126,11 @@
                           Enviado em: {{ formatDate(art.created_at) }}
                         </div>
                       </div>
+                      <div v-if="approvalDisplay(art)" class="col-12">
+                        <span class="badge" :class="approvalDisplay(art).badgeClass">
+                          {{ approvalDisplay(art).label }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -187,6 +192,18 @@ function formatDate(date) {
 
 function handleImageError(event) {
   event.target.style.display = 'none';
+}
+
+/** Tarja só para aprovada/rejeitada; pendente não exibe nada. */
+function approvalDisplay(art) {
+  const s = (art?.approval_status || 'pending').toLowerCase();
+  if (s === 'approved') {
+    return { label: 'Aprovada', badgeClass: 'bg-success' };
+  }
+  if (s === 'rejected') {
+    return { label: 'Rejeitado', badgeClass: 'bg-danger' };
+  }
+  return null;
 }
 </script>
 

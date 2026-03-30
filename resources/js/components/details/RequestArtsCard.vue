@@ -131,10 +131,9 @@
                                                 </div>
                                                 <div class="col-12">
                                                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                                        <div>
-                                                            <span class="text-muted small me-2">Status da revisão:</span>
-                                                            <span class="badge" :class="getApprovalStatusBadgeClass(art.approval_status)">
-                                                                {{ getApprovalStatusLabel(art.approval_status) }}
+                                                        <div v-if="approvalDisplay(art)">
+                                                            <span class="badge" :class="approvalDisplay(art).badgeClass">
+                                                                {{ approvalDisplay(art).label }}
                                                             </span>
                                                         </div>
                                                         <div class="row">
@@ -363,18 +362,16 @@ function normalizeToInteractions(dataArray) {
     });
 }
 
-function getApprovalStatusLabel(status) {
-    const normalizedStatus = (status || 'pending').toLowerCase();
-    if (normalizedStatus === 'approved') return 'Aprovada';
-    if (normalizedStatus === 'rejected') return 'Reprovada';
-    return 'Pendente';
-}
-
-function getApprovalStatusBadgeClass(status) {
-    const normalizedStatus = (status || 'pending').toLowerCase();
-    if (normalizedStatus === 'approved') return 'bg-success';
-    if (normalizedStatus === 'rejected') return 'bg-danger';
-    return 'bg-warning text-dark';
+/** Tarja só para aprovada/rejeitada; pendente não exibe nada. */
+function approvalDisplay(art) {
+    const s = (art?.approval_status || 'pending').toLowerCase();
+    if (s === 'approved') {
+        return { label: 'Aprovada', badgeClass: 'bg-success' };
+    }
+    if (s === 'rejected') {
+        return { label: 'Rejeitado', badgeClass: 'bg-danger' };
+    }
+    return null;
 }
 
 function hasAnotherApprovedArt(interaction, currentArtId) {
