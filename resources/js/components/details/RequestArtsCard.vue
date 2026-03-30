@@ -121,6 +121,47 @@
                                                         Enviado em: {{ formatDate(art.created_at) }}
                                                     </div>
                                                 </div>
+                                                <div class="col-12">
+                                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                        <div>
+                                                            <span class="text-muted small me-2">Status da revisão:</span>
+                                                            <span class="badge" :class="getApprovalStatusBadgeClass(art.approval_status)">
+                                                                {{ getApprovalStatusLabel(art.approval_status) }}
+                                                            </span>
+                                                        </div>
+                                                        <div v-if="auth.user && isReseller" class="d-flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-success"
+                                                                :disabled="updatingApprovalStatus[art.id] || art.approval_status === 'approved' || hasAnotherApprovedArt(interaction, art.id)"
+                                                                :title="hasAnotherApprovedArt(interaction, art.id) ? 'Já existe uma arte aprovada para esta parede.' : ''"
+                                                                @click="updateApprovalStatus(art, 'approved')"
+                                                            >
+                                                                <span
+                                                                    v-if="updatingApprovalStatus[art.id] === 'approved'"
+                                                                    class="spinner-border spinner-border-sm me-1"
+                                                                    role="status"
+                                                                    aria-hidden="true"
+                                                                ></span>
+                                                                Aprovar
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-danger"
+                                                                :disabled="updatingApprovalStatus[art.id] || art.approval_status === 'rejected'"
+                                                                @click="updateApprovalStatus(art, 'rejected')"
+                                                            >
+                                                                <span
+                                                                    v-if="updatingApprovalStatus[art.id] === 'rejected'"
+                                                                    class="spinner-border spinner-border-sm me-1"
+                                                                    role="status"
+                                                                    aria-hidden="true"
+                                                                ></span>
+                                                                Reprovar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div v-if="art.comment" class="mb-3">
@@ -253,6 +294,7 @@ const loadingRequestArts = ref(false);
 const artFiles = ref({});
 const artComments = ref({});
 const uploadingArt = ref({});
+const updatingApprovalStatus = ref({});
 
 const isReseller = computed(() => {
     return auth.hasRole(['reseller'])
@@ -293,6 +335,7 @@ function normalizeToInteractions(dataArray) {
             dealer_id: art.dealer_id ?? art.dealer?.id ?? null,
             designer_id: art.designer_id ?? art.designer?.id ?? null,
             comment: art.comment ?? null,
+            approval_status: art.approval_status ?? 'pending',
             path_file: art.path_file ?? null,
             image_url: imageUrl,
             created_at: art.created_at ?? null,
@@ -305,6 +348,7 @@ function normalizeToInteractions(dataArray) {
         const arts = Array.isArray(art.arts) && art.arts.length > 0
             ? art.arts.map((a) => ({
                 ...a,
+                approval_status: a.approval_status ?? 'pending',
                 designer_name: a.designer?.name ?? a.designer_name ?? designerName,
                 dealer_name: a.dealer?.name ?? a.dealer_name ?? dealerName,
             }))
@@ -312,6 +356,58 @@ function normalizeToInteractions(dataArray) {
         const arts_count = art.arts_count ?? art.arts?.length ?? arts.length;
         return { ...normalized, arts_count, arts };
     });
+}
+
+function getApprovalStatusLabel(status) {
+    const normalizedStatus = (status || 'pending').toLowerCase();
+    if (normalizedStatus === 'approved') return 'Aprovada';
+    if (normalizedStatus === 'rejected') return 'Reprovada';
+    return 'Pendente';
+}
+
+function getApprovalStatusBadgeClass(status) {
+    const normalizedStatus = (status || 'pending').toLowerCase();
+    if (normalizedStatus === 'approved') return 'bg-success';
+    if (normalizedStatus === 'rejected') return 'bg-danger';
+    return 'bg-warning text-dark';
+}
+
+function hasAnotherApprovedArt(interaction, currentArtId) {
+    if (!interaction?.arts || !Array.isArray(interaction.arts)) return false;
+
+    return interaction.arts.some((item) => {
+        if (!item?.id || item.id === currentArtId) return false;
+        return (item.approval_status || '').toLowerCase() === 'approved';
+    });
+}
+
+async function updateApprovalStatus(art, status) {
+    if (!art?.id) return;
+
+    updatingApprovalStatus.value[art.id] = status;
+    try {
+        const response = await requestArtService.updateArtApprovalStatus({
+            request_layout_art_id: art.id,
+            approval_status: status,
+        });
+
+        art.approval_status = response?.approval_status ?? status;
+        window.Toast.fire({
+            icon: 'success',
+            title: response?.message || 'Status atualizado com sucesso.',
+        });
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message ?? 'Não foi possível atualizar o status da iteração.';
+        window.Swal.fire({
+            title: 'Erro',
+            text: errorMessage,
+            icon: 'error',
+            showCloseButton: true,
+            confirmButtonText: 'OK',
+        });
+    } finally {
+        delete updatingApprovalStatus.value[art.id];
+    }
 }
 
 async function fetchRequestLayoutArts() {

@@ -7,6 +7,7 @@ use App\Models\RequestLayoutArt;
 use App\Models\RequestLayoutArtInteraction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RequestLayoutArtRepository
 {
@@ -38,6 +39,7 @@ class RequestLayoutArtRepository
                 'order_budget_id' => $orderBudgetId,
                 'interactions_card_id' => $interaction->id,
                 'comment' => $comment,
+                'approval_status' => 'pending',
             ]);
 
             $orderBudget = OrderBudget::findOrFail($orderBudgetId);
@@ -60,6 +62,30 @@ class RequestLayoutArtRepository
                 'interaction_id' => $interaction->id,
             ];
         });
+    }
+
+    public function updateApprovalStatus(int $requestLayoutArtId, string $approvalStatus): RequestLayoutArt
+    {
+        $requestLayoutArt = RequestLayoutArt::findOrFail($requestLayoutArtId);
+
+        if ($approvalStatus === 'approved') {
+            $approvedArtExistsForWall = RequestLayoutArt::where('order_budget_id', $requestLayoutArt->order_budget_id)
+                ->where('id', '!=', $requestLayoutArt->id)
+                ->where('approval_status', 'approved')
+                ->exists();
+
+            if ($approvedArtExistsForWall) {
+                throw ValidationException::withMessages([
+                    'approval_status' => 'Já existe uma arte aprovada para esta parede.',
+                ]);
+            }
+        }
+
+        $requestLayoutArt->update([
+            'approval_status' => $approvalStatus,
+        ]);
+
+        return $requestLayoutArt->fresh();
     }
 }
 

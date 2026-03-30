@@ -10,6 +10,7 @@ Route::get('budgets', [BudgetController::class, 'index']);
 Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview']);
 Route::get('budgets/orders', [BudgetController::class, 'orders']);
 Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts']);
+Route::patch('budgets/request-layout-arts/status', [BudgetController::class, 'updateRequestLayoutArtStatus']);
 Route::post('budgets/cancel', [BudgetController::class, 'cancel']);
 Route::post('budgets/generate-pdf', [BudgetController::class, 'generatePdf']);
 Route::post('budgets/place-order', [BudgetController::class, 'placeOrder']);

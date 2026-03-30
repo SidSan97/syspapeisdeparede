@@ -9,6 +9,7 @@ use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\StoreBudgetRequest;
 use App\Http\Requests\Budget\UpdateBudgetRequest;
 use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
+use App\Http\Requests\Budget\UpdateRequestLayoutArtStatusRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Budget\UploadReferringFileRequest;
 use App\Http\Requests\Common\ListRequest;
@@ -430,6 +431,7 @@ class BudgetController extends Controller
                 'order_id' => $art->order_id,
                 'order_budget_id' => $art->order_budget_id,
                 'comment' => $art->comment,
+                'approval_status' => $art->approval_status ?? 'pending',
                 'path_file' => $art->path_file,
                 'image_url' => $imageUrl,
                 'created_at' => $art->created_at?->toIso8601String(),
@@ -446,6 +448,22 @@ class BudgetController extends Controller
         });
 
         return response()->json($formattedArts->values());
+    }
+
+    public function updateRequestLayoutArtStatus(UpdateRequestLayoutArtStatusRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $updatedArt = $this->requestLayoutArtRepository->updateApprovalStatus(
+            $validated['request_layout_art_id'],
+            $validated['approval_status']
+        );
+
+        return response()->json([
+            'id' => $updatedArt->id,
+            'approval_status' => $updatedArt->approval_status,
+            'message' => 'Status da iteração atualizado com sucesso.',
+        ]);
     }
 
     public function registerPayment(RegisterPaymentRequest $request): JsonResponse

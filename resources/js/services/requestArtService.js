@@ -18,8 +18,14 @@ export function useRequestArtService() {
     });
   }
 
+  async function updateArtApprovalStatus(payload) {
+    const response = await axios.patch('v1/budgets/request-layout-arts/status', payload);
+    return response.data;
+  }
+
   return {
     getRequestLayoutArts,
     uploadArt,
+    updateArtApprovalStatus,
   };
 }
