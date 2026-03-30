@@ -97,32 +97,33 @@ async function handleUpload() {
 
     const response = await artService.uploadArt(formData);
 
-    if (response?.success) {
-      // Atualizar o card localmente
-      if (props.card) {
-        props.card.status = 'Pendente de Revisão';
-        if (props.card.order) {
-          props.card.order.status = 'Pendente de Revisão';
-        }
-      }
+    const isSuccess = Boolean(response?.success ?? response?.id);
 
-      // Limpar o formulário
-      selectedFile.value = null;
-      showInput.value = false;
-      comment.value = '';
-      if (fileInputRef.value) {
-        fileInputRef.value.value = '';
-      }
-
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: response.message || 'Arte carregada com sucesso',
-        });
-      }
-
-      emit('art-uploaded');
+    if (!isSuccess) {
+      throw new Error(response?.message || 'Resposta inválida ao enviar a arte.');
     }
+
+    if (props.card) {
+      props.card.status = 'Pendente de Revisão';
+      if (props.card.order) {
+        props.card.order.status = 'Pendente de Revisão';
+      }
+    }
+
+    selectedFile.value = null;
+    comment.value = '';
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
+
+    if (window.Toast?.fire) {
+      window.Toast.fire({
+        icon: 'success',
+        title: response.message || 'Arte carregada com sucesso.',
+      });
+    }
+
+    emit('art-uploaded');
   } catch (error) {
     console.error('Erro ao carregar arte:', error);
     const errorMessage = error.response?.data?.message || 'Erro ao carregar arte. Tente novamente.';
