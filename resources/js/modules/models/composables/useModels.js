@@ -32,6 +32,7 @@ export function useModels() {
             comment: false,
             file: false,
             collection: false,
+            layout: false,
         },
     });
 
@@ -115,6 +116,12 @@ export function useModels() {
             model.requests.collection ??
             model.requestCollection ??
             model.request_collection ??
+            false;
+        form.requests.layout =
+            model.requests.layout ??
+            model.requestLayout ??
+            model.request_layout ??
+            model.request_layout_referring_model ??
             false;
     }
 

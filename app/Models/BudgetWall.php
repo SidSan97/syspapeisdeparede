@@ -26,6 +26,7 @@ class BudgetWall extends Model
         'link_referring_model',
         'files_referring_model',
         'collection_referring_model',
+        'request_layout_referring_model',
         'strip_height',
         'strip_count',
     ];
@@ -42,6 +43,7 @@ class BudgetWall extends Model
         'link_referring_model' => 'string',
         'files_referring_model' => 'array',
         'collection_referring_model' => 'string',
+        'request_layout_referring_model' => 'array',
         'strip_height' => 'decimal:2',
         'strip_count' => 'integer',
     ];

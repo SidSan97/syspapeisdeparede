@@ -42,6 +42,7 @@ class BudgetWallFactory extends Factory
             'link_referring_model' => fake()->boolean(30) ? fake()->url() : null,
             'files_referring_model' => fake()->boolean(20) ? [fake()->url()] : null,
             'collection_referring_model' => fake()->boolean(30) ? fake()->word() : null,
+            'request_layout_referring_model' => fake()->boolean(30),
         ];
     }
 }

@@ -18,6 +18,7 @@ class CollectionModel extends Model
         'request_comment',
         'request_file',
         'request_collection',
+        'request_layout',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class CollectionModel extends Model
         'request_comment' => 'boolean',
         'request_file' => 'boolean',
         'request_collection' => 'boolean',
+        'request_layout' => 'boolean',
     ];
 
     public function files(): HasMany

@@ -106,6 +106,19 @@
               </label>
             </div>
           </div>
+          <div class="col-md-3">
+            <div class="form-check form-switch">
+              <input
+                id="requiresLayout"
+                v-model="form.requests.layout"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label class="form-check-label" for="requiresLayout">
+                Solicitar Layout ao Aprovar Pedido?
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
