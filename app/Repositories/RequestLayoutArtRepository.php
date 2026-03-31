@@ -11,6 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class RequestLayoutArtRepository
 {
+    public function show(int $id)
+    {
+        return RequestLayoutArt::findOrFail($id);
+    }
+
     public function uploadArt(
         ?UploadedFile $file,
         int $orderBudgetId,
@@ -79,11 +84,34 @@ class RequestLayoutArtRepository
                     'approval_status' => 'Já existe uma arte aprovada para esta parede.',
                 ]);
             }
+
+            $path = trim((string) ($requestLayoutArt->path_file ?? ''));
+            if ($path === '') {
+                throw ValidationException::withMessages([
+                    'approval_status' => 'A arte aprovada precisa possuir arquivo válido.',
+                ]);
+            }
         }
 
-        $requestLayoutArt->update([
-            'approval_status' => $approvalStatus,
-        ]);
+        DB::transaction(function () use ($requestLayoutArt, $approvalStatus) {
+            $requestLayoutArt->update([
+                'approval_status' => $approvalStatus,
+            ]);
+
+            if ($approvalStatus !== 'approved') {
+                return;
+            }
+
+            $orderBudget = OrderBudget::with('wall')->find($requestLayoutArt->order_budget_id);
+            if (!$orderBudget || !$orderBudget->wall) {
+                return;
+            }
+
+            // A parede passa a usar a arte aprovada no request_layouts_art
+            $orderBudget->wall->update([
+                'files_referring_model' => [$requestLayoutArt->path_file],
+            ]);
+        });
 
         return $requestLayoutArt->fresh();
     }
