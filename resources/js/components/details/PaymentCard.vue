@@ -16,13 +16,13 @@
                 <div class="text-muted small">Parcelas</div>
                 <div class="fw-semibold">{{ data.installments }}x</div>
             </div>
-            <div v-if="data.paid" class="mb-3">
+            <div v-if="!hasPendingAmounts && data.paid" class="mb-3">
                 <div class="alert alert-success mb-0">
                     <i class="fa fa-check-circle me-2"></i>
                     Pedido já está pago
                 </div>
             </div>
-            <div v-if="activePaymentLinkUrl && data.paid == 0" class="mb-3">
+            <div v-if="activePaymentLinkUrl && hasPendingAmounts" class="mb-3">
                 <div v-if="isPaymentLinkExpired(activePaymentLinkExpirationDate)" class="alert alert-warning mb-2">
                     <i class="fa fa-exclamation-triangle me-2"></i>
                     Link de pagamento expirado. Gerando novo link...
@@ -71,7 +71,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in paymentLinksRows" :key="row.item">
+                            <tr v-for="row in paymentLinksRows" :key="row.key">
                                 <td>{{ row.item }}</td>
                                 <td>{{ formatMoney(row.amount_total) }}</td>
                                 <td>{{ row.payment_method ? formatPaymentMethod(row.payment_method) : '-' }}</td>
@@ -92,7 +92,7 @@
                     {{ paidStatusText }}
                 </div>
             </div>
-            <div v-if="isOrder && !data.paid" class="mb-0">
+            <div v-if="isOrder && hasPendingAmounts" class="mb-0">
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -164,10 +164,19 @@ const activePaymentLinkExpirationDate = computed(() => {
     return null;
 });
 const hasPaymentTableData = computed(() => Boolean(props.data?.payment_breakdown?.base));
+const hasPendingAmounts = computed(() => {
+    const remaining = props.data?.payment_breakdown?.remaining || {};
+    const method = props.data?.payment_method === 'pix' ? 'PRODUTOS_PIX' : 'PRODUTOS_CREDIT_CARD';
+
+    return Number(remaining.ARTES || 0) > 0
+        || Number(remaining[method] || 0) > 0
+        || Number(remaining.FRETE || 0) > 0;
+});
 const paymentLinksRows = computed(() => {
     const links = props.data?.payment_links || [];
     const breakdown = props.data?.payment_breakdown || {};
     const base = breakdown.base || {};
+    const paid = breakdown.paid || {};
     const remaining = breakdown.remaining || {};
 
     const productsAmount = props.data?.payment_method === 'pix'
@@ -181,33 +190,99 @@ const paymentLinksRows = computed(() => {
         const match = [...links].reverse().find((link) => Array.isArray(link.components) && link.components.includes(componentName));
         return match?.payment_method || null;
     };
+    const getAdjustmentTotals = (componentName) => {
+        const totals = {
+            paid: 0,
+            pending: 0,
+            method: null,
+        };
 
-    return [
-        {
-            item: 'Artes',
-            amount_total: Number(base.ARTES || 0),
-            payment_method: resolveMethod('ARTES'),
-            status: Number(remaining.ARTES || 0) <= 0 ? 'paid' : 'pending',
-            statusLabel: Number(remaining.ARTES || 0) <= 0 ? 'Pago' : 'Pendente',
-        },
-        {
-            item: 'Produtos',
-            amount_total: productsAmount,
-            payment_method: resolveMethod('PRODUTOS'),
-            status: productsRemaining <= 0 ? 'paid' : 'pending',
-            statusLabel: productsRemaining <= 0 ? 'Pago' : 'Pendente',
-        },
-        {
-            item: 'Frete',
-            amount_total: Number(base.FRETE || 0),
-            payment_method: resolveMethod('FRETE'),
-            status: Number(remaining.FRETE || 0) <= 0 ? 'paid' : 'pending',
-            statusLabel: Number(remaining.FRETE || 0) <= 0 ? 'Pago' : 'Pendente',
-        },
-    ];
+        links.forEach((link) => {
+            const adjustmentComponents = Array.isArray(link.adjustment_components) ? link.adjustment_components : [];
+            if (!adjustmentComponents.includes(componentName)) {
+                return;
+            }
+
+            const value = componentName === 'ARTES'
+                ? Number(link.amount_artes || 0)
+                : componentName === 'PRODUTOS'
+                    ? Number(link.amount_produtos || 0)
+                    : Number(link.amount_frete || 0);
+
+            if (value <= 0) {
+                return;
+            }
+
+            totals.method = totals.method || link.payment_method || null;
+            if (link.status === 'paid') {
+                totals.paid += value;
+            } else {
+                totals.pending += value;
+            }
+        });
+
+        return totals;
+    };
+
+    const rows = [];
+    const pushComponentRows = (label, componentKey, baseAmount, paidAmount, remainingAmount) => {
+        const amountBase = Number(baseAmount || 0);
+        const amountPaid = Number(paidAmount || 0);
+        const amountRemaining = Number(remainingAmount || 0);
+        const method = resolveMethod(componentKey);
+        const lower = label.toLowerCase();
+        const adjustmentTotals = getAdjustmentTotals(componentKey);
+        const paidWithoutAdjustments = Math.max(0, amountPaid - adjustmentTotals.paid);
+        const adjustmentOpen = Math.max(0, amountRemaining - adjustmentTotals.pending);
+
+        if (paidWithoutAdjustments > 0) {
+            rows.push({
+                key: `${componentKey}-paid`,
+                item: label,
+                amount_total: paidWithoutAdjustments,
+                payment_method: method,
+                status: 'paid',
+                statusLabel: 'Pago',
+            });
+        } else {
+            rows.push({
+                key: `${componentKey}-base`,
+                item: label,
+                amount_total: amountBase,
+                payment_method: method,
+                status: amountRemaining <= 0 ? 'paid' : 'pending',
+                statusLabel: amountRemaining <= 0 ? 'Pago' : 'Pendente',
+            });
+        }
+
+        const hasAdjustmentHistory = amountPaid > 0 || adjustmentTotals.paid > 0 || adjustmentTotals.pending > 0;
+        const adjustmentValue = adjustmentTotals.paid + adjustmentOpen + adjustmentTotals.pending;
+        if (hasAdjustmentHistory && adjustmentValue > 0) {
+            const adjustmentStatus = adjustmentOpen <= 0 && adjustmentTotals.pending <= 0 ? 'paid' : 'pending';
+            rows.push({
+                key: `${componentKey}-adjustment`,
+                item: `Ajustes ${lower}`,
+                amount_total: adjustmentValue,
+                payment_method: adjustmentTotals.method,
+                status: adjustmentStatus,
+                statusLabel: adjustmentStatus === 'paid' ? 'Pago' : 'Pendente',
+            });
+        }
+    };
+
+    pushComponentRows('Artes', 'ARTES', Number(base.ARTES || 0), Number(paid.ARTES || 0), Number(remaining.ARTES || 0));
+    pushComponentRows('Produtos', 'PRODUTOS', productsAmount, Number(paid.PRODUTOS || 0), productsRemaining);
+    pushComponentRows('Frete', 'FRETE', Number(base.FRETE || 0), Number(paid.FRETE || 0), Number(remaining.FRETE || 0));
+
+    return rows;
 });
 
 const tableHasRowsWithMethod = computed(() => paymentLinksRows.value.some((row) => row.payment_method));
+const hasPendingAdjustmentRows = computed(() =>
+    paymentLinksRows.value.some(
+        (row) => typeof row.item === 'string' && row.item.toLowerCase().startsWith('ajustes') && row.status === 'pending'
+    )
+);
 const paidStatusText = computed(() => {
     if (!tableHasRowsWithMethod.value) {
         return 'Nenhum link gerado ainda';
@@ -216,6 +291,10 @@ const paidStatusText = computed(() => {
 });
 const dataLinksCount = computed(() => (props.data?.payment_links || []).length);
 const cardBorderClass = computed(() => {
+    if (hasPendingAdjustmentRows.value) {
+        return 'border-warning border-2';
+    }
+
     if (props.data?.payment_status === 'paid') {
         return 'border-success border-2';
     }
@@ -227,6 +306,10 @@ const cardBorderClass = computed(() => {
     return '';
 });
 const cardHeaderClass = computed(() => {
+    if (hasPendingAdjustmentRows.value) {
+        return 'bg-warning-subtle';
+    }
+
     if (props.data?.payment_status === 'paid') {
         return 'bg-success-subtle';
     }

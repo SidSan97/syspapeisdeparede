@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\OrderPaymentLink;
 use App\Models\Setting;
 
 class OrderPaymentCompositionService
@@ -40,14 +41,37 @@ class OrderPaymentCompositionService
         $composition = $this->getOrderComposition($order);
         $selected = array_values(array_unique($components));
 
-        $amountArtes = in_array('ARTES', $selected, true) ? $composition['ARTES'] : 0.0;
-        $amountFrete = in_array('FRETE', $selected, true) ? $composition['FRETE'] : 0.0;
+        $paid = [
+            'ARTES' => (float) OrderPaymentLink::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'paid')
+                ->sum('amount_artes'),
+            'PRODUTOS' => (float) OrderPaymentLink::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'paid')
+                ->sum('amount_produtos'),
+            'FRETE' => (float) OrderPaymentLink::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'paid')
+                ->sum('amount_frete'),
+        ];
+
+        $remaining = [
+            'ARTES' => round(max(0, (float) $composition['ARTES'] - $paid['ARTES']), 2),
+            'PRODUTOS_PIX' => round(max(0, (float) $composition['PRODUTOS_PIX'] - $paid['PRODUTOS']), 2),
+            'PRODUTOS_CREDIT_CARD' => round(max(0, (float) $composition['PRODUTOS_CREDIT_CARD'] - $paid['PRODUTOS']), 2),
+            'FRETE' => round(max(0, (float) $composition['FRETE'] - $paid['FRETE']), 2),
+        ];
+
+        // Geração de link sempre usa somente o saldo pendente (diferença)
+        $amountArtes = in_array('ARTES', $selected, true) ? $remaining['ARTES'] : 0.0;
+        $amountFrete = in_array('FRETE', $selected, true) ? $remaining['FRETE'] : 0.0;
         $amountProdutos = 0.0;
 
         if (in_array('PRODUTOS', $selected, true)) {
             $amountProdutos = $paymentMethod === 'pix'
-                ? $composition['PRODUTOS_PIX']
-                : $composition['PRODUTOS_CREDIT_CARD'];
+                ? $remaining['PRODUTOS_PIX']
+                : $remaining['PRODUTOS_CREDIT_CARD'];
         }
 
         return [
@@ -57,6 +81,8 @@ class OrderPaymentCompositionService
             'amount_frete' => round($amountFrete, 2),
             'amount_total' => round($amountArtes + $amountProdutos + $amountFrete, 2),
             'composition' => $composition,
+            'paid' => $paid,
+            'remaining' => $remaining,
         ];
     }
 }

@@ -127,11 +127,70 @@ class WebhookController extends Controller
                 ->find((int) $metadata['internal_payment_link_id']);
         }
 
+        // conciliar por componentes e valor do payload para evitar baixa no link errado.
+        $metadataComponents = $this->extractComponentsFromMetadata($metadata);
+        $payloadAmount = isset($data['amount']) ? round(((float) $data['amount']) / 100, 2) : null;
+
+        if (!empty($metadataComponents) || $payloadAmount !== null) {
+            $pendingLinks = OrderPaymentLink::query()
+                ->where('order_id', $orderId)
+                ->where('status', 'pending')
+                ->get();
+
+            $matches = $pendingLinks->filter(function (OrderPaymentLink $link) use ($metadataComponents, $payloadAmount) {
+                $componentsMatch = true;
+                if (!empty($metadataComponents)) {
+                    $linkComponents = $this->normalizeComponentsArray($link->components ?? []);
+                    $componentsMatch = $linkComponents === $metadataComponents;
+                }
+
+                $amountMatch = true;
+                if ($payloadAmount !== null) {
+                    $linkAmount = round((float) ($link->amount_total ?? 0), 2);
+                    $amountMatch = abs($linkAmount - $payloadAmount) < 0.01;
+                }
+
+                return $componentsMatch && $amountMatch;
+            });
+
+            if ($matches->isNotEmpty()) {
+                return $matches->sortByDesc('id')->first();
+            }
+        }
+
         return OrderPaymentLink::query()
             ->where('order_id', $orderId)
             ->where('status', 'pending')
             ->latest('id')
             ->first();
+    }
+
+    protected function extractComponentsFromMetadata($metadata): array
+    {
+        if (!is_array($metadata) || empty($metadata['components'])) {
+            return [];
+        }
+
+        $raw = $metadata['components'];
+        if (is_array($raw)) {
+            return $this->normalizeComponentsArray($raw);
+        }
+
+        if (is_string($raw)) {
+            $items = array_map('trim', explode(',', $raw));
+            return $this->normalizeComponentsArray($items);
+        }
+
+        return [];
+    }
+
+    protected function normalizeComponentsArray(array $components): array
+    {
+        $normalized = array_map(static fn ($item) => strtoupper(trim((string) $item)), $components);
+        $normalized = array_values(array_filter($normalized, static fn ($item) => $item !== ''));
+        sort($normalized);
+
+        return $normalized;
     }
 
     protected function refreshOrderPaymentStatus(Order $order): void

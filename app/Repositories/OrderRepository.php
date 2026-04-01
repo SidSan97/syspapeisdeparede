@@ -5,9 +5,11 @@ namespace App\Repositories;
 use App\Models\Budget;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use App\Support\Budget\BudgetCalculator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderRepository
 {
@@ -140,40 +142,87 @@ class OrderRepository
     public function update(Order $order, array $data): Order
     {
         if (!empty($data['rooms']) && is_array($data['rooms'])) {
-            $order->loadMissing(['rooms.walls']);
-            $existingRooms = $order->rooms()->orderBy('position')->with('walls')->get();
+            $rooms = $data['rooms'];
 
-            foreach ($data['rooms'] as $roomIndex => $roomData) {
-                $room = $existingRooms->get($roomIndex);
-                if (!$room) {
-                    continue;
-                }
-
-                $room->update([
-                    'name' => $roomData['name'] ?? $room->name,
-                ]);
-
-                $existingWalls = $room->walls()->orderBy('position')->get();
-                foreach (($roomData['walls'] ?? []) as $wallIndex => $wallData) {
-                    $wall = $existingWalls->get($wallIndex);
-                    if (!$wall) {
-                        continue;
-                    }
-
-                    $wall->update([
-                        'name' => $wallData['name'] ?? $wall->name,
-                        'width' => $wallData['width'] ?? $wall->width,
-                        'height' => $wallData['height'] ?? $wall->height,
-                        'collection_model_id' => $wallData['model'] ?? $wall->collection_model_id,
-                        'continue_same_art' => (bool) ($wallData['continueSameArt'] ?? $wall->continue_same_art),
-                        'continuations' => $wallData['continuations'] ?? $wall->continuations,
-                        'comment_referring_model' => $wallData['comment_referring_model'] ?? $wall->comment_referring_model,
-                        'link_referring_model' => $wallData['link_referring_model'] ?? $wall->link_referring_model,
-                        'files_referring_model' => $wallData['files_referring_model'] ?? $wall->files_referring_model,
-                        'collection_referring_model' => $wallData['collection_referring_model'] ?? $wall->collection_referring_model,
-                    ]);
-                }
+            // Recalcular totais quando a estrutura de ambientes/paredes muda
+            $selectedCarrier = null;
+            if (
+                array_key_exists('selected_carrier_price', $data) &&
+                $data['selected_carrier_price'] !== null
+            ) {
+                $selectedCarrier = [
+                    'price' => (float) $data['selected_carrier_price'],
+                    'deliveryTime' => (int) ($data['selected_carrier_delivery_time'] ?? 0),
+                ];
             }
+
+            $data['total_area'] = BudgetCalculator::calculateTotalArea($rooms);
+            $data['total_amount'] = BudgetCalculator::calculateTotalAmountVista(
+                (float) $data['total_area'],
+                $rooms,
+                $selectedCarrier
+            );
+            $data['total_amount_installments'] = BudgetCalculator::calculateTotalAmountPrazo(
+                (float) $data['total_area'],
+                $rooms,
+                $selectedCarrier
+            );
+            $data['delivery_time'] = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
+
+            DB::transaction(function () use ($order, &$data, $rooms) {
+                unset($data['rooms']);
+                $order->update($data);
+
+                $tenantId = $order->tenant_id;
+
+                // Sincronização total: remove estrutura antiga e recria conforme payload
+                $order->rooms()->delete();
+
+                foreach ($rooms as $roomIndex => $roomData) {
+                    $room = $order->rooms()->create([
+                        'tenant_id' => $tenantId,
+                        'name' => $roomData['name'] ?? null,
+                        'position' => $roomIndex,
+                        'raw_payload' => $roomData,
+                    ]);
+
+                    $wallsSequence = BudgetCalculator::calculateWallsSequence($roomData['walls'] ?? []);
+
+                    foreach (($roomData['walls'] ?? []) as $wallIndex => $wallData) {
+                        $wallMetrics = $wallsSequence['perWall'][$wallIndex] ?? null;
+                        $totalAreaWall = (float) ($wallMetrics['total_area'] ?? 0);
+                        $stripCount = (int) ($wallMetrics['strip_count'] ?? 0);
+                        $stripHeight = $wallMetrics['strip_height'] ?? null;
+
+                        $room->walls()->create([
+                            'tenant_id' => $tenantId,
+                            'name' => $wallData['name'] ?? null,
+                            'position' => $wallIndex,
+                            'width' => $wallData['width'] ?? null,
+                            'height' => $wallData['height'] ?? null,
+                            'continue_same_art' => (bool) ($wallData['continueSameArt'] ?? false),
+                            'continuations' => $wallData['continuations'] ?? [],
+                            'collection_model_id' => $wallData['model'] ?? null,
+                            'total_area' => $totalAreaWall,
+                            'strip_height' => $stripHeight,
+                            'strip_count' => $stripCount,
+                            'comment_referring_model' => $wallData['comment_referring_model'] ?? null,
+                            'link_referring_model' => $wallData['link_referring_model'] ?? null,
+                            'files_referring_model' => isset($wallData['files_referring_model'])
+                                ? (array) $wallData['files_referring_model']
+                                : null,
+                            'collection_referring_model' => $wallData['collection_referring_model'] ?? null,
+                        ]);
+                    }
+                }
+
+                $primaryRoomId = $order->rooms()->orderBy('position')->value('id');
+                if ($primaryRoomId) {
+                    $order->update(['primary_budget_room_id' => $primaryRoomId]);
+                }
+            });
+
+            return $order->fresh(['user', 'tenant', 'primaryRoom', 'rooms.walls.collectionModel']);
         }
 
         $order->update($data);

@@ -225,6 +225,7 @@ class OrderResource extends JsonResource
                     'amount_total' => (float) $link->amount_total,
                     'status' => $link->status,
                     'payment_url' => $link->payment_url,
+                    'adjustment_components' => $this->extractAdjustmentComponents($link->provider_payload ?? []),
                     'expires_at' => $link->expires_at,
                     'paid_at' => $link->paid_at,
                     'created_at' => $link->created_at,
@@ -267,6 +268,25 @@ class OrderResource extends JsonResource
         ];
 
         return $data;
+    }
+
+    protected function extractAdjustmentComponents($providerPayload): array
+    {
+        if (!is_array($providerPayload)) {
+            return [];
+        }
+
+        $local = $providerPayload['local'] ?? [];
+        $fromLocal = $local['adjustment_components'] ?? null;
+        if (is_array($fromLocal)) {
+            return array_values(array_filter(array_map('strval', $fromLocal)));
+        }
+
+        if (is_string($fromLocal) && trim($fromLocal) !== '') {
+            return array_values(array_filter(array_map('trim', explode(',', $fromLocal))));
+        }
+
+        return [];
     }
 
     protected function makePublicUrl(?string $path): ?string

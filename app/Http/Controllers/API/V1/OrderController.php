@@ -193,6 +193,7 @@ class OrderController extends Controller
             'metadata' => [
                 'order_id' => (string) $order->id,
                 'components' => implode(',', $calculation['components']),
+                'adjustment_components' => implode(',', $this->resolveAdjustmentComponents($calculation, $paymentMethod)),
             ],
         ];
 
@@ -233,8 +234,48 @@ class OrderController extends Controller
             'payment_url' => $paymentUrl,
             'status' => 'pending',
             'expires_at' => $expirationDate,
-            'provider_payload' => $apiResponse,
+            'provider_payload' => [
+                'api' => $apiResponse,
+                'local' => [
+                    'adjustment_components' => $this->resolveAdjustmentComponents($calculation, $paymentMethod),
+                ],
+            ],
         ]);
+    }
+
+    protected function resolveAdjustmentComponents(array $calculation, string $paymentMethod): array
+    {
+        $components = $calculation['components'] ?? [];
+        $paid = $calculation['paid'] ?? [];
+        $remaining = $calculation['remaining'] ?? [];
+
+        $adjustments = [];
+        foreach ($components as $component) {
+            if ($component === 'ARTES') {
+                if ((float) ($paid['ARTES'] ?? 0) > 0 && (float) ($remaining['ARTES'] ?? 0) > 0) {
+                    $adjustments[] = 'ARTES';
+                }
+                continue;
+            }
+
+            if ($component === 'FRETE') {
+                if ((float) ($paid['FRETE'] ?? 0) > 0 && (float) ($remaining['FRETE'] ?? 0) > 0) {
+                    $adjustments[] = 'FRETE';
+                }
+                continue;
+            }
+
+            if ($component === 'PRODUTOS') {
+                $remainingProdutos = $paymentMethod === 'pix'
+                    ? (float) ($remaining['PRODUTOS_PIX'] ?? 0)
+                    : (float) ($remaining['PRODUTOS_CREDIT_CARD'] ?? 0);
+                if ((float) ($paid['PRODUTOS'] ?? 0) > 0 && $remainingProdutos > 0) {
+                    $adjustments[] = 'PRODUTOS';
+                }
+            }
+        }
+
+        return array_values(array_unique($adjustments));
     }
 
     public function productionLayouts(): JsonResponse
