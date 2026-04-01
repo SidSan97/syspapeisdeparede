@@ -76,7 +76,14 @@
               <select id="payment-method" v-model="form.payment_method" class="form-select">
                 <option value="pix">Pix</option>
                 <option value="credit_card">Cartao</option>
+                <option v-if="boletoOptionVisible" value="boleto">Boleto (saldo, a prazo, integral)</option>
               </select>
+              <p class="small text-muted mt-1 mb-0">
+                Saldo na carteira: {{ formatMoney(walletBalanceNumber) }}
+              </p>
+              <p v-if="form.payment_method === 'boleto'" class="small text-info mt-2 mb-0">
+                Usa valores a prazo (como cartao), debito integral do saldo, sem parcelas e sem link externo.
+              </p>
             </div>
 
             <div class="mb-0" v-if="form.payment_method === 'credit_card'">
@@ -139,7 +146,7 @@
                 role="status"
                 aria-hidden="true"
               ></span>
-              {{ submitting ? 'Gerando...' : 'Gerar link' }}
+              {{ submitButtonLabel }}
             </button>
           </div>
         </div>
@@ -168,6 +175,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  walletBalance: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits(['close', 'submit']);
@@ -181,6 +192,24 @@ const form = reactive({
 });
 const installmentsOptions = Array.from({ length: 12 }, (_, index) => index + 1);
 const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const walletBalanceNumber = computed(() => Number(props.walletBalance ?? 0));
+
+/** Total a prazo (ARTES + produtos credit card), sem frete — usado para elegibilidade ao boleto. */
+const boletoPayableTotal = computed(() => {
+  const remaining = props.paymentBreakdown?.remaining || {};
+  const base = props.paymentBreakdown?.base || {};
+  let total = 0;
+  if (form.artes) total += Number(remaining.ARTES ?? base.ARTES ?? 0);
+  if (form.produtos) total += Number(remaining.PRODUTOS_CREDIT_CARD ?? base.PRODUTOS_CREDIT_CARD ?? 0);
+  return Number(total.toFixed(2));
+});
+
+const boletoOptionVisible = computed(() => {
+  const t = boletoPayableTotal.value;
+  const w = walletBalanceNumber.value;
+  return t > 0 && t <= w + 1e-9;
+});
 
 const componentValues = computed(() => {
   const remaining = props.paymentBreakdown?.remaining || {};
@@ -202,6 +231,13 @@ const selectedTotal = computed(() => {
   if (form.produtos) total += componentValues.value.produtos;
   if (form.frete) total += componentValues.value.frete;
   return Number(total.toFixed(2));
+});
+
+const submitButtonLabel = computed(() => {
+  if (props.submitting) {
+    return form.payment_method === 'boleto' ? 'Pagando...' : 'Gerando...';
+  }
+  return form.payment_method === 'boleto' ? 'Pagar com saldo' : 'Gerar link';
 });
 const componentState = computed(() => ({
   artes: {
@@ -328,6 +364,19 @@ function handleSubmit() {
     return;
   }
 
+  if (form.payment_method === 'boleto') {
+    const t = boletoPayableTotal.value;
+    const w = walletBalanceNumber.value;
+    if (t <= 0) {
+      error.value = 'Selecione componentes com valor pendente (a prazo) para boleto.';
+      return;
+    }
+    if (t - w > 0.005) {
+      error.value = 'Saldo insuficiente na carteira para este pagamento.';
+      return;
+    }
+  }
+
   emit('submit', {
     components,
     payment_method: form.payment_method,
@@ -365,6 +414,17 @@ watch(() => form.payment_method, (method) => {
   }
   if (componentState.value.frete.paid) {
     form.frete = false;
+  }
+});
+
+watch([boletoPayableTotal, walletBalanceNumber, () => form.payment_method], () => {
+  if (form.payment_method !== 'boleto') {
+    return;
+  }
+  const t = boletoPayableTotal.value;
+  const w = walletBalanceNumber.value;
+  if (t <= 0 || t - w > 0.005) {
+    form.payment_method = 'pix';
   }
 });
 

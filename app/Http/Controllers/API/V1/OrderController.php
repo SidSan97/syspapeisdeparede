@@ -19,6 +19,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
+use App\Services\OrderBoletoWalletPaymentService;
+use App\Services\OrderEditWalletCreditService;
 use App\Services\OrderPaymentCompositionService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
@@ -99,7 +101,7 @@ class OrderController extends Controller
         return (new OrderResource($order))->response();
     }
 
-    public function update(UpdateOrderRequest $request, int $id): JsonResponse
+    public function update(UpdateOrderRequest $request, int $id, OrderEditWalletCreditService $orderEditWalletCredit): JsonResponse
     {
         $order = $this->repository->find($id);
 
@@ -108,6 +110,12 @@ class OrderController extends Controller
         }
 
         $validated = $request->validated();
+
+        $compositionBefore = null;
+        if (! empty($validated['rooms']) && is_array($validated['rooms']) && (int) $order->paid === 1) {
+            $compositionBefore = $this->paymentCompositionService->getOrderComposition($order);
+        }
+
         $order = $this->repository->update($order, $validated);
 
         if (!empty($validated['dropshipping_data']) && $validated['dropshipping_budget'] === 1) {
@@ -130,7 +138,11 @@ class OrderController extends Controller
             $order->dropshippingData()->delete();
         }
 
-        return (new OrderResource($order))->response();
+        if ($compositionBefore !== null) {
+            $orderEditWalletCredit->creditIfCompositionDecreased($order->fresh(), $compositionBefore);
+        }
+
+        return (new OrderResource($order->fresh()))->response();
     }
 
     public function getByStatus(Request $request, string $status): JsonResponse
@@ -139,17 +151,29 @@ class OrderController extends Controller
         return OrderResource::collection($orders)->response();
     }
 
-    public function generatePaymentLink(GenerateOrderPaymentLinkRequest $request, int $id): JsonResponse
-    {
+    public function generatePaymentLink(
+        GenerateOrderPaymentLinkRequest $request,
+        int $id,
+        OrderBoletoWalletPaymentService $boletoWalletPayment
+    ): JsonResponse {
         $order = Order::findOrFail($id);
         $validated = $request->validated();
 
         $paymentMethod = $validated['payment_method'];
-        $installments = $paymentMethod === 'credit_card'
-            ? (int) ($validated['installments'] ?? ($order->installments ?? 1))
-            : null;
 
-        $this->createPaymentLinkForOrder($order, $validated['components'], $paymentMethod, $installments);
+        if ($paymentMethod === 'boleto') {
+            $boletoWalletPayment->payFromWallet(
+                $order,
+                $validated['components'],
+                auth('api')->user()
+            );
+        } else {
+            $installments = $paymentMethod === 'credit_card'
+                ? (int) ($validated['installments'] ?? ($order->installments ?? 1))
+                : null;
+
+            $this->createPaymentLinkForOrder($order, $validated['components'], $paymentMethod, $installments);
+        }
 
         return (new OrderResource($order->refresh()))->response();
     }

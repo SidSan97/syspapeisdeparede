@@ -32,6 +32,7 @@ export function useFormatting() {
             credit_card: 'Cartão',
             pix: 'PIX',
             installment: 'Parcelado',
+            boleto: 'Boleto (saldo)',
         };
         return methods[method] || method || '-';
     }

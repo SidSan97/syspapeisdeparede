@@ -56,6 +56,10 @@ const handleLogout = () => {
         <i class="fas fa-user me-2"></i> Perfil
       </RouterLink>
 
+      <RouterLink :to="'/carteira'" class="dropdown-item">
+        <i class="fas fa-wallet me-2"></i> Ver saldo
+      </RouterLink>
+
       <a class="dropdown-item" href="#" @click.prevent="handleLogout">
         <i class="fas fa-sign-out-alt me-2"></i> Sair
       </a>

@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +22,16 @@ class User extends Authenticatable implements Commentator //implements MustVerif
     use HasUserScopes;
     use Notifiable;
     use HasRoles;
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            UserWallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['balance' => 0]
+            );
+        });
+    }
 
     /**
      * @see https://spatie.be/docs/laravel-permission/v6/basic-usage/multiple-guards
@@ -104,6 +115,11 @@ class User extends Authenticatable implements Commentator //implements MustVerif
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(UserWallet::class);
     }
 
     /**

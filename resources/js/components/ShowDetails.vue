@@ -72,6 +72,7 @@
             :submitting="generatingPaymentLink"
             :default-installments="Number(data?.installments || 1)"
             :payment-breakdown="data?.payment_breakdown || null"
+            :wallet-balance="walletBalance"
             @close="paymentLinkModalVisible = false"
             @submit="submitGeneratePaymentLink"
         />
@@ -81,6 +82,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
 import { USER_TYPES } from '@/constants/userTypes';
@@ -109,6 +111,7 @@ const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
 const paymentLinkModalVisible = ref(false);
+const walletBalance = ref(0);
 
 const orderService = useOrderService();
 
@@ -145,6 +148,10 @@ async function loadData() {
         }
 
         data.value = responseData;
+
+        if (isOrder.value) {
+            await refreshWalletBalance();
+        }
 
         // Verificar se o link de pagamento está expirado e gerar novo se necessário
         if (isOrder.value && responseData.link_payment && responseData.payment_expiration_date) {
@@ -223,11 +230,21 @@ async function handleApprove() {
     }
 }
 
+async function refreshWalletBalance() {
+    try {
+        const { data } = await axios.get('v1/wallet', { params: { page: 1 } });
+        walletBalance.value = Number(data.balance ?? 0);
+    } catch {
+        walletBalance.value = 0;
+    }
+}
+
 async function generatePaymentLink() {
     if (!data.value?.id || !isOrder.value) {
         return;
     }
 
+    await refreshWalletBalance();
     paymentLinkModalVisible.value = true;
 }
 
@@ -241,13 +258,19 @@ async function submitGeneratePaymentLink(formValues) {
             data.value = responseData;
         }
 
+        const isBoleto = formValues?.payment_method === 'boleto';
         await window.Swal.fire({
-            title: 'Link gerado!',
-            text: 'Link de pagamento gerado com sucesso.',
+            title: isBoleto ? 'Pagamento realizado!' : 'Link gerado!',
+            text: isBoleto
+                ? 'O valor foi debitado do seu saldo.'
+                : 'Link de pagamento gerado com sucesso.',
             icon: 'success',
             confirmButtonText: 'OK',
         });
         paymentLinkModalVisible.value = false;
+        if (isBoleto) {
+            await refreshWalletBalance();
+        }
     } catch (error) {
         const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível gerar o link de pagamento.';
 

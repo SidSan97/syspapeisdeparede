@@ -22,6 +22,11 @@ const routes = [
         component: () => import('../views/profile/ProfileView.vue'),
       },
       {
+        path: '/carteira',
+        name: 'Credits',
+        component: () => import('../views/credits/CreditView.vue'),
+      },
+      {
         path: '/colecao-arts',
         name: 'CollectionModels',
         component: () => import('../views/colecao-arts/CollectionModelsView.vue'),

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
+use App\Services\OrderPaymentStateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -68,12 +68,13 @@ class WebhookController extends Controller
             ]);
         }
 
-        $this->refreshOrderPaymentStatus($order);
+        $paymentState = app(OrderPaymentStateService::class);
+        $paymentState->refreshPaidFlags($order);
 
-        if ($paymentLink && $this->paymentLinkContainsArtes($paymentLink)) {
+        if ($paymentLink) {
             $paymentLink->refresh();
-            if ($paymentLink->status === 'paid') {
-                $this->syncOrderBudgetStatusesAfterArtesPaid($order);
+            if ($paymentLink->status === 'paid' && $paymentState->linkContainsArtes($paymentLink)) {
+                $paymentState->syncBudgetsAfterArtesPaid($order);
             }
         }
 
@@ -193,67 +194,4 @@ class WebhookController extends Controller
         return $normalized;
     }
 
-    protected function refreshOrderPaymentStatus(Order $order): void
-    {
-        $composition = app(\App\Services\OrderPaymentCompositionService::class)
-            ->getOrderComposition($order);
-
-        $orderTotal = (float) ($order->payment_method === 'pix'
-            ? ($composition['TOTAL_PIX'] ?? 0)
-            : ($composition['TOTAL_CREDIT_CARD'] ?? 0));
-
-        $paidAmount = (float) OrderPaymentLink::query()
-            ->where('order_id', $order->id)
-            ->where('status', 'paid')
-            ->sum('amount_total');
-
-        $isPaid = $paidAmount >= $orderTotal && $orderTotal > 0;
-        $paymentStatus = $paidAmount <= 0 ? 'unpaid' : ($isPaid ? 'paid' : 'partial');
-
-        $order->update([
-            'paid' => $isPaid ? 1 : 0,
-            'payment_status' => $paymentStatus,
-        ]);
-    }
-
-    protected function paymentLinkContainsArtes(OrderPaymentLink $link): bool
-    {
-        $components = $link->components ?? [];
-
-        return is_array($components) && in_array('ARTES', $components, true);
-    }
-
-    /**
-     * Quando o pagamento inclui artes, cards (OrderBudget) com modelo que exige link de referência
-     * recebem status conforme a parede já tem ou não link_referring_model preenchido.
-     */
-    protected function syncOrderBudgetStatusesAfterArtesPaid(Order $order): void
-    {
-        $order->loadMissing(['orderBudgets.wall.collectionModel']);
-
-        foreach ($order->orderBudgets as $orderBudget) {
-            $wall = $orderBudget->wall;
-            if (! $wall instanceof BudgetWall) {
-                continue;
-            }
-
-            $model = $wall->collectionModel;
-            if (! $model || ! $model->request_link) {
-                continue;
-            }
-
-            $newStatus = $this->wallHasReferringLink($wall) ? 'Arte Recebida' : 'Aguardando Arte';
-
-            if ($orderBudget->status !== $newStatus) {
-                $orderBudget->update(['status' => $newStatus]);
-            }
-        }
-    }
-
-    protected function wallHasReferringLink(BudgetWall $wall): bool
-    {
-        $link = $wall->link_referring_model;
-
-        return $link !== null && trim((string) $link) !== '';
-    }
 }
