@@ -71,7 +71,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in paymentLinksRows" :key="row.key">
+                            <tr v-for="row in paymentLinksRows" :key="row.item">
                                 <td>{{ row.item }}</td>
                                 <td>{{ formatMoney(row.amount_total) }}</td>
                                 <td>{{ row.payment_method ? formatPaymentMethod(row.payment_method) : '-' }}</td>
@@ -92,7 +92,7 @@
                     {{ paidStatusText }}
                 </div>
             </div>
-            <div v-if="isOrder && (!Number(data.paid) || hasOutstandingPaymentBalance)" class="mb-0">
+            <div v-if="isOrder && !data.paid" class="mb-0">
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -106,7 +106,7 @@
                         aria-hidden="true"
                     ></span>
                     <i v-else class="fa fa-credit-card me-2"></i>
-                    {{ generatingPaymentLink ? 'Gerando...' : (Number(data.paid) && hasOutstandingPaymentBalance ? 'Pagar ajuste' : 'Pagar') }}
+                    {{ generatingPaymentLink ? 'Gerando...' : 'Pagar' }}
                 </button>
             </div>
         </div>
@@ -164,149 +164,47 @@ const activePaymentLinkExpirationDate = computed(() => {
     return null;
 });
 const hasPaymentTableData = computed(() => Boolean(props.data?.payment_breakdown?.base));
-
-/** Saldo ainda não coberto pelos links pagos (ex.: ajuste de frete/metragem após pedido quitado). */
-const hasOutstandingPaymentBalance = computed(() => {
-    const remaining = props.data?.payment_breakdown?.remaining;
-    if (!remaining) {
-        return false;
-    }
-    const isPix = props.data?.payment_method === 'pix';
-    const produtosRemaining = isPix
-        ? Number(remaining.PRODUTOS_PIX || 0)
-        : Number(remaining.PRODUTOS_CREDIT_CARD || 0);
-    return (
-        Number(remaining.ARTES || 0) > 0
-        || produtosRemaining > 0
-        || Number(remaining.FRETE || 0) > 0
-    );
-});
 const paymentLinksRows = computed(() => {
     const links = props.data?.payment_links || [];
     const breakdown = props.data?.payment_breakdown || {};
     const base = breakdown.base || {};
     const remaining = breakdown.remaining || {};
-    const paidByComponent = breakdown.paid || {};
 
-    const isPix = props.data?.payment_method === 'pix';
-    const productsBase = isPix
+    const productsAmount = props.data?.payment_method === 'pix'
         ? Number(base.PRODUTOS_PIX || 0)
         : Number(base.PRODUTOS_CREDIT_CARD || 0);
-    const productsRemaining = isPix
+    const productsRemaining = props.data?.payment_method === 'pix'
         ? Number(remaining.PRODUTOS_PIX || 0)
         : Number(remaining.PRODUTOS_CREDIT_CARD || 0);
-    const productsPaid = Number(paidByComponent.PRODUTOS || 0);
-
-    const artesBase = Number(base.ARTES || 0);
-    const artesRemaining = Number(remaining.ARTES || 0);
-    const artesPaid = Number(paidByComponent.ARTES || 0);
-
-    const freteBase = Number(base.FRETE || 0);
-    const freteRemaining = Number(remaining.FRETE || 0);
-    const fretePaid = Number(paidByComponent.FRETE || 0);
 
     const resolveMethod = (componentName) => {
         const match = [...links].reverse().find((link) => Array.isArray(link.components) && link.components.includes(componentName));
         return match?.payment_method || null;
     };
 
-    const resolveMethodPaid = (componentName) => {
-        let last = null;
-        for (const link of links) {
-            if (link.status === 'paid' && Array.isArray(link.components) && link.components.includes(componentName)) {
-                last = link;
-            }
-        }
-        return last?.payment_method || null;
-    };
-
-    const rows = [];
-
-    if (artesPaid > 0 && artesRemaining > 0) {
-        rows.push({
-            key: 'artes-paid',
+    return [
+        {
             item: 'Artes',
-            amount_total: artesPaid,
-            payment_method: resolveMethodPaid('ARTES'),
-            status: 'paid',
-            statusLabel: 'Pago',
-        });
-        rows.push({
-            key: 'artes-diferenca',
-            item: 'Ajuste de Artes',
-            amount_total: artesRemaining,
+            amount_total: Number(base.ARTES || 0),
             payment_method: resolveMethod('ARTES'),
-            status: 'pending',
-            statusLabel: 'Pendente',
-        });
-    } else {
-        rows.push({
-            key: 'artes',
-            item: 'Artes',
-            amount_total: artesBase,
-            payment_method: resolveMethod('ARTES'),
-            status: artesRemaining <= 0 ? 'paid' : 'pending',
-            statusLabel: artesRemaining <= 0 ? 'Pago' : 'Pendente',
-        });
-    }
-
-    if (productsPaid > 0 && productsRemaining > 0) {
-        rows.push({
-            key: 'produtos-paid',
+            status: Number(remaining.ARTES || 0) <= 0 ? 'paid' : 'pending',
+            statusLabel: Number(remaining.ARTES || 0) <= 0 ? 'Pago' : 'Pendente',
+        },
+        {
             item: 'Produtos',
-            amount_total: productsPaid,
-            payment_method: resolveMethodPaid('PRODUTOS'),
-            status: 'paid',
-            statusLabel: 'Pago',
-        });
-        rows.push({
-            key: 'produtos-diferenca',
-            item: 'Diferença de Produtos',
-            amount_total: productsRemaining,
-            payment_method: resolveMethod('PRODUTOS'),
-            status: 'pending',
-            statusLabel: 'Pendente',
-        });
-    } else {
-        rows.push({
-            key: 'produtos',
-            item: 'Produtos',
-            amount_total: productsBase,
+            amount_total: productsAmount,
             payment_method: resolveMethod('PRODUTOS'),
             status: productsRemaining <= 0 ? 'paid' : 'pending',
             statusLabel: productsRemaining <= 0 ? 'Pago' : 'Pendente',
-        });
-    }
-
-    if (fretePaid > 0 && freteRemaining > 0) {
-        rows.push({
-            key: 'frete-paid',
+        },
+        {
             item: 'Frete',
-            amount_total: fretePaid,
-            payment_method: resolveMethodPaid('FRETE'),
-            status: 'paid',
-            statusLabel: 'Pago',
-        });
-        rows.push({
-            key: 'frete-diferenca',
-            item: 'Ajuste de Frete',
-            amount_total: freteRemaining,
+            amount_total: Number(base.FRETE || 0),
             payment_method: resolveMethod('FRETE'),
-            status: 'pending',
-            statusLabel: 'Pendente',
-        });
-    } else {
-        rows.push({
-            key: 'frete',
-            item: 'Frete',
-            amount_total: freteBase,
-            payment_method: resolveMethod('FRETE'),
-            status: freteRemaining <= 0 ? 'paid' : 'pending',
-            statusLabel: freteRemaining <= 0 ? 'Pago' : 'Pendente',
-        });
-    }
-
-    return rows;
+            status: Number(remaining.FRETE || 0) <= 0 ? 'paid' : 'pending',
+            statusLabel: Number(remaining.FRETE || 0) <= 0 ? 'Pago' : 'Pendente',
+        },
+    ];
 });
 
 const tableHasRowsWithMethod = computed(() => paymentLinksRows.value.some((row) => row.payment_method));

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
 use Illuminate\Http\JsonResponse;
@@ -68,6 +69,13 @@ class WebhookController extends Controller
         }
 
         $this->refreshOrderPaymentStatus($order);
+
+        if ($paymentLink && $this->paymentLinkContainsArtes($paymentLink)) {
+            $paymentLink->refresh();
+            if ($paymentLink->status === 'paid') {
+                $this->syncOrderBudgetStatusesAfterArtesPaid($order);
+            }
+        }
 
         Log::info('Webhook Pagar.me: pedido marcado como pago', [
             'order_id' => $orderId,
@@ -147,5 +155,46 @@ class WebhookController extends Controller
             'paid' => $isPaid ? 1 : 0,
             'payment_status' => $paymentStatus,
         ]);
+    }
+
+    protected function paymentLinkContainsArtes(OrderPaymentLink $link): bool
+    {
+        $components = $link->components ?? [];
+
+        return is_array($components) && in_array('ARTES', $components, true);
+    }
+
+    /**
+     * Quando o pagamento inclui artes, cards (OrderBudget) com modelo que exige link de referência
+     * recebem status conforme a parede já tem ou não link_referring_model preenchido.
+     */
+    protected function syncOrderBudgetStatusesAfterArtesPaid(Order $order): void
+    {
+        $order->loadMissing(['orderBudgets.wall.collectionModel']);
+
+        foreach ($order->orderBudgets as $orderBudget) {
+            $wall = $orderBudget->wall;
+            if (! $wall instanceof BudgetWall) {
+                continue;
+            }
+
+            $model = $wall->collectionModel;
+            if (! $model || ! $model->request_link) {
+                continue;
+            }
+
+            $newStatus = $this->wallHasReferringLink($wall) ? 'Arte Recebida' : 'Aguardando Arte';
+
+            if ($orderBudget->status !== $newStatus) {
+                $orderBudget->update(['status' => $newStatus]);
+            }
+        }
+    }
+
+    protected function wallHasReferringLink(BudgetWall $wall): bool
+    {
+        $link = $wall->link_referring_model;
+
+        return $link !== null && trim((string) $link) !== '';
     }
 }
