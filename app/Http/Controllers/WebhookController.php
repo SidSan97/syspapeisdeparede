@@ -77,7 +77,7 @@ class WebhookController extends Controller
     }
 
     /**
-     * Tenta obter o ID do nosso Order a partir do payload.
+     * Tenta obter o ID do Order a partir do payload.
      */
     protected function resolveOrderId(array $data): ?int
     {
