@@ -58,7 +58,7 @@
                   v-model="form.frete"
                   class="form-check-input"
                   type="checkbox"
-                  :disabled="form.payment_method !== 'pix' || componentState.frete.paid"
+                  :disabled="freteCheckboxDisabled"
                 />
                 <label class="form-check-label" for="component-frete">
                   FRETE
@@ -66,8 +66,8 @@
                   <span v-if="componentState.frete.paid" class="badge text-bg-success ms-1">Pago</span>
                 </label>
               </div>
-              <div v-if="form.payment_method !== 'pix'" class="small text-muted mt-1">
-                O frete so pode ser pago via Pix.
+              <div v-if="form.payment_method !== 'pix' && !freteAccompaniedByOtherComponents" class="small text-muted mt-1">
+                Com cartão ou boleto, marque também artes e/ou produtos para incluir o frete no mesmo pagamento.
               </div>
             </div>
 
@@ -195,13 +195,28 @@ const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', curre
 
 const walletBalanceNumber = computed(() => Number(props.walletBalance ?? 0));
 
-/** Total a prazo (ARTES + produtos credit card), sem frete — usado para elegibilidade ao boleto. */
+/** Total a prazo (ARTES + produtos cartão + frete quando acompanhado), para elegibilidade ao boleto. */
+const freteAccompaniedByOtherComponents = computed(() => Boolean(form.artes || form.produtos));
+
+const freteCheckboxDisabled = computed(() => {
+  if (componentState.value.frete.paid) {
+    return true;
+  }
+  if (form.payment_method === 'pix') {
+    return false;
+  }
+  return !freteAccompaniedByOtherComponents.value;
+});
+
 const boletoPayableTotal = computed(() => {
   const remaining = props.paymentBreakdown?.remaining || {};
   const base = props.paymentBreakdown?.base || {};
   let total = 0;
   if (form.artes) total += Number(remaining.ARTES ?? base.ARTES ?? 0);
   if (form.produtos) total += Number(remaining.PRODUTOS_CREDIT_CARD ?? base.PRODUTOS_CREDIT_CARD ?? 0);
+  if (form.frete && freteAccompaniedByOtherComponents.value) {
+    total += Number(remaining.FRETE ?? base.FRETE ?? 0);
+  }
   return Number(total.toFixed(2));
 });
 
@@ -338,8 +353,8 @@ function disposeModal() {
 function handleSubmit() {
   error.value = '';
 
-  if (form.payment_method !== 'pix' && form.frete) {
-    error.value = 'Frete so pode ser pago via Pix.';
+  if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
+    error.value = 'Com cartao ou boleto, o frete precisa ser acompanhado de artes e/ou produtos.';
     return;
   }
 
@@ -401,8 +416,8 @@ watch(() => props.defaultInstallments, (value) => {
   }
 });
 
-watch(() => form.payment_method, (method) => {
-  if (method !== 'pix') {
+watch(() => form.payment_method, () => {
+  if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
     form.frete = false;
   }
 
@@ -413,6 +428,12 @@ watch(() => form.payment_method, (method) => {
     form.artes = false;
   }
   if (componentState.value.frete.paid) {
+    form.frete = false;
+  }
+});
+
+watch([() => form.artes, () => form.produtos], () => {
+  if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
     form.frete = false;
   }
 });

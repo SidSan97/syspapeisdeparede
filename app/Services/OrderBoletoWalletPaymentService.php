@@ -23,7 +23,10 @@ class OrderBoletoWalletPaymentService
     public function payFromWallet(Order $order, array $components, User $payer): void
     {
         if (in_array('FRETE', $components, true)) {
-            abort(422, 'O frete só pode ser pago via Pix.');
+            $accompanied = in_array('ARTES', $components, true) || in_array('PRODUTOS', $components, true);
+            if (! $accompanied) {
+                abort(422, 'O frete só pode ser pago via Pix, salvo quando acompanhado de artes e/ou produtos.');
+            }
         }
 
         $calculation = $this->compositionService->calculateSelectedAmount(

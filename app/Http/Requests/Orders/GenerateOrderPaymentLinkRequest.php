@@ -38,6 +38,17 @@ class GenerateOrderPaymentLinkRequest extends FormRequest
             if ($method === 'boleto' && $this->filled('installments')) {
                 $validator->errors()->add('installments', 'Boleto é sempre à vista; não utilize parcelas.');
             }
+
+            $components = $this->input('components', []);
+            if (is_array($components) && in_array('FRETE', $components, true) && $method !== 'pix') {
+                $accompanied = in_array('ARTES', $components, true) || in_array('PRODUTOS', $components, true);
+                if (! $accompanied) {
+                    $validator->errors()->add(
+                        'components',
+                        'Com cartão ou boleto, o frete deve ser acompanhado de artes e/ou produtos.'
+                    );
+                }
+            }
         });
     }
 }
