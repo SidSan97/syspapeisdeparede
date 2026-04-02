@@ -47,8 +47,9 @@ class OrderPaymentStateService
     }
 
     /**
-     * Quando o pagamento inclui artes, cards (OrderBudget) com modelo que exige link de referência
-     * recebem status conforme a parede já tem ou não link_referring_model preenchido.
+     * Quando o pagamento inclui artes, atualiza status dos cards (OrderBudget):
+     * - modelo sem exigência de link (ou sem modelo): Arte Recebida;
+     * - modelo com request_link: Arte Recebida se link_referring_model preenchido, senão Aguardando Arte.
      */
     public function syncBudgetsAfterArtesPaid(Order $order): void
     {
@@ -62,6 +63,10 @@ class OrderPaymentStateService
 
             $model = $wall->collectionModel;
             if (! $model || ! $model->request_link) {
+                if ($orderBudget->status !== 'Arte Recebida') {
+                    $orderBudget->update(['status' => 'Arte Recebida']);
+                }
+
                 continue;
             }
 
