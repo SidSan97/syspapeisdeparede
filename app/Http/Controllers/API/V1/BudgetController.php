@@ -95,6 +95,13 @@ class BudgetController extends Controller
         return (new BudgetResource($budget))->response();
     }
 
+    public function duplicate(Budget $budget): JsonResponse
+    {
+        $newBudget = $this->repository->duplicate($budget);
+
+        return (new BudgetResource($newBudget))->response();
+    }
+
     public function pendingReview(): JsonResponse
     {
         $budgets = $this->repository->getPendingReview();

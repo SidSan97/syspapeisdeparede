@@ -74,6 +74,15 @@
                                     <button
                                         class="dropdown-item"
                                         type="button"
+                                        @click="$emit('duplicate', budget)"
+                                    >
+                                        Duplicar
+                                    </button>
+                                </li>
+                                <li>
+                                    <button
+                                        class="dropdown-item"
+                                        type="button"
                                         :class="{ disabled: !canEditBudget(budget) }"
                                         :disabled="!canEditBudget(budget)"
                                         :title="canEditBudget(budget) ? '' : editBlockedTitle"
@@ -150,7 +159,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['view-details', 'generate-pdf', 'create-order', 'edit', 'cancel', 'delete']);
+defineEmits(['view-details', 'duplicate', 'generate-pdf', 'create-order', 'edit', 'cancel', 'delete']);
 
 const editBlockedTitle =
     'Orçamento aprovado com pedido vinculado não pode ser editado.';
