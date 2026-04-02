@@ -63,6 +63,12 @@ const routes = [
         component: () => import('../views/orders/EditOrderView.vue'),
       },
       {
+        path: '/pedidos/:orderId/nota-fiscal',
+        name: 'OrderInvoice',
+        meta: { roles: ['super admin', 'admin', 'production', 'commercial', 'reseller'] },
+        component: () => import('../views/invoice/InvoiceView.vue'),
+      },
+      {
         path: '/pedidos/:id',
         name: 'ShowOrderDetails',
         component: () => import('../components/ShowDetails.vue'),

@@ -48,6 +48,7 @@
                         @edit="editOrder"
                         @cancel="openCancelModal"
                         @delete="openDeleteModal"
+                        @view-invoice="viewInvoiceByOrder"
                     />
 
                     <div
@@ -127,9 +128,10 @@ const deleteError = ref('');
 
 const isAdmin = computed(() => auth.isAdmin());
 const isCommercial = computed(() => auth.hasRole('commercial'));
+const isReseller = computed(() => auth.hasRole('reseller'));
 
-/** Filtros (busca, status, datas, revendedor) apenas para admin. */
-const canShowFilters = computed(() => isAdmin.value);
+/** Busca por nome e filtro de situação: admin e revendedor. Linha com datas, revendedor e limpar: só admin. */
+const canShowFilters = computed(() => isAdmin.value || isReseller.value);
 
 /** Comercial: sem coluna de valores e sem coluna de ações. */
 const showValuesColumn = computed(() => !isCommercial.value);
@@ -180,6 +182,13 @@ function handlePaymentSuccess() {
 
 function editOrder(order) {
   router.push({ name: 'EditOrder', params: { id: order.id } });
+}
+
+function viewInvoiceByOrder(order) {
+  if (!order?.id) {
+    return;
+  }
+  router.push({ name: 'OrderInvoice', params: { orderId: String(order.id) } });
 }
 
 function openCancelModal(pedido) {

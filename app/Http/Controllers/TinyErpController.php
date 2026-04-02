@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TinyErpProductResource;
 use App\Http\Requests\TinyErp\TinyErpSettingsRequest;
 use App\Services\TinyErpService;
-use Illuminate\Support\Facades\Cache;
 use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class TinyErpController extends Controller
 {
@@ -150,5 +151,19 @@ class TinyErpController extends Controller
                 'message' => 'Erro ao carregar tipos de transportadores',
             ], 500);
         }
+    }
+
+    public function getInvoiceByOrderId(int $orderId)
+    {
+        $invoice = $this->tinyErpService->searchInvoices($orderId);
+
+        if ($invoice instanceof JsonResponse) {
+            return $invoice;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $invoice,
+        ], 200);
     }
 }

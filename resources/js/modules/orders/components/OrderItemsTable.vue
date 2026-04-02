@@ -69,6 +69,15 @@
                                         Editar
                                     </button>
                                 </li>
+                                <li v-if="order.nf_sent === 1">
+                                    <button
+                                        class="dropdown-item"
+                                        type="button"
+                                        @click="$emit('view-invoice', order)"
+                                    >
+                                        Ver nota fiscal
+                                    </button>
+                                </li>
                                 <li v-if="!isCancelled(order)">
                                     <button
                                         class="dropdown-item"
@@ -129,7 +138,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['view-details', 'register-payment', 'edit', 'cancel', 'delete']);
+defineEmits(['view-details', 'register-payment', 'edit', 'cancel', 'delete', 'view-invoice']);
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
