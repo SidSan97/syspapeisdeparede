@@ -155,11 +155,22 @@ class TinyErpController extends Controller
 
     public function getInvoiceByOrderId(int $orderId)
     {
+        $cacheKey = 'tiny_erp_invoice_by_order_id_' . $orderId;
+        $cachedData = Cache::get($cacheKey);
+
+        if ($cachedData !== null) {
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData,
+            ], 200);
+        }
         $invoice = $this->tinyErpService->searchInvoices($orderId);
 
         if ($invoice instanceof JsonResponse) {
             return $invoice;
         }
+
+        Cache::put($cacheKey, $invoice, now()->addHours(24));
 
         return response()->json([
             'success' => true,
