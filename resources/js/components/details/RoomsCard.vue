@@ -21,7 +21,11 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <strong>{{ wall.name || `Parede ${wallIndex + 1}` }}</strong>
-                                        <span class="badge" :class="getWallStatusClass(wall, roomIndex, wallIndex)">
+                                        <span
+                                            v-if="showWallStatus"
+                                            class="badge"
+                                            :class="getWallStatusClass(wall, roomIndex, wallIndex)"
+                                        >
                                             {{ getWallStatusLabel(wall, roomIndex, wallIndex) }}
                                         </span>
                                     </div>
@@ -133,6 +137,10 @@ const props = defineProps({
     data: {
         type: Object,
         required: true,
+    },
+    showWallStatus: {
+        type: Boolean,
+        default: true,
     },
 });
 

@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 class OrderRepository
 {
+    public function __construct(
+        protected OrderBudgetRepository $orderBudgetRepository,
+    ) {}
 
     public function all(): Collection
     {
@@ -170,17 +173,24 @@ class OrderRepository
             $data['delivery_time'] = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
 
             DB::transaction(function () use ($order, &$data, $rooms) {
-                unset($data['rooms']);
+                unset($data['rooms'], $data['primary_budget_room_id']);
                 $order->update($data);
 
                 $tenantId = $order->tenant_id;
 
-                // Sincronização total: remove estrutura antiga e recria conforme payload
-                $order->rooms()->delete();
+                $order->loadMissing('rooms');
+                foreach ($order->rooms as $existingRoom) {
+                    if ($existingRoom->budget_id !== null) {
+                        $existingRoom->update(['order_id' => null]);
+                    } else {
+                        $existingRoom->delete();
+                    }
+                }
 
                 foreach ($rooms as $roomIndex => $roomData) {
                     $room = $order->rooms()->create([
                         'tenant_id' => $tenantId,
+                        'budget_id' => null,
                         'name' => $roomData['name'] ?? null,
                         'position' => $roomIndex,
                         'raw_payload' => $roomData,
@@ -220,6 +230,8 @@ class OrderRepository
                 if ($primaryRoomId) {
                     $order->update(['primary_budget_room_id' => $primaryRoomId]);
                 }
+
+                $this->orderBudgetRepository->syncFromOrderRooms($order->fresh(['rooms.walls']));
             });
 
             return $order->fresh(['user', 'tenant', 'primaryRoom', 'rooms.walls.collectionModel']);

@@ -301,4 +301,48 @@ class OrderBudgetRepository {
             })
             ->delete();
     }
+
+    public function syncFromOrderRooms(Order $order): void
+    {
+        $order->loadMissing(['rooms.walls']);
+
+        $layoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $tenantId = $order->tenant_id;
+
+        $wallIds = [];
+        $orderIndex = 1;
+
+        $rooms = $order->rooms->sortBy('position');
+        foreach ($rooms as $room) {
+            $walls = collect($room->walls)->sortBy('position');
+            foreach ($walls as $wall) {
+                $wallIds[] = $wall->id;
+
+                $orderBudget = OrderBudget::query()->firstOrNew([
+                    'order_id' => $order->id,
+                    'budget_wall_id' => $wall->id,
+                ]);
+
+                if (! $orderBudget->exists) {
+                    $orderBudget->status = 'Aprovar Layout';
+                }
+
+                $orderBudget->tenant_id = $tenantId;
+                $orderBudget->layout_column_names_id = $layoutColumnId;
+                $orderBudget->description = $wall->comment_referring_model ?? null;
+                $orderBudget->order_index = $orderIndex++;
+                $orderBudget->save();
+            }
+        }
+
+        OrderBudget::query()
+            ->where('order_id', $order->id)
+            ->whereNotNull('budget_wall_id')
+            ->when(! empty($wallIds), function ($query) use ($wallIds) {
+                $query->whereNotIn('budget_wall_id', $wallIds);
+            }, function ($query) {
+                $query->whereRaw('1 = 1');
+            })
+            ->delete();
+    }
 }
