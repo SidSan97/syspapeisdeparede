@@ -112,7 +112,8 @@ class OrderController extends Controller
         $validated = $request->validated();
 
         $compositionBefore = null;
-        if (! empty($validated['rooms']) && is_array($validated['rooms']) && (int) $order->paid === 1) {
+        if (! empty($validated['rooms']) && is_array($validated['rooms'])
+            && $orderEditWalletCredit->shouldSnapshotCompositionForRoomEdit($order)) {
             $compositionBefore = $this->paymentCompositionService->getOrderComposition($order);
         }
 
