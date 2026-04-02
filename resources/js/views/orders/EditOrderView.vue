@@ -552,28 +552,60 @@
                                     </div>
                                 </div>
 
-                                <div v-if="budget.carriers && budget.carriers.length > 0" class="mt-4">
-                                    <label class="form-label">Transportadora</label>
-                                    <div class="list-group">
-                                        <div
-                                            v-for="(carrier, index) in budget.carriers"
-                                            :key="index"
-                                            :class="{ 'active': budget.selectedCarrier === index }"
-                                            @click="budget.selectedCarrier = index"
-                                            style="cursor: pointer;"
-                                        >
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ carrier.name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">Prazo: {{ carrier.deliveryTime }} dias</small>
-                                                </div>
-                                                <div class="text-end">
-                                                    <strong class="text-primary">R$ {{ carrier.price.toFixed(2) }}</strong>
+                                <div
+                                    v-if="budget.carriers && budget.carriers.length > 0"
+                                    class="mt-4"
+                                >
+                                    <template v-if="selectedFreightCarrier && !freightPickerExpanded">
+                                        <label class="form-label">Transportadora</label>
+                                        <div class="list-group freight-carrier-list">
+                                            <div class="list-group-item freight-option freight-option-summary">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ selectedFreightCarrier.name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">Prazo: {{ selectedFreightCarrier.deliveryTime }} dias</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <strong class="text-primary">R$ {{ selectedFreightCarrier.price.toFixed(2) }}</strong>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </template>
+                                    <template v-else>
+                                        <label class="form-label">Transportadora</label>
+                                        <div class="list-group freight-carrier-list">
+                                            <button
+                                                v-for="(carrier, index) in budget.carriers"
+                                                :key="index"
+                                                type="button"
+                                                class="list-group-item list-group-item-action freight-option text-start"
+                                                :class="{ active: isFreightCarrierSelected(index) }"
+                                                @click="selectFreightCarrier(index)"
+                                            >
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ carrier.name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">Prazo: {{ carrier.deliveryTime }} dias</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <strong class="text-primary freight-option-price">R$ {{ carrier.price.toFixed(2) }}</strong>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button
+                                        v-if="selectedFreightCarrier"
+                                        type="button"
+                                        class="btn btn-link btn-sm px-0 mt-2 text-decoration-none"
+                                        :disabled="!budget.cep || calculatingFreight"
+                                        @click="calculateFreight"
+                                    >
+                                        Alterar transportadora
+                                    </button>
                                 </div>
                         </div>
                     </div>
@@ -707,6 +739,58 @@ const STRIP_HEIGHT_OPTIONS = [
     6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
 ];
 const calculatingFreight = ref(false);
+const freightPickerExpanded = ref(true);
+
+const selectedFreightCarrier = computed(() => {
+    const carriers = budget.carriers;
+    if (!Array.isArray(carriers) || carriers.length === 0) {
+        return null;
+    }
+    const sel = budget.selectedCarrier;
+    if (sel === null || sel === undefined || sel === '') {
+        return null;
+    }
+    const idx = Number(sel);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= carriers.length) {
+        return null;
+    }
+    return carriers[idx];
+});
+
+function normalizedSelectedCarrierIndex() {
+    const sel = budget.selectedCarrier;
+    if (sel === null || sel === undefined || sel === '') {
+        return null;
+    }
+    const idx = Number(sel);
+    if (!Number.isFinite(idx) || idx < 0) {
+        return null;
+    }
+    return idx;
+}
+
+function isFreightCarrierSelected(index) {
+    return normalizedSelectedCarrierIndex() === index;
+}
+
+function syncFreightPickerExpanded() {
+    const carriers = budget.carriers;
+    const idx = normalizedSelectedCarrierIndex();
+    if (!Array.isArray(carriers) || carriers.length === 0) {
+        freightPickerExpanded.value = true;
+        return;
+    }
+    if (carriers.length === 1) {
+        freightPickerExpanded.value = idx === null || idx >= carriers.length;
+        return;
+    }
+    freightPickerExpanded.value = idx === null || idx >= carriers.length;
+}
+
+function selectFreightCarrier(index) {
+    budget.selectedCarrier = index;
+    freightPickerExpanded.value = false;
+}
 
 // Solicitações de arte
 const requestLayoutArts = ref([]);
@@ -1079,7 +1163,12 @@ function normalizeOrderFromAPI(orderData) {
         rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
         cep: orderData.cep || '',
         carriers: carriers,
-        selectedCarrier: selectedCarrierIndex,
+        selectedCarrier:
+            selectedCarrierIndex !== null &&
+            selectedCarrierIndex !== undefined &&
+            Number(selectedCarrierIndex) >= 0
+                ? Number(selectedCarrierIndex)
+                : null,
         paymentMethod: normalizedPaymentMethod,
         installmentLimit: orderData.installment_limit || 12,
         installments: orderData.installments || 1,
@@ -1120,6 +1209,7 @@ async function loadOrder() {
 
         const normalized = normalizeOrderFromAPI(orderData);
         Object.assign(budget, normalized);
+        syncFreightPickerExpanded();
 
         // Carregar dados de dropshipping se existirem
         if (normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
@@ -1622,7 +1712,15 @@ async function calculateFreight() {
     if (!budget.cep) {
         return;
     }
+    freightPickerExpanded.value = true;
     calculatingFreight.value = true;
+
+    const previousSelected =
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+            ? { ...budget.carriers[budget.selectedCarrier] }
+            : null;
 
     try {
         const { data } = await axios.post('v1/frenet/calculate-shipping', {
@@ -1630,28 +1728,43 @@ async function calculateFreight() {
             productData: tinyErpProducts.value
         });
 
-        // Mapear os dados da resposta para o formato esperado
         if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
             budget.carriers = data.data.ShippingSevicesArray
-                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
+                .filter(service => !service.Error)
                 .map(service => ({
                     name: `${service.Carrier} - ${service.ServiceDescription}`,
                     price: parseFloat(service.ShippingPrice) || 0,
                     deliveryTime: parseInt(service.DeliveryTime) || 0
                 }));
 
-            // Resetar a seleção se não houver carriers ou se o índice selecionado não existir mais
             if (budget.carriers.length === 0) {
                 budget.selectedCarrier = null;
-            } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
+            } else if (
+                budget.selectedCarrier !== null &&
+                Number(budget.selectedCarrier) >= budget.carriers.length
+            ) {
                 budget.selectedCarrier = null;
+            }
+
+            if (previousSelected && budget.carriers.length > 0) {
+                let matchIdx = budget.carriers.findIndex(
+                    (c) =>
+                        c.name === previousSelected.name &&
+                        Number(c.price) === Number(previousSelected.price)
+                );
+                if (matchIdx < 0) {
+                    matchIdx = budget.carriers.findIndex((c) => c.name === previousSelected.name);
+                }
+                if (matchIdx >= 0) {
+                    budget.selectedCarrier = matchIdx;
+                } else {
+                    budget.selectedCarrier = null;
+                }
             }
         } else {
             budget.carriers = [];
             budget.selectedCarrier = null;
         }
-
-        calculatingFreight.value = false;
     } catch (error) {
         console.error('Erro ao calcular frete:', error);
         window.Swal.fire({
@@ -1659,6 +1772,8 @@ async function calculateFreight() {
             text: 'Não foi possível calcular o frete. Tente novamente mais tarde.',
             confirmButtonText: 'Entendi!',
         });
+    } finally {
+        calculatingFreight.value = false;
     }
 }
 
@@ -1782,6 +1897,24 @@ function updateBudget() {
 .budget-attention-info {
   font-size: 12px;
   font-weight: 600;
+}
+
+.freight-carrier-list .freight-option.active {
+  background-color: #63c2de;
+  border-color: #63c2de;
+  color: #fff;
+}
+
+.freight-carrier-list .freight-option.active :deep(.text-muted) {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.freight-carrier-list .freight-option.active .freight-option-price {
+  color: #fff !important;
+}
+
+.freight-option-summary {
+  cursor: default;
 }
 </style>
 
