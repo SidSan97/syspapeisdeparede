@@ -1,10 +1,14 @@
 <template>
     <div class="card mb-2 production-card" :draggable="!isFullyProduced" @dragstart="$emit('drag-start', $event)"
         @click="$emit('click')">
-        <div v-if="coverImage" class="ratio ratio-21x9">
-            <img :src="coverImage" :alt="card.name" class="production-card-image card-img-top bg-light" />
+        <div v-if="coverImage" class="production-card-cover flex-shrink-0 bg-light">
+            <img
+                :src="coverImage"
+                :alt="card.name"
+                class="production-card-cover-img"
+            />
         </div>
-        <div class="card-body px-3 pt-3 pb-2">
+        <div class="card-body px-3 pt-3 pb-2 flex-grow-1 min-w-0">
             <div class="mb-2">
                 <div class="d-flex gap-2 align-items-start flex-wrap">
                     <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
@@ -101,6 +105,21 @@ defineEmits(['drag-start', 'click']);
     box-shadow: var(--ds-shadow-raised);
     cursor: pointer;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.production-card-cover {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--bs-card-border-radius, 8px) var(--bs-card-border-radius, 8px) 0 0;
+}
+
+.production-card-cover-img {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
 }
 
 .production-deadline-badge {
@@ -128,17 +147,6 @@ defineEmits(['drag-start', 'click']);
 
 .production-card:active {
     cursor: grabbing;
-}
-
-.production-card-image {
-    width: 100%;
-    height: 150px;
-}
-
-.production-card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .production-card-body {
