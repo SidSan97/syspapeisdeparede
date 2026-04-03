@@ -184,7 +184,7 @@ async function duplicateBudget(budget) {
     await swalSuccess(
       'Orçamento duplicado',
       newId
-        ? `Cópia criada (#${newId}). Você pode editá-la agora.`
+        ? `Cópia criada (#${newId}).`
         : 'Cópia criada com sucesso.',
     );
 

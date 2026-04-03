@@ -54,6 +54,16 @@
                     </ul>
                 </div>
             </div>
+
+            <div v-if="showMergeOrdersButton" class="ms-2 d-flex align-items-end">
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    @click.prevent="$emit('merge-orders')"
+                >
+                    Juntar pedidos
+                </button>
+            </div>
         </div>
 
         <div v-if="isAdmin" class="row buttons-filters mt-2">
@@ -123,6 +133,10 @@ import { watch } from 'vue';
 import debounce from 'lodash/debounce';
 
 const props = defineProps({
+    showMergeOrdersButton: {
+        type: Boolean,
+        default: false,
+    },
     isAdmin: {
         type: Boolean,
         default: false,
@@ -176,6 +190,7 @@ const emit = defineEmits([
     'update:dateTo',
     'update:selectedUserId',
     'clearFilters',
+    'merge-orders',
 ]);
 
 function setStatusFilter(value) {

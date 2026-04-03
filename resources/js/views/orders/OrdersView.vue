@@ -4,6 +4,7 @@
       <div>
                 <OrderFilters
                     v-if="canShowFilters"
+                    :show-merge-orders-button="canMergeOrders"
                     :is-admin="isAdmin"
                     :loading="loading"
                     :loading-users="loadingUsers"
@@ -21,6 +22,7 @@
                     @update:date-to="dateTo = $event"
                     @update:selected-user-id="selectedUserId = $event"
                     @clear-filters="clearFilters"
+                    @merge-orders="onMergeOrders"
                 />
 
           <div v-if="loading" class="p-5 text-center text-muted fw-semibold">
@@ -38,6 +40,7 @@
 
                     <OrderItemsTable
                         v-else
+                        v-model:selected-order-ids="selectedOrderIds"
                         :orders="orders"
                         :can-register-payment="canRegisterPayment"
                         :show-values-column="showValuesColumn"
@@ -91,6 +94,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useOrderList } from '@/modules/orders/composables/useOrderList';
 import { useOrderFilters } from '@/modules/orders/composables/useOrderFilters';
 import { useOrderListService } from '@/modules/orders/services/orderListService';
+import { validateMergeOrdersSelection } from '@/modules/orders/utils/validateMergeOrders';
 import { swalConfirmation, swalSuccess, swalError } from '@/utils/alerts';
 
 const router = useRouter();
@@ -125,10 +129,15 @@ const cancelError = ref('');
 const orderToDelete = ref(null);
 const deleting = ref(false);
 const deleteError = ref('');
+const selectedOrderIds = ref([]);
 
 const isAdmin = computed(() => auth.isAdmin());
 const isCommercial = computed(() => auth.hasRole('commercial'));
 const isReseller = computed(() => auth.hasRole('reseller'));
+
+const canMergeOrders = computed(
+    () => isAdmin.value && selectedOrderIds.value.length >= 2
+);
 
 /** Busca por nome e filtro de situação: admin e revendedor. Linha com datas, revendedor e limpar: só admin. */
 const canShowFilters = computed(() => isAdmin.value || isReseller.value);
@@ -144,6 +153,64 @@ const canRegisterPayment = computed(() => {
 
 function handlePageChange(page) {
     fetchOrders(filters.value, page);
+}
+
+async function onMergeOrders() {
+    const ids = selectedOrderIds.value;
+    const selectedRows = orders.value.filter((o) => ids.includes(o.id));
+    const precheck = validateMergeOrdersSelection(selectedRows);
+    if (precheck) {
+        await swalError('Não é possível juntar', precheck);
+        return;
+    }
+
+    const { value: name, isDismissed } = await window.Swal.fire({
+        title: 'Juntar pedidos',
+        html: 'Informe o nome do <strong>novo pedido</strong> que reunirá os ambientes e modelos selecionados.',
+        input: 'text',
+        inputPlaceholder: 'Nome do pedido',
+        showCancelButton: true,
+        confirmButtonText: 'Criar pedido',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        inputValidator: (v) => {
+            if (!v || !String(v).trim()) {
+                return 'Digite um nome para o pedido.';
+            }
+            return null;
+        },
+    });
+
+    if (isDismissed || name == null) {
+        return;
+    }
+
+    const trimmedName = String(name).trim();
+
+    try {
+        await orderListService.mergeOrders({
+            order_ids: [...ids],
+            name: trimmedName,
+        });
+        selectedOrderIds.value = [];
+        await swalSuccess(
+            'Pedidos mesclados com sucesso!',
+            'Foi criado um novo pedido com a união dos selecionados.'
+        );
+        await fetchOrders(filters.value, paginationData.value.current_page);
+    } catch (error) {
+        const d = error.response?.data;
+        const fromErrors =
+            d?.errors && typeof d.errors === 'object'
+                ? Object.values(d.errors).flat().join(' ')
+                : '';
+        const msg =
+            d?.message ||
+            fromErrors ||
+            error.message ||
+            'Não foi possível juntar os pedidos.';
+        await swalError('Erro ao juntar pedidos', msg);
+    }
 }
 
 async function fetchUsers() {

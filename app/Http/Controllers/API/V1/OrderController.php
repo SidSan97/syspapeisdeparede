@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Common\ListRequest;
 use App\Http\Requests\Orders\GenerateOrderPaymentLinkRequest;
+use App\Http\Requests\Orders\MergeOrdersRequest;
 use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
@@ -309,6 +310,25 @@ class OrderController extends Controller
         $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
 
         return response()->json($data);
+    }
+
+    public function merge(MergeOrdersRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        try {
+            $order = $this->repository->mergeOrders(
+                $validated['order_ids'],
+                $validated['name']
+            );
+
+            return (new OrderResource($order))->response()->setStatusCode(201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     public function cancel(Request $request): JsonResponse
