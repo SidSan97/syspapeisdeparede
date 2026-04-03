@@ -11,14 +11,16 @@
         <div class="card-body px-3 pt-3 pb-2 flex-grow-1 min-w-0">
             <div class="mb-2">
                 <div class="d-flex gap-2 align-items-start flex-wrap">
-                    <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
-
-                    <span
-                        v-if="card.status"
-                        class="badge text-wrap align-self-start flex-shrink-0"
-                        :class="getOrderBudgetStatusBadgeClass(card.status)"
-                    >{{ card.status }}</span>
+                    <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p> 
                 </div>
+
+                <span
+                    v-if="card.status"
+                    class="badge text-wrap align-self-start flex-shrink-0 me-2"
+                    :class="getOrderBudgetStatusBadgeClass(card.status)"
+                >
+                    {{ card.status }}
+                </span>
                 <span v-if="!isFullyProduced && productionTimerText" class="d-inline-block mt-1">
                     <span
                         class="badge text-wrap production-deadline-badge"
@@ -26,6 +28,7 @@
                     >{{ productionTimerText }}</span>
                 </span>
             </div>
+
             <div class="d-flex gap-3">
                 <div class="fa-xs text-body-secondary">
                     <i class="far fa-clock me-2"></i>
