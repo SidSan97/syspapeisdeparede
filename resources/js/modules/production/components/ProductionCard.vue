@@ -5,14 +5,22 @@
             <img :src="coverImage" :alt="card.name" class="production-card-image card-img-top bg-light" />
         </div>
         <div class="card-body px-3 pt-3 pb-2">
-            <div class="gap-2 mb-2">
-                <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
+            <div class="mb-2">
+                <div class="d-flex gap-2 align-items-start flex-wrap">
+                    <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
 
-                <span
-                    v-if="card.status"
-                    class="badge text-wrap align-self-start flex-shrink-0"
-                    :class="getOrderBudgetStatusBadgeClass(card.status)"
-                >{{ card.status }}</span>
+                    <span
+                        v-if="card.status"
+                        class="badge text-wrap align-self-start flex-shrink-0"
+                        :class="getOrderBudgetStatusBadgeClass(card.status)"
+                    >{{ card.status }}</span>
+                </div>
+                <span v-if="!isFullyProduced && productionTimerText" class="d-inline-block mt-1">
+                    <span
+                        class="badge text-wrap production-deadline-badge"
+                        :class="productionTimerClass"
+                    >{{ productionTimerText }}</span>
+                </span>
             </div>
             <div class="d-flex gap-3">
                 <div class="fa-xs text-body-secondary">
@@ -37,10 +45,6 @@
             </div>
             <div v-if="card.production_date" class="mt-2">
                 <span class="fa-xs text-body-secondary">Produção: {{ formattedProductionDate }}</span>
-                <div v-if="productionTimerText" class="badge bg-light fs-sm" :class="productionTimerClass">
-                    <i class="fa fa-hourglass-half me-1"></i>
-                    <span>{{ productionTimerText }}</span>
-                </div>
             </div>
         </div>
     </div>
@@ -96,19 +100,29 @@ defineEmits(['drag-start', 'click']);
     --bs-card-border-radius: var(--bs-border-radius-lg, 8px);
     box-shadow: var(--ds-shadow-raised);
     cursor: pointer;
-    /* background-color: var(--bs-card-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
-    transition: all 0.2s ease;
-    user-select: none;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; */
+    overflow: hidden;
+}
+
+.production-deadline-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    max-width: 100%;
+}
+
+.production-deadline-badge--success {
+    background-color: #198754;
+}
+
+.production-deadline-badge--warning {
+    background-color: #fd7e14;
+}
+
+.production-deadline-badge--danger {
+    background-color: #dc3545;
 }
 
 .production-card:hover {
-    /* box-shadow: var(--bs-box-shadow); */
     transform: translateY(-2px);
 }
 
