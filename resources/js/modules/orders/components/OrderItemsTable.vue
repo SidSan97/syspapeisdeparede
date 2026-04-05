@@ -24,7 +24,7 @@
             </thead>
             <tbody>
                 <tr v-for="order in orders" :key="order.id">
-                    <td class="text-center align-middle">
+                    <th class="text-center align-middle">
                         <input
                             type="checkbox"
                             class="form-check-input"
@@ -32,8 +32,8 @@
                             :aria-label="`Selecionar pedido ${order.id}`"
                             @change="onRowToggle(order.id, $event)"
                         />
-                    </td>
-                    <th scope="row">{{ order.id }}</th>
+                    </th>
+                    <td scope="row">{{ order.id }}</td>
                     <td>{{ formatDate(order.created_at || order.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button
@@ -46,7 +46,7 @@
                         <span v-else class="fw-semibold">{{ order.name }}</span>
                     </td>
                     <td v-if="showValuesColumn" class="">
-                        <span class="fw-semibold">{{ formatCurrency(order.total_amount) }}</span>
+                        <span class="fw-semibold">{{ formatCurrency(order.installments > 0 ? order.total_amount_installments : order.total_amount) }}</span> 
                     </td>
                     <td class="text-nowrap">
                         <OrderStatusBadge :status="order.status" />
