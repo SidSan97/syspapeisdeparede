@@ -133,6 +133,10 @@ class ExpeditionController extends Controller
     {
         $groupings = $this->tinyErpService->searchGroupings($carrier);
 
+        if ($groupings instanceof JsonResponse) {
+            return $groupings;
+        }
+
         return response()->json($groupings);
     }
 

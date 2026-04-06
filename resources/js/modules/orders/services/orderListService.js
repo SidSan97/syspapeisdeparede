@@ -68,11 +68,21 @@ export function useOrderListService() {
         return response.data;
     }
 
+    /**
+     * Junta vários pedidos em um novo (apenas admin; validações no backend).
+     * @param {{ order_ids: number[], name: string }} payload
+     */
+    async function mergeOrders(payload) {
+        const { data } = await axios.post('v1/orders/merge', payload);
+        return data;
+    }
+
     return {
         getOrders,
         getUsers,
         cancelOrder,
         deleteOrder,
+        mergeOrders,
     };
 }
 

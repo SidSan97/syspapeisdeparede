@@ -36,7 +36,7 @@
                                 :dropshipping-data="dropshippingData"
                             />
 
-                            <RoomsCard :data="data" />
+                            <RoomsCard :data="data" :show-wall-status="isOrder" />
 
                             <SelectedModelsCard :data="data" />
 

@@ -1,7 +1,10 @@
 <template>
-  <div v-if="wall && wall.collection_model" class="collection-models-section">
+  <div
+    v-if="wall && (wall.collection_model || hasWallModelReferringContent(wall))"
+    class="collection-models-section"
+  >
     <!-- Modelos selecionados -->
-    <div class="collection-models-section-item">
+    <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
         <i class="fa fa-cube"></i> Modelos selecionados
       </h3>
@@ -13,8 +16,14 @@
       </div>
     </div>
 
+    <WallModelReferringFields
+      v-if="hasWallModelReferringContent(wall)"
+      :wall="wall"
+      class="collection-models-section-item"
+    />
+
     <!-- Imagens da Parede Específica -->
-    <div class="collection-models-section-item">
+    <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
         <i class="fa fa-image"></i> Imagens da Parede
       </h3>
@@ -35,7 +44,10 @@
 </template>
 
 <script setup>
-const props = defineProps({
+import WallModelReferringFields from '@/components/details/WallModelReferringFields.vue';
+import { hasWallModelReferringContent } from '@/utils/wallModelReferringContent';
+
+defineProps({
   wall: {
     type: Object,
     default: null,

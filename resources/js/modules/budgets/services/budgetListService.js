@@ -73,11 +73,18 @@ export function useBudgetListService() {
         return response.data;
     }
 
+    async function duplicateBudget(budgetId) {
+        const { data } = await axios.post(`v1/budgets/${budgetId}/duplicate`);
+
+        return data?.data ?? data;
+    }
+
     return {
         getBudgets,
         getUsers,
         cancelBudget,
         deleteBudget,
+        duplicateBudget,
     };
 }
 

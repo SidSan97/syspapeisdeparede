@@ -1,19 +1,34 @@
 <template>
     <div class="card mb-2 production-card" :draggable="!isFullyProduced" @dragstart="$emit('drag-start', $event)"
         @click="$emit('click')">
-        <div v-if="coverImage" class="ratio ratio-21x9">
-            <img :src="coverImage" :alt="card.name" class="production-card-image card-img-top bg-light" />
+        <div v-if="coverImage" class="production-card-cover flex-shrink-0 bg-light">
+            <img
+                :src="coverImage"
+                :alt="card.name"
+                class="production-card-cover-img"
+            />
         </div>
-        <div class="card-body px-3 pt-3 pb-2">
-            <div class="gap-2 mb-2">
-                <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
+        <div class="card-body px-3 pt-3 pb-2 flex-grow-1 min-w-0">
+            <div class="mb-2">
+                <div class="d-flex gap-2 align-items-start flex-wrap">
+                    <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p> 
+                </div>
 
                 <span
                     v-if="card.status"
-                    class="badge text-wrap align-self-start flex-shrink-0"
+                    class="badge text-wrap align-self-start flex-shrink-0 me-2"
                     :class="getOrderBudgetStatusBadgeClass(card.status)"
-                >{{ card.status }}</span>
+                >
+                    {{ card.status }}
+                </span>
+                <span v-if="!isFullyProduced && productionTimerText" class="d-inline-block mt-1">
+                    <span
+                        class="badge text-wrap production-deadline-badge"
+                        :class="productionTimerClass"
+                    >{{ productionTimerText }}</span>
+                </span>
             </div>
+
             <div class="d-flex gap-3">
                 <div class="fa-xs text-body-secondary">
                     <i class="far fa-clock me-2"></i>
@@ -37,10 +52,6 @@
             </div>
             <div v-if="card.production_date" class="mt-2">
                 <span class="fa-xs text-body-secondary">Produção: {{ formattedProductionDate }}</span>
-                <div v-if="productionTimerText" class="badge bg-light fs-sm" :class="productionTimerClass">
-                    <i class="fa fa-hourglass-half me-1"></i>
-                    <span>{{ productionTimerText }}</span>
-                </div>
             </div>
         </div>
     </div>
@@ -96,35 +107,49 @@ defineEmits(['drag-start', 'click']);
     --bs-card-border-radius: var(--bs-border-radius-lg, 8px);
     box-shadow: var(--ds-shadow-raised);
     cursor: pointer;
-    /* background-color: var(--bs-card-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
-    transition: all 0.2s ease;
-    user-select: none;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    overflow: hidden; */
+}
+
+.production-card-cover {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--bs-card-border-radius, 8px) var(--bs-card-border-radius, 8px) 0 0;
+}
+
+.production-card-cover-img {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.production-deadline-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    max-width: 100%;
+}
+
+.production-deadline-badge--success {
+    background-color: #198754;
+}
+
+.production-deadline-badge--warning {
+    background-color: #fd7e14;
+}
+
+.production-deadline-badge--danger {
+    background-color: #dc3545;
 }
 
 .production-card:hover {
-    /* box-shadow: var(--bs-box-shadow); */
     transform: translateY(-2px);
 }
 
 .production-card:active {
     cursor: grabbing;
-}
-
-.production-card-image {
-    width: 100%;
-    height: 150px;
-}
-
-.production-card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .production-card-body {

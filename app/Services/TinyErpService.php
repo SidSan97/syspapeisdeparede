@@ -237,7 +237,7 @@ class TinyErpService
         }
     }
 
-    public function searchInvoices(): JsonResponse|array
+    public function searchInvoices($orderId = null): JsonResponse|array
     {
         try {
             $params = [
@@ -245,6 +245,10 @@ class TinyErpService
                 'formato' => 'json',
                 'situacao' => 6, // 6 = Emitida
             ];
+
+            if ($orderId) {
+                $params['numeroEcommerce'] = (int)$orderId;
+            }
 
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/notas.fiscais.pesquisa.php?' . $queryString;

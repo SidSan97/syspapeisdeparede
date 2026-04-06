@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 // Orçamentos
 Route::post('budgets', [BudgetController::class, 'store']);
+Route::post('budgets/{budget}/duplicate', [BudgetController::class, 'duplicate']);
 Route::get('budgets', [BudgetController::class, 'index']);
 Route::get('budgets/pending-review', [BudgetController::class, 'pendingReview']);
 Route::get('budgets/orders', [BudgetController::class, 'orders']);

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 // Pedidos
 Route::get('orders', [OrderController::class, 'index']);
+Route::post('orders/merge', [OrderController::class, 'merge']);
 Route::get('orders/layouts', [OrderController::class, 'layouts']);
 Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts']);
 Route::get('orders/expedition', [OrderExpeditionController::class, 'expedition']);

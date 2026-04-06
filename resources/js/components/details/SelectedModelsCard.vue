@@ -5,7 +5,7 @@
         </div>
         <div class="card-body">
             <div v-for="(room, roomIndex) in data.rooms" :key="roomIndex">
-                <div v-if="room.walls && room.walls.some(w => w.collection_model || w.collection_model_name)" class="mb-4">
+                <div v-if="room.walls && room.walls.some(w => showWallInSelectedModels(w))" class="mb-4">
                     <h6 class="mb-3">{{ room.name || `Ambiente ${roomIndex + 1}` }}</h6>
                     <div v-for="(wall, wallIndex) in room.walls" :key="wallIndex">
                         <div v-if="wall.collection_model || wall.collection_model_name" class="mb-3 pb-3 border-bottom">
@@ -22,6 +22,12 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <WallModelReferringFields
+                            v-if="hasWallModelReferringContent(wall)"
+                            :wall="wall"
+                            class="collection-models-section-item"
+                        />
                     </div>
                 </div>
             </div>
@@ -30,9 +36,11 @@
 </template>
 
 <script setup>
+import WallModelReferringFields from '@/components/details/WallModelReferringFields.vue';
 import { useFormatting } from '@/composables/useFormatting';
+import { hasWallModelReferringContent } from '@/utils/wallModelReferringContent';
 
-const props = defineProps({
+defineProps({
     data: {
         type: Object,
         required: true,
@@ -40,5 +48,13 @@ const props = defineProps({
 });
 
 const { formatCurrency } = useFormatting();
+
+function showWallInSelectedModels(wall) {
+    return Boolean(
+        wall?.collection_model ||
+            wall?.collection_model_name ||
+            hasWallModelReferringContent(wall),
+    );
+}
 </script>
 

@@ -68,6 +68,44 @@ export function parseDate(dateString) {
 }
 
 /**
+ * Data de calendário local a partir de YYYY-MM-DD ou fallback para parseDate.
+ * Evita interpretar "2026-04-28" como meia-noite UTC (desloca o dia em timezones BR).
+ * @param {string|null|undefined} value
+ * @returns {Date|null}
+ */
+export function parseCalendarDateLocal(value) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const y = Number(iso[1]);
+    const mo = Number(iso[2]) - 1;
+    const d = Number(iso[3]);
+    return new Date(y, mo, d);
+  }
+  return parseDate(s);
+}
+
+/**
+ * Dias corridos entre o dia de "hoje" e o dia do prazo (ambos no fuso local).
+ * @param {Date} deadlineDate
+ * @param {Date} now
+ * @returns {number} positivo = dias restantes, 0 = vence hoje, negativo = atraso em dias
+ */
+export function calendarDaysUntil(deadlineDate, now) {
+  const n = now instanceof Date ? now : new Date(now);
+  const startToday = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const endDay = new Date(
+    deadlineDate.getFullYear(),
+    deadlineDate.getMonth(),
+    deadlineDate.getDate(),
+  );
+  return Math.round((endDay.getTime() - startToday.getTime()) / 86400000);
+}
+
+/**
  * Retorna o texto do timer baseado na data de entrega do card
  * @param {Object} card - Objeto do card
  * @param {string} card.delivery_date_end - Data final de entrega
@@ -152,91 +190,66 @@ export function getTimerClass(card, currentTime, prefix = 'trello-card-timer') {
 }
 
 /**
- * Retorna o texto do timer baseado na data de entrega do card
- * Se a data passou e production_percentage < 100, mostra "Atrasado"
- * @param {Object} card - Objeto do card
- * @param {string} card.delivery_date_end_full - Data final de entrega completa
- * @param {number} card.production_percentage - Percentual de produção (0-100)
- * @param {Date} currentTime - Data/hora atual
- * @returns {string|null} Texto do timer ou null se não houver data
+ * Texto da tarja de prazo (produção): dias corridos até delivery_date_end_full vs hoje.
+ * @param {Object} card
+ * @param {string} card.delivery_date_end_full
+ * @param {Date} currentTime
+ * @returns {string|null}
  */
 export function getProductionTimerText(card, currentTime) {
   if (!card || !card.delivery_date_end_full) {
     return null;
   }
 
-  const deliveryDate = parseDate(card.delivery_date_end_full);
+  const deliveryDate = parseCalendarDateLocal(card.delivery_date_end_full);
   if (!deliveryDate) {
     return null;
   }
 
   const now = currentTime instanceof Date ? currentTime : new Date(currentTime);
-  const diffMs = deliveryDate.getTime() - now.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const days = calendarDaysUntil(deliveryDate, now);
 
-  // Se já passou da data E production_percentage < 100, mostrar "Atrasado"
-  if (diffMs < 0) {
-    const productionPercentage = Number(card.production_percentage) || 0;
-    if (productionPercentage < 100) {
-      return 'Atrasado';
-    }
-    // Se já está 100%, não mostrar timer
-    return null;
+  if (days < 0) {
+    const a = Math.abs(days);
+    return a === 1 ? '1 dia de atraso' : `${a} dias de atraso`;
   }
-
-  // Se ainda não chegou na data
-  if (diffDays > 0) {
-    return `${diffDays} ${diffDays === 1 ? 'dia' : 'dias'} restante${diffDays > 1 ? 's' : ''}`;
-  } else if (diffHours > 0) {
-    return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} restante${diffHours > 1 ? 's' : ''}`;
-  } else if (diffMinutes > 0) {
-    return `${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'} restante${diffMinutes > 1 ? 's' : ''}`;
-  } else {
-    return 'Menos de 1 minuto';
+  if (days === 0) {
+    return 'Vence hoje';
   }
+  if (days === 1) {
+    return '1 dia restante';
+  }
+  return `${days} dias restantes`;
 }
 
 /**
- * Retorna a classe CSS do timer de produção baseado no status
- * @param {Object} card - Objeto do card
- * @param {string} card.delivery_date_end_full - Data final de entrega completa
- * @param {number} card.production_percentage - Percentual de produção (0-100)
- * @param {Date} currentTime - Data/hora atual
- * @param {string} prefix - Prefixo da classe CSS (ex: 'production-card-timer')
- * @returns {string} Classe CSS do timer
+ * Modificador de cor da tarja de prazo: verde (≥6 dias), laranja (&lt;6 dias e não atrasado), vermelho (atrasado).
+ * @param {Object} card
+ * @param {string} card.delivery_date_end_full
+ * @param {Date} currentTime
+ * @param {string} _prefix legado, ignorado
+ * @returns {string} modificador (`production-deadline-badge--success|warning|danger`) ou vazio
  */
-export function getProductionTimerClass(card, currentTime, prefix = 'production-card-timer') {
+export function getProductionTimerClass(card, currentTime, _prefix = 'production-card-timer') {
   if (!card || !card.delivery_date_end_full) {
     return '';
   }
 
-  const deliveryDate = parseDate(card.delivery_date_end_full);
+  const deliveryDate = parseCalendarDateLocal(card.delivery_date_end_full);
   if (!deliveryDate) {
     return '';
   }
 
   const now = currentTime instanceof Date ? currentTime : new Date(currentTime);
-  const diffMs = deliveryDate.getTime() - now.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const days = calendarDaysUntil(deliveryDate, now);
 
-  // Se já passou da data E production_percentage < 100, mostrar como atrasado
-  if (diffMs < 0) {
-    const productionPercentage = Number(card.production_percentage) || 0;
-    if (productionPercentage < 100) {
-      return `${prefix}-overdue`;
-    }
-    return '';
+  if (days < 0) {
+    return 'production-deadline-badge--danger';
   }
-
-  // Se está próximo do prazo (menos de 3 dias)
-  if (diffDays <= 3) {
-    return `${prefix}-urgent`;
+  if (days < 6) {
+    return 'production-deadline-badge--warning';
   }
-
-  return `${prefix}-normal`;
+  return 'production-deadline-badge--success';
 }
 
 /**

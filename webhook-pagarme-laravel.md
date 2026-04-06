@@ -153,9 +153,48 @@ Para simular o webhook no ambiente local:
 
 ---
 
+## 6. Configurar o Webhook no Painel do Pagar.me
+
+No painel, vá em **Configurações → Webhooks → Criar Webhook**, informe a URL para onde as notificações serão enviadas e selecione os eventos desejados.
+
+Para detectar pagamento de link, selecione pelo menos:
+
+| Evento | Descrição |
+|---|---|
+| `order.paid` ✅ | Pedido pago com sucesso |
+| `order.payment_failed` | Falha no pagamento (opcional) |
+| `order.canceled` | Pedido cancelado (opcional) |
+
+> 📘 **Portas suportadas:** `http:80` e `https:443`
+
 ---
 
-## 6. Atributos do Objeto Webhook
+## 7. Estrutura do Payload Recebido
+
+```json
+{
+  "id": "hook_RyEKQO789TRpZjv5",
+  "type": "order.paid",
+  "account": {
+    "id": "acc_xxx",
+    "name": "Sua Loja"
+  },
+  "data": {
+    "id": "or_ZdnB5BBCmYhk534R",
+    "status": "paid",
+    "amount": 12356,
+    "customer": {
+      "name": "João Silva",
+      "email": "joao@email.com"
+    },
+    "items": []
+  }
+}
+```
+
+---
+
+## 8. Atributos do Objeto Webhook
 
 | Atributo | Tipo | Descrição |
 |---|---|---|
@@ -171,3 +210,4 @@ Para simular o webhook no ambiente local:
 | `data` | object | Conteúdo da requisição |
 
 ---
+

@@ -3,6 +3,17 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
+                    <th scope="col" class="text-center" style="width: 40px;">
+                        <span class="visually-hidden">Selecionar todos os pedidos da página</span>
+                        <input
+                            ref="selectAllCheckboxRef"
+                            type="checkbox"
+                            class="form-check-input"
+                            :checked="allSelectedOnPage"
+                            aria-label="Selecionar todos os pedidos da página"
+                            @change="onToggleAll($event)"
+                        />
+                    </th>
                     <th scope="col" style="width: 64px;">Número</th>
                     <th scope="col" style="width: 64px;">Data</th>
                     <th class="text-nowrap" scope="col">Pedido</th>
@@ -13,7 +24,16 @@
             </thead>
             <tbody>
                 <tr v-for="order in orders" :key="order.id">
-                    <th scope="row">{{ order.id }}</th>
+                    <th class="text-center align-middle">
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            :checked="isOrderSelected(order.id)"
+                            :aria-label="`Selecionar pedido ${order.id}`"
+                            @change="onRowToggle(order.id, $event)"
+                        />
+                    </th>
+                    <td scope="row">{{ order.id }}</td>
                     <td>{{ formatDate(order.created_at || order.createdAt) }}</td>
                     <td style="min-width: 240px;">
                         <button
@@ -26,7 +46,7 @@
                         <span v-else class="fw-semibold">{{ order.name }}</span>
                     </td>
                     <td v-if="showValuesColumn" class="">
-                        <span class="fw-semibold">{{ formatCurrency(order.total_amount) }}</span>
+                        <span class="fw-semibold">{{ formatCurrency(order.installments > 0 ? order.total_amount_installments : order.total_amount) }}</span> 
                     </td>
                     <td class="text-nowrap">
                         <OrderStatusBadge :status="order.status" />
@@ -69,6 +89,15 @@
                                         Editar
                                     </button>
                                 </li>
+                                <li v-if="order.nf_sent === 1">
+                                    <button
+                                        class="dropdown-item"
+                                        type="button"
+                                        @click="$emit('view-invoice', order)"
+                                    >
+                                        Ver nota fiscal
+                                    </button>
+                                </li>
                                 <li v-if="!isCancelled(order)">
                                     <button
                                         class="dropdown-item"
@@ -100,6 +129,7 @@
 </template>
 
 <script setup>
+import { ref, computed, watch, nextTick } from 'vue';
 import { formatDate } from '@/utils/dateUtils';
 import OrderStatusBadge from './OrderStatusBadge.vue';
 
@@ -127,9 +157,106 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    selectedOrderIds: {
+        type: Array,
+        default: () => [],
+    },
 });
 
-defineEmits(['view-details', 'register-payment', 'edit', 'cancel', 'delete']);
+const emit = defineEmits([
+    'view-details',
+    'register-payment',
+    'edit',
+    'cancel',
+    'delete',
+    'view-invoice',
+    'update:selectedOrderIds',
+]);
+
+const selectAllCheckboxRef = ref(null);
+
+const orderIdsOnPage = computed(() => props.orders.map((o) => o.id));
+
+const selectedSet = computed(() => new Set(props.selectedOrderIds ?? []));
+
+const allSelectedOnPage = computed(() => {
+    const ids = orderIdsOnPage.value;
+    if (ids.length === 0) {
+        return false;
+    }
+    const set = selectedSet.value;
+    return ids.every((id) => set.has(id));
+});
+
+const someSelectedOnPage = computed(() => {
+    const ids = orderIdsOnPage.value;
+    if (ids.length === 0) {
+        return false;
+    }
+    const set = selectedSet.value;
+    const n = ids.filter((id) => set.has(id)).length;
+    return n > 0 && n < ids.length;
+});
+
+function syncSelectAllIndeterminate() {
+    nextTick(() => {
+        const el = selectAllCheckboxRef.value;
+        if (!el) {
+            return;
+        }
+        el.indeterminate = someSelectedOnPage.value && !allSelectedOnPage.value;
+    });
+}
+
+watch(
+    [allSelectedOnPage, someSelectedOnPage, orderIdsOnPage],
+    () => syncSelectAllIndeterminate(),
+    { flush: 'post' }
+);
+
+function emitSelection(nextSet) {
+    emit('update:selectedOrderIds', [...nextSet]);
+}
+
+function onToggleAll(event) {
+    const checked = event.target.checked;
+    const ids = orderIdsOnPage.value;
+    const next = new Set(selectedSet.value);
+    if (checked) {
+        ids.forEach((id) => next.add(id));
+    } else {
+        ids.forEach((id) => next.delete(id));
+    }
+    emitSelection(next);
+    syncSelectAllIndeterminate();
+}
+
+function onRowToggle(orderId, event) {
+    const checked = event.target.checked;
+    const next = new Set(selectedSet.value);
+    if (checked) {
+        next.add(orderId);
+    } else {
+        next.delete(orderId);
+    }
+    emitSelection(next);
+}
+
+function isOrderSelected(orderId) {
+    return selectedSet.value.has(orderId);
+}
+
+watch(
+    () => props.orders.map((o) => o.id),
+    (ids) => {
+        const valid = new Set(ids);
+        const current = props.selectedOrderIds ?? [];
+        const next = new Set(current.filter((id) => valid.has(id)));
+        if (next.size !== current.length) {
+            emitSelection(next);
+        }
+    }
+);
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
