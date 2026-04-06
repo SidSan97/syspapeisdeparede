@@ -155,7 +155,7 @@ Para simular o webhook no ambiente local:
 
 ---
 
-## 8. Atributos do Objeto Webhook
+## 6. Atributos do Objeto Webhook
 
 | Atributo | Tipo | Descrição |
 |---|---|---|
@@ -171,4 +171,3 @@ Para simular o webhook no ambiente local:
 | `data` | object | Conteúdo da requisição |
 
 ---
-
