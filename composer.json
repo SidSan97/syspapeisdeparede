@@ -6,7 +6,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "anisotton/pagarme-laravel": "^1.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "beyondcode/laravel-comments": "^1.8",
         "guzzlehttp/guzzle": "^7.10",
@@ -29,14 +28,10 @@
         "phpunit/phpunit": "^11.0.1"
     },
     "autoload": {
-        "exclude-from-classmap": [
-            "vendor/anisotton/pagarme-laravel/src/Utils/ApiAdapter.php"
-        ],
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/",
-            "Anisotton\\Pagarme\\Utils\\": "app/Overrides/Pagarme/Utils/"
+            "Database\\Seeders\\": "database/seeders/"
         },
         "files": [
             "app/Helpers/str_helper.php",
