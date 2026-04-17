@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Requests\Users\UserRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Models\User;
+use App\Models\UserWallet;
 use Illuminate\Http\Request;
 
 class UserController extends BaseController
@@ -52,31 +53,55 @@ class UserController extends BaseController
 
     public function store(UserRequest $request)
     {
-        $data = $request->safe()->except('role');
+        $data = $request->safe()->except(['role', 'wallet_balance']);
 
         $user = User::create($data);
 
         $user->assignRole($request->validated('role'));
+
+        if ($request->validated('role') === 'reseller') {
+            $this->syncResellerWalletBalance($user, (float) $request->input('wallet_balance', 0));
+        }
+
+        $user->load('wallet');
 
         return new UserResource($user);
     }
 
     public function show(User $user)
     {
-        $user->load(['roles:id,name', 'permissions']);
+        $user->load(['roles:id,name', 'permissions', 'wallet']);
 
         return new UserResource($user);
     }
 
     public function update(User $user, UserRequest $request)
     {
-        $data = $request->safe()->except('role');
+        $data = $request->safe()->except(['role', 'wallet_balance']);
         $role = $request->validated('role');
 
         $user->update($data);
         $user->syncRoles([$role]);
 
+        if ($role === 'reseller') {
+            $this->syncResellerWalletBalance($user, (float) $request->input('wallet_balance', 0));
+        }
+
+        $user->load('wallet');
+
         return new UserResource($user);
+    }
+
+    protected function syncResellerWalletBalance(User $user, float $balance): void
+    {
+        $wallet = UserWallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+
+        $wallet->update([
+            'balance' => round(max(0, $balance), 2),
+        ]);
     }
 
     public function destroy(User $user)

@@ -120,10 +120,25 @@
         </div>
       </div>
 
-      <!-- Checkbox de Dropshipping (apenas para revendedor) -->
+      <!-- Saldo carteira digital e dropshipping (apenas para revendedor) -->
       <div v-if="form.role === 'reseller'" class="row">
-        <div class="col-12 mb-3">
-          <div class="form-check">
+        <div class="col-12 col-lg-6 mb-3">
+          <label class="form-label" for="wallet_balance">Saldo da carteira digital</label>
+          <div class="input-group">
+            <span class="input-group-text">R$</span>
+            <money
+              id="wallet_balance"
+              v-model.number="form.wallet_balance"
+              v-bind="moneyConfig"
+              name="wallet_balance"
+              class="form-control"
+              :disabled="loading"
+            />
+          </div>
+          <has-error :form="form" field="wallet_balance"></has-error>
+        </div>
+        <div class="col-12 col-lg-6 mb-3 d-flex align-items-end">
+          <div class="form-check mb-2">
             <input
               class="form-check-input"
               type="checkbox"
@@ -172,8 +187,21 @@ const form = reactive(new Form({
   password_confirmation: '',
   role: '',
   is_dropshipping: 0,
+  wallet_balance: 0,
   email_verified_at: '',
 }))
+
+const moneyConfig = {
+  decimal: ',',
+  thousands: '.',
+  precision: 2,
+  prefix: '',
+  allowBlank: false,
+  min: 0,
+  max: null,
+  disableNegative: true,
+  minimumNumberOfCharacters: 0,
+}
 
 const passwordMismatch = ref(false)
 
@@ -198,9 +226,9 @@ const validatePasswordMatch = () => {
 }
 
 const handleRoleChange = () => {
-  // Se o papel não for reseller, resetar is_dropshipping para 0
   if (form.role !== 'reseller') {
     form.is_dropshipping = 0
+    form.wallet_balance = 0
   }
 }
 
@@ -208,6 +236,7 @@ const handleRoleChange = () => {
 watch(() => form.role, (newValue) => {
   if (newValue !== 'reseller') {
     form.is_dropshipping = 0
+    form.wallet_balance = 0
   }
 })
 

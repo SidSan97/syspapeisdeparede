@@ -40,6 +40,7 @@ class UserRequest extends FormRequest
             'password'   => ['required', 'string', 'min:6'],
             'password_confirmation' => ['required', 'string', 'same:password'],
             'is_dropshipping' => ['nullable', 'integer', 'in:0,1'],
+            'wallet_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
         ];
     }
 
@@ -57,6 +58,7 @@ class UserRequest extends FormRequest
             ],
             'password'   => ['nullable', 'string', 'min:6'],
             'is_dropshipping' => ['nullable', 'integer', 'in:0,1'],
+            'wallet_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
         ];
     }
 
@@ -72,8 +74,26 @@ class UserRequest extends FormRequest
             $isDropshipping = 0;
         }
 
+        $walletBalance = null;
+        if ($this->input('role') === 'reseller') {
+            $raw = $this->input('wallet_balance');
+            if ($raw === null || $raw === '') {
+                $walletBalance = 0.0;
+            } elseif (is_numeric($raw)) {
+                $walletBalance = (float) $raw;
+            } elseif (is_string($raw)) {
+                $clean = trim(str_replace(['R$', ' ', "\xc2\xa0"], '', $raw));
+                $clean = str_replace('.', '', $clean);
+                $clean = str_replace(',', '.', $clean);
+                $walletBalance = is_numeric($clean) ? (float) $clean : 0.0;
+            } else {
+                $walletBalance = 0.0;
+            }
+        }
+
         $this->merge([
             'is_dropshipping' => $isDropshipping,
+            'wallet_balance' => $walletBalance,
         ]);
     }
 }
