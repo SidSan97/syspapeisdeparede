@@ -1,98 +1,83 @@
 <template>
-  <div class="members-section">
-
+  <div>
     <!-- Lista de membros do card -->
     <div>
       <h3 class="fs-xs text-body-secondary">Membros</h3>
       <div class="avatar-group">
-        <div
-        class="position-relative"
+        <BaseDropdown
           v-for="member in card.members"
-          :key="member.id"
+          :key="`member-${member.id}`"
           :title="member.name"
-          @click="canRemoveMembers ? handleMemberClick(member) : null"
         >
-            <span class="avatar" :style="{ backgroundColor: getAvatarColor(member.name) }" role="button">{{ getInitials(member.name) }}</span>
+          <template #trigger="{ toggle }">
+            <BaseAvatar :src="avatarUrl(member.name)" @click="toggle" />
+          </template>
 
-          <div v-if="showMemberMenu && selectedMember?.id === member.id" class="position-absolute start-0 top-0 mt-7 dropdown-menu show" @click.stop>
-            <button class="dropdown-item" @click="handleRemoveMember(member)">Remover do Cartão</button>
-          </div>
-        </div>
-        <button class="btn btn-default btn-icon rounded-pill" @click="toggleMembersMenu">
-        <i class="fa-solid fa-plus fa-fw"></i>
-      </button>
+          <li v-if="canRemoveMembers && member.id !== auth.user?.id">
+            <button class="dropdown-item" @click="confirmRemoveMember(member)">
+              Remover do Cartão
+            </button>
+          </li>
+
+          <li v-if="member.id === auth.user?.id">
+            <button class="dropdown-item" @click="handleLeaveAsMember" :disabled="loadingLeave">
+              <span v-if="loadingLeave">Saindo...</span>
+              <span v-else>Sair do Cartão</span>
+            </button>
+          </li>
+        </BaseDropdown>
+
+        <BaseDropdown @open="fetchMembers">
+          <template #trigger="{ open, toggle }">
+            <button class="avatar btn btn-default avatar-btn" @click="toggle">
+              <IconPlus :size="18" class="p-1" />
+            </button>
+          </template>
+
+          <li><h6 class="dropdown-header text-center">Membros</h6></li>
+          <li class="px-4">
+            <input
+              v-model="query"
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Pesquisar membros"
+            />
+          </li>
+
+          <template v-if="loadingMembers">
+            <li class="p-4 text-center text-muted">Carregando...</li>
+          </template>
+          <template v-else-if="availableMembers.length === 0">
+            <li class="p-4 text-center text-muted">Nenhum designer encontrado</li>
+          </template>
+          <template v-else>
+            <li v-for="member in filteredMembers" :key="member.id">
+              <button
+                type="button"
+                class="dropdown-item d-flex align-items-center gap-3"
+                :disabled="loadingAdd === member.id"
+                @click.prevent="handleAdd(member)"
+              >
+                <BaseAvatar :src="avatarUrl(member.name)" />
+                <span>{{ member.name }}</span>
+              </button>
+            </li>
+          </template>
+        </BaseDropdown>
       </div>
     </div>
+
     <!-- Botões de ação -->
-      <div class="mb-4 mt-2 position-relative members-section-actions">
-
-      <!-- Menu de adicionar membros -->
-      <div v-if="showMembersMenu" class="position-absolute mt-2 border rounded shadow-lg overflow-hidden d-flex flex-column members-section-menu">
-        <div class="d-flex align-items-center justify-content-between py-3 px-4 border-bottom border-secondary-subtle members-section-menu-header">
-          <button class="border-0 bg-transparent text-body p-2 rounded members-section-menu-back" @click="closeMembersMenu">
-            <i class="fa fa-chevron-left fa-fw"></i>
-          </button>
-          <h3 class="mb-0 fw-semibold text-body flex-fill text-center members-section-menu-title">Membros</h3>
-          <button class="border-0 bg-transparent text-body p-2 rounded members-section-menu-close" @click="closeMembersMenu">
-            <i class="fa fa-times fa-fw"></i>
-          </button>
-        </div>
-
-        <div class="py-3 px-4 border-bottom border-secondary-subtle members-section-menu-search">
-          <input
-            v-model="memberSearchQuery"
-            type="text"
-            class="form-control form-control-sm members-section-menu-search-input"
-            placeholder="Pesquisar membros"
-          />
-        </div>
-
-        <div class="flex-fill overflow-auto py-3 px-4 members-section-menu-content">
-          <h4 class="small fw-semibold text-secondary text-uppercase mb-3 members-section-menu-section-title">Adicionar membros</h4>
-          <div v-if="loadingMembers" class="py-4 text-center text-secondary small members-section-menu-loading">
-            <span>Carregando...</span>
-          </div>
-          <div v-else-if="availableMembers.length === 0" class="py-4 text-center text-secondary small members-section-menu-empty">
-            <span>Nenhum designer encontrado</span>
-          </div>
-          <div v-else class="d-flex flex-column gap-1 members-section-menu-list">
-            <div
-              v-for="member in filteredMembers"
-              :key="member.id"
-              class="d-flex align-items-center gap-3 p-2 rounded position-relative members-section-menu-item"
-              :class="{ 'is-adding': addingMember && currentAddingMemberId === member.id }"
-              @click="handleAddMember(member)"
-            >
-              <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 members-section-menu-avatar" :style="{ backgroundColor: getAvatarColor(member.name) }">
-                {{ getInitials(member.name) }}
-              </div>
-              <span class="small text-body members-section-menu-name">{{ member.name }}</span>
-              <span v-if="addingMember && currentAddingMemberId === member.id" class="ms-auto text-primary small members-section-menu-loading-indicator">
-                <i class="fa fa-spinner fa-spin fa-fw"></i>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
+    <div class="mb-4 mt-2">
       <button
         v-if="!isCurrentUserMember"
-        class="btn btn-secondary"
-        @click="handleJoinAsMember"
-        :disabled="joiningAsMember"
+        class="btn btn-default btn-sm"
+        @click="handleAdd(auth.user)"
+        :disabled="!auth.user || loadingAdd === auth.user?.id"
       >
-        <i class="bi bi-plus-circle fa-fw"></i>
-        {{ joiningAsMember ? 'Ingressando...' : 'Ingressar' }}
-      </button>
-      <button
-        v-else
-        class="btn btn-danger"
-        @click="handleLeaveAsMember"
-        :disabled="leavingAsMember"
-      >
-        <i class="bi bi-x-circle fa-fw"></i>
-        {{ leavingAsMember ? 'Saindo...' : 'Sair' }}
+        <IconUserPlus :size="18" />
+
+        Ingressar
       </button>
     </div>
   </div>
@@ -100,8 +85,17 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useMemberService } from '@/modules/card-modals/services/memberService';
+import { useDebounceFn } from '@vueuse/core';
+import { useDialog } from '@/composables/useDialog';
+import { useToast } from '@/composables/useToast';
+import { userService } from '@/services/userService';
+import { memberService } from '@/modules/card-modals/services/memberService';
 import { useAuthStore } from '@/stores/auth';
+
+import BaseDropdown from '@/components/common/BaseDropdown.vue';
+import BaseAvatar from '@/components/common/BaseAvatar.vue';
+
+import { IconUserPlus, IconPlus } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -119,426 +113,162 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['member-added', 'member-removed', 'user-joined', 'user-left']);
+const emit = defineEmits(['member-added', 'member-removed']);
 
+const dialog = useDialog();
+const toast = useToast();
 const auth = useAuthStore();
-const memberService = useMemberService();
 
-const showMembersMenu = ref(false);
+const hasFetchedMembers = ref(false);
 const availableMembers = ref([]);
-const memberSearchQuery = ref('');
+const query = ref('');
+const debouncedQuery = ref('');
+
+watch(
+  query,
+  useDebounceFn((value) => {
+    debouncedQuery.value = value;
+  }, 300),
+);
+
 const loadingMembers = ref(false);
-const addingMember = ref(false);
-const currentAddingMemberId = ref(null);
-const joiningAsMember = ref(false);
-const leavingAsMember = ref(false);
-const showMemberMenu = ref(false);
-const selectedMember = ref(null);
+const loadingAdd = ref(null);
+const loadingLeave = ref(false);
 
 const isCurrentUserMember = computed(() => {
-  if (!auth.user?.id || !props.card?.members) {
-    return false;
-  }
-  return props.card.members.some(member => member.id === auth.user.id);
+  if (!auth.user?.id || !props.card?.members) return false;
+
+  return props.card.members.some((member) => member.id === auth.user.id);
 });
+
+const cardMemberIds = computed(() => {
+  const members = props.card?.members ?? [];
+  return new Set(members.map((m) => m.id));
+});
+
+const availableNonCardMembers = computed(() =>
+  availableMembers.value.filter((member) => !cardMemberIds.value.has(member.id)),
+);
 
 const filteredMembers = computed(() => {
-  // Filtrar membros que já estão no card
-  const cardMemberIds = props.card?.members?.map(m => m.id) || [];
-  let members = availableMembers.value.filter(member => !cardMemberIds.includes(member.id));
+  const base = availableNonCardMembers.value;
 
-  if (!memberSearchQuery.value.trim()) {
-    return members;
-  }
-  const query = memberSearchQuery.value.toLowerCase().trim();
-  return members.filter(member =>
-    member.name.toLowerCase().includes(query)
-  );
+  if (!debouncedQuery.value.trim()) return base;
+
+  const query = debouncedQuery.value.toLowerCase();
+
+  return base.filter((member) => member.name.toLowerCase().includes(query));
 });
 
-function getInitials(name) {
-  if (!name) {
-    return '??';
-  }
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
-
-function getAvatarColor(name) {
-  if (!name) {
-    return '#5e6c84';
-  }
-
-  const colors = [
-    '#00b8d9', '#00a86b', '#0065ff', '#5243aa', '#ff5630',
-    '#ff8b00', '#36b37e', '#ffab00', '#6554c0', '#00c7e6',
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
-
-function toggleMembersMenu() {
-  showMembersMenu.value = !showMembersMenu.value;
-  if (showMembersMenu.value && availableMembers.value.length === 0) {
-    fetchMembers();
-  }
-}
-
-function closeMembersMenu() {
-  showMembersMenu.value = false;
-  memberSearchQuery.value = '';
-}
+const avatarUrl = (name) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=32&background=random`;
 
 async function fetchMembers() {
-  try {
-    loadingMembers.value = true;
-    const response = await memberService.searchDesigners();
+  if (hasFetchedMembers.value || loadingMembers.value) return;
 
-    if (Array.isArray(response)) {
-      availableMembers.value = response;
-    } else if (response?.data && Array.isArray(response.data)) {
-      availableMembers.value = response.data;
-    } else if (response?.success && response?.data) {
-      availableMembers.value = Array.isArray(response.data.data) ? response.data.data : (Array.isArray(response.data) ? response.data : []);
-    } else {
-      availableMembers.value = [];
-    }
-  } catch (error) {
-    console.error('Erro ao buscar membros:', error);
-    availableMembers.value = [];
+  query.value = '';
+  debouncedQuery.value = '';
+
+  loadingMembers.value = true;
+
+  try {
+    const { data } = await userService.all({ role: 'designer' });
+
+    availableMembers.value = data;
+    hasFetchedMembers.value = true;
+  } catch (err) {
+    handleApiError(err, 'Erro ao carregar membros.');
   } finally {
     loadingMembers.value = false;
   }
 }
 
-async function handleAddMember(member) {
-  if (!props.card?.id || addingMember.value) {
-    return;
-  }
+async function handleAdd(member) {
+  if (!member?.id) return;
+  if (loadingAdd.value === member.id) return;
 
-  addingMember.value = true;
-  currentAddingMemberId.value = member.id;
+  loadingAdd.value = member.id;
 
   try {
-    const response = await memberService.addMember(props.card.id, member.id, props.typePage);
-
-    // Fechar o menu de membros após adicionar
-    closeMembersMenu();
-
-    // Adicionar o membro à lista do card
-    if (props.card && !props.card.members) {
-      props.card.members = [];
-    }
-    if (props.card && !props.card.members.find(m => m.id === member.id)) {
-      props.card.members.push({
-        id: member.id,
-        name: member.name,
-      });
-    }
-
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Membro adicionado com sucesso',
-      });
-    }
-
     emit('member-added', member);
-  } catch (error) {
-    console.error('Erro ao adicionar membro:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao adicionar membro. Tente novamente.';
 
-    if (window.Swal) {
-      window.Swal.fire('Erro!', errorMessage, 'error');
-    } else {
-      alert(errorMessage);
-    }
+    await memberService.addMember(props.card.id, member.id, props.typePage);
+
+    toast.success('Usuário adicionado com sucesso.');
+  } catch (err) {
+    emit('member-removed', member.id);
+
+    handleApiError(err, 'Erro ao adicionar membro.');
   } finally {
-    addingMember.value = false;
-    currentAddingMemberId.value = null;
-  }
-}
-
-async function handleJoinAsMember() {
-  if (!props.card?.id || joiningAsMember.value || !auth.user?.id) {
-    return;
-  }
-
-  joiningAsMember.value = true;
-
-  try {
-    const response = await memberService.addMember(props.card.id, auth.user.id, props.typePage);
-
-    // Adicionar o usuário logado à lista de membros do card
-    if (props.card && !props.card.members) {
-      props.card.members = [];
-    }
-    if (props.card && auth.user && !props.card.members.find(m => m.id === auth.user.id)) {
-      props.card.members.push({
-        id: auth.user.id,
-        name: auth.user.name,
-      });
-    }
-
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Você ingressou no card com sucesso',
-      });
-    }
-
-    emit('user-joined');
-  } catch (error) {
-    console.error('Erro ao ingressar no card:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao ingressar no card. Tente novamente.';
-
-    if (window.Swal) {
-      window.Swal.fire('Erro!', errorMessage, 'error');
-    } else {
-      alert(errorMessage);
-    }
-  } finally {
-    joiningAsMember.value = false;
+    loadingAdd.value = null;
   }
 }
 
 async function handleLeaveAsMember() {
-  if (!props.card?.id || leavingAsMember.value || !auth.user?.id) {
-    return;
-  }
+  if (!props.card?.id || loadingLeave.value || !auth.user?.id) return;
 
-  leavingAsMember.value = true;
+  loadingLeave.value = true;
 
   try {
-    const response = await memberService.removeMember(props.card.id, auth.user.id, props.typePage);
+    await memberService.removeMember(props.card.id, auth.user.id, props.typePage);
 
-    // Remover o usuário logado da lista de membros do card
-    if (props.card && Array.isArray(props.card.members)) {
-      props.card.members = props.card.members.filter(m => m.id !== auth.user.id);
-    }
+    toast.success('Você saiu do card com sucesso');
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Você saiu do card com sucesso',
-      });
-    }
+    emit('member-removed', auth.user.id);
+  } catch (err) {
+    console.error('Erro ao sair do card:', err);
 
-    emit('user-left');
-  } catch (error) {
-    console.error('Erro ao sair do card:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao sair do card. Tente novamente.';
-
-    if (window.Swal) {
-      window.Swal.fire('Erro!', errorMessage, 'error');
-    } else {
-      alert(errorMessage);
-    }
+    handleApiError(err, 'Erro ao sair do card. Tente novamente.');
   } finally {
-    leavingAsMember.value = false;
+    loadingLeave.value = false;
   }
 }
 
-function handleMemberClick(member) {
-  if (showMemberMenu.value && selectedMember.value?.id === member.id) {
-    showMemberMenu.value = false;
-    selectedMember.value = null;
-  } else {
-    showMemberMenu.value = true;
-    selectedMember.value = member;
-  }
+async function confirmRemoveMember(member) {
+  if (!member?.id) return;
+
+  const confirmed = await dialog.confirmDelete({
+    title: 'Remover membro?',
+    text: `Deseja remover ${member.name} do card?`,
+    showCancelButton: true,
+    confirmButtonText: 'Sim, remover',
+  });
+
+  if (!confirmed) return;
+
+  await removeMember(member);
 }
 
-async function handleRemoveMember(member) {
-  if (!props.card?.id || !member?.id) {
-    return;
-  }
-
-  if (window.Swal) {
-    const result = await window.Swal.fire({
-      title: 'Remover membro?',
-      text: `Deseja remover ${member.name} do card?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sim, remover',
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!result.isConfirmed) {
-      showMemberMenu.value = false;
-      selectedMember.value = null;
-      return;
-    }
-  }
+async function removeMember(member) {
+  emit('member-removed', member.id);
 
   try {
-    const response = await memberService.removeMember(props.card.id, member.id, props.typePage);
+    await memberService.removeMember(props.card.id, member.id, props.typePage);
 
-    // Remover o membro da lista do card
-    if (props.card && Array.isArray(props.card.members)) {
-      props.card.members = props.card.members.filter(m => m.id !== member.id);
-    }
+    toast.success('Membro removido com sucesso.');
+  } catch (err) {
+    emit('member-added', member);
 
-    // Adicionar o membro de volta à lista de disponíveis
-    if (!availableMembers.value.find(m => m.id === member.id)) {
-      availableMembers.value.push(member);
-    }
+    console.error('Erro ao remover membro:', err);
 
-    showMemberMenu.value = false;
-    selectedMember.value = null;
-
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Membro removido com sucesso',
-      });
-    }
-
-    emit('member-removed', member);
-  } catch (error) {
-    console.error('Erro ao remover membro:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao remover membro. Tente novamente.';
-
-    if (window.Swal) {
-      window.Swal.fire('Erro!', errorMessage, 'error');
-    } else {
-      alert(errorMessage);
-    }
+    handleApiError(err, 'Erro ao remover membro. Tente novamente.');
   }
 }
 
-// Fechar menu de membro ao clicar fora
-watch(() => showMemberMenu.value, (isOpen) => {
-  if (isOpen) {
-    const closeMenu = (e) => {
-      if (!e.target.closest('.avatar')) {
-        showMemberMenu.value = false;
-        selectedMember.value = null;
-        document.removeEventListener('click', closeMenu);
-      }
-    };
-    setTimeout(() => {
-      document.addEventListener('click', closeMenu);
-    }, 0);
-  }
-});
+function handleApiError(error, fallbackMessage) {
+  console.error(error);
 
-// Resetar quando o card mudar
-watch(() => props.card?.id, () => {
-  showMemberMenu.value = false;
-  selectedMember.value = null;
-  closeMembersMenu();
-});
+  const message = error.response?.data?.message || fallbackMessage;
+
+  toast.error(message);
+}
 </script>
 
 <style lang="scss" scoped>
-.members-section {
-  margin-bottom: 24px;
-}
-
-
-
-.members-section-menu {
-  top: 100%;
-  left: 0;
-  width: 340px;
-  max-height: 600px;
-  z-index: 1000;
-  background-color: var(--ds-background-accent-blue-subtlest-hovered);
-}
-
-.members-section-list-title {
-    font-size: 15px;
-}
-
-.members-section-menu-back,
-.members-section-menu-close {
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--bs-secondary-bg);
-  }
-}
-
-.members-section-menu-section-title {
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-}
-
-.members-section-menu-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover:not(.is-adding) {
-    background-color: var(--bs-secondary-bg);
-  }
-
-  &:active:not(.is-adding) {
-    background-color: var(--bs-tertiary-bg);
-  }
-
-  &.is-adding {
-    opacity: 0.7;
-    cursor: wait;
-  }
-}
-
-.members-section-menu-avatar {
-  width: 32px;
-  height: 32px;
-  font-size: 0.8125rem;
-}
-
-.members-section-menu-name {
-  font-size: 0.875rem;
-}
-
-.members-section-member-avatar {
-  width: 40px;
-  height: 40px;
-  font-size: 0.875rem;
-  cursor: default;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: var(--bs-box-shadow);
-  }
-
-  &.is-clickable {
-    cursor: pointer;
-  }
-}
-
-.members-section-member-popover {
-  top: 100%;
-  left: 0;
-  min-width: 180px;
-  z-index: 1000;
-}
-
-.members-section-member-remove {
-  padding: 0.625rem 1rem;
-  background: antiquewhite;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--bs-danger-bg-subtle);
-  }
-
-  i {
-    font-size: 0.75rem;
-  }
+.avatar-btn {
+  --bs-avatar-bg: var(--bs-btn-bg);
+  --bs-btn-padding-x: 0;
+  --bs-btn-padding-y: 0;
+  color: var(--bs-btn-color);
 }
 </style>
-

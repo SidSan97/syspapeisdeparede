@@ -28,4 +28,3 @@ class LayoutColumnNameSeeder extends Seeder
         }
     }
 }
-

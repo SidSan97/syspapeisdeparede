@@ -120,14 +120,14 @@ class BudgetAndOrderSeeder extends Seeder
             DB::commit();
 
             $this->command->newLine(2);
-            $this->command->info("✅ Criados com sucesso:");
+            $this->command->info('✅ Criados com sucesso:');
             $this->command->info("   - {$budgetCount} orçamentos");
             $this->command->info("   - {$orderCount} pedidos");
-            $this->command->info("   - Total: " . ($budgetCount + $orderCount) . " registros");
+            $this->command->info('   - Total: '.($budgetCount + $orderCount).' registros');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->command->error('❌ Erro ao criar registros: ' . $e->getMessage());
+            $this->command->error('❌ Erro ao criar registros: '.$e->getMessage());
             throw $e;
         }
     }
@@ -220,7 +220,7 @@ class BudgetAndOrderSeeder extends Seeder
                     'width' => $width,
                     'height' => $height,
                     'total_area' => $totalArea,
-                    'collection_model_id' => !empty($collectionModelIds)
+                    'collection_model_id' => ! empty($collectionModelIds)
                         ? fake()->randomElement($collectionModelIds)
                         : \App\Models\CollectionModel::factory(),
                 ]);
@@ -229,7 +229,7 @@ class BudgetAndOrderSeeder extends Seeder
         }
 
         // Atualizar primary_budget_room_id com o primeiro room
-        if (!empty($rooms)) {
+        if (! empty($rooms)) {
             $budget->update(['primary_budget_room_id' => $rooms[0]->id]);
         }
 
@@ -242,5 +242,4 @@ class BudgetAndOrderSeeder extends Seeder
 
         $budget->update(['total_area' => round($totalArea, 2)]);
     }
-
 }

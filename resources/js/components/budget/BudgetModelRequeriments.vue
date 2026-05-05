@@ -46,7 +46,7 @@
           :src="resolveStorageUrl(uploadedImagePath)"
           alt="Imagem de referência"
           class="rounded"
-          style="max-height: 80px; max-width: 120px; object-fit: contain;"
+          style="max-height: 80px; max-width: 120px; object-fit: contain"
           @error="handleImageError"
         />
         <div class="flex-grow-1 small">
@@ -66,10 +66,7 @@
     <div v-if="requiresCollection" class="mb-2">
       <div class="mb-2 position-relative">
         <!-- Resumo da arte escolhida (edição / após selecionar na grade) -->
-        <div
-          v-if="loadingSelectionSummary"
-          class="mt-2 text-muted small"
-        >
+        <div v-if="loadingSelectionSummary" class="mt-2 text-muted small">
           <span class="spinner-border spinner-border-sm me-2" role="status"></span>
           Carregando seleção da coleção...
         </div>
@@ -81,22 +78,20 @@
             :src="selectionSummary.imageUrl"
             alt=""
             class="rounded flex-shrink-0 border"
-            style="width: 72px; height: 72px; object-fit: cover;"
+            style="width: 72px; height: 72px; object-fit: cover"
             loading="lazy"
             @error="handleSummaryImageError"
           />
           <div class="small min-w-0 flex-grow-1">
-            <div
-              v-if="selectionSummary.categoryLine"
-              class="text-muted mb-1 text-break"
-            >
+            <div v-if="selectionSummary.categoryLine" class="text-muted mb-1 text-break">
               {{ selectionSummary.categoryLine }}
             </div>
             <div class="fw-semibold text-break">
               {{ selectionSummary.imageName }}
             </div>
           </div>
-        </div> <br>
+        </div>
+        <br />
 
         <label class="form-label">Coleção</label>
         <div class="input-group">
@@ -114,25 +109,27 @@
           <button
             v-if="selectedCollectionId"
             type="button"
-            class="btn btn-outline-secondary"
+            class="btn btn-default"
             :disabled="disabled"
             title="Limpar seleção"
-            @mousedown.prevent="clearCollectionSelection"
+            @click.prevent="clearCollectionSelection"
           >
-            ×
+            <IconX :size="18" />
           </button>
         </div>
 
         <div
           v-show="showSearchResults"
           class="list-group position-absolute w-100 shadow overflow-auto"
-          style="z-index: 1050; max-height: 220px;"
+          style="z-index: 1050; max-height: 220px"
         >
           <template v-if="loadingCollections">
             <div class="list-group-item list-group-item-secondary">Buscando...</div>
           </template>
           <template v-else-if="collectionError">
-            <div class="list-group-item list-group-item-danger">{{ collectionError }}</div>
+            <div class="list-group-item list-group-item-danger">
+              {{ collectionError }}
+            </div>
           </template>
           <template v-else-if="collectionSearchQuery.length < 1 && searchResults.length === 0">
             <div class="list-group-item list-group-item-secondary">Digite para buscar coleções</div>
@@ -150,33 +147,37 @@
             @mousedown.prevent="selectCollection(item)"
           >
             {{ item.name }}
-            <span v-if="item.parent?.name" class="text-muted small ms-1">({{ item.parent.name }})</span>
+            <span v-if="item.parent?.name" class="text-muted small ms-1"
+              >({{ item.parent.name }})</span
+            >
           </button>
         </div>
       </div>
 
       <div v-if="selectedCollectionId" class="mt-2">
         <div v-if="loadingImages" class="text-muted small">Carregando artes...</div>
-        <div v-else-if="imagesError" class="text-danger small">{{ imagesError }}</div>
+        <div v-else-if="imagesError" class="text-danger small">
+          {{ imagesError }}
+        </div>
         <div v-else-if="!images.length" class="text-muted small">Nenhuma arte disponível.</div>
         <div v-else class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2">
-          <div
-            v-for="image in images"
-            :key="image.id"
-            class="col show-collection-images"
-          >
+          <div v-for="image in images" :key="image.id" class="col show-collection-images">
             <div
               role="button"
               tabindex="0"
               class="card h-100 w-100 p-0 text-start border overflow-hidden"
               :class="[
                 wall.collection_referring_model == image.id ? 'border-success border-2' : '',
-                disabled ? 'opacity-75 pe-none' : ''
+                disabled ? 'opacity-75 pe-none' : '',
               ]"
-              :style="{ cursor: disabled ? 'not-allowed' : 'pointer' }"
+              :style="{
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }"
               :aria-disabled="disabled"
               @click="!disabled && (wall.collection_referring_model = String(image.id))"
-              @keydown.enter.prevent="!disabled && (wall.collection_referring_model = String(image.id))"
+              @keydown.enter.prevent="
+                !disabled && (wall.collection_referring_model = String(image.id))
+              "
             >
               <div class="ratio ratio-1x1">
                 <img
@@ -187,7 +188,10 @@
                 />
               </div>
               <div class="card-body p-2">
-                <span class="small d-block" :title="image.name || image.title || `Arte ${image.id}`">
+                <span
+                  class="small d-block"
+                  :title="image.name || image.title || `Arte ${image.id}`"
+                >
                   {{ image.name || image.title || `Arte ${image.id}` }}
                 </span>
               </div>
@@ -201,9 +205,11 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import debounce from 'lodash/debounce';
+import { useDebounceFn } from '@vueuse/core';
+import { useToast } from '@/composables/useToast';
 import { useBudgetOrderService } from '@/modules/budgets/services/budgetOrderService';
-import { useBudgetService } from '@/modules/budgets/services/budgetService';
+import { IconX } from '@tabler/icons-vue';
+import { budgetService } from '@/services/budgetService';
 
 const props = defineProps({
   wall: { type: Object, required: true },
@@ -211,8 +217,9 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
 });
 
+const toast = useToast();
+
 const budgetOrderService = useBudgetOrderService();
-const budgetService = useBudgetService();
 const fileInputRef = ref(null);
 const uploadingFile = ref(false);
 const collectionSearchQuery = ref('');
@@ -235,11 +242,14 @@ const requiresFiles = computed(() => Boolean(props.model?.requests?.file));
 const requiresCollection = computed(() => Boolean(props.model?.requests?.collection));
 
 const hasRequirements = computed(
-  () => requiresComment.value || requiresLink.value || requiresFiles.value || requiresCollection.value
+  () =>
+    requiresComment.value || requiresLink.value || requiresFiles.value || requiresCollection.value,
 );
 
 const uploadedImagePath = computed(() => {
-  const files = Array.isArray(props.wall?.files_referring_model) ? props.wall.files_referring_model : [];
+  const files = Array.isArray(props.wall?.files_referring_model)
+    ? props.wall.files_referring_model
+    : [];
   return files[0] ?? null;
 });
 
@@ -253,7 +263,7 @@ watch(
       if (wall.collection_referring_model == null) wall.collection_referring_model = '';
     }
   },
-  { immediate: true, deep: false }
+  { immediate: true, deep: false },
 );
 
 watch(
@@ -269,7 +279,7 @@ watch(
       images.value = [];
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -279,8 +289,7 @@ watch(
       selectionSummary.value = null;
       return;
     }
-    const sid =
-      newId != null && String(newId).trim() !== '' ? String(newId).trim() : '';
+    const sid = newId != null && String(newId).trim() !== '' ? String(newId).trim() : '';
     if (!sid) {
       selectionSummary.value = null;
       return;
@@ -302,7 +311,7 @@ watch(
       loadingSelectionSummary.value = false;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const DEFAULT_COVER = '/assets/img/no-image.jpg';
@@ -310,7 +319,8 @@ const DEFAULT_COVER = '/assets/img/no-image.jpg';
 function getImageUrl(image) {
   const url = image?.url ?? image?.path_name ?? image?.pathName;
   if (url && (url.startsWith('/') || /^https?:\/\//i.test(url))) return url;
-  if (url) return `${window.location.origin.replace(/\/$/, '')}/storage/${String(url).replace(/^storage\//, '')}`;
+  if (url)
+    return `${window.location.origin.replace(/\/$/, '')}/storage/${String(url).replace(/^storage\//, '')}`;
   return DEFAULT_COVER;
 }
 
@@ -333,7 +343,7 @@ function syncSummaryFromLocalImage(image) {
   const ctx = selectedCategoryContext.value;
   const categoryLine = ctx?.parentName
     ? `${ctx.parentName} › ${ctx.name || ''}`.trim()
-    : (ctx?.name || '');
+    : ctx?.name || '';
   selectionSummary.value = {
     imageUrl: getImageUrl(image),
     imageName: image.name || image.title || `Arte ${image.id}`,
@@ -356,7 +366,7 @@ async function hydrateSelectionSummaryFromApi(imageId) {
   const cat = payload.category;
   const categoryLine = cat?.parent?.name
     ? `${cat.parent.name} › ${cat.name || ''}`.trim()
-    : (cat?.name || '');
+    : cat?.name || '';
 
   selectionSummary.value = {
     imageUrl: payload.url || getImageUrl(payload),
@@ -390,12 +400,8 @@ async function handleFileChange(event) {
     }
   } catch (err) {
     console.error('Erro ao enviar imagem:', err);
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'error',
-        title: err?.response?.data?.message || 'Não foi possível enviar a imagem.',
-      });
-    }
+
+    toast.error(err?.response?.data?.message || 'Não foi possível enviar a imagem.');
   } finally {
     uploadingFile.value = false;
     input.value = '';
@@ -428,7 +434,7 @@ async function runSearch() {
   }
 }
 
-const performSearch = debounce(runSearch, 300);
+const performSearch = useDebounceFn(runSearch, 300);
 
 function onSearchFocus() {
   showSearchResults.value = true;

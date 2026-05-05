@@ -1,11 +1,16 @@
 <script setup>
-import axios from 'axios';
-import { useAuthStore } from '@/stores/auth';
 import { onMounted, ref, useTemplateRef, computed } from 'vue';
+import { Modal } from 'bootstrap';
+import { IconDotsVertical } from '@tabler/icons-vue';
+import { http } from '@/lib/http';
+import { useAuthStore } from '@/stores/auth';
+import CollectionImportModal from '@/components/collection-import/CollectionImportModal.vue';
 
 const emit = defineEmits(['saved']);
 const auth = useAuthStore();
 const isAdmin = computed(() => auth.hasPermission('manage collections'));
+
+const importModalRef = useTemplateRef('importModalRef');
 
 const availableCollections = ref([]);
 const selectedRootCategoryIds = ref([]);
@@ -62,7 +67,7 @@ const saveCollection = async () => {
     formDataToSend.append('images[]', formData.value.image);
     formDataToSend.append('names[]', formData.value.name.trim());
 
-    const res = await axios.post('v1/collection-images', formDataToSend, {
+    const res = await http.post('v1/collection-images', formDataToSend, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -117,7 +122,7 @@ const fetchSubcategoriesForRoot = async (rootId) => {
   };
 
   try {
-    const { data } = await axios.get(`v1/collection-categories/children/${rootId}`);
+    const { data } = await http.get(`v1/collection-categories/children/${rootId}`);
     const payload = data?.data ?? data ?? [];
     const items = Array.isArray(payload)
       ? payload.map((item) => ({
@@ -171,7 +176,7 @@ const toggleRootCategory = async (rootId) => {
 
 const fetchCollectionsForModal = async () => {
   try {
-    const { data } = await axios.get('v1/collection-categories', {
+    const { data } = await http.get('v1/collection-categories', {
       params: { tree: true },
     });
     const payload = data?.data ?? data ?? {};
@@ -186,6 +191,18 @@ const fetchCollectionsForModal = async () => {
   } catch (error) {
     availableCollections.value = [];
   }
+};
+
+const shareCatalogLink = () => {
+  const url = `${window.location.origin}/catalogo`;
+  navigator.clipboard.writeText(url).then(() => {
+    window.Swal.fire({
+      title: 'Link copiado!',
+      text: url,
+      icon: 'success',
+      confirmButtonText: 'Ok',
+    });
+  });
 };
 
 const openAddModal = () => {
@@ -210,7 +227,7 @@ onMounted(async () => {
   await fetchCollectionsForModal();
 
   if (addModalRef.value) {
-    addModal.value = new window.bootstrap.Modal(addModalRef.value);
+    addModal.value = new Modal(addModalRef.value);
   }
 });
 </script>
@@ -224,17 +241,27 @@ onMounted(async () => {
   </RouterLink>
   <div class="dropdown" v-if="isAdmin">
     <button
-      class="btn btn-outline-default"
+      class="btn btn-outline-default btn-icon"
       type="button"
       data-bs-toggle="dropdown"
       aria-expanded="false"
     >
-      <i class="fa fa-ellipsis-v fa-fw"></i>
+      <IconDotsVertical :size="18" />
     </button>
     <div class="dropdown-menu dropdown-menu-end">
-      <RouterLink to="/settings/colecoes" class="dropdown-item">Categorias</RouterLink>
+      <RouterLink :to="{ name: 'settings.collections' }" class="dropdown-item"
+        >Categorias</RouterLink
+      >
+      <button class="dropdown-item" type="button" @click="importModalRef.open()">
+        Importar ZIP
+      </button>
+      <button class="dropdown-item" type="button" @click="shareCatalogLink">
+        Compartilhar catálogo
+      </button>
     </div>
   </div>
+
+  <CollectionImportModal ref="importModalRef" @imported="emit('saved')" />
 
   <Teleport to="body">
     <!-- Modal Adicionar Coleção -->
@@ -286,7 +313,7 @@ onMounted(async () => {
                   />
                   <label
                     for="collection-image"
-                    class="btn btn-outline-secondary mb-0"
+                    class="btn btn-default mb-0"
                     style="cursor: pointer"
                   >
                     Escolher Arquivo
@@ -305,12 +332,10 @@ onMounted(async () => {
                     v-for="collection in availableCollections"
                     :key="collection.id"
                     type="button"
-                    class="btn btn-sm"
-                    :class="
-                      selectedRootCategoryIds.includes(collection.id)
-                        ? 'btn-primary'
-                        : 'btn-outline-secondary'
-                    "
+                    class="btn btn-outline-default btn-sm"
+                    :class="{
+                      active: selectedRootCategoryIds.includes(collection.id),
+                    }"
                     @click="toggleRootCategory(collection.id)"
                   >
                     {{ collection.name }}
@@ -326,16 +351,9 @@ onMounted(async () => {
                   Selecione pelo menos uma categoria para ver as subcategorias.
                 </div>
 
-                <div
-                  v-for="rootId in selectedRootCategoryIds"
-                  :key="`root-${rootId}`"
-                  class="mb-2"
-                >
-                  <div class="fw-semibold mb-1">
-                    {{
-                      availableCollections.find((c) => c.id === rootId)?.name ||
-                      'Categoria'
-                    }}
+                <div v-for="rootId in selectedRootCategoryIds" :key="`root-${rootId}`" class="mb-2">
+                  <div class="h5 mt-4">
+                    {{ availableCollections.find((c) => c.id === rootId)?.name || 'Categoria' }}
                   </div>
 
                   <div
@@ -359,16 +377,12 @@ onMounted(async () => {
                         v-for="subcategory in subcategoriesByRoot[rootId]"
                         :key="subcategory.id"
                         type="button"
-                        class="btn btn-sm"
-                        :class="
-                          selectedSubcategoryIds.includes(subcategory.id)
-                            ? 'btn-primary'
-                            : 'btn-outline-secondary'
-                        "
+                        class="btn btn-outline-default btn-sm"
+                        :class="{
+                          active: selectedSubcategoryIds.includes(subcategory.id),
+                        }"
                         @click="
-                          selectedSubcategoryIds = selectedSubcategoryIds.includes(
-                            subcategory.id,
-                          )
+                          selectedSubcategoryIds = selectedSubcategoryIds.includes(subcategory.id)
                             ? selectedSubcategoryIds.filter((id) => id !== subcategory.id)
                             : [...selectedSubcategoryIds, subcategory.id]
                         "
@@ -382,10 +396,7 @@ onMounted(async () => {
                   </div>
                 </div>
 
-                <small
-                  v-if="selectedSubcategoryIds.length"
-                  class="form-text text-muted"
-                >
+                <small v-if="selectedSubcategoryIds.length" class="form-text text-muted">
                   A imagem será adicionada em todas as subcategorias selecionadas.
                 </small>
               </div>

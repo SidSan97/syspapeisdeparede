@@ -1,7 +1,12 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { useFormatting } from '@/composables/useFormatting';
+import { IconX } from '@tabler/icons-vue';
+import { ref, computed, watch, nextTick } from 'vue';
+import BaseAvatar from './common/BaseAvatar.vue';
+import BaseDropdown from './common/BaseDropdown.vue';
 
-// Props
+const { formatDate } = useFormatting();
+
 const props = defineProps({
   comment: {
     type: Object,
@@ -11,68 +16,63 @@ const props = defineProps({
       user_name: 'Autor',
       comment: '',
       created_at: new Date(),
-    })
+    }),
   },
   saving: {
     type: Boolean,
-    default: false
-  }
-})
+    default: false,
+  },
+});
 
-// Emits
-const emit = defineEmits(['save', 'delete'])
+const emit = defineEmits(['save', 'delete']);
 
-// Estado interno
-const editMode = ref(false)
-const showDeleteConfirm = ref(false)
-const inputRef = ref(null)
-const newComment = ref(props.comment.comment)
+const editMode = ref(false);
+const showDeleteConfirm = ref(false);
+const inputRef = ref(null);
+const newComment = ref(props.comment.comment);
 
-// Atualiza newComment quando prop mudar
-watch(() => props.comment.comment, (val) => {
-  newComment.value = val
-})
+watch(
+  () => props.comment.comment,
+  (val) => {
+    newComment.value = val;
+  },
+);
 
-// Computed
-const canSave = computed(() => newComment.value.trim().length > 0 && !props.saving)
+const canSave = computed(() => newComment.value.trim().length > 0 && !props.saving);
 
-// Funções
 const openEdit = async () => {
-  editMode.value = true
-  await nextTick()
-  inputRef.value?.focus()
-}
+  editMode.value = true;
+  await nextTick();
+  inputRef.value?.focus();
+};
 
 const cancel = () => {
-  newComment.value = props.comment.comment
-  editMode.value = false
-}
+  newComment.value = props.comment.comment;
+  editMode.value = false;
+};
 
 const save = () => {
-  emit('save', { id: props.comment.id, newComment: newComment.value })
-  editMode.value = false
-}
+  emit('save', { id: props.comment.id, newComment: newComment.value });
+  editMode.value = false;
+};
 
 const deleteComment = () => {
-  emit('delete', props.comment.id)
-}
+  emit('delete', props.comment.id);
+};
 
-// Utilitários
 const getInitials = (name) => {
-  return name.split(' ').map(n => n[0].toUpperCase()).join('')
-}
-
-const formatDate = (date) => {
-  const d = new Date(date)
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
-}
+  return name
+    .split(' ')
+    .map((n) => n[0].toUpperCase())
+    .join('');
+};
 </script>
 
 <template>
   <div class="comment-item mb-3">
     <!-- Visualização -->
     <div class="d-flex gap-2">
-      <span class="avatar text-bg-primary">{{ getInitials(comment.user_name) }}</span>
+      <BaseAvatar>{{ getInitials(comment.user_name) }}</BaseAvatar>
       <div class="flex-1">
         <div class="mb-2">
           <strong class="fs-sm me-2">{{ comment.user_name }}</strong>
@@ -88,25 +88,42 @@ const formatDate = (date) => {
               Editar
             </a>
             &bull;
-            <a href="#" class="text-body text-decoration-underline" @click.prevent="showDeleteConfirm = !showDeleteConfirm">
-              Excluir
-            </a>
-          </div>
+            <BaseDropdown>
+              <template #trigger="{ toggle }">
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0 fs-xs fw-normal text-body text-decoration-underline"
+                  @click.prevent="toggle"
+                >
+                  Excluir
+                </button>
+              </template>
 
-          <!-- Confirmação de exclusão -->
-          <div v-if="showDeleteConfirm" class="dropdown-menu show">
-            <h6 class="dropdown-header d-flex justify-content-between">
-              Excluir comentário?
-              <a href="#" class="text-body text-decoration-none" @click="showDeleteConfirm = false">
-                <i class="fa fa-times"></i>
-              </a>
-            </h6>
-            <p class="text-muted mb-2 px-3" style="max-width: 200px">
-              A exclusão de um comentário é permanente. Não é possível desfazer.
-            </p>
-            <div class="p-3">
-              <button type="button" class="btn btn-danger w-100" @click="deleteComment">Excluir comentário</button>
-            </div>
+              <template #default="{ open, close }">
+                <h6 class="dropdown-header d-flex justify-content-between">
+                  <span></span>
+                  <span>Excluir comentário?</span>
+                  <a href="#" class="text-body text-decoration-none" @click.prevent="close">
+                    <IconX :size="18" />
+                  </a>
+                </h6>
+                <p class="mb-2 px-3" style="max-width: 200px">
+                  A exclusão de um comentário é permanente. Não é possível desfazer.
+                </p>
+                <div class="p-3">
+                  <button
+                    type="button"
+                    class="btn btn-danger w-100"
+                    @click="
+                      deleteComment();
+                      toggle();
+                    "
+                  >
+                    Excluir comentário
+                  </button>
+                </div>
+              </template>
+            </BaseDropdown>
           </div>
         </div>
 
@@ -122,19 +139,20 @@ const formatDate = (date) => {
           ></textarea>
 
           <div class="d-flex gap-2">
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="save"
-              :disabled="!canSave"
-            >
-              <span v-if="props.saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <button type="button" class="btn btn-primary" @click="save" :disabled="!canSave">
+              <span
+                v-if="props.saving"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
               Salvar
             </button>
-            <button type="button" class="btn btn-default" @click="cancel">Descartar as alterações</button>
+            <button type="button" class="btn btn-default" @click="cancel">
+              Descartar as alterações
+            </button>
           </div>
         </div>
-
       </div>
     </div>
   </div>

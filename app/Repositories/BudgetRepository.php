@@ -2,20 +2,20 @@
 
 namespace App\Repositories;
 
+use App\Actions\Budget\DuplicateBudgetAction;
 use App\Models\Budget;
 use App\Models\BudgetRoom;
 use App\Models\Order;
+use App\Models\OrderBudget;
+use App\Services\LayoutCardHistoryService;
 use App\Support\Budget\BudgetCalculator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Models\OrderBudget;
-use App\Services\LayoutCardHistoryService;
-use App\Repositories\DropshippingRepository;
 
-class BudgetRepository {
-
+class BudgetRepository
+{
     protected $historyService;
 
     public function __construct(
@@ -45,7 +45,7 @@ class BudgetRepository {
 
         $query = Budget::with('rooms.walls.collectionModel');
 
-        if(!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
@@ -329,7 +329,7 @@ class BudgetRepository {
 
             // Processar dados mapeados por parede
             $wallDataMapping = [];
-            if (!empty($data['wall_referring_model_data'])) {
+            if (! empty($data['wall_referring_model_data'])) {
                 $decoded = json_decode($data['wall_referring_model_data'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                     $wallDataMapping = $decoded;
@@ -338,7 +338,7 @@ class BudgetRepository {
 
             // Processar collection_referring_model mapeado por parede
             $wallImageMapping = [];
-            if (!empty($data['collection_referring_model'])) {
+            if (! empty($data['collection_referring_model'])) {
                 $decoded = json_decode($data['collection_referring_model'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                     $wallImageMapping = $decoded;
@@ -373,14 +373,14 @@ class BudgetRepository {
                     }
 
                     $wallFilesKey = "wall_files.{$wall->id}";
-                    if (!$wallFiles && isset($data[$wallFilesKey])) {
+                    if (! $wallFiles && isset($data[$wallFilesKey])) {
                         $wallFiles = $data[$wallFilesKey];
-                        if (!is_array($wallFiles)) {
+                        if (! is_array($wallFiles)) {
                             $wallFiles = [$wallFiles];
                         }
                     }
 
-                    if ($wallFiles && is_array($wallFiles) && !empty($wallFiles)) {
+                    if ($wallFiles && is_array($wallFiles) && ! empty($wallFiles)) {
                         $existingFiles = is_array($wall->files_referring_model)
                             ? $wall->files_referring_model
                             : [];
@@ -396,7 +396,7 @@ class BudgetRepository {
                         $newFiles = array_diff($mergedFiles, $existingFiles);
                         $allNewFiles = array_merge($allNewFiles, $newFiles);
 
-                        if (!empty($mergedFiles)) {
+                        if (! empty($mergedFiles)) {
                             $wallUpdatePayload['files_referring_model'] = $mergedFiles;
                         }
                     }
@@ -405,7 +405,7 @@ class BudgetRepository {
                         $wallUpdatePayload['collection_referring_model'] = $wallImageMapping[$wall->id];
                     }
 
-                    if (!empty($wallUpdatePayload)) {
+                    if (! empty($wallUpdatePayload)) {
                         $wall->update($wallUpdatePayload);
                     }
                 }
@@ -429,13 +429,13 @@ class BudgetRepository {
             // Garante um card (order_budget) por parede do orçamento no pedido
             $this->orderBudgetRepository->syncFromBudget($order, $budget);
 
-            if (!empty($allNewFiles) && Auth::check()) {
+            if (! empty($allNewFiles) && Auth::check()) {
                 $user = Auth::user();
                 $orderBudgets = OrderBudget::where('order_id', $order->id)->get();
 
                 foreach ($allNewFiles as $filePath) {
                     $fileName = basename($filePath);
-                    $fileUrl = asset('storage/' . $filePath);
+                    $fileUrl = asset('storage/'.$filePath);
 
                     foreach ($orderBudgets as $orderBudget) {
                         $this->historyService->logFileAttachment($orderBudget->id, $user, $fileName, $fileUrl);
@@ -479,98 +479,12 @@ class BudgetRepository {
         return $stringValue !== '' ? $stringValue : null;
     }
 
+    /**
+     * @deprecated
+     */
     public function duplicate(Budget $source): Budget
     {
-        $source->loadMissing(['rooms.walls', 'dropshippingData']);
-
-        return DB::transaction(function () use ($source) {
-            $budget = Budget::create([
-                'user_id' => $source->user_id,
-                'tenant_id' => $source->tenant_id,
-                'order_id' => null,
-                'name' => $source->name,
-                'total_area' => $source->total_area,
-                'total_amount' => $source->total_amount,
-                'total_amount_installments' => $source->total_amount_installments,
-                'total_amount_markup' => $source->total_amount_markup,
-                'total_amount_installments_markup' => $source->total_amount_installments_markup,
-                'delivery_time' => $source->delivery_time,
-                'payment_method' => $source->payment_method,
-                'installment_limit' => $source->installment_limit,
-                'installments' => $source->installments,
-                'cep' => $source->cep,
-                'selected_carrier_name' => $source->selected_carrier_name,
-                'selected_carrier_price' => $source->selected_carrier_price,
-                'selected_carrier_delivery_time' => $source->selected_carrier_delivery_time,
-                'carriers_snapshot' => $source->carriers_snapshot,
-                'primary_budget_room_id' => null,
-                'status' => $source->status,
-                'payment_file' => null,
-                'dropshipping_budget' => $source->dropshipping_budget,
-            ]);
-
-            foreach ($source->rooms as $room) {
-                $newRoom = $budget->rooms()->create([
-                    'tenant_id' => $room->tenant_id,
-                    'name' => $room->name,
-                    'position' => $room->position,
-                    'raw_payload' => $room->raw_payload,
-                ]);
-
-                foreach ($room->walls as $wall) {
-                    $newRoom->walls()->create([
-                        'tenant_id' => $wall->tenant_id,
-                        'name' => $wall->name,
-                        'position' => $wall->position,
-                        'width' => $wall->width,
-                        'height' => $wall->height,
-                        'continue_same_art' => $wall->continue_same_art,
-                        'continuations' => $wall->continuations,
-                        'collection_model_id' => $wall->collection_model_id,
-                        'total_area' => $wall->total_area,
-                        'comment_referring_model' => $wall->comment_referring_model,
-                        'link_referring_model' => $wall->link_referring_model,
-                        'files_referring_model' => $wall->files_referring_model,
-                        'collection_referring_model' => $wall->collection_referring_model,
-                        'request_layout_referring_model' => $wall->request_layout_referring_model,
-                        'strip_height' => $wall->strip_height,
-                        'strip_count' => $wall->strip_count,
-                    ]);
-                }
-            }
-
-            $primaryRoomId = $budget->rooms()->orderBy('position')->value('id');
-            if ($primaryRoomId) {
-                $budget->update(['primary_budget_room_id' => $primaryRoomId]);
-            }
-
-            if ($source->dropshipping_budget && $source->dropshippingData) {
-                $dd = $source->dropshippingData;
-                $this->dropshippingRepository->create(
-                    [
-                        'name' => $dd->name,
-                        'person_type' => $dd->person_type,
-                        'cpf_cnpj' => $dd->cpf_cnpj,
-                        'IE' => $dd->IE,
-                        'email' => $dd->email,
-                        'phone' => $dd->phone,
-                        'cep' => $dd->cep,
-                        'uf' => $dd->uf,
-                        'state' => $dd->state,
-                        'city' => $dd->city,
-                        'neighborhood' => $dd->neighborhood,
-                        'public_space' => $dd->public_space,
-                        'number' => $dd->number,
-                        'complement' => $dd->complement,
-                    ],
-                    $budget->id,
-                    null,
-                    (int) ($dd->dealer_id ?: Auth::id())
-                );
-            }
-
-            return $budget->fresh(['rooms.walls.collectionModel', 'dropshippingData']);
-        });
+        return app(DuplicateBudgetAction::class)->execute($source);
     }
 
     public function registerPayment(Order $order, UploadedFile $file): Order
@@ -578,7 +492,7 @@ class BudgetRepository {
         return DB::transaction(function () use ($order, $file) {
             $path = $file->store('payments', ['disk' => 'public']);
 
-            if (!$path) {
+            if (! $path) {
                 throw new \Exception('Erro ao fazer upload do arquivo de pagamento.');
             }
 

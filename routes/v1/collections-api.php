@@ -3,9 +3,13 @@
 use App\Http\Controllers\API\V1\CollectionArtController;
 use App\Http\Controllers\API\V1\CollectionArtSubcategoryController;
 use App\Http\Controllers\API\V1\CollectionImageController;
+use App\Http\Controllers\API\V1\CollectionImportController;
 use App\Http\Controllers\API\V1\CollectionModelController;
 use App\Http\Controllers\API\V1\MyFavoriteCollectionImageController;
 use Illuminate\Support\Facades\Route;
+
+// Rotas adicionais para collection-categories
+Route::get('collection-categories/children/{parentId?}', [\App\Http\Controllers\API\V1\CollectionCategoryController::class, 'children']);
 
 Route::apiResources([
     'collection-models' => CollectionModelController::class,
@@ -15,8 +19,10 @@ Route::apiResources([
     'collection-categories' => \App\Http\Controllers\API\V1\CollectionCategoryController::class,
 ]);
 
-// Rotas adicionais para collection-categories
-Route::get('collection-categories/children/{parentId?}', [\App\Http\Controllers\API\V1\CollectionCategoryController::class, 'children']);
+// Import ZIP (chunked upload + async processing)
+Route::post('collection-import/chunk', [CollectionImportController::class, 'chunk']);
+Route::post('collection-import/process', [CollectionImportController::class, 'process']);
+Route::get('collection-import/{importId}/status', [CollectionImportController::class, 'status']);
 
 // My Favorite Collection Images
 Route::get('my-favorite-collection-images', [MyFavoriteCollectionImageController::class, 'index']);

@@ -1,5 +1,5 @@
 <template>
-  <template v-for="wall in (walls || [])" :key="wall.key">
+  <template v-for="wall in walls || []" :key="wall.key">
     <div class="border rounded p-3 mb-3">
       <div class="mb-3">
         <div class="fw-semibold">{{ wall.roomName }}</div>
@@ -8,9 +8,7 @@
       </div>
 
       <div v-if="wall.requiresComment" class="mb-3">
-        <label :for="`orderComment-${wall.key}`" class="form-label">
-          Descrição do modelo
-        </label>
+        <label :for="`orderComment-${wall.key}`" class="form-label"> Descrição do modelo </label>
         <textarea
           :id="`orderComment-${wall.key}`"
           v-model.trim="wallForms[wall.key].comment"
@@ -24,9 +22,7 @@
       </div>
 
       <div v-if="wall.requiresFiles" class="mb-3">
-        <label :for="`orderFiles-${wall.key}`" class="form-label">
-          Uploads de referência
-        </label>
+        <label :for="`orderFiles-${wall.key}`" class="form-label"> Uploads de referência </label>
         <input
           :id="`orderFiles-${wall.key}`"
           :ref="(el) => setFileInputRef && setFileInputRef(wall.key, el)"
@@ -36,13 +32,18 @@
           multiple
           :disabled="orderSubmitting"
           @change="(e) => handleOrderFilesChange(wall.key, e)"
+        />
+        <small class="text-muted"
+          >Envie imagens em formatos JPG, PNG ou WEBP (máx. 5MB cada).</small
         >
-        <small class="text-muted">Envie imagens em formatos JPG, PNG ou WEBP (máx. 5MB cada).</small>
 
         <div v-if="wall.existingFiles && wall.existingFiles.length" class="mt-2">
           <div class="text-muted small mb-1">Arquivos enviados anteriormente</div>
           <ul class="list-unstyled small mb-0">
-            <li v-for="(file, index) in wall.existingFiles" :key="`existing-file-${wall.key}-${index}`">
+            <li
+              v-for="(file, index) in wall.existingFiles"
+              :key="`existing-file-${wall.key}-${index}`"
+            >
               <a :href="resolveStorageUrl(file)" target="_blank" rel="noopener">
                 {{ extractFileName(file) }}
               </a>
@@ -73,9 +74,7 @@
       </div>
 
       <div v-if="wall.requiresLink" class="mb-3">
-        <label :for="`orderLink-${wall.key}`" class="form-label">
-          Link de referência
-        </label>
+        <label :for="`orderLink-${wall.key}`" class="form-label"> Link de referência </label>
         <input
           :id="`orderLink-${wall.key}`"
           v-model.trim="wallForms[wall.key].link"
@@ -83,7 +82,7 @@
           class="form-control"
           placeholder="https://exemplo.com/referencia"
           :disabled="orderSubmitting"
-        >
+        />
       </div>
     </div>
   </template>

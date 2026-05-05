@@ -6,6 +6,7 @@
         class="navbar-brand d-inline-flex align-items-center m-0 p-0 me-lg-6 me-xl-9 p-1 rounded text-reset"
         href="/"
       >
+        <!-- FIXME: Obter name do config Laravel, ou mudar -->
         Arts
       </a>
 
@@ -19,21 +20,26 @@
       <div class="d-flex align-items-center ms-auto gap-3 me-2 me-lg-3">
         <NavTheme />
 
-        <RouterLink :to="'/settings'" class="btn btn-subtle px-2" v-if="auth.user">
-          <i class="fa fa-cog"></i>
-        </RouterLink>
-
         <NavUser />
 
         <button
           class="navbar-toggler"
           type="bdNavbar"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#sidebar-nav"
-          aria-controls="sidebar-nav"
-          aria-label="Toggle navigation"
+          aria-label="Alternar naveção"
+          @click="toggle"
         >
-          <i class="fa fa-bars"></i>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="currentcolor"
+            viewBox="0 0 16 16"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M2.5 11.5A.5.5.0 013 11h10a.5.5.0 010 1H3a.5.5.0 01-.5-.5zm0-4A.5.5.0 013 7h10a.5.5.0 010 1H3a.5.5.0 01-.5-.5zm0-4A.5.5.0 013 3h10a.5.5.0 010 1H3a.5.5.0 01-.5-.5z"
+            ></path>
+          </svg>
         </button>
       </div>
     </nav>
@@ -42,13 +48,13 @@
 
 <script setup>
 import { RouterLink } from 'vue-router';
+import { useSidebar } from '@/composables/useSidebar';
 import NavUser from './NavUser.vue';
 import NavTheme from './NavTheme.vue';
-import { useAuthStore } from '@/stores/auth';
+
+const { toggle } = useSidebar();
 
 const mainNavItems = [
   // Adicione itens de navegação aqui se necessário
 ];
-
-const auth = useAuthStore();
 </script>

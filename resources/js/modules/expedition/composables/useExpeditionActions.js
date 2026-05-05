@@ -1,10 +1,9 @@
 import { useRouter } from 'vue-router';
-import { useExpeditionService } from '../services/expeditionService';
-import { createLinkAlertConfig } from '@/utils/sweetalertHelpers';
+import { expeditionService } from '../services/expeditionService';
+import { showCopyLinkAlert } from '@/utils/sweetalertHelpers';
 
 export function useExpeditionActions() {
   const router = useRouter();
-  const expeditionService = useExpeditionService();
 
   async function generateSeparationLabel(expedition, loading) {
     try {
@@ -78,7 +77,9 @@ export function useExpeditionActions() {
       console.error('Erro ao gerar nota fiscal:', error);
       window.Swal.fire({
         title: 'Erro ao gerar nota fiscal!',
-        text: error.response?.data?.message || 'Não foi possível gerar a nota fiscal. Tente novamente mais tarde.',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível gerar a nota fiscal. Tente novamente mais tarde.',
         icon: 'error',
         confirmButtonText: 'Entendi!',
       });
@@ -99,15 +100,15 @@ export function useExpeditionActions() {
 
       if (link) {
         const result = await window.Swal.fire(
-          createLinkAlertConfig({
+          showCopyLinkAlert({
             title: 'DANFE gerado com sucesso!',
             linkId: 'danfe-link',
             linkValue: link,
             message: 'Deseja abrir o DANFE agora?',
             successMessage: 'O link do DANFE foi copiado para a área de transferência.',
             confirmButtonText: 'Abrir DANFE',
-            cancelButtonText: 'Fechar'
-          })
+            cancelButtonText: 'Fechar',
+          }),
         );
 
         if (result.isConfirmed) {
@@ -125,7 +126,9 @@ export function useExpeditionActions() {
       console.error('Erro ao gerar DANFE:', error);
       window.Swal.fire({
         title: 'Erro ao gerar DANFE!',
-        text: error.response?.data?.message || 'Não foi possível gerar o DANFE. Tente novamente mais tarde.',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível gerar o DANFE. Tente novamente mais tarde.',
         icon: 'error',
         confirmButtonText: 'Entendi!',
       });
@@ -139,23 +142,19 @@ export function useExpeditionActions() {
       loading.value = true;
       const data = await expeditionService.printCarrierLabels(groupingId);
 
-      const link =
-        data?.links?.[0]?.link ||
-        data?.data?.links?.[0]?.link ||
-        data?.link ||
-        null;
+      const link = data?.links?.[0]?.link || data?.data?.links?.[0]?.link || data?.link || null;
 
       if (link) {
         const result = await window.Swal.fire(
-          createLinkAlertConfig({
+          showCopyLinkAlert({
             title: 'Etiqueta gerada com sucesso!',
             linkId: 'label-link',
             linkValue: link,
             message: 'Deseja visualizar a etiqueta agora?',
             successMessage: 'O link da etiqueta foi copiado para a área de transferência.',
             confirmButtonText: 'Visualizar etiqueta',
-            cancelButtonText: 'Fechar'
-          })
+            cancelButtonText: 'Fechar',
+          }),
         );
 
         if (result.isConfirmed) {
@@ -173,7 +172,9 @@ export function useExpeditionActions() {
       console.error('Erro ao imprimir etiquetas:', error);
       window.Swal.fire({
         title: 'Erro ao imprimir etiquetas!',
-        text: error.response?.data?.message || 'Não foi possível imprimir as etiquetas. Tente novamente mais tarde.',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível imprimir as etiquetas. Tente novamente mais tarde.',
         icon: 'error',
         confirmButtonText: 'Entendi!',
       });
@@ -193,7 +194,7 @@ export function useExpeditionActions() {
       sessionStorage.setItem(`invoice_${invoiceId}`, JSON.stringify(invoice.nota_fiscal));
       router.push({
         name: 'ShowInvoiceDetails',
-        params: { id: invoiceId }
+        params: { id: invoiceId },
       });
     }
   }
@@ -204,7 +205,7 @@ export function useExpeditionActions() {
       sessionStorage.setItem(`grouping_${groupingId}`, JSON.stringify(grouping));
       router.push({
         name: 'ShowGroupingDetails',
-        params: { id: groupingId }
+        params: { id: groupingId },
       });
     }
   }

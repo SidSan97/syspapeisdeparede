@@ -33,4 +33,3 @@ export const CARRIERS = [
 export function getCarriersList() {
   return [...CARRIERS].sort();
 }
-

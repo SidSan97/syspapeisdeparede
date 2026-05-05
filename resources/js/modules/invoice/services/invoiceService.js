@@ -1,19 +1,15 @@
-import axios from 'axios';
+import http from 'http';
 
 /**
  * Chamadas HTTP relacionadas à nota fiscal (Tiny ERP).
  */
-export function useInvoiceService() {
-    /**
-     * @param {string|number} orderId
-     * @returns {Promise<object>}
-     */
-    async function getInvoiceByOrderId(orderId) {
-        const { data } = await axios.get(`v1/tiny-erp/invoice-by-order-id/${orderId}`);
-        return data;
-    }
-
-    return {
-        getInvoiceByOrderId,
-    };
-}
+export const invoiceService = {
+  /**
+   * @param {string|number} orderId
+   * @returns {Promise<object>}
+   */
+  async getInvoiceByOrderId(orderId) {
+    const { data } = await http.get(`v1/tiny-erp/invoices/${orderId}`);
+    return data;
+  },
+};

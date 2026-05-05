@@ -3,8 +3,11 @@
 use App\Http\Controllers\API\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// Profile
-Route::get('profile', [ProfileController::class, 'index']);
-Route::put('profile', [ProfileController::class, 'update']);
-Route::post('change-password', [ProfileController::class, 'changePassword']);
-Route::post('profile/avatar', [ProfileController::class, 'uploadAvatar']);
+Route::prefix('profile')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+        Route::get('/', [ProfileController::class, 'show']);
+        Route::put('/', [ProfileController::class, 'update']);
+        Route::put('password', [ProfileController::class, 'updatePassword']);
+        Route::put('avatar', [ProfileController::class, 'updateAvatar']);
+    });

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { useProductionService } from '@/modules/production/services/productionService';
+import { productionService } from '@/services/productionService';
 
 /**
  * Store para gerenciar relatórios de produção e ações relacionadas
@@ -57,7 +57,6 @@ export const useProductionReportsStore = defineStore('productionReports', {
 
       try {
         this.setLoading(cardId, true);
-        const productionService = useProductionService();
         const reports = await productionService.getProductionReports(cardId);
         this.setReports(cardId, reports);
       } catch (error) {
@@ -81,7 +80,6 @@ export const useProductionReportsStore = defineStore('productionReports', {
       this.setMarkingAsProduced(cardId, true);
 
       try {
-        const productionService = useProductionService();
         const updated = await productionService.markAsProduced(cardId);
         return updated;
       } catch (error) {
@@ -134,11 +132,11 @@ export const useProductionReportsStore = defineStore('productionReports', {
         const newReports = { ...this.reports };
         const newLoading = { ...this.loading };
         const newMarkingAsProduced = { ...this.markingAsProduced };
-        
+
         delete newReports[cardId];
         delete newLoading[cardId];
         delete newMarkingAsProduced[cardId];
-        
+
         this.reports = newReports;
         this.loading = newLoading;
         this.markingAsProduced = newMarkingAsProduced;
@@ -146,4 +144,3 @@ export const useProductionReportsStore = defineStore('productionReports', {
     },
   },
 });
-

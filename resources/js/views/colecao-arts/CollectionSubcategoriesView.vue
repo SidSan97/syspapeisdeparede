@@ -1,8 +1,15 @@
 <template>
   <section class="content">
     <Page :title="collectionName || 'Subcategorias'" :back-to="{ name: 'CollectionModels' }">
-      <template #actions v-if="isAdmin">
-        <CollectionActions @saved="() => { fetchSubcategories(route.params.id); fetchCollections(); }" />
+      <template #extra v-if="isAdmin">
+        <CollectionActions
+          @saved="
+            () => {
+              fetchSubcategories(route.params.id);
+              fetchCollections();
+            }
+          "
+        />
       </template>
 
       <div class="container py-4">
@@ -61,12 +68,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
 import Page from '@/components/page/Page.vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-// Alerts agora usam window.Swal.fire diretamente
+import { http } from '@/lib/http';
 import { useAuthStore } from '@/stores/auth';
 import CollectionActions from './components/CollectionActions.vue';
 import CollectionCard from './components/CollectionCard.vue';
@@ -107,9 +113,7 @@ const filteredSubcategories = computed(() => {
     return subcategories.value;
   }
 
-  return subcategories.value.filter((subcategory) =>
-    subcategory.name.toLowerCase().includes(term),
-  );
+  return subcategories.value.filter((subcategory) => subcategory.name.toLowerCase().includes(term));
 });
 
 const fetchSubcategories = async (categoryId) => {
@@ -120,12 +124,12 @@ const fetchSubcategories = async (categoryId) => {
   loading.value = true;
   try {
     // Buscar a categoria para obter o nome
-    const { data: categoryData } = await axios.get(`v1/collection-categories/${categoryId}`);
+    const { data: categoryData } = await http.get(`v1/collection-categories/${categoryId}`);
     const categoryPayload = categoryData?.data ?? categoryData ?? {};
     collectionName.value = categoryPayload.name ?? 'Coleção';
 
     // Buscar os filhos (subcategorias)
-    const { data } = await axios.get(`v1/collection-categories/children/${categoryId}`);
+    const { data } = await http.get(`v1/collection-categories/children/${categoryId}`);
     const payload = data?.data ?? data ?? [];
     const subcategoriesList = Array.isArray(payload) ? payload : [];
 
@@ -153,7 +157,7 @@ const viewSubcategoryImages = (subcategory) => {
 
 const fetchCollections = async () => {
   try {
-    const { data } = await axios.get('v1/collection-categories', {
+    const { data } = await http.get('v1/collection-categories', {
       params: { tree: true },
     });
     const payload = data?.data ?? data ?? {};

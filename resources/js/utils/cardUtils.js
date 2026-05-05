@@ -4,10 +4,7 @@
  * @returns {string} ID formatado com 5 dígitos (ex: 1 -> "00001", 100 -> "00100")
  */
 export function formatCardId(id) {
-  if (!id) {
-    return '00000';
-  }
-  return String(id).padStart(5, '0');
+  return id ? String(id).padStart(5, '0') : '00000';
 }
 
 /**
@@ -21,16 +18,14 @@ export function formatCardId(id) {
  * @param {string} defaultName - Nome padrão caso não tenha nome nem membros
  * @returns {string} Nome formatado para exibição
  */
-export function getCardDisplayName(card, defaultName = 'aaa') {
-  if (!card) {
-    return defaultName;
-  }
+export function getCardDisplayName(card, defaultName = '') {
+  if (!card) return defaultName;
 
   // Se o card tiver membros, formatar como: 00001 - JOÃO SILVA
   if (card.members && Array.isArray(card.members) && card.members.length > 0) {
-    const formattedId = formatCardId(card.id);
+    const formattedId = formatCardId(card.order_id);
     const membersNames = card.members
-      .map(m => m.name?.toUpperCase() || '')
+      .map((m) => m.name?.toUpperCase() || '')
       .filter(Boolean)
       .join(', ');
     return `${formattedId} - ${membersNames}`;
@@ -273,4 +268,3 @@ export function getOrderBudgetStatusBadgeClass(status) {
   }
   return 'bg-secondary';
 }
-

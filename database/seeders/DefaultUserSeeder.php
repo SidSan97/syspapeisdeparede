@@ -1,14 +1,13 @@
 <?php
 
-
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\UserType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
-use App\Support\UserType;
 
 class DefaultUserSeeder extends Seeder
 {

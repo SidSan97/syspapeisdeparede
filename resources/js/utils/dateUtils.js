@@ -47,7 +47,11 @@ export function convertDateMaskToIso(dateString) {
   const month = parts[1];
   const year = parts[2];
 
-  if (Number.isNaN(parseInt(day, 10)) || Number.isNaN(parseInt(month, 10)) || Number.isNaN(parseInt(year, 10))) {
+  if (
+    Number.isNaN(parseInt(day, 10)) ||
+    Number.isNaN(parseInt(month, 10)) ||
+    Number.isNaN(parseInt(year, 10))
+  ) {
     return null;
   }
 
@@ -65,7 +69,7 @@ export function formatDate(value) {
   }
 
   let date;
-  
+
   // Se for uma string no formato YYYY-MM-DD, parsear manualmente para evitar problemas de fuso horário
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
     const parts = value.split('T')[0].split('-');

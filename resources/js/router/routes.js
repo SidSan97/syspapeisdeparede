@@ -1,6 +1,7 @@
 import settings from './settings';
 import AppLayout from '../layouts/AppLayout.vue';
 import budgets from './budgets';
+import orders from './orders';
 
 const routes = [
   {
@@ -34,12 +35,13 @@ const routes = [
       {
         path: '/colecao-arts/colecao/:id',
         name: 'CollectionSubcategories',
-        component: () => import('../views/colecao-arts/CollectionSubcategoriesView.vue'),
+        component: () => import('../views/colecao-arts/CollectionModelsView.vue'),
+        // import('../views/colecao-arts/CollectionSubcategoriesView.vue'),
       },
       {
         path: '/colecao-arts/catalogo',
         name: 'CollectionCatalog',
-        redirect: { name: 'SettingsCollections' },
+        redirect: { name: 'settings.collections' },
       },
       {
         path: '/colecao-arts/subcategoria/:id',
@@ -52,41 +54,21 @@ const routes = [
         component: () => import('../views/colecao-arts/MyFavoritesView.vue'),
       },
       {
-        path: '/pedidos',
-        name: 'Pedidos',
-        meta: { roles: ['super admin', 'admin', 'production', 'commercial', 'reseller'] },
-        component: () => import('../views/orders/OrdersView.vue'),
-      },
-      {
-        path: '/pedidos/:id/edit',
-        name: 'EditOrder',
-        component: () => import('../views/orders/EditOrderView.vue'),
-      },
-      {
-        path: '/pedidos/:orderId/nota-fiscal',
-        name: 'OrderInvoice',
-        meta: { roles: ['super admin', 'admin', 'production', 'commercial', 'reseller'] },
-        component: () => import('../views/invoice/InvoiceView.vue'),
-      },
-      {
-        path: '/pedidos/:id',
-        name: 'ShowOrderDetails',
-        component: () => import('../components/ShowDetails.vue'),
-      },
-      {
         path: '/layouts',
-        name: 'Layouts',
-        meta: { roles: ['super admin', 'admin', 'designer', 'production'] },
-        component: () => import('../views/layouts/LayoutsView.vue'),
+        name: 'layouts.board',
+        meta: {
+          roles: ['super admin', 'admin', 'designer', 'production'],
+        },
+        component: () => import('../views/layouts/LayoutsBoardView.vue'),
       },
       {
-        path: '/products',
-        name: 'Product',
+        path: '/production',
+        name: 'production.board',
         meta: { roles: ['super admin', 'admin', 'production'] },
-        component: () => import('../views/production/ProductView.vue'),
+        component: () => import('../views/production/ProductionBoardView.vue'),
       },
       {
-        path: '/pedidos-producao',
+        path: '/orders-producao',
         name: 'InternalOrders',
         redirect: { name: 'Pedidos' },
       },
@@ -106,6 +88,7 @@ const routes = [
         name: 'ShowGroupingDetails',
         component: () => import('../modules/expedition/components/showGroupingDetails.vue'),
       },
+      ...orders,
       ...budgets,
       ...settings,
       {

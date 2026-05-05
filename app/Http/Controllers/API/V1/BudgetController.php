@@ -2,90 +2,67 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Actions\Budget\CreateBudgetAction;
+use App\Actions\Budget\DuplicateBudgetAction;
+use App\Actions\Budget\UpdateBudgetAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Budget\GeneratePdfRequest;
+use App\Http\Requests\Api\V1\IndexBudgetRequest;
+use App\Http\Requests\Api\V1\StoreBudgetRequest;
+use App\Http\Requests\Api\V1\UpdateBudgetRequest;
+use App\Http\Requests\Api\V1\UpdateBudgetStatusRequest;
 use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
-use App\Http\Requests\Budget\StoreBudgetRequest;
-use App\Http\Requests\Budget\UpdateBudgetRequest;
 use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
 use App\Http\Requests\Budget\UpdateRequestLayoutArtStatusRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Budget\UploadReferringFileRequest;
-use App\Http\Requests\Common\ListRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
 use App\Models\Order;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
 use App\Repositories\BudgetWallRepository;
+use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use App\Repositories\RequestLayoutArtRepository;
-use App\Repositories\DropshippingRepository;
-use App\Services\GeneratePdfService;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
+use App\Services\TinyErpService;
 use App\Support\DocumentValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Services\TinyErpService;
 
 class BudgetController extends Controller
 {
-    protected $repository;
-    protected $budgetWallRepository;
-    protected $generatePdfService;
-    protected $generatePaymentService;
-    protected $layoutService;
-    protected $orderBudgetRepository;
-    protected $orderRepository;
-    protected $requestLayoutArtRepository;
-    protected $dropshippingRepository;
-    protected $tinyErpService;
-
     public function __construct(
-        BudgetRepository $repository,
-        BudgetWallRepository $budgetWallRepository,
-        GeneratePdfService $generatePdfService,
-        GeneratePaymentService $generatePaymentService,
-        LayoutService $layoutService,
-        OrderBudgetRepository $orderBudgetRepository,
-        OrderRepository $orderRepository,
-        RequestLayoutArtRepository $requestLayoutArtRepository,
-        DropshippingRepository $dropshippingRepository,
-        TinyErpService $tinyErpService
-    ) {
-        $this->repository = $repository;
-        $this->budgetWallRepository = $budgetWallRepository;
-        $this->generatePdfService = $generatePdfService;
-        $this->generatePaymentService = $generatePaymentService;
-        $this->layoutService = $layoutService;
-        $this->orderBudgetRepository = $orderBudgetRepository;
-        $this->orderRepository = $orderRepository;
-        $this->requestLayoutArtRepository = $requestLayoutArtRepository;
-        $this->dropshippingRepository = $dropshippingRepository;
-        $this->tinyErpService = $tinyErpService;
-    }
+        protected BudgetRepository $repository,
+        protected BudgetWallRepository $budgetWallRepository,
+        protected GeneratePaymentService $generatePaymentService,
+        protected LayoutService $layoutService,
+        protected OrderBudgetRepository $orderBudgetRepository,
+        protected OrderRepository $orderRepository,
+        protected RequestLayoutArtRepository $requestLayoutArtRepository,
+        protected DropshippingRepository $dropshippingRepository,
+        protected TinyErpService $tinyErpService
+    ) {}
 
-    public function index(ListRequest $request): JsonResponse
+    public function index(IndexBudgetRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $budgets = Budget::with(['user', 'tenant', 'primaryRoom'])
+            ->forUser($request->user())
+            ->search($request->search)
+            ->byStatus($request->status)
+            ->byDateRange($request->date_from, $request->date_to)
+            ->byUserId($request->user_id)
+            ->latest()
+            ->paginate();
 
-        $filters = [
-            'search' => $validated['search'] ?? null,
-            'status' => $validated['status'] ?? 'all',
-            'date_from' => $validated['date_from'] ?? null,
-            'date_to' => $validated['date_to'] ?? null,
-            'user_id' => $validated['user_id'] ?? null,
-        ];
-
-        $paginatedBudgets = $this->repository->paginate($filters);
-
-        return BudgetResource::collection($paginatedBudgets)->response();
+        return BudgetResource::collection($budgets)->response();
     }
 
     public function show(Budget $budget): JsonResponse
@@ -95,154 +72,51 @@ class BudgetController extends Controller
         return (new BudgetResource($budget))->response();
     }
 
-    public function duplicate(Budget $budget): JsonResponse
+    public function duplicate(Budget $budget, DuplicateBudgetAction $action): JsonResponse
     {
-        $newBudget = $this->repository->duplicate($budget);
+        $duplicated = $action->execute($budget);
 
-        return (new BudgetResource($newBudget))->response();
+        return (new BudgetResource($duplicated))->response();
     }
 
-    public function pendingReview(): JsonResponse
+    public function store(StoreBudgetRequest $request, CreateBudgetAction $action): JsonResponse
     {
-        $budgets = $this->repository->getPendingReview();
-        return BudgetResource::collection($budgets)->response();
+        $budget = $action->execute($request->validated());
+
+        return (new BudgetResource($budget))
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function orders(): JsonResponse
+    public function update(Budget $budget, UpdateBudgetRequest $request, UpdateBudgetAction $action): JsonResponse
     {
-        $budgets = $this->repository->getAll();
-        return BudgetResource::collection($budgets)->response();
-    }
+        if ($budget->isApproved() && $budget->order_id) {
+            abort(422, 'Orçamento aprovado com pedido vinculado não pode ser editado.');
+        }
 
-    public function store(StoreBudgetRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-
-        $budget = DB::transaction(function () use ($data) {
-            // Criar o orçamento
-            $budget = $this->repository->create($data);
-
-            // Criar dados de dropshipping se fornecidos
-            if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
-                if (!DocumentValidator::validateCPFCNPJ($data['dropshipping_data']['cpf_cnpj'])) {
-                    abort(422, 'CPF/CNPJ inválido');
-                }
-
-                $this->dropshippingRepository->create(
-                    $data['dropshipping_data'],
-                    $budget->id,
-                    null,
-                    Auth::id()
-                );
-            }
-
-            return $budget;
-        });
-
-        return (new BudgetResource($budget))->response()->setStatusCode(201);
-    }
-
-    public function update(UpdateBudgetRequest $request, int $id): JsonResponse
-    {
-        $data = $request->validated();
-
-        $budget = DB::transaction(function () use ($id, $data) {
-            $budget = \App\Models\Budget::findOrFail($id);
-
-            $statusLower = strtolower(trim((string) ($budget->status ?? '')));
-            if ($statusLower === 'aprovado' && $budget->order_id) {
-                abort(422, 'Orçamento aprovado com pedido vinculado não pode ser editado.');
-            }
-
-            $budget = $this->repository->update($budget, $data);
-
-            if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
-                $existingDropshipping = $budget->dropshippingData;
-
-                if ($existingDropshipping) {
-                    $this->dropshippingRepository->update(
-                        $data['dropshipping_data'],
-                        $existingDropshipping->id
-                    );
-                } else {
-                    $this->dropshippingRepository->create(
-                        $data['dropshipping_data'],
-                        $budget->id,
-                        null,
-                        Auth::id()
-                    );
-                }
-            } elseif (isset($data['dropshipping_budget']) && $data['dropshipping_budget'] === 0) {
-                $budget->dropshippingData()->delete();
-            }
-
-            return $budget->fresh(['dropshippingData']);
-        });
+        $budget = $action->execute($budget, $request->validated());
 
         return (new BudgetResource($budget))->response();
     }
 
-    public function cancel(Request $request): JsonResponse
+    public function updateStatus(UpdateBudgetStatusRequest $request, Budget $budget)
     {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:budgets,id'],
+        $translatedStatus = $request->getTranslatedStatus();
+
+        $budget->update([
+            'status' => $translatedStatus,
         ]);
 
-        $budget = Budget::findOrFail($validated['id']);
-        $budgetUpdated = $this->repository->cancel($budget);
+        $budget->fresh(['rooms.walls.collectionModel']);
 
-        return (new BudgetResource($budgetUpdated))->response();
+        return new BudgetResource($budget);
     }
 
-    public function destroy(Budget $budget): JsonResponse
+    public function destroy(Budget $budget): Response
     {
-        try {
-            DB::beginTransaction();
+        $budget->delete();
 
-            $hasOrders = $budget->rooms()
-                ->whereNotNull('order_id')
-                ->exists();
-
-            if ($hasOrders) {
-                $budget->delete();
-            } else {
-                $budget->delete();
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Orçamento excluído com sucesso.',
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao excluir orçamento: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function placeOrder(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:budgets,id'],
-        ]);
-
-        $budget = $this->repository->getAllById($validated['id']);
-
-        if (!$budget) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Orçamento não encontrado.',
-            ], 404);
-        }
-
-        $budget = $this->repository->placeOrder($budget, $request->all());
-
-        return (new BudgetResource($budget))->response();
+        return response()->noContent();
     }
 
     public function createLayoutOrder(Order $order, Budget $budget)
@@ -253,8 +127,8 @@ class BudgetController extends Controller
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
 
-        if (!$firstColumn) {
-           throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
+        if (! $firstColumn) {
+            throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
         }
 
         // Criar um OrderBudget para cada parede do orçamento usando dados do Order
@@ -281,27 +155,7 @@ class BudgetController extends Controller
         return $orderBudgets;
     }
 
-    public function generatePdf(GeneratePdfRequest $request): \Symfony\Component\HttpFoundation\Response
-    {
-        $validated = $request->validated();
-
-        $budget = Budget::with(['rooms.walls.collectionModel', 'dropshippingData'])->findOrFail($validated['id']);
-
-        // Aceitar tanto cash_value quanto total_amount (para compatibilidade)
-        $cashValue = $validated['total_amount'] ?? $validated['cash_value'] ?? null;
-        $installmentValue = $validated['total_amount_installments'] ?? $validated['installment_value'] ?? null;
-        $mockupPercentage = $validated['mockup_percentage'] ?? $validated['percentage'] ?? null;
-
-        $this->repository->updateMarkup($budget, $mockupPercentage);
-
-        return $this->generatePdfService->generateBudgetPdf(
-            $budget,
-            $mockupPercentage,
-            $cashValue,
-            $installmentValue
-        );
-    }
-
+    /** @deprecated */
     public function updateLayoutColumn(UpdateLayoutColumnRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -320,13 +174,10 @@ class BudgetController extends Controller
         return response()->json($orderBudget);
     }
 
-
     protected function formatMoney(float $value): string
     {
         return 'R$ ' . number_format($value, 2, ',', '.');
     }
-
-
 
     public function uploadArt(UploadArtRequest $request): JsonResponse
     {
@@ -355,14 +206,13 @@ class BudgetController extends Controller
     /**
      * Get request layout arts for a budget and order budget
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param  Request  $request
      */
     public function getRequestLayoutArts(GetRequestLayoutArtsRequest $request): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Usuário não autenticado');
         }
 
@@ -394,7 +244,7 @@ class BudgetController extends Controller
         }
 
         // Aplicar filtros por tipo de usuário
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             if ($isDesigner) {
                 $query->where('designer_id', $user->id);
             } elseif ($isReseller) {
@@ -450,7 +300,7 @@ class BudgetController extends Controller
                     'id' => $art->dealer->id,
                     'name' => $art->dealer->name,
                 ] : null,
-                'wall_info' => $wallInfo
+                'wall_info' => $wallInfo,
             ];
         });
 
@@ -477,7 +327,7 @@ class BudgetController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
+        if (! $user || ! $user->isAdmin()) {
             abort(403, 'Você não tem permissão para registrar pagamentos.');
         }
 
@@ -485,12 +335,12 @@ class BudgetController extends Controller
         $order = Order::findOrFail($data['order_id']);
         $file = $request->file('payment_file');
 
-        if($order->dropshipping_budget) {
+        if ($order->dropshipping_budget) {
             $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
             $accountPayable = $this->tinyErpService->sendAccountPayable($order->toArray(), $dropshippingBudget->toArray());
             $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshippingBudget->toArray());
 
-            if($orderTiny['status'] == "Erro") {
+            if ($orderTiny['status'] == 'Erro') {
                 $errors = $orderTiny['registros']['registro']['erros'] ?? 'Erro desconhecido';
                 abort(403, is_string($errors) ? $errors : json_encode($errors));
             }

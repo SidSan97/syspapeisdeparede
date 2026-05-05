@@ -33,7 +33,7 @@ class CollectionModelFactory extends Factory
         ];
 
         return [
-            'name' => fake()->randomElement($modelNames) . ' ' . fake()->word(),
+            'name' => fake()->randomElement($modelNames).' '.fake()->word(),
             'value' => fake()->randomFloat(2, 50, 500),
             'deadline' => fake()->numberBetween(5, 30),
             'request_link' => fake()->boolean(40),

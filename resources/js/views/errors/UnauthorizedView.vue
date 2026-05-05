@@ -1,7 +1,9 @@
-<script setup></script>
+<script setup>
+import { IconLock } from '@tabler/icons-vue';
+</script>
 
 <template>
   <div class="p-4">
-    <i class="fa fa-lock fa-lg mb-4"></i>
+    <IconLock :size="18" class="mb-4" />
   </div>
 </template>

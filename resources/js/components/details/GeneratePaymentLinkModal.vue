@@ -35,7 +35,9 @@
                 <label class="form-check-label" for="component-artes">
                   ARTES
                   <span class="text-muted">({{ formatMoney(componentValues.artes) }})</span>
-                  <span v-if="componentState.artes.paid" class="badge text-bg-success ms-1">Pago</span>
+                  <span v-if="componentState.artes.paid" class="badge text-bg-success ms-1"
+                    >Pago</span
+                  >
                 </label>
               </div>
               <div class="form-check">
@@ -49,7 +51,9 @@
                 <label class="form-check-label" for="component-produtos">
                   PRODUTOS
                   <span class="text-muted">({{ formatMoney(componentValues.produtos) }})</span>
-                  <span v-if="componentState.produtos.paid" class="badge text-bg-success ms-1">Pago</span>
+                  <span v-if="componentState.produtos.paid" class="badge text-bg-success ms-1"
+                    >Pago</span
+                  >
                 </label>
               </div>
               <div class="form-check">
@@ -63,11 +67,17 @@
                 <label class="form-check-label" for="component-frete">
                   FRETE
                   <span class="text-muted">({{ formatMoney(componentValues.frete) }})</span>
-                  <span v-if="componentState.frete.paid" class="badge text-bg-success ms-1">Pago</span>
+                  <span v-if="componentState.frete.paid" class="badge text-bg-success ms-1"
+                    >Pago</span
+                  >
                 </label>
               </div>
-              <div v-if="form.payment_method !== 'pix' && !freteAccompaniedByOtherComponents" class="small text-muted mt-1">
-                Com cartão ou boleto, marque também artes e/ou produtos para incluir o frete no mesmo pagamento.
+              <div
+                v-if="form.payment_method !== 'pix' && !freteAccompaniedByOtherComponents"
+                class="small text-muted mt-1"
+              >
+                Com cartão ou boleto, marque também artes e/ou produtos para incluir o frete no
+                mesmo pagamento.
               </div>
             </div>
 
@@ -76,13 +86,16 @@
               <select id="payment-method" v-model="form.payment_method" class="form-select">
                 <option value="pix">Pix</option>
                 <option value="credit_card">Cartao</option>
-                <option v-if="boletoOptionVisible" value="boleto">Boleto (saldo, a prazo, integral)</option>
+                <option v-if="boletoOptionVisible" value="boleto">
+                  Boleto (saldo, a prazo, integral)
+                </option>
               </select>
               <p class="small text-muted mt-1 mb-0">
                 Saldo na carteira: {{ formatMoney(walletBalanceNumber) }}
               </p>
               <p v-if="form.payment_method === 'boleto'" class="small text-info mt-2 mb-0">
-                Usa valores a prazo (como cartao), debito integral do saldo, sem parcelas e sem link externo.
+                Usa valores a prazo (como cartao), debito integral do saldo, sem parcelas e sem link
+                externo.
               </p>
             </div>
 
@@ -94,7 +107,11 @@
                 class="form-control"
                 :disabled="form.payment_method !== 'credit_card'"
               >
-                <option v-for="installment in installmentsOptions" :key="installment" :value="installment">
+                <option
+                  v-for="installment in installmentsOptions"
+                  :key="installment"
+                  :value="installment"
+                >
                   {{ installment }}x
                 </option>
               </select>
@@ -157,6 +174,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { Modal } from 'bootstrap';
 
 const props = defineProps({
   visible: {
@@ -213,7 +231,8 @@ const boletoPayableTotal = computed(() => {
   const base = props.paymentBreakdown?.base || {};
   let total = 0;
   if (form.artes) total += Number(remaining.ARTES ?? base.ARTES ?? 0);
-  if (form.produtos) total += Number(remaining.PRODUTOS_CREDIT_CARD ?? base.PRODUTOS_CREDIT_CARD ?? 0);
+  if (form.produtos)
+    total += Number(remaining.PRODUTOS_CREDIT_CARD ?? base.PRODUTOS_CREDIT_CARD ?? 0);
   if (form.frete && freteAccompaniedByOtherComponents.value) {
     total += Number(remaining.FRETE ?? base.FRETE ?? 0);
   }
@@ -309,7 +328,7 @@ function initializeModal() {
     return;
   }
 
-  modalInstance = new window.bootstrap.Modal(modalElement.value, {
+  modalInstance = new Modal(modalElement.value, {
     backdrop: true,
     keyboard: true,
     focus: true,
@@ -374,7 +393,10 @@ function handleSubmit() {
     return;
   }
 
-  if (form.payment_method === 'credit_card' && (!form.installments || form.installments < 1 || form.installments > 12)) {
+  if (
+    form.payment_method === 'credit_card' &&
+    (!form.installments || form.installments < 1 || form.installments > 12)
+  ) {
     error.value = 'Informe parcelas validas entre 1 e 12.';
     return;
   }
@@ -399,38 +421,47 @@ function handleSubmit() {
   });
 }
 
-watch(() => props.visible, (isVisible) => {
-  if (isVisible) {
-    resetForm();
-    nextTick(() => {
-      showModalInstance();
-    });
-  } else {
-    hideModal();
-  }
-});
+watch(
+  () => props.visible,
+  (isVisible) => {
+    if (isVisible) {
+      resetForm();
+      nextTick(() => {
+        showModalInstance();
+      });
+    } else {
+      hideModal();
+    }
+  },
+);
 
-watch(() => props.defaultInstallments, (value) => {
-  if (value && value > 0) {
-    form.installments = value;
-  }
-});
+watch(
+  () => props.defaultInstallments,
+  (value) => {
+    if (value && value > 0) {
+      form.installments = value;
+    }
+  },
+);
 
-watch(() => form.payment_method, () => {
-  if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
-    form.frete = false;
-  }
+watch(
+  () => form.payment_method,
+  () => {
+    if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
+      form.frete = false;
+    }
 
-  if (componentState.value.produtos.paid) {
-    form.produtos = false;
-  }
-  if (componentState.value.artes.paid) {
-    form.artes = false;
-  }
-  if (componentState.value.frete.paid) {
-    form.frete = false;
-  }
-});
+    if (componentState.value.produtos.paid) {
+      form.produtos = false;
+    }
+    if (componentState.value.artes.paid) {
+      form.artes = false;
+    }
+    if (componentState.value.frete.paid) {
+      form.frete = false;
+    }
+  },
+);
 
 watch([() => form.artes, () => form.produtos], () => {
   if (form.payment_method !== 'pix' && form.frete && !freteAccompaniedByOtherComponents.value) {
@@ -462,4 +493,3 @@ onBeforeUnmount(() => {
   disposeModal();
 });
 </script>
-

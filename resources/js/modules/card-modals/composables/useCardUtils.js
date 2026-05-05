@@ -11,15 +11,14 @@ import { ref } from 'vue';
  * @returns {boolean}
  */
 export function isImageFile(file) {
-    if (!file) {
-        return false;
-    }
-    const mime = (file.mime || file.mimetype || '').toLowerCase();
-    if (mime.startsWith('image/')) {
-        return true;
-    }
-    const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
-    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
+  if (!file) return false;
+
+  const mime = (file.mime || file.mimetype || '').toLowerCase();
+
+  if (mime.startsWith('image/')) return true;
+
+  const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
+  return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some((ext) => name.endsWith(ext));
 }
 
 /**
@@ -28,19 +27,18 @@ export function isImageFile(file) {
  * @returns {string}
  */
 export function getImageUrl(file) {
-    if (file.url) {
-        return file.url;
+  if (file.url) return file.url;
+
+  if (file.fileUrl) return file.fileUrl;
+
+  if (file.file_path) {
+    if (file.file_path.startsWith('http')) {
+      return file.file_path;
     }
-    if (file.fileUrl) {
-        return file.fileUrl;
-    }
-    if (file.file_path) {
-        if (file.file_path.startsWith('http')) {
-            return file.file_path;
-        }
-        return `/storage/${file.file_path}`;
-    }
-    return '';
+    return `/storage/${file.file_path}`;
+  }
+
+  return '';
 }
 
 /**
@@ -49,14 +47,12 @@ export function getImageUrl(file) {
  * @returns {string}
  */
 export function getCoverImage(card) {
-    if (!card) {
-        return '';
-    }
-    if (card.image) {
-        return card.image;
-    }
-    const imageAttachment = card.uploaded_files?.find(file => isImageFile(file));
-    return imageAttachment ? getImageUrl(imageAttachment) : '';
+  if (!card) return '';
+
+  if (card.image) return card.image;
+
+  const imageAttachment = card.uploaded_files?.find((file) => isImageFile(file));
+  return imageAttachment ? getImageUrl(imageAttachment) : '';
 }
 
 /**
@@ -65,10 +61,9 @@ export function getCoverImage(card) {
  * @returns {number}
  */
 export function getCommentsCount(card) {
-    if (!card || !Array.isArray(card.comments)) {
-        return 0;
-    }
-    return card.comments.length;
+  if (!card || !Array.isArray(card.comments)) return 0;
+
+  return card.comments.length;
 }
 
 /**
@@ -77,24 +72,23 @@ export function getCommentsCount(card) {
  * @returns {number}
  */
 export function getActivitiesCount(card) {
-    if (!card) {
-        return 0;
-    }
-    let count = 0;
+  if (!card) return 0;
 
-    if (Array.isArray(card.activities)) {
-        count += card.activities.length;
-    }
+  let count = 0;
 
-    if (Array.isArray(card.history)) {
-        count += card.history.length;
-    }
+  if (Array.isArray(card.activities)) {
+    count += card.activities.length;
+  }
 
-    if (card.budget?.comment_referring_model) {
-        count += 1;
-    }
+  if (Array.isArray(card.history)) {
+    count += card.history.length;
+  }
 
-    return count;
+  if (card.budget?.comment_referring_model) {
+    count += 1;
+  }
+
+  return count;
 }
 
 /**
@@ -102,20 +96,19 @@ export function getActivitiesCount(card) {
  * @returns {Object} Funções e estado do modal
  */
 export function useCardModal() {
-    const selectedCard = ref(null);
+  const selectedCard = ref(null);
 
-    function openCardModal(card) {
-        selectedCard.value = card;
-    }
+  function openCardModal(card) {
+    selectedCard.value = card;
+  }
 
-    function closeCardModal() {
-        selectedCard.value = null;
-    }
+  function closeCardModal() {
+    selectedCard.value = null;
+  }
 
-    return {
-        selectedCard,
-        openCardModal,
-        closeCardModal,
-    };
+  return {
+    selectedCard,
+    openCardModal,
+    closeCardModal,
+  };
 }
-

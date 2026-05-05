@@ -1,3 +1,7 @@
+<script setup>
+import { IconAlertCircle } from '@tabler/icons-vue';
+</script>
+
 <template>
   <section class="content">
     <div class="container">
@@ -6,10 +10,11 @@
           <div class="card mb-3">
             <div class="card-body p-0">
               <div class="text-center p-4">
-                <i class="fa fa-3x fa-exclamation-circle text-muted m-4 rounded-circle"></i>
+                <IconAlertCircle :size="64" class="icon text-muted m-4" />
                 <h4>Não há página neste endereço</h4>
                 <p class="text-muted mb-4">
-                  Verifique o URL e tente de novo ou use a barra de pesquisa para encontrar o que precisa.
+                  Verifique o URL e tente de novo ou use a barra de pesquisa para encontrar o que
+                  precisa.
                 </p>
               </div>
             </div>
@@ -23,9 +28,3 @@
     <!-- /.container-fluid -->
   </section>
 </template>
-
-<script>
-export default {
-  mounted() { },
-}
-</script>

@@ -13,7 +13,7 @@
               v-model="searchQuery"
             />
             <span class="input-group-text">
-              <i class="fa fa-search"></i>
+              <IconSearch :size="18" />
             </span>
           </div>
         </div>
@@ -28,7 +28,7 @@
       <EmptyState
         v-else-if="filteredItems.length === 0"
         heading="Nenhuma separação encontrada"
-        icon="shipping-fast"
+        :icon="IconTruckDelivery"
         class="p-5"
       >
         Não há itens prontos para separação no momento.
@@ -38,23 +38,32 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col" style="width: 64px;">Nº</th>
-              <th scope="col" style="width: 64px;">Data</th>
+              <th scope="col" style="width: 64px">Nº</th>
+              <th scope="col" style="width: 64px">Data</th>
               <th class="text-nowrap" scope="col">Pedido</th>
-              <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-              <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+              <th class="text-nowrap" scope="col" style="width: 120px">Valor total</th>
+              <th class="text-nowrap" scope="col" style="width: 64px">Opções</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="expedition in filteredItems" :key="expedition.id">
               <th scope="row">{{ expedition.id }}</th>
-              <td>{{ formatDate(expedition.order?.created_at || expedition.created_at) }}</td>
-              <td style="min-width: 240px;">
-                <div class="fw-semibold">{{ expedition.order?.name || '—' }}</div>
-                <small class="text-muted">Pedido #{{ expedition.order_id }}</small> -
-                <small class="text-muted">Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small>
+              <td>
+                {{ formatDate(expedition.order?.created_at || expedition.created_at) }}
               </td>
-              <td>{{ formatCurrency(expedition.order?.total_amount || 0) }}</td>
+              <td style="min-width: 240px">
+                <div class="fw-semibold">
+                  {{ expedition.order?.name || '—' }}
+                </div>
+                <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
+                -
+                <small class="text-muted"
+                  >Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small
+                >
+              </td>
+              <td>
+                {{ formatCurrency(expedition.order?.total_amount || 0) }}
+              </td>
               <td>
                 <div class="dropdown">
                   <button
@@ -63,7 +72,7 @@
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <i class="fa fa-ellipsis-h"></i>
+                    <IconDotsVertical :size="18" />
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
@@ -93,7 +102,9 @@
       </div>
 
       <div
-        v-if="!loading && filteredItems.length > 0 && paginationData && paginationData.last_page > 1"
+        v-if="
+          !loading && filteredItems.length > 0 && paginationData && paginationData.last_page > 1
+        "
         class="p-3"
       >
         <PaginationNav :data="paginationData" @pagination-change-page="handlePageChange" />
@@ -107,6 +118,9 @@ import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import PaginationNav from '@/components/pagination/PaginationNav.vue';
 import { formatDate } from '@/utils/dateUtils';
+
+// Icons
+import { IconDotsVertical, IconSearch, IconTruckDelivery } from '@tabler/icons-vue';
 
 const props = defineProps({
   expeditions: {
@@ -130,7 +144,12 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['view-details', 'generate-separation-label', 'page-change', 'search-change']);
+const emit = defineEmits([
+  'view-details',
+  'generate-separation-label',
+  'page-change',
+  'search-change',
+]);
 
 const searchQuery = ref('');
 

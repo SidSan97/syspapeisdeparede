@@ -35,7 +35,7 @@ class ExpeditionController extends Controller
         DropshippingRepository $dropshippingRepository
     )
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
         $this->OrderRepository = $OrderRepository;
         $this->expeditionService = $expeditionService;
         $this->orderBudgetRepository = $orderBudgetRepository;

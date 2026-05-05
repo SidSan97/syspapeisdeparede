@@ -1,7 +1,7 @@
 <template>
   <section class="content">
     <Page :title="subcategoryName || 'Imagens'" back-to="/colecao-arts">
-      <template #actions v-if="isAdmin">
+      <template #extra v-if="isAdmin">
         <CollectionActions @saved="() => fetchSubcategoryImages(route.params.id)" />
       </template>
 
@@ -9,16 +9,17 @@
         <!-- Busca -->
         <div v-if="!loading && images.length" class="row mb-4">
           <div class="col-12 col-md-6 col-lg-4">
-            <label for="search-image" class="form-label small text-muted mb-1">
-              Buscar pelo nome da imagem
-            </label>
-            <input
-              id="search-image"
-              v-model.trim="searchTerm"
-              type="text"
-              class="form-control"
-              placeholder="Digite o nome da imagem"
-            />
+            <div class="input-group input-group-prefix">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Pesquisar"
+                v-model="searchTerm"
+              />
+              <span class="input-group-text">
+                <IconSearch :size="18" />
+              </span>
+            </div>
           </div>
         </div>
 
@@ -36,43 +37,47 @@
           </div>
 
           <div v-else>
-          <div class="row">
-            <div v-for="image in filteredImages" :key="image.id" class="col-12 col-sm-6 col-md-4">
-              <CollectionCard
-                :src="image.url"
-                :title="image.name || image.path_name"
-                @on-cover-click="openModal(image)"
-              >
-                <template #actions>
-                  <div class="d-flex justify-content-between w-100">
-                    <!-- Compartilhar via WhatsApp -->
-                    <button
-                      type="button"
-                      class="btn btn-success"
-                      @click.stop="shareOnWhatsApp(image)"
-                      :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
-                    >
-                      Compartilhar <i class="bi bi-whatsapp ms-2"></i>
-                    </button>
+            <div class="row">
+              <div v-for="image in filteredImages" :key="image.id" class="col-12 col-sm-6 col-md-4">
+                <CollectionCard
+                  :src="asset(image.url)"
+                  :title="image.name || image.path_name"
+                  @on-cover-click="openModal(image)"
+                >
+                  <template #actions>
+                    <div class="d-flex justify-content-between w-100">
+                      <!-- Compartilhar via WhatsApp -->
+                      <button
+                        type="button"
+                        class="btn btn-success"
+                        @click.stop="shareOnWhatsApp(image)"
+                        :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
+                      >
+                        Compartilhar
 
-                    <!-- Favorito (somente logado) -->
-                    <button
-                      v-if="isLoggedIn"
-                      type="button"
-                      class="image-gallery__favorite-btn"
-                      :class="{ 'is-favorited': image.is_favorited }"
-                      @click.stop="toggleFavorite(image)"
-                      :title="
-                        image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
-                      "
-                    >
-                      <i class="fa fa-heart"></i>
-                    </button>
-                  </div>
-                </template>
-              </CollectionCard>
+                        <IconBrandWhatsapp :size="18" class="ms-2" />
+                      </button>
+
+                      <!-- Favorito (somente logado) -->
+                      <button
+                        v-if="isLoggedIn"
+                        type="button"
+                        class="image-gallery__favorite-btn"
+                        :class="{
+                          'is-favorited': image.is_favorited,
+                        }"
+                        @click.stop="toggleFavorite(image)"
+                        :title="
+                          image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+                        "
+                      >
+                        <IconHeart :size="18" />
+                      </button>
+                    </div>
+                  </template>
+                </CollectionCard>
+              </div>
             </div>
-          </div>
           </div>
         </div>
 
@@ -80,7 +85,7 @@
           <div v-if="modalImage" class="image-modal" @click.self="closeModal">
             <div class="image-modal__content">
               <button type="button" class="image-modal__close" @click="closeModal">
-                <i class="fa fa-times"></i>
+                <IconX :size="18" />
               </button>
               <img
                 :src="modalImage.url"
@@ -96,14 +101,16 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
-// Alerts agora usam window.Swal.fire diretamente
 import Page from '@/components/page/Page.vue';
-import CollectionCard from './components/CollectionCard.vue';
-import CollectionActions from './components/CollectionActions.vue';
+import { http } from '@/lib/http';
 import { useAuthStore } from '@/stores/auth';
+import { IconBrandWhatsapp, IconHeart, IconSearch, IconX } from '@tabler/icons-vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import CollectionActions from './components/CollectionActions.vue';
+import CollectionCard from './components/CollectionCard.vue';
+import { asset } from '@/composables/useAsset';
+
 const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 const route = useRoute();
@@ -172,7 +179,7 @@ const fetchSubcategoryImages = async (categoryId) => {
 
   loading.value = true;
   try {
-    const { data } = await axios.get(`v1/collection-categories/${categoryId}`);
+    const { data } = await http.get(`v1/collection-categories/${categoryId}`);
     const payload = data?.data ?? data ?? {};
 
     subcategoryName.value = payload.name ?? '';
@@ -189,7 +196,7 @@ const fetchSubcategoryImages = async (categoryId) => {
       await Promise.all(
         normalizedImages.map(async (image) => {
           try {
-            const { data: favoriteData } = await axios.get(
+            const { data: favoriteData } = await http.get(
               `v1/collection-images/${image.id}/check-favorite`,
             );
             image.is_favorited = favoriteData?.data?.is_favorited ?? false;
@@ -228,7 +235,7 @@ const closeModal = () => {
 
 const toggleFavorite = async (image) => {
   try {
-    const { data } = await axios.post(`v1/collection-images/${image.id}/toggle-favorite`);
+    const { data } = await http.post(`v1/collection-images/${image.id}/toggle-favorite`);
     image.is_favorited = data?.data?.is_favorited ?? false;
   } catch (error) {
     window.Swal.fire({
@@ -251,9 +258,7 @@ const shareOnWhatsApp = (image) => {
   const title = `${collectionLabel}${subcategoryLabel} ${modelName} \n`;
 
   const url = image.url || '';
-  const text = url
-    ? `${title}\n${url}`
-    : title;
+  const text = url ? `${title}\n${url}` : title;
 
   const encoded = encodeURIComponent(text);
   const whatsappUrl = `https://wa.me/?text=${encoded}`;

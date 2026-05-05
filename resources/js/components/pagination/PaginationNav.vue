@@ -10,7 +10,7 @@
           @click="changePage(1)"
           aria-label="Primeira página"
         >
-          <i class="fa fa-angle-double-left"></i>
+          <IconChevronsLeft :size="18" />
         </button>
       </li>
 
@@ -22,18 +22,14 @@
           @click="changePage(data.current_page - 1)"
           aria-label="Página anterior"
         >
-          <i class="fa fa-angle-left"></i>
+          <IconChevronLeft :size="18" />
         </button>
       </li>
 
       <!-- Números das páginas (limitado) -->
       <template v-for="page in visiblePages" :key="page">
         <li class="page-item" :class="{ active: page === data.current_page }">
-          <button
-            class="page-link"
-            type="button"
-            @click="changePage(page)"
-          >
+          <button class="page-link" type="button" @click="changePage(page)">
             {{ page }}
           </button>
         </li>
@@ -48,7 +44,7 @@
           @click="changePage(data.current_page + 1)"
           aria-label="Próxima página"
         >
-          <i class="fa fa-angle-right"></i>
+          <IconChevronRight :size="18" />
         </button>
       </li>
 
@@ -60,7 +56,7 @@
           @click="changePage(data.last_page)"
           aria-label="Última página"
         >
-          <i class="fa fa-angle-double-right"></i>
+          <IconChevronsRight :size="18" />
         </button>
       </li>
     </ul>
@@ -68,7 +64,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+} from '@tabler/icons-vue';
+import { computed, onMounted } from 'vue';
 
 const props = defineProps({
   data: {
@@ -114,6 +116,10 @@ function changePage(page) {
 
   emit('pagination-change-page', page);
 }
+
+onMounted(() => {
+  console.warn('[PaginationNav]: Componente obsoleto. Usar "Bootstrap5Pagination".');
+});
 </script>
 
 <style scoped>

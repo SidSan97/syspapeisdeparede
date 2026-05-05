@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppVersionController;
+use App\Http\Controllers\PublicCatalogController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,10 @@ Route::get('version', AppVersionController::class);
 // Webhook Pagar.me (público, sem autenticação)
 Route::post('webhook/pagarme', [WebhookController::class, 'handlePagarme']);
 
+// Catálogo público (sem autenticação, com rate limiting)
+Route::middleware('throttle:60,1')
+    ->get('/public/catalog/items', [PublicCatalogController::class, 'items']);
+
 // Rota para obter dados completos do usuário autenticado (sessão web)
 Route::middleware('auth:web')->get('/user', function (Request $request) {
     $user = $request->user();
@@ -41,7 +46,7 @@ Route::middleware('auth:web')->get('/user', function (Request $request) {
 });
 
 // Rota para API tokens (Passport) - mantida para compatibilidade
-Route::middleware('auth:api')->get('/user-api', function (Request $request) {
+Route::middleware('auth:sanctum')->get('/user-api', function (Request $request) {
     $user = $request->user();
 
     return [
@@ -60,7 +65,7 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/v1/collections-api.php';
 
     // Demais rotas autenticadas
-    Route::middleware('auth:api')->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
         require __DIR__ . '/v1/profile-api.php';
         require __DIR__ . '/v1/users-api.php';
         require __DIR__ . '/v1/budgets-api.php';

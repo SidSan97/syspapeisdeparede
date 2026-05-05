@@ -16,7 +16,7 @@ class CollectionCategoryController extends BaseController
     ) {
         // Deixar listagem e visualização públicas para uso externo (catálogo),
         // mantendo autenticação para operações de escrita.
-        $this->middleware('auth:api')->except(['index', 'show', 'children']);
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'children']);
     }
 
     public function index(Request $request): JsonResponse

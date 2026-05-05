@@ -1,17 +1,18 @@
 <template>
-  <div v-if="blocks.length" class="wall-model-referring-fields mb-3" :class="{ 'wall-model-referring-fields--compact': compact }">
+  <div
+    v-if="blocks.length"
+    class="wall-model-referring-fields mb-3"
+    :class="{ 'wall-model-referring-fields--compact': compact }"
+  >
     <h3
       v-if="!compact"
       class="wall-model-referring-fields__title d-flex align-items-center gap-2 mb-2"
     >
-      <i class="fa fa-paperclip"></i>
+      <IconPaperclip />
+
       Referências do modelo
     </h3>
-    <div
-      v-for="block in blocks"
-      :key="block.key"
-      class="wall-model-referring-fields__block"
-    >
+    <div v-for="block in blocks" :key="block.key" class="wall-model-referring-fields__block">
       <div class="text-muted small mb-1">{{ block.label }}</div>
       <template v-if="block.type === 'text'">
         <div class="p-2 rounded border wall-model-referring-fields__text">
@@ -19,12 +20,9 @@
         </div>
       </template>
       <template v-else-if="block.type === 'link'">
-        <a
-          :href="block.href"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-break"
-        >{{ block.text }}</a>
+        <a :href="block.href" target="_blank" rel="noopener noreferrer" class="text-break">{{
+          block.text
+        }}</a>
       </template>
       <template v-else-if="block.type === 'files'">
         <div class="d-flex flex-wrap gap-2">
@@ -34,16 +32,22 @@
             :href="it.url"
             target="_blank"
             rel="noopener noreferrer"
-            class="btn btn-sm btn-outline-secondary"
+            class="btn btn-sm btn-outline-default"
           >
-            <i class="fa fa-file me-1"></i>
+            <IconFile :size="18" class="me-1" />
+
             {{ it.label }}
           </a>
         </div>
       </template>
       <template v-else-if="block.type === 'collection_image'">
         <div class="wall-model-referring-fields__collection-image p-2 rounded border">
-          <template v-if="!collectionImageState(block.imageId) || collectionImageState(block.imageId).status === 'loading'">
+          <template
+            v-if="
+              !collectionImageState(block.imageId) ||
+              collectionImageState(block.imageId).status === 'loading'
+            "
+          >
             <span class="text-muted small">Carregando...</span>
           </template>
           <template v-else-if="collectionImageState(block.imageId).status === 'error'">
@@ -51,9 +55,14 @@
             <div class="text-muted small mt-1">ID: {{ block.imageId }}</div>
           </template>
           <template v-else>
-            <div class="fw-medium">{{ collectionImageState(block.imageId).data?.name ?? '—' }}</div>
-            
-            <div v-if="collectionImageState(block.imageId).data?.url" class="mt-2 d-flex flex-column gap-2">
+            <div class="fw-medium">
+              {{ collectionImageState(block.imageId).data?.name ?? '—' }}
+            </div>
+
+            <div
+              v-if="collectionImageState(block.imageId).data?.url"
+              class="mt-2 d-flex flex-column gap-2"
+            >
               <img
                 :src="collectionImageState(block.imageId).data.url"
                 :alt="collectionImageState(block.imageId).data?.name || 'Arte da coleção'"
@@ -64,7 +73,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="small"
-              >Abrir imagem</a>
+                >Abrir imagem</a
+              >
             </div>
           </template>
         </div>
@@ -75,8 +85,9 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { useWallService } from '@/services/wallService';
+import { wallService } from '@/services/wallService';
 import { getWallModelReferringBlocks } from '@/utils/wallModelReferringContent';
+import { IconFile, IconPaperclip } from '@tabler/icons-vue';
 
 const props = defineProps({
   wall: {
@@ -88,8 +99,6 @@ const props = defineProps({
     default: false,
   },
 });
-
-const { getCollectionImageById } = useWallService();
 
 const blocks = computed(() => getWallModelReferringBlocks(props.wall));
 
@@ -115,7 +124,7 @@ async function loadCollectionImage(imageId) {
   };
 
   try {
-    const data = await getCollectionImageById(imageId);
+    const data = await wallService.getCollectionImageById(imageId);
     collectionImagesById.value = {
       ...collectionImagesById.value,
       [imageId]: { status: 'loaded', data: data || null },
@@ -125,7 +134,8 @@ async function loadCollectionImage(imageId) {
       ...collectionImagesById.value,
       [imageId]: {
         status: 'error',
-        message: err?.response?.data?.message || err?.message || 'Não foi possível carregar a arte.',
+        message:
+          err?.response?.data?.message || err?.message || 'Não foi possível carregar a arte.',
       },
     };
   }

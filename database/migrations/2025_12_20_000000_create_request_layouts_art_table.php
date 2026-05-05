@@ -82,4 +82,3 @@ return new class extends Migration
         Schema::dropIfExists('request_layouts_art_interactions');
     }
 };
-

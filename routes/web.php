@@ -18,7 +18,11 @@ Route::get('home', function () {
 });
 
 // Rotas públicas para o catálogo de coleções/imagens (sem exigir login)
-Route::get('colecao-arts/{vue_capture?}', PublicCatalogController::class)
+// Route::get('colecao-arts/{vue_capture?}', PublicCatalogController::class)
+//     ->where('vue_capture', '[\/\w\.-]*');
+
+// Catálogo público standalone (blade + Vue separados do SPA admin)
+Route::get('catalogo/{vue_capture?}', [PublicCatalogController::class, 'index'])
     ->where('vue_capture', '[\/\w\.-]*');
 
 // Demais rotas SPA protegidas por autenticação

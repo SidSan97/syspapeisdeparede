@@ -12,7 +12,6 @@ class CreateSettingsTable extends Migration
     |--------------------------------------------------------------------------
     */
 
-
     public function up()
     {
         Schema::create('settings', function (Blueprint $table) {
@@ -23,7 +22,6 @@ class CreateSettingsTable extends Migration
             $table->timestamps();
         });
     }
-
 
     public function down()
     {

@@ -1,36 +1,63 @@
-import axios from 'axios';
+import { http } from '@/lib/http';
 
-/**
- * Service para gerenciar chamadas de API relacionadas a artes
- */
-export function useArtService() {
-    async function uploadArt(formData) {
-        const response = await axios.post('v1/budgets/order-budgets/upload-art', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        return response.data;
-    }
+const endpoint = '/v1/budgets';
 
-    async function fetchRequestLayoutArts(orderBudgetId, orderId = null, budgetId = null) {
-        const params = {};
-
-        if (orderId) {
-            params.order_id = orderId;
-        } else if (budgetId) {
-            params.budget_id = budgetId;
-        }
-
-        const response = await axios.get('v1/budgets/request-layout-arts', {
-            params,
-        });
-        return response.data;
-    }
-
-    return {
-        uploadArt,
-        fetchRequestLayoutArts,
-    };
+function unwrap(promise) {
+  return promise.then((res) => res.data);
 }
 
+function buildUploadUrl() {
+  return `${endpoint}/order-budgets/upload-art`;
+}
+
+function buildRequestLayoutArtsUrl() {
+  return `${endpoint}/request-layout-arts`;
+}
+
+function buildRequestParams({ orderId, budgetId } = {}) {
+  const params = {};
+
+  if (orderId && budgetId) {
+    throw new Error('Use only orderId OR budgetId, not both');
+  }
+
+  if (orderId) {
+    params.order_id = orderId;
+  }
+
+  if (budgetId) {
+    params.budget_id = budgetId;
+  }
+
+  return params;
+}
+
+export const artService = {
+  /**
+   * Upload de arte
+   */
+  upload(formData) {
+    if (!(formData instanceof FormData)) {
+      throw new Error('formData must be an instance of FormData');
+    }
+
+    return unwrap(
+      http.post(buildUploadUrl(), formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }),
+    );
+  },
+
+  /**
+   * Buscar artes de layout
+   */
+  listRequestLayoutArts({ orderId, budgetId } = {}) {
+    return unwrap(
+      http.get(buildRequestLayoutArtsUrl(), {
+        params: buildRequestParams({ orderId, budgetId }),
+      }),
+    );
+  },
+};

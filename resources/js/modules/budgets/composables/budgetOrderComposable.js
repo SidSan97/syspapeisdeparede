@@ -1,14 +1,11 @@
 import { computed, reactive, ref } from 'vue';
-import { useBudgetOrderService } from '../services/budgetOrderService';
 import { useBudgetOrderCollections } from './budgetOrderCollections';
-import { useBudgetOrderValidation } from './budgetOrderValidation';
+import { useFormatting } from '@/composables/useFormatting';
 
 /**
  * Composable para gerenciar o estado e lógica do formulário de pedido de orçamento
  */
 export function useBudgetOrderComposable(budget) {
-  const budgetOrderService = useBudgetOrderService();
-
   // Estado do formulário global (termos)
   const orderForm = reactive({
     termsAccepted: false,
@@ -29,9 +26,7 @@ export function useBudgetOrderComposable(budget) {
 
   // Computed properties
   const orderSummary = computed(() => {
-    if (!budget.value) {
-      return null;
-    }
+    if (!budget.value) return null;
 
     const rawTotal = Number(budget.value.total_amount ?? budget.value.totalAmount ?? 0);
     const total = Number.isFinite(rawTotal) ? rawTotal : 0;
@@ -79,10 +74,7 @@ export function useBudgetOrderComposable(budget) {
       const roomId = room?.id ?? `room-${roomIndex}`;
 
       (room?.walls ?? []).forEach((wall, wallIndex) => {
-        const collectionModel =
-          wall?.collection_model ??
-          wall?.collectionModel ??
-          null;
+        const collectionModel = wall?.collection_model ?? wall?.collectionModel ?? null;
 
         if (!collectionModel) {
           return;
@@ -93,24 +85,15 @@ export function useBudgetOrderComposable(budget) {
         const wallKey = `${roomId}-${wallId}`;
 
         const requiresComment =
-          collectionModel?.request_comment ??
-          collectionModel?.requestComment ??
-          false;
+          collectionModel?.request_comment ?? collectionModel?.requestComment ?? false;
 
-        const requiresLink =
-          collectionModel?.request_link ??
-          collectionModel?.requestLink ??
-          false;
+        const requiresLink = collectionModel?.request_link ?? collectionModel?.requestLink ?? false;
 
         const requiresFiles =
-          collectionModel?.request_file ??
-          collectionModel?.requestFile ??
-          false;
+          collectionModel?.request_file ?? collectionModel?.requestFile ?? false;
 
         const requiresCollection =
-          collectionModel?.request_collection ??
-          collectionModel?.requestCollection ??
-          false;
+          collectionModel?.request_collection ?? collectionModel?.requestCollection ?? false;
 
         // Normalizar valores booleanos
         const normalizeBool = (value) => {
@@ -177,23 +160,7 @@ export function useBudgetOrderComposable(budget) {
     resetWallSelections,
   } = useBudgetOrderCollections(budget, requiresCollection);
 
-  // Funções auxiliares de formatação
-  function formatCurrency(value) {
-    if (value === null || value === undefined) {
-      return currencyFormatter.format(0);
-    }
-
-    const numericValue = Number(value);
-    return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
-  }
-
-  function formatDeliveryTime(days) {
-    if (!days) {
-      return 'Não informado';
-    }
-
-    return `${days} ${days === 1 ? 'dia' : 'dias'}`;
-  }
+  const { formatCurrency, formatDeliveryTime } = useFormatting();
 
   // Funções de extração de dados
   function extractCollectionModelsFromBudget(budgetData) {
@@ -443,86 +410,6 @@ export function useBudgetOrderComposable(budget) {
     return true;
   }
 
-  async function submitOrder() {
-    if (!budget.value?.id) {
-      return null;
-    }
-
-    if (!validateOrder()) {
-      return null;
-    }
-
-    orderSubmitting.value = true;
-    orderError.value = '';
-
-    try {
-      const formData = new FormData();
-      formData.append('id', budget.value.id);
-
-      // Enviar dados por parede
-      wallsWithRequirements.value.forEach((wall) => {
-        const form = wallForms[wall.key];
-
-        if (!form) {
-          return;
-        }
-
-        const wallId = wall.wallId;
-
-        if (wall.requiresComment && form.comment) {
-          formData.append(`walls[${wallId}][comment_referring_model]`, form.comment);
-        }
-
-        if (wall.requiresLink && form.link) {
-          formData.append(`walls[${wallId}][link_referring_model]`, form.link);
-        }
-
-        if (wall.requiresFiles && form.files.length) {
-          form.files.forEach((file) => {
-            formData.append(`walls[${wallId}][files_referring_model][]`, file);
-          });
-        }
-
-        if (wall.requiresCollection) {
-          const selection = wallSelections[wall.key];
-          if (selection?.imageId) {
-            formData.append(`walls[${wallId}][collection_referring_model]`, selection.imageId);
-          }
-        }
-      });
-
-      formData.append('terms_accepted', orderForm.termsAccepted ? '1' : '0');
-
-      const payload = await budgetOrderService.placeOrder(formData);
-
-      if (!payload) {
-        throw new Error('Resposta inválida do servidor.');
-      }
-
-      let orderId = payload.order_id;
-
-      if (!orderId) {
-        throw new Error('ID do pedido não encontrado na resposta.');
-      }
-
-      return { orderId, payload };
-    } catch (error) {
-      const firstError = error.response?.data?.errors
-        ? Object.values(error.response.data.errors).flat().shift()
-        : null;
-
-      orderError.value =
-        firstError ??
-        error.response?.data?.message ??
-        error.message ??
-        'Não foi possível realizar o pedido. Tente novamente.';
-
-      throw error;
-    } finally {
-      orderSubmitting.value = false;
-    }
-  }
-
   return {
     // Estado
     orderForm,
@@ -566,7 +453,5 @@ export function useBudgetOrderComposable(budget) {
     handleCollectionImageError,
     validateFormRequirements,
     validateOrder,
-    submitOrder,
   };
 }
-

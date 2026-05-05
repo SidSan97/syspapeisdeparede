@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Actions\Order\MergeOrderAction;
+use App\Actions\Order\UpdateOrderAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Common\ListRequest;
+use App\Http\Requests\Api\V1\IndexOrderRequest;
+use App\Http\Requests\Api\V1\UpdateOrderRequest;
 use App\Http\Requests\Orders\GenerateOrderPaymentLinkRequest;
 use App\Http\Requests\Orders\MergeOrdersRequest;
-use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
-use App\Models\Budget;
-use App\Models\BudgetRoom;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\OrderPaymentLink;
@@ -21,11 +21,10 @@ use Illuminate\Http\Request;
 use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
 use App\Services\OrderBoletoWalletPaymentService;
-use App\Services\OrderEditWalletCreditService;
 use App\Services\OrderPaymentCompositionService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
@@ -39,7 +38,8 @@ class OrderController extends Controller
     protected $tinyErpService;
     protected $paymentCompositionService;
 
-    public function __construct(OrderRepository $repository,
+    public function __construct(
+        OrderRepository $repository,
         LayoutService $layoutService,
         GeneratePaymentService $generatePaymentService,
         OrderPaymentCompositionService $paymentCompositionService,
@@ -47,9 +47,9 @@ class OrderController extends Controller
         OrderBudget $orderBudget,
         DropshippingRepository $dropshippingRepository,
         TinyErpService $tinyErpService
-    )
-    {
-        $this->middleware('auth:api');
+    ) {
+        $this->middleware('auth:sanctum');
+
         $this->repository = $repository;
         $this->layoutService = $layoutService;
         $this->generatePaymentService = $generatePaymentService;
@@ -60,91 +60,53 @@ class OrderController extends Controller
         $this->tinyErpService = $tinyErpService;
     }
 
-    public function index(ListRequest $request): JsonResponse
+    public function index(IndexOrderRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $orders = Order::with(['user', 'tenant', 'primaryRoom', 'paymentLinks'])
+            ->orderByDesc('created_at')
+            ->forUser($request->user())
+            ->search($request->search)
+            ->byStatus($request->status)
+            ->byDateRange($request->date_from, $request->date_to)
+            ->byUserId($request->user_id)
+            ->latest()
+            ->paginate();
 
-        $filters = [
-            'search' => $validated['search'] ?? null,
-            'status' => $validated['status'] ?? 'all',
-            'date_from' => $validated['date_from'] ?? null,
-            'date_to' => $validated['date_to'] ?? null,
-            'user_id' => $validated['user_id'] ?? null,
-        ];
-
-        $paginatedOrders = $this->repository->paginate($filters);
-
-        return BudgetResource::collection($paginatedOrders)->response(); 
+        return BudgetResource::collection($orders)->response();
     }
 
-    public function all(): JsonResponse
+    public function show(Order $order): JsonResponse
     {
-        $orders = $this->repository->all();
-        return OrderResource::collection($orders)->response();
+        return (new OrderResource($order))->response();
     }
 
-    public function layouts(): JsonResponse
+    public function update(
+        Order $order,
+        UpdateOrderRequest $request,
+        UpdateOrderAction $action
+    ): JsonResponse {
+        $order = $action->execute($order, $request->validated());
+
+        return (new OrderResource($order->fresh()))->response();
+    }
+
+    public function destroy(Order $order): Response
+    {
+        $this->authorize('delete', $order);
+
+        DB::transaction(fn() => $order->delete());
+
+        return response()->noContent();
+    }
+
+    public function layouts()
     {
         $orderBudgets = $this->repository->getLayoutsForApprove();
         $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
 
+        // TODO: Migrar para resource collection.
+        // return OrderLayoutCardResource::collection($orderBudgets);
         return response()->json($data);
-    }
-
-    public function show(int $id): JsonResponse
-    {
-        $order = $this->repository->find($id);
-
-        if (!$order) {
-            abort(404, 'Pedido não encontrado');
-        }
-
-        return (new OrderResource($order))->response();
-    }
-
-    public function update(UpdateOrderRequest $request, int $id, OrderEditWalletCreditService $orderEditWalletCredit): JsonResponse
-    {
-        $order = $this->repository->find($id);
-
-        if (!$order) {
-            abort(404, 'Pedido não encontrado');
-        }
-
-        $validated = $request->validated();
-
-        $compositionBefore = null;
-        if (! empty($validated['rooms']) && is_array($validated['rooms'])
-            && $orderEditWalletCredit->shouldSnapshotCompositionForRoomEdit($order)) {
-            $compositionBefore = $this->paymentCompositionService->getOrderComposition($order);
-        }
-
-        $order = $this->repository->update($order, $validated);
-
-        if (!empty($validated['dropshipping_data']) && $validated['dropshipping_budget'] === 1) {
-            $existingDropshipping = $order->dropshippingData;
-
-            if ($existingDropshipping) {
-                $this->dropshippingRepository->update(
-                    $validated['dropshipping_data'],
-                    $existingDropshipping->id
-                );
-            } else {
-                $this->dropshippingRepository->create(
-                    $validated['dropshipping_data'],
-                    null,
-                    $order->id,
-                    Auth::id()
-                );
-            }
-        } elseif (isset($validated['dropshipping_budget']) && $validated['dropshipping_budget'] === 0) {
-            $order->dropshippingData()->delete();
-        }
-
-        if ($compositionBefore !== null) {
-            $orderEditWalletCredit->creditIfCompositionDecreased($order->fresh(), $compositionBefore);
-        }
-
-        return (new OrderResource($order->fresh()))->response();
     }
 
     public function getByStatus(Request $request, string $status): JsonResponse
@@ -155,10 +117,9 @@ class OrderController extends Controller
 
     public function generatePaymentLink(
         GenerateOrderPaymentLinkRequest $request,
-        int $id,
+        Order $order,
         OrderBoletoWalletPaymentService $boletoWalletPayment
     ): JsonResponse {
-        $order = Order::findOrFail($id);
         $validated = $request->validated();
 
         $paymentMethod = $validated['payment_method'];
@@ -167,7 +128,7 @@ class OrderController extends Controller
             $boletoWalletPayment->payFromWallet(
                 $order,
                 $validated['components'],
-                auth('api')->user()
+                $request->user()
             );
         } else {
             $installments = $paymentMethod === 'credit_card'
@@ -180,9 +141,8 @@ class OrderController extends Controller
         return (new OrderResource($order->refresh()))->response();
     }
 
-    public function generateLegacyPaymentLink(int $id): JsonResponse
+    public function generateLegacyPaymentLink(Order $order): JsonResponse
     {
-        $order = Order::findOrFail($id);
         $paymentMethod = $order->payment_method === 'pix' ? 'pix' : 'credit_card';
         $installments = $paymentMethod === 'credit_card' ? (int) ($order->installments ?? 1) : null;
         $this->createPaymentLinkForOrder($order, ['ARTES', 'PRODUTOS', 'FRETE'], $paymentMethod, $installments);
@@ -307,68 +267,27 @@ class OrderController extends Controller
     public function productionLayouts(): JsonResponse
     {
         $orderBudgets = $this->repository->getLayoutsForProduction();
+
         $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
 
         return response()->json($data);
     }
 
-    public function merge(MergeOrdersRequest $request): JsonResponse
+    public function merge(MergeOrdersRequest $request, MergeOrderAction $action): JsonResponse
     {
-        $validated = $request->validated();
+        $data = $request->validated();
 
-        try {
-            $order = $this->repository->mergeOrders(
-                $validated['order_ids'],
-                $validated['name']
-            );
+        $order = $action->execute($data['order_ids'], $data['name']);
 
-            return (new OrderResource($order))->response()->setStatusCode(201);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+        return (new OrderResource($order))->response()->setStatusCode(201);
     }
 
-    public function cancel(Request $request): JsonResponse
+    public function cancel(Order $order): JsonResponse
     {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:orders,id'],
+        $order->update([
+            'status' => 'Cancelado',
         ]);
 
-        $order = $this->repository->find($validated['id']);
-
-        if (!$order) {
-            abort(404, 'Pedido não encontrado');
-        }
-
-        $orderUpdated = $this->repository->cancel($order);
-
-        return (new OrderResource($orderUpdated))->response();
-    }
-
-    public function destroy(Order $order): JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-
-            $order->delete(); // OrderObserver cuida da limpeza de budget_rooms e budgets
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pedido excluído com sucesso.',
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao excluir pedido: ' . $e->getMessage(),
-            ], 500);
-        }
+        return (new OrderResource($order))->response();
     }
 }
-

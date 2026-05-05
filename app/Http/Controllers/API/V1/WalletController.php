@@ -10,12 +10,12 @@ class WalletController extends BaseController
 {
     public function __construct()
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
     }
 
     public function show(Request $request)
     {
-        $user = auth('api')->user();
+        $user = $request->user();
 
         $wallet = UserWallet::firstOrCreate(
             ['user_id' => $user->id],

@@ -13,7 +13,6 @@ export function useBudgetOrderValidation({
   wallsRequiringCollection,
   wallSelections,
 }) {
-
   function validateTerms() {
     if (!orderForm.termsAccepted) {
       orderError.value = 'É necessário aceitar os termos para continuar.';
@@ -57,11 +56,7 @@ export function useBudgetOrderValidation({
   }
 
   function validateFiles() {
-    if (
-      requiresFiles.value &&
-      !orderExistingFiles.value.length &&
-      !orderNewFiles.value.length
-    ) {
+    if (requiresFiles.value && !orderExistingFiles.value.length && !orderNewFiles.value.length) {
       orderError.value = 'Envie pelo menos um arquivo de referência para prosseguir.';
       return false;
     }
@@ -101,4 +96,3 @@ export function useBudgetOrderValidation({
     validateFiles,
   };
 }
-

@@ -35,4 +35,3 @@ export function sumArtworkDays(budget, getModelById) {
 
   return totalArtworkDays;
 }
-

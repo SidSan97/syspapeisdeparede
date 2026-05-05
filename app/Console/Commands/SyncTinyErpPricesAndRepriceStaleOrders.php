@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\TinyErpController;
+use App\Http\Controllers\TinyErpSettingsController;
 use App\Jobs\RepriceStaleUnpaidOrdersAndBudgetsJob;
 use App\Models\Setting;
 use Illuminate\Console\Command;
@@ -14,7 +14,7 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
 
     protected $description = 'Atualiza preços do Tiny ERP e reprecifica pedidos/orçamentos não pagos 30+ dias quando houver mudança';
 
-    public function handle(TinyErpController $tinyErpController): int
+    public function handle(TinyErpSettingsController $tinyErpController): int
     {
         // Compara com o último snapshot processado (não com o preço "atual"),
         // para disparar reprecificação somente quando houver mudança real.
@@ -26,6 +26,7 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
 
         if (isset($tinyData['status']) && $tinyData['status'] === 'Erro') {
             $this->error('Não foi possível sincronizar preços do Tiny ERP.');
+
             return self::FAILURE;
         }
 
@@ -34,6 +35,7 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
 
         if ($currentVista <= 0 || $currentPrazo <= 0) {
             $this->error('Preços do Tiny ERP inválidos após sincronização.');
+
             return self::FAILURE;
         }
 
@@ -41,11 +43,13 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
             Setting::set('tiny_erp_last_processed_price_payment', (string) $currentVista, 'string');
             Setting::set('tiny_erp_last_processed_price_installment', (string) $currentPrazo, 'string');
             $this->info('Snapshot inicial salvo. Nenhuma reprecificação executada.');
+
             return self::SUCCESS;
         }
 
         if ($this->sameMoney($lastProcessedVista, $currentVista) && $this->sameMoney($lastProcessedPrazo, $currentPrazo)) {
             $this->info('Sem mudança de preço do Tiny ERP. Nada a reprocessar.');
+
             return self::SUCCESS;
         }
 
@@ -57,6 +61,7 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
         );
 
         $this->info('Mudança detectada. Job de reprecificação enviado para fila.');
+
         return self::SUCCESS;
     }
 
@@ -74,4 +79,3 @@ class SyncTinyErpPricesAndRepriceStaleOrders extends Command
         return round($a, 2) === round($b, 2);
     }
 }
-

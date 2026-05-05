@@ -1,15 +1,53 @@
+<script setup>
+import { computed } from 'vue';
+
+import PageHeader from './PageHeader.vue';
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: null,
+  },
+
+  subtitle: {
+    type: String,
+    default: '',
+  },
+
+  fullWidth: {
+    type: Boolean,
+    default: false,
+  },
+
+  backTo: {
+    type: [String, Object],
+    default: null,
+  },
+
+  breadcrumbs: {
+    type: Array,
+    default: () => [],
+  },
+});
+
+const containerClass = computed(() => (props.fullWidth ? 'container-fluid' : 'container'));
+</script>
+
 <template>
-  <div :class="containerClass">
+  <div class="" :class="containerClass">
     <div class="row g-0">
       <div class="col-12 mt-3">
-        <PageHeader :title="title" :subtitle="subtitle" :back-to="backTo">
-          <template #titleMetadata>
-            <slot name="titleMetadata"></slot>
+        <PageHeader
+          :title="title"
+          :subtitle="subtitle"
+          :back-to="backTo"
+          :breadcrumbs="breadcrumbs"
+        >
+          <template #extra>
+            <slot name="extra"></slot>
           </template>
-          <template #actions>
-            <slot name="actions"></slot>
-          </template>
-          <template v-if="hasSubtitleSlot" #subtitle>
+
+          <template v-if="$slots.subtitle" #subtitle>
             <slot name="subtitle"></slot>
           </template>
         </PageHeader>
@@ -20,40 +58,4 @@
   </div>
 </template>
 
-<script setup>
-import { computed, useSlots } from 'vue'
-import PageHeader from './PageHeader.vue'
-
-// Props
-const props = defineProps({
-  /**
-   * Título da página.
-   */
-  title: String,
-
-  /**
-   * Subtítulo da página.
-   */
-  subtitle: String,
-
-  /**
-   * Largura total?
-   */
-  fullWidth: Boolean,
-
-  /**
-   * Voltar para.
-   */
-  backTo: [String, Object],
-})
-
-// Computed
-const containerClass = computed(() =>
-  props.fullWidth ? 'container-fluid' : 'container'
-)
-
-// Slots
-const slots = useSlots()
-
-const hasSubtitleSlot = computed(() => !!slots.subtitle)
-</script>
+<style scoped></style>

@@ -2,76 +2,56 @@
 
 namespace App\Http\Controllers\API\V1;
 
-use App\Http\Requests\Users\ChangePasswordRequest;
-use App\Http\Requests\Users\ProfileRequest;
-use App\Models\User;
+use App\Actions\Profile\UpdateAvatarAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\UpdateAvatarRequest;
+use App\Http\Requests\Api\V1\UpdatePasswordRequest;
+use App\Http\Requests\Api\V1\UpdateProfileRequest;
+use App\Http\Resources\V1\UserResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
-class ProfileController extends BaseController
+class ProfileController extends Controller
 {
-    public function __construct()
+    public function show(Request $request)
     {
-        $this->middleware('auth:api');
+        $user = $request->user();
+
+        return new UserResource($user);
     }
 
-    public function index(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
-        $user = auth('api')->user();
+        $user = $request->user();
 
-        return $this->sendResponse($user, 'Perfil do usuário');
+        $user->update($request->only(['name', 'email']));
+
+        return new UserResource($user);
     }
 
-    public function update(ProfileRequest $request)
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
     {
-        $user = auth('api')->user();
+        $user = $request->user();
 
         $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
+            'password' => Hash::make($request->password),
         ]);
 
-        return $this->sendResponse($user, 'Perfil atualizado com sucesso');
+        return response()->json([
+            'message' => 'Senha atualizada com sucesso',
+        ]);
     }
 
-    public function changePassword(ChangePasswordRequest $request)
+    public function updateAvatar(UpdateAvatarRequest $request, UpdateAvatarAction $action): JsonResponse
     {
-        $user = auth('api')->user();
+        $user = $request->user();
 
-        User::find($user->id)->update(['password' => Hash::make($request->new_password)]);
+        $url = $action->execute($user, $request->input('image'));
 
-        return $this->sendResponse([], 'Senha atualizada com sucesso');
-    }
-
-    public function uploadAvatar(Request $request)
-    {
-        $user = auth('api')->user();
-
-        $data = $request->input('image');
-        if (preg_match('/^data:image\/(\w+);base64,/', $data, $type)) {
-            $data = substr($data, strpos($data, ',') + 1);
-            $type = strtolower($type[1]); // jpg, png, etc.
-
-            $data = base64_decode($data);
-            $filename = 'avatar_'.Str::random(10).'.'.$type;
-            $path = 'avatars/'.$filename;
-
-            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-
-            Storage::disk('public')->put($path, $data);
-
-            $user->update(['avatar' => $path]);
-
-            return $this->sendResponse([
-                'success' => true,
-                'url' => Storage::url($path),
-            ], 'Imagem carregada com sucesso.');
-        }
-
-        return $this->sendError('Algo deu errado ao carregar a imagem.');
+        return response()->json([
+            'url' => $url,
+            'message' => 'Imagem carregada com sucesso.',
+        ]);
     }
 }

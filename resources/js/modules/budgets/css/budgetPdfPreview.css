@@ -1,241 +1,241 @@
 .pdf-preview-content {
-    background: white;
-    padding: 40px;
-    max-width: 210mm;
-    margin: 0 auto;
-    border: 1px solid #000;
-    filter: grayscale(100%);
+  background: white;
+  padding: 40px;
+  max-width: 210mm;
+  margin: 0 auto;
+  border: 1px solid #000;
+  filter: grayscale(100%);
+}
+
+/* Cabeçalho */
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #000;
+}
+
+.pdf-logo {
+  flex: 0 0 150px;
+}
+
+.logo-placeholder {
+  width: 120px;
+  height: 80px;
+  border: 2px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 12px;
+  background: #fff;
+}
+
+.logo-placeholder i {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.pdf-header-right {
+  flex: 1;
+  text-align: right;
+}
+
+.pdf-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+  color: #000;
+}
+
+.pdf-subtitle {
+  font-size: 14px;
+  color: #000;
+  margin: 0;
+}
+
+/* Seção de Informações */
+.pdf-info-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.pdf-info-table {
+  width: 48%;
+  border-collapse: collapse;
+  border: 1px solid #000;
+  font-size: 12px;
+  background: #f0f0f0;
+  font-weight: bold;
+  color: #000;
+}
+
+.pdf-info-table td {
+  padding: 9px 0 0 5px;
+  border: 1px solid #000;
+  vertical-align: top;
+}
+
+.pdf-info-value {
+  background: #ffffff;
+  color: #000;
+}
+
+.pdf-info-value div {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Tabela de Itens */
+.pdf-items-section {
+  margin-bottom: 30px;
+}
+
+.pdf-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: #232222;
+}
+
+.pdf-items-table thead {
+  background: #ffffff;
+}
+
+.pdf-items-table th {
+  padding: 10px 8px;
+  text-align: left;
+  border: 1px solid #000;
+  color: #000;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.pdf-items-table td {
+  padding: 8px;
+  border: 1px solid #000;
+  vertical-align: top;
+  font-size: 12px;
+}
+
+.wall-details {
+  font-size: 12px;
+  color: #000;
+  margin-top: 5px;
+}
+
+/* Resumo */
+.pdf-summary-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #000;
+  color: #000;
+}
+
+.pdf-summary-left p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #000;
+}
+
+.pdf-summary-left p strong {
+  color: #000;
+}
+
+.pdf-total-cash {
+  font-size: 15px !important;
+  font-weight: bold;
+  margin-top: 12px !important;
+  padding-top: 12px;
+  border-top: 2px solid #000;
+  color: #000;
+}
+
+.pdf-total-installment {
+  font-size: 15px !important;
+  font-weight: bold;
+  margin-top: 8px !important;
+  color: #000;
+}
+
+.pdf-mockup-input {
+  font-size: 13px !important;
+  margin-top: 12px !important;
+  padding-top: 12px;
+  border-top: 1px solid #ccc;
+  color: #000;
+}
+
+.pdf-edit-icon {
+  margin-left: 10px;
+  cursor: pointer;
+  color: #000;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.pdf-edit-icon:hover {
+  color: #666;
+}
+
+.pdf-edit-input {
+  margin-left: 10px;
+  padding: 4px 8px;
+  border: 1px solid #000;
+  border-radius: 3px;
+  font-size: 12px;
+  width: 120px;
+  color: #000;
+  background: #fff;
+}
+
+.pdf-edit-input:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Entrega */
+.pdf-shipping-section {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.pdf-shipping-section .pdf-info-group {
+  flex: 1;
+  color: #1b1b1b;
+}
+
+/* Observações */
+.pdf-observations-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #000;
+}
+
+.pdf-observations-section strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.pdf-observations-section p {
+  font-size: 11px;
+  color: #000;
+  line-height: 1.5;
+}
+
+/* Estilos para impressão */
+@media print {
+  .pdf-preview-content {
+    box-shadow: none;
+    padding: 20mm;
   }
-  
-  /* Cabeçalho */
-  .pdf-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #000;
-  }
-  
-  .pdf-logo {
-    flex: 0 0 150px;
-  }
-  
-  .logo-placeholder {
-    width: 120px;
-    height: 80px;
-    border: 2px solid #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #000;
-    font-size: 12px;
-    background: #fff;
-  }
-  
-  .logo-placeholder i {
-    font-size: 24px;
-    margin-bottom: 5px;
-  }
-  
-  .pdf-header-right {
-    flex: 1;
-    text-align: right;
-  }
-  
-  .pdf-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin: 0 0 5px 0;
-    color: #000;
-  }
-  
-  .pdf-subtitle {
-    font-size: 14px;
-    color: #000;
-    margin: 0;
-  }
-  
-  /* Seção de Informações */
-  .pdf-info-section {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 30px;
-    gap: 20px;
-  }
-  
-  .pdf-info-table {
-    width: 48%;
-    border-collapse: collapse;
-    border: 1px solid #000;
-    font-size: 12px;
-    background: #f0f0f0;
-    font-weight: bold;
-    color: #000;
-  }
-  
-  .pdf-info-table td {
-    padding: 9px 0 0 5px;
-    border: 1px solid #000;
-    vertical-align: top;
-  }
-  
-  .pdf-info-value {
-    background: #ffffff;
-    color: #000;
-  }
-  
-  .pdf-info-value div {
-    margin: 0;
-    line-height: 1.4;
-  }
-  
-  /* Tabela de Itens */
-  .pdf-items-section {
-    margin-bottom: 30px;
-  }
-  
-  .pdf-items-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-    color: #232222;
-  }
-  
-  .pdf-items-table thead {
-    background: #ffffff;
-  }
-  
-  .pdf-items-table th {
-    padding: 10px 8px;
-    text-align: left;
-    border: 1px solid #000;
-    color: #000;
-    font-weight: bold;
-    font-size: 11px;
-  }
-  
-  .pdf-items-table td {
-    padding: 8px;
-    border: 1px solid #000;
-    vertical-align: top;
-    font-size: 12px;
-  }
-  
-  .wall-details {
-    font-size: 12px;
-    color: #000;
-    margin-top: 5px;
-  }
-  
-  /* Resumo */
-  .pdf-summary-section {
-    margin-bottom: 30px;
-    padding: 20px;
-    background: #ffffff;
-    border: 1px solid #000;
-    color: #000;
-  }
-  
-  .pdf-summary-left p {
-    margin: 8px 0;
-    font-size: 13px;
-    color: #000;
-  }
-  
-  .pdf-summary-left p strong {
-    color: #000;
-  }
-  
-  .pdf-total-cash {
-    font-size: 15px !important;
-    font-weight: bold;
-    margin-top: 12px !important;
-    padding-top: 12px;
-    border-top: 2px solid #000;
-    color: #000;
-  }
-  
-  .pdf-total-installment {
-    font-size: 15px !important;
-    font-weight: bold;
-    margin-top: 8px !important;
-    color: #000;
-  }
-  
-  .pdf-mockup-input {
-    font-size: 13px !important;
-    margin-top: 12px !important;
-    padding-top: 12px;
-    border-top: 1px solid #ccc;
-    color: #000;
-  }
-  
-  .pdf-edit-icon {
-    margin-left: 10px;
-    cursor: pointer;
-    color: #000;
-    font-size: 14px;
-    transition: color 0.2s;
-  }
-  
-  .pdf-edit-icon:hover {
-    color: #666;
-  }
-  
-  .pdf-edit-input {
-    margin-left: 10px;
-    padding: 4px 8px;
-    border: 1px solid #000;
-    border-radius: 3px;
-    font-size: 12px;
-    width: 120px;
-    color: #000;
-    background: #fff;
-  }
-  
-  .pdf-edit-input:focus {
-    outline: none;
-    border-color: #000;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Entrega */
-  .pdf-shipping-section {
-    display: flex;
-    gap: 40px;
-    margin-bottom: 30px;
-  }
-  
-  .pdf-shipping-section .pdf-info-group {
-    flex: 1;
-    color: #1b1b1b
-  }
-  
-  /* Observações */
-  .pdf-observations-section {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #000;
-  }
-  
-  .pdf-observations-section strong {
-    display: block;
-    margin-bottom: 10px;
-    font-size: 12px;
-  }
-  
-  .pdf-observations-section p {
-    font-size: 11px;
-    color: #000;
-    line-height: 1.5;
-  }
-  
-  /* Estilos para impressão */
-  @media print {
-    .pdf-preview-content {
-      box-shadow: none;
-      padding: 20mm;
-    }
-  }
+}

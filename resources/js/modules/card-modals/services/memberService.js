@@ -1,53 +1,58 @@
-import axios from 'axios';
+import { http } from '@/lib/http';
 
-/**
- * Service para gerenciar chamadas de API relacionadas a membros
- */
-export function useMemberService() {
-    /**
-     * Buscar membros disponíveis (designers)
-     * @param {string} role - Role para filtrar (ex: 'designer')
-     * @returns {Promise}
-     */
-    async function searchDesigners() {
-        const response = await axios.get('v1/users/list-designers', {
-        });
-        return response.data;
-    }
+export const PAGE_TYPE = Object.freeze({
+  LAYOUT: 'layout',
+  PRODUCT: 'product',
+});
 
-    /**
-     * Adicionar um membro ao card
-     * @param {number} orderBudgetId - ID do orçamento
-     * @param {number} userId - ID do usuário
-     * @param {string} typePage - Tipo de página ('layout' ou 'product')
-     * @returns {Promise}
-     */
-    async function addMember(orderBudgetId, userId, typePage = 'layout') {
-        const response = await axios.post(`v1/budgets/order-budgets/${orderBudgetId}/members`, {
-            user_id: userId,
-            type_page: typePage,
-        });
-        return response.data;
-    }
+const endpoint = '/v1/budgets/order-budgets';
 
-    /**
-     * Remover um membro do card
-     * @param {number} orderBudgetId - ID do orçamento
-     * @param {number} userId - ID do usuário
-     * @param {string} typePage - Tipo de página ('layout' ou 'product')
-     * @returns {Promise}
-     */
-    async function removeMember(orderBudgetId, userId, typePage = 'layout') {
-        const response = await axios.delete(`v1/budgets/order-budgets/${orderBudgetId}/members/${userId}`, {
-            data: { type_page: typePage }
-        });
-        return response.data;
-    }
+function buildMembersUrl(orderBudgetId, userId = null) {
+  let url = `${endpoint}/${orderBudgetId}/members`;
 
-    return {
-        searchDesigners,
-        addMember,
-        removeMember,
-    };
+  if (userId) {
+    url += `/${userId}`;
+  }
+
+  return url;
 }
 
+function validateIds(orderBudgetId, userId) {
+  if (!orderBudgetId) {
+    throw new Error('orderBudgetId is required');
+  }
+
+  if (!userId) {
+    throw new Error('userId is required');
+  }
+}
+
+async function unwrap(promise) {
+  const { data } = await promise;
+  return data;
+}
+
+export const memberService = {
+  addMember(orderBudgetId, userId, typePage = PAGE_TYPE.LAYOUT) {
+    validateIds(orderBudgetId, userId);
+
+    return unwrap(
+      http.post(buildMembersUrl(orderBudgetId), {
+        user_id: userId,
+        type_page: typePage,
+      }),
+    );
+  },
+
+  removeMember(orderBudgetId, userId, typePage = PAGE_TYPE.LAYOUT) {
+    validateIds(orderBudgetId, userId);
+
+    return unwrap(
+      http.delete(buildMembersUrl(orderBudgetId, userId), {
+        data: {
+          type_page: typePage,
+        },
+      }),
+    );
+  },
+};

@@ -1,24 +1,26 @@
+const basePath = '/settings/users';
+
 const roles = ['super admin', 'admin'];
 
 const withRoles = { meta: { roles } };
 
 export default [
   {
-    path: 'users',
-    name: 'UserList',
-    component: () => import('../views/users/UsersListView.vue'),
+    path: basePath,
+    name: 'settings.users.list',
+    component: () => import('../views/users/UserListView.vue'),
     ...withRoles,
   },
   {
-    path: 'users/create',
-    name: 'UserCreate',
-    component: () => import('../views/users/UsersCreateView.vue'),
+    path: `${basePath}/create`,
+    name: 'settings.users.create',
+    component: () => import('../views/users/UserCreateView.vue'),
     ...withRoles,
   },
   {
-    path: 'users/:id/edit',
-    name: 'UserEdit',
-    component: () => import('../views/users/UsersEditView.vue'),
+    path: `${basePath}/:id/edit`,
+    name: 'settings.users.edit',
+    component: () => import('../views/users/UserEditView.vue'),
     ...withRoles,
   },
 ];

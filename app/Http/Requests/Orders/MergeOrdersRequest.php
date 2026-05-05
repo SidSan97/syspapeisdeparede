@@ -3,19 +3,16 @@
 namespace App\Http\Requests\Orders;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 
 class MergeOrdersRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = Auth::user();
-
-        return $user && $user->isAdmin();
+        return auth()->check() && $this->user()->isAdmin();
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

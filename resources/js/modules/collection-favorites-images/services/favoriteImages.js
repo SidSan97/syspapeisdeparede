@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { http } from '@/lib/http';
 
 export const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
@@ -33,16 +33,14 @@ function normalizeImage(image) {
  */
 export function useFavoriteImagesService() {
   async function fetchFavoriteImages() {
-    const { data } = await axios.get('v1/my-favorite-collection-images');
+    const { data } = await http.get('v1/my-favorite-collection-images');
     const payload = data?.data ?? data ?? [];
     const imagesList = Array.isArray(payload) ? payload : [];
     return imagesList.map(normalizeImage);
   }
 
   async function toggleFavorite(imageId) {
-    const { data } = await axios.post(
-      `v1/collection-images/${imageId}/toggle-favorite`
-    );
+    const { data } = await http.post(`v1/collection-images/${imageId}/toggle-favorite`);
     return data?.data?.is_favorited ?? false;
   }
 
@@ -51,8 +49,7 @@ export function useFavoriteImagesService() {
       const img = images[i];
       const name = img.name || img.path_name || `imagem-${img.id}`;
       const ext = (name.match(/\.(jpe?g|png|gif|webp)$/i) || [])[1] || 'jpg';
-      const baseName =
-        name.replace(/\.(jpe?g|png|gif|webp)$/i, '') || `imagem-${img.id}`;
+      const baseName = name.replace(/\.(jpe?g|png|gif|webp)$/i, '') || `imagem-${img.id}`;
       const filename = `${baseName}.${ext}`;
 
       try {

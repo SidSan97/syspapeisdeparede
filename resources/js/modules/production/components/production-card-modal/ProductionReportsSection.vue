@@ -1,26 +1,26 @@
 <template>
   <div v-if="card.id" class="production-reports-section">
     <h3 class="production-reports-section-title">
-      <i class="fa fa-file-pdf"></i> Relatórios de Produção
+      <IconFileTypePdf />
+
+      Relatórios de Produção
     </h3>
     <div v-if="loading" class="production-reports-section-loading text-muted">
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+
       Carregando relatórios...
     </div>
     <div v-else-if="reports.length === 0" class="production-reports-section-empty text-muted">
       Nenhum relatório de produção encontrado para este card.
     </div>
     <div v-else class="production-reports-section-list">
-      <div
-        v-for="report in reports"
-        :key="report.id"
-        class="production-reports-section-item"
-      >
+      <div v-for="report in reports" :key="report.id" class="production-reports-section-item">
         <div class="production-reports-section-item-body">
           <div class="production-reports-section-item-header">
             <div class="production-reports-section-item-content">
               <h6 class="production-reports-section-item-title">
-                <i class="fa fa-file-pdf me-2"></i>
+                <IconFileTypePdf class="me-2" />
+
                 Relatório #{{ report.id }}
               </h6>
               <div class="production-reports-section-item-meta">
@@ -32,7 +32,8 @@
                 </span>
               </div>
               <div v-if="report.user" class="production-reports-section-item-user small">
-                <i class="fa fa-user me-1"></i>
+                <IconUser class="me-1" />
+
                 {{ report.user.name }}
               </div>
             </div>
@@ -43,13 +44,21 @@
                 :disabled="downloadingReportId === report.id"
                 title="Baixar PDF"
               >
-                <span v-if="downloadingReportId === report.id" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                <i v-else class="fa fa-download me-2"></i>
+                <span
+                  v-if="downloadingReportId === report.id"
+                  class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                ></span>
+                <IconDownload v-else class="me-2" />
+
                 {{ downloadingReportId === report.id ? 'Baixando...' : 'Baixar PDF' }}
               </button>
             </div>
           </div>
-          <div v-if="report.column_name" class="production-reports-section-item-column border-top pt-3 small">
+          <div
+            v-if="report.column_name"
+            class="production-reports-section-item-column border-top pt-3 small"
+          >
             <span class="fw-semibold text-muted">Coluna:</span>
             <span class="ms-2">{{ report.column_name }}</span>
           </div>
@@ -61,7 +70,9 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { http } from '@/lib/http';
+import { useToast } from '@/composables/useToast';
+import { IconDownload, IconFileTypePdf, IconUser } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -77,6 +88,8 @@ const props = defineProps({
     default: false,
   },
 });
+
+const toast = useToast();
 
 const downloadingReportId = ref(null);
 
@@ -98,16 +111,18 @@ function formatDate(date) {
 
 function getReportActionTypeLabel(actionType) {
   const labels = {
-    'mark_as_produced': 'Marcado como Produzido',
-    'production_percentage_100': 'Produção 100%',
+    mark_as_produced: 'Marcado como Produzido',
+    production_percentage_100: 'Produção 100%',
   };
-  return labels[actionType] || actionType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return (
+    labels[actionType] || actionType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+  );
 }
 
 function getReportBadgeClass(actionType) {
   const classes = {
-    'mark_as_produced': 'bg-success',
-    'production_percentage_100': 'bg-info',
+    mark_as_produced: 'bg-success',
+    production_percentage_100: 'bg-info',
   };
   return classes[actionType] || 'bg-secondary';
 }
@@ -120,7 +135,7 @@ async function handleDownload(reportId) {
   downloadingReportId.value = reportId;
 
   try {
-    const response = await axios.get(`v1/orders/production-reports/${reportId}/download-pdf`, {
+    const response = await http.get(`v1/orders/production-reports/${reportId}/download-pdf`, {
       responseType: 'blob',
     });
 
@@ -134,12 +149,7 @@ async function handleDownload(reportId) {
     link.remove();
     window.URL.revokeObjectURL(url);
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: 'PDF baixado com sucesso',
-      });
-    }
+    toast.success('PDF baixado com sucesso');
   } catch (error) {
     console.error('Erro ao baixar PDF do relatório:', error);
     const errorMessage = error.response?.data?.message || 'Erro ao baixar PDF. Tente novamente.';
@@ -243,4 +253,3 @@ async function handleDownload(reportId) {
   margin-top: 0.75rem;
 }
 </style>
-

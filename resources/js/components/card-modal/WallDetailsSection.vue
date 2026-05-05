@@ -1,77 +1,96 @@
 <template>
   <div v-if="wall" class="wall-details-section">
-    <h3 class="fw-semibold text-body mb-3 d-flex align-items-center gap-2 wall-details-section-title">
-      <i class="fa fa-ruler"></i> Detalhes da Parede
+    <h3
+      class="fw-semibold text-body mb-3 d-flex align-items-center gap-2 wall-details-section-title"
+    >
+      <IconRuler />
+
+      Detalhes da Parede
     </h3>
     <div class="d-flex flex-column wall-details-section-content">
       <div class="wall-details-section-grid">
         <div class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Nome da Parede</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ wall.name || 'Não informado' }}</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ wall.name || 'Não informado' }}
+          </div>
         </div>
         <div class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Largura</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.width) }} m</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ formatNumber(wall.width) }} m
+          </div>
         </div>
         <div class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Altura</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.height) }} m</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ formatNumber(wall.height) }} m
+          </div>
         </div>
         <div class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Metros</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.total_area) }} m</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ formatNumber(wall.total_area) }} m
+          </div>
         </div>
         <div v-if="wall.strip_height" class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Tamanho da Faixa</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.strip_height) }} m</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ formatNumber(wall.strip_height) }} m
+          </div>
         </div>
         <div v-if="wall.strip_count" class="p-3 rounded wall-details-section-item">
           <div class="mb-1 fw-medium wall-details-section-label">Quantidade de Faixas</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ wall.strip_count }}</div>
+          <div class="small fw-semibold text-body wall-details-section-value">
+            {{ wall.strip_count }}
+          </div>
         </div>
       </div>
 
       <!-- Continuações -->
-      <div v-if="wall.continue_same_art && wall.continuations && wall.continuations.length > 0" class="mt-2 wall-details-section-continuations">
-        <h4 class="small fw-semibold text-body mb-3 d-flex align-items-center gap-2 wall-details-section-continuations-title">
-          <i class="fa fa-arrows-h text-secondary"></i> Continuações
+      <div
+        v-if="wall.continue_same_art && wall.continuations && wall.continuations.length > 0"
+        class="mt-2 wall-details-section-continuations"
+      >
+        <h4 class="small fw-semibold text-body mb-3 d-flex align-items-center gap-2 fs-sm">
+          <IconArrowsHorizontal class="text-secondary" />
+
+          Continuações
         </h4>
         <div class="d-flex flex-column wall-details-section-continuations-list">
-          <div
-            v-for="(continuation, index) in wall.continuations"
-            :key="index"
-            class="p-3 rounded wall-details-section-continuation-item"
-          >
-            <div class="mb-2 wall-details-section-continuation-header">
-              <span class="small fw-semibold text-body wall-details-section-continuation-number">Continuação {{ index + 1 }}</span>
+          <div v-for="(continuation, index) in wall.continuations" :key="index" class="card">
+            <div class="card-header p-1 border-bottom">
+              <h6 class="fs-sm">Continuação {{ index + 1 }}</h6>
             </div>
-            <div class="d-flex flex-wrap wall-details-section-continuation-details">
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Largura:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(continuation.width) }} m</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Altura:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(continuation.height) }} m</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Metro:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">
-                  {{ formatNumber(getWallArea(continuation)) }} m
-                </span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Quantidade de Faixas:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ calculateStrips(continuation) }}</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Tamanho da Faixa:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(calculateStripHeight(continuation)) }} m</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Sentido:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ getDirection(continuation) }}</span>
-              </div>
+            <div class="table-responsive">
+              <table class="table table-sm m-0">
+                <thead>
+                  <tr>
+                    <th>Parede</th>
+                    <th>Largura (m)</th>
+                    <th>Altura (m)</th>
+                    <th>Qtd. Faixas</th>
+                    <th>Alt. Faixas (m)</th>
+                    <!-- <th>Encaixe</th> -->
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{{ continuation.name }}</td>
+                    <td>{{ formatNumber(continuation.width) }}</td>
+                    <td>{{ formatNumber(continuation.height) }}</td>
+                    <td>{{ calculateStrips(continuation) }}</td>
+                    <td>{{ formatNumber(calculateStripHeight(continuation)) }}</td>
+                    <!-- <td></td> -->
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td class="fw-bolder" colspan="2">Sentido de instalação:</td>
+                    <td colspan="3">{{ getDirection(continuation) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </div>
@@ -81,7 +100,9 @@
 </template>
 
 <script setup>
-import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+import { useFormatting } from '@/composables/useFormatting';
+import { calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+import { IconArrowsHorizontal, IconRuler } from '@tabler/icons-vue';
 
 const props = defineProps({
   wall: {
@@ -90,13 +111,7 @@ const props = defineProps({
   },
 });
 
-function formatNumber(value) {
-  if (value === null || value === undefined) {
-    return '-';
-  }
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
-}
+const { formatNumber } = useFormatting();
 
 function getDirection(continuation) {
   if (continuation.direction === 'left-to-right') {
@@ -176,4 +191,3 @@ function getDirection(continuation) {
   font-size: 0.8125rem;
 }
 </style>
-

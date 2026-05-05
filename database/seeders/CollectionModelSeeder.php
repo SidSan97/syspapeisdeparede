@@ -15,8 +15,8 @@ class CollectionModelSeeder extends Seeder
         $models = [
             [
                 'name' => 'Personalizado com Desenhista',
-                'value' => 0.00,
-                'deadline' => 10,
+                'value' => 180.0,
+                'deadline' => 8,
                 'request_comment' => true,
                 'request_link' => false,
                 'request_file' => false,
@@ -25,7 +25,7 @@ class CollectionModelSeeder extends Seeder
             [
                 'name' => 'Personalizado com Arte Pronta',
                 'value' => 0.00,
-                'deadline' => 10,
+                'deadline' => 1,
                 'request_comment' => false,
                 'request_link' => false,
                 'request_file' => true,
@@ -33,17 +33,17 @@ class CollectionModelSeeder extends Seeder
             ],
             [
                 'name' => 'Arte do Shutterstock',
-                'value' => 0.00,
-                'deadline' => 10,
+                'value' => 90.0,
+                'deadline' => 1,
                 'request_comment' => false,
                 'request_link' => true,
                 'request_file' => false,
                 'request_collection' => false,
             ],
             [
-                'name' => 'Coleção',
-                'value' => 0.00,
-                'deadline' => 10,
+                'name' => 'Coleção Arts',
+                'value' => 0.0,
+                'deadline' => 1,
                 'request_comment' => false,
                 'request_link' => false,
                 'request_file' => false,
@@ -59,4 +59,3 @@ class CollectionModelSeeder extends Seeder
         }
     }
 }
-

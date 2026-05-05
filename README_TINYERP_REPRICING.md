@@ -14,26 +14,26 @@ Este documento descreve a implementacao de reprecificacao automatica de `orders`
 - `app/Console/Commands/SyncTinyErpPricesAndRepriceStaleOrders.php`
 - `app/Jobs/RepriceStaleUnpaidOrdersAndBudgetsJob.php`
 - `routes/console.php`
-- `app/Http/Controllers/TinyErpController.php`
+- `app/Http/Controllers/TinyErpSettingsController.php`
 
 ## Fluxo da solucao
 
 1. O scheduler dispara o comando diario:
-   - `tinyerp:sync-prices-and-reprice`
+    - `tinyerp:sync-prices-and-reprice`
 2. O comando invalida `tiny_erp_all_data` e chama sincronizacao do Tiny:
-   - `TinyErpController::all()`
+    - `TinyErpSettingsController::all()`
 3. A sincronizacao atualiza settings atuais:
-   - `tiny_erp_price_payment` (preco a vista)
-   - `tiny_erp_price_installment` (preco a prazo)
+    - `tiny_erp_price_payment` (preco a vista)
+    - `tiny_erp_price_installment` (preco a prazo)
 4. O comando compara com o ultimo snapshot processado:
-   - `tiny_erp_last_processed_price_payment`
-   - `tiny_erp_last_processed_price_installment`
+    - `tiny_erp_last_processed_price_payment`
+    - `tiny_erp_last_processed_price_installment`
 5. Se nao houve mudanca, encerra sem reprecificar.
 6. Se houve mudanca, envia job em fila:
-   - `RepriceStaleUnpaidOrdersAndBudgetsJob`
+    - `RepriceStaleUnpaidOrdersAndBudgetsJob`
 7. O job recalcula `orders` e `budgets` elegiveis.
 8. Ao final, atualiza o snapshot processado e o timestamp:
-   - `tiny_erp_last_reprice_at`
+    - `tiny_erp_last_reprice_at`
 
 ## Regra de elegibilidade
 
@@ -97,4 +97,3 @@ Sem worker, o job de reprecificacao nao sera processado.
 - Na primeira execucao, o comando salva o snapshot inicial e nao reprecifica.
 - A comparacao de mudanca usa arredondamento monetario para evitar falso positivo por ruído decimal.
 - A rotina foi desenhada para minimizar processamento desnecessario.
-

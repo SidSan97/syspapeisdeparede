@@ -6,14 +6,14 @@
     <!-- Modelos selecionados -->
     <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
-        <i class="fa fa-cube"></i> Modelos selecionados
+        <IconCube />
+
+        Modelos selecionados
       </h3>
       <div v-if="wall.collection_model.name" class="collection-models-section-name">
         {{ wall.collection_model.name }}
       </div>
-      <div v-else class="collection-models-section-empty text-muted">
-        Nenhum modelo selecionado
-      </div>
+      <div v-else class="collection-models-section-empty text-muted">Nenhum modelo selecionado</div>
     </div>
 
     <WallModelReferringFields
@@ -25,9 +25,14 @@
     <!-- Imagens da Parede Específica -->
     <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
-        <i class="fa fa-image"></i> Imagens da Parede
+        <IconPhoto />
+
+        Imagens da Parede
       </h3>
-      <div v-if="wall.collection_model.files && wall.collection_model.files.length > 0" class="collection-models-section-images">
+      <div
+        v-if="wall.collection_model.files && wall.collection_model.files.length > 0"
+        class="collection-models-section-images"
+      >
         <div
           v-for="(file, fileIndex) in wall.collection_model.files"
           :key="fileIndex"
@@ -46,6 +51,7 @@
 <script setup>
 import WallModelReferringFields from '@/components/details/WallModelReferringFields.vue';
 import { hasWallModelReferringContent } from '@/utils/wallModelReferringContent';
+import { IconCube, IconPhoto } from '@tabler/icons-vue';
 
 defineProps({
   wall: {
@@ -126,4 +132,3 @@ function getImageUrl(file) {
   }
 }
 </style>
-

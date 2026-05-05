@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (Schema::hasTable('settings')) {
+        if (!app()->runningInConsole() && Schema::hasTable('settings')) {
             $settings = Cache::rememberForever('tiny_erp_settings', function () {
                 return DB::table('settings')->pluck('val', 'name')->toArray();
             });

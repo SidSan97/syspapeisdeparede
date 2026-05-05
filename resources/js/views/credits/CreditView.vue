@@ -1,10 +1,10 @@
 <template>
   <section class="content">
-    <Page title="Minha carteira" subtitle="Saldo em créditos e histórico de movimentações." fullWidth>
-      <template #actions>
+    <Page title="Créidto">
+      <template #extra>
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm"
+          class="btn btn-outline-default btn-sm"
           :disabled="loading"
           @click="fetchWallet(1)"
         >
@@ -16,7 +16,9 @@
       <div class="card bd-card border-0 mb-4 mt-1">
         <div class="card-body">
           <p class="text-muted text-uppercase small mb-1">Saldo disponível</p>
-          <p class="display-6 mb-0 fw-semibold text-body">{{ formattedBalance }}</p>
+          <p class="display-6 mb-0 fw-semibold text-body">
+            {{ formattedBalance }}
+          </p>
         </div>
       </div>
 
@@ -29,7 +31,7 @@
       <EmptyState
         v-else-if="!error && paginated.data.length === 0"
         heading="Nenhuma movimentação"
-        icon="wallet"
+        :icon="IconWallet"
         class="p-5 mt-1"
       >
         Quando houver créditos ou débitos, eles aparecerão aqui.
@@ -49,13 +51,21 @@
             </thead>
             <tbody>
               <tr v-for="row in paginated.data" :key="row.id">
-                <td class="text-nowrap">{{ formatDate(row.created_at) }}</td>
-                <td class="">{{ formatTransactionType(row.type) }}</td>
+                <td class="text-nowrap">
+                  {{ formatDate(row.created_at) }}
+                </td>
+                <td class="">
+                  {{ formatTransactionType(row.type) }}
+                </td>
                 <td class="text-start font-monospace" :class="amountClass(row.amount)">
                   {{ formatMoney(row.amount) }}
                 </td>
-                <td class="text-start font-monospace">{{ formatMoney(row.balance_after) }}</td>
-                <td class=" text-muted">{{ row.description || '—' }}</td>
+                <td class="text-start font-monospace">
+                  {{ formatMoney(row.balance_after) }}
+                </td>
+                <td class="text-muted">
+                  {{ row.description || '—' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -71,11 +81,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
-import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
+import Page from '@/components/page/Page.vue';
 import { Bootstrap5Pagination } from 'laravel-vue-pagination';
+import { computed, onMounted, ref } from 'vue';
+
+import { http } from '@/lib/http';
+import { IconWallet } from '@tabler/icons-vue';
 
 const loading = ref(true);
 const error = ref('');
@@ -87,7 +99,10 @@ const formattedBalance = computed(() => formatMoney(balance.value));
 function formatMoney(value) {
   const n = Number(value);
   if (Number.isNaN(n)) return 'R$ 0,00';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(n);
 }
 
 function formatDate(iso) {
@@ -121,12 +136,11 @@ const fetchWallet = async (page = 1) => {
   loading.value = true;
   error.value = '';
   try {
-    const { data } = await axios.get('v1/wallet', { params: { page } });
+    const { data } = await http.get('v1/wallet', { params: { page } });
     balance.value = data.balance ?? '0.00';
     paginated.value = data;
   } catch (e) {
-    error.value =
-      e.response?.data?.message || e.message || 'Não foi possível carregar a carteira.';
+    error.value = e.response?.data?.message || e.message || 'Não foi possível carregar a carteira.';
     paginated.value = { data: [] };
   } finally {
     loading.value = false;

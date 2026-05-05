@@ -7,29 +7,29 @@ const withRoles = { meta: { roles } };
 export default [
   {
     path: basePath,
-    name: 'BudgetList',
-    component: () => import('../views/budget/BudgetView.vue'),
+    name: 'budgets.list',
+    component: () => import('../views/budgets/BudgetListView.vue'),
     ...withRoles,
   },
   {
     path: `${basePath}/create`,
-    name: 'BudgetCreate',
-    component: () => import('../views/budget/NewBudget.vue'),
+    name: 'budgets.create',
+    component: () => import('../views/budgets/BudgetCreateView.vue'),
     ...withRoles,
   },
   {
     path: `${basePath}/:id`,
-    name: 'BudgetDetail',
-    component: () => import('../components/ShowDetails.vue'),
+    name: 'budgets.show',
+    component: () => import('../views/budgets/BudgetShowView.vue'),
   },
   {
     path: `${basePath}/:id/edit`,
-    name: 'BudgetEdit',
-    component: () => import('../views/budget/EditBudget.vue'),
+    name: 'budgets.edit',
+    component: () => import('../views/budgets/BudgetEditView.vue'),
   },
   {
     path: `${basePath}/:id/pdf-preview`,
-    name: 'BudgetPdfPreview',
-    component: () => import('../views/budget/BudgetPdfPreview.vue'),
+    name: 'budgets.pdf-preview',
+    component: () => import('../views/budgets/BudgetPdfPreview.vue'),
   },
 ];

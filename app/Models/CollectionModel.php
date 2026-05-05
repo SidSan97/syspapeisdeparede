@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class CollectionModel extends Model
 {
@@ -32,9 +33,23 @@ class CollectionModel extends Model
         'request_layout' => 'boolean',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($model) {
+            foreach ($model->files as $file) {
+                if ($file->file_path && Storage::disk('public')->exists($file->file_path)) {
+                    Storage::disk('public')->delete($file->file_path);
+                }
+
+                $file->delete();
+            }
+        });
+    }
+
     public function files(): HasMany
     {
         return $this->hasMany(CollectionModelFile::class);
     }
 }
-

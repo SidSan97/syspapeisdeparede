@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Budget extends Model
 {
-    use HasFactory, HasTenantScope, HasBudgetScopes;
+    use HasBudgetScopes,
+        HasFactory,
+        HasTenantScope;
 
     protected $fillable = [
         'user_id',
@@ -61,9 +63,6 @@ class Budget extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the tenant (user) that owns the budget.
-     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(User::class, 'tenant_id');
@@ -92,5 +91,13 @@ class Budget extends Model
     public function dropshippingData(): HasOne
     {
         return $this->hasOne(DropshippingData::class);
+    }
+
+    public function isApproved(): bool
+    {
+        // FIXME: Usar enum.
+        $statusLower = strtolower(trim((string) ($budget->status ?? '')));
+
+        return $statusLower === 'aprovado';
     }
 }

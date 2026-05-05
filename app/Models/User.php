@@ -12,16 +12,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Passport\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements Commentator //implements MustVerifyEmail
+class User extends Authenticatable implements Commentator // , MustVerifyEmail
 {
-    use HasApiTokens;
-    use HasFactory;
-    use HasUserScopes;
-    use Notifiable;
-    use HasRoles;
+    use HasApiTokens,
+        HasFactory,
+        HasRoles,
+        HasUserScopes,
+        Notifiable;
 
     protected static function booted(): void
     {
@@ -63,15 +63,20 @@ class User extends Authenticatable implements Commentator //implements MustVerif
 
     public function getAvatarUrlAttribute(): string
     {
-        return $this->avatar
-            ? Storage::url($this->avatar)
-            : asset('images/avatar.svg');
+        if ($this->avatar) {
+            return Storage::url($this->avatar);
+        }
+
+        $hash = substr(md5($this->name ?? $this->email), 0, 6);
+        $name = urlencode($this->name ?? '?');
+
+        return "https://ui-avatars.com/api/?name={$name}&background={$hash}&color=fff&bold=true";
     }
 
     /**
      * Check if a comment for a specific model needs to be approved.
-     * @param mixed $model
-     * @return bool
+     *
+     * @param  mixed  $model
      */
     public function needsCommentApproval($model): bool
     {

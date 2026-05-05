@@ -1,7 +1,9 @@
 <template>
   <div v-if="show" class="request-arts-section">
     <h3 class="request-arts-section-title">
-      <i class="fa fa-paint-brush"></i> Solicitações de Artes
+      <IconBrush />
+
+      Solicitações de Artes
     </h3>
     <div v-if="loading" class="request-arts-section-loading text-muted">
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -26,14 +28,13 @@
             :aria-expanded="interactionIndex === 0"
             :aria-controls="`interaction-${prefix}-${interactionIndex}`"
           >
-            <i class="fa fa-comments me-2"></i>
+            <IconMessages class="me-2" />
+
             Interação #{{ interaction.id }}
             <span v-if="interaction.wall_info?.wall_name" class="badge bg-info ms-2">
               {{ interaction.wall_info.wall_name }}
             </span>
-            <span class="badge bg-secondary ms-2">
-              {{ interaction.arts_count }} arte(s)
-            </span>
+            <span class="badge bg-secondary ms-2"> {{ interaction.arts_count }} arte(s) </span>
           </button>
         </h2>
         <div
@@ -49,44 +50,65 @@
                   <div class="text-muted small">
                     <h5>Comentário</h5>
                   </div>
-                  <div class="fw-semibold mb-3">{{ interaction.comment || 'N/A' }}</div>
-
-                  <div class="d-flex justify-content-center">
-                    <img v-if="interaction.image_url" :src="interaction.image_url" alt="Imagem da arte" class="img-fluid img-request">
+                  <div class="fw-semibold mb-3">
+                    {{ interaction.comment || 'N/A' }}
                   </div>
 
-                    <div class="mt-2 text-center">
-                      <a
-                        :href="interaction.image_url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="btn btn-sm btn-outline-primary"
-                      >
-                        <i class="fa fa-external-link me-1"></i>
-                        Abrir em nova aba
-                      </a>
-                    </div>
+                  <div class="d-flex justify-content-center">
+                    <img
+                      v-if="interaction.image_url"
+                      :src="interaction.image_url"
+                      alt="Imagem da arte"
+                      class="img-fluid img-request"
+                    />
+                  </div>
+
+                  <div class="mt-2 text-center">
+                    <a
+                      :href="interaction.image_url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-sm btn-default"
+                    >
+                      <IconExternalLink :size="16" class="me-1" />
+
+                      Abrir em nova aba
+                    </a>
+                  </div>
                 </div>
-                <hr>
+                <hr />
                 <div class="col-md-6">
                   <div class="text-muted small">Ambiente</div>
-                  <div class="fw-semibold">{{ interaction.wall_info.room_name || 'N/A' }}</div>
+                  <div class="fw-semibold">
+                    {{ interaction.wall_info.room_name || 'N/A' }}
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <div class="text-muted small">Parede</div>
-                  <div class="fw-semibold">{{ interaction.wall_info.wall_name || 'N/A' }}</div>
+                  <div class="fw-semibold">
+                    {{ interaction.wall_info.wall_name || 'N/A' }}
+                  </div>
                 </div>
                 <div v-if="interaction.wall_info.width" class="col-md-4">
                   <div class="text-muted small">Largura</div>
-                  <div class="fw-semibold">{{ formatNumber(interaction.wall_info.width) }} m</div>
+                  <div class="fw-semibold">
+                    {{ formatNumber(interaction.wall_info.width) }}
+                    m
+                  </div>
                 </div>
                 <div v-if="interaction.wall_info.height" class="col-md-4">
                   <div class="text-muted small">Altura</div>
-                  <div class="fw-semibold">{{ formatNumber(interaction.wall_info.height) }} m</div>
+                  <div class="fw-semibold">
+                    {{ formatNumber(interaction.wall_info.height) }}
+                    m
+                  </div>
                 </div>
                 <div v-if="interaction.wall_info.total_area" class="col-md-4">
                   <div class="text-muted small">Área</div>
-                  <div class="fw-semibold">{{ formatNumber(interaction.wall_info.total_area) }} m²</div>
+                  <div class="fw-semibold">
+                    {{ formatNumber(interaction.wall_info.total_area) }}
+                    m²
+                  </div>
                 </div>
               </div>
             </div>
@@ -94,7 +116,8 @@
             <!-- Lista de Artes da Interação -->
             <div v-if="interaction.arts && interaction.arts.length > 0" class="mt-3">
               <h6 class="mb-3">
-                <i class="fa fa-images me-2"></i>
+                <IconLibraryPhoto :size="18" class="me-2" />
+
                 Artes ({{ interaction.arts.length }})
               </h6>
               <div
@@ -108,22 +131,30 @@
                     <div class="row g-2">
                       <div v-if="art.dealer_name" class="col-md-6">
                         <div class="text-muted small">
-                          <i class="fa fa-user-tie me-1"></i>
+                          <IconUserStar class="me-1" />
+
                           Revendedor
                         </div>
-                        <div class="fw-semibold">{{ art.dealer_name }}</div>
+                        <div class="fw-semibold">
+                          {{ art.dealer_name }}
+                        </div>
                       </div>
                       <div v-if="art.designer_name" class="col-md-6">
                         <div class="text-muted small">
-                          <i class="fa fa-user me-1"></i>
+                          <IconUser class="me-1" />
+
                           Designer
                         </div>
-                        <div class="fw-semibold">{{ art.designer_name }}</div>
+                        <div class="fw-semibold">
+                          {{ art.designer_name }}
+                        </div>
                       </div>
                       <div v-if="art.created_at" class="col-12">
                         <div class="text-muted small">
-                          <i class="fa fa-calendar me-1"></i>
-                          Enviado em: {{ formatDate(art.created_at) }}
+                          <IconCalendar :size="18" class="me-1" />
+
+                          Enviado em:
+                          {{ formatDate(art.created_at) }}
                         </div>
                       </div>
                       <div v-if="approvalDisplay(art)" class="col-12">
@@ -144,6 +175,16 @@
 </template>
 
 <script setup>
+import {
+  IconBrush,
+  IconCalendar,
+  IconExternalLink,
+  IconLibraryPhoto,
+  IconMessages,
+  IconUser,
+  IconUserStar,
+} from '@tabler/icons-vue';
+
 const props = defineProps({
   show: {
     type: Boolean,
@@ -240,4 +281,3 @@ function approvalDisplay(art) {
   border-radius: 5px;
 }
 </style>
-

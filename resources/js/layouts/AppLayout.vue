@@ -1,12 +1,15 @@
 <script setup>
+import { useSidebar } from '@/composables/useSidebar';
 import AppSidebar from '../components/AppSidebar.vue';
 import AppHeader from '../components/AppHeader.vue';
+
+const { isOpen, close } = useSidebar();
 </script>
 
 <template>
   <AppHeader />
   <div class="bd-layout">
-    <AppSidebar />
+    <AppSidebar :is-open="isOpen" @close="close" />
     <main class="bd-main">
       <router-view />
     </main>
@@ -33,6 +36,6 @@ import AppHeader from '../components/AppHeader.vue';
     'intro'
     'content'
     'footer';
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
 }
 </style>

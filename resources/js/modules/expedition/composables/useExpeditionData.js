@@ -1,9 +1,7 @@
 import { ref } from 'vue';
-import { useExpeditionService } from '../services/expeditionService';
+import { expeditionService } from '../services/expeditionService';
 
 export function useExpeditionData() {
-  const expeditionService = useExpeditionService();
-
   const expeditions = ref([]);
   const invoices = ref([]);
   const invoicesList = ref([]);
@@ -87,7 +85,9 @@ export function useExpeditionData() {
       groupings.value = [];
       window.Swal.fire({
         title: 'Erro ao buscar agrupamentos!',
-        text: error.response?.data?.message || 'Não foi possível buscar os agrupamentos. Tente novamente mais tarde.',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível buscar os agrupamentos. Tente novamente mais tarde.',
         icon: 'error',
         confirmButtonText: 'Entendi!',
       });
