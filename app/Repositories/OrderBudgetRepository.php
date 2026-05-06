@@ -258,9 +258,12 @@ class OrderBudgetRepository {
      */
     public function syncFromBudget(Order $order, Budget $budget): void
     {
-        $budget->loadMissing(['rooms.walls']);
+        $budget->loadMissing(['rooms.walls.collectionModel']);
 
-        $layoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $defaultLayoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $newLayoutsColumnId = LayoutColumnName::query()
+            ->where('name', 'Novos Layouts')
+            ->value('id');
         $tenantId = $order->tenant_id ?? $budget->tenant_id;
 
         $wallIds = [];
@@ -283,7 +286,11 @@ class OrderBudgetRepository {
                 }
 
                 $orderBudget->tenant_id = $tenantId;
-                $orderBudget->layout_column_names_id = $layoutColumnId;
+                $orderBudget->layout_column_names_id = $this->resolveInitialLayoutColumnId(
+                    $wall->collectionModel?->name,
+                    $defaultLayoutColumnId,
+                    $newLayoutsColumnId
+                );
                 $orderBudget->description = $wall->comment_referring_model ?? null;
                 $orderBudget->order_index = $orderIndex++;
                 $orderBudget->save();
@@ -304,9 +311,12 @@ class OrderBudgetRepository {
 
     public function syncFromOrderRooms(Order $order): void
     {
-        $order->loadMissing(['rooms.walls']);
+        $order->loadMissing(['rooms.walls.collectionModel']);
 
-        $layoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $defaultLayoutColumnId = LayoutColumnName::query()->orderBy('id')->value('id');
+        $newLayoutsColumnId = LayoutColumnName::query()
+            ->where('name', 'Novos Layouts')
+            ->value('id');
         $tenantId = $order->tenant_id;
 
         $wallIds = [];
@@ -328,7 +338,11 @@ class OrderBudgetRepository {
                 }
 
                 $orderBudget->tenant_id = $tenantId;
-                $orderBudget->layout_column_names_id = $layoutColumnId;
+                $orderBudget->layout_column_names_id = $this->resolveInitialLayoutColumnId(
+                    $wall->collectionModel?->name,
+                    $defaultLayoutColumnId,
+                    $newLayoutsColumnId
+                );
                 $orderBudget->description = $wall->comment_referring_model ?? null;
                 $orderBudget->order_index = $orderIndex++;
                 $orderBudget->save();
@@ -344,5 +358,24 @@ class OrderBudgetRepository {
                 $query->whereRaw('1 = 1');
             })
             ->delete();
+    }
+
+    protected function resolveInitialLayoutColumnId(
+        ?string $collectionModelName,
+        ?int $defaultLayoutColumnId,
+        ?int $newLayoutsColumnId
+    ): ?int {
+        $normalizedName = mb_strtolower(trim((string) $collectionModelName));
+        $shouldStartOnNewLayouts = in_array($normalizedName, [
+            'arte do shutterstock',
+            'coleção arts',
+            'colecao arts',
+        ], true);
+
+        if ($shouldStartOnNewLayouts && $newLayoutsColumnId) {
+            return $newLayoutsColumnId;
+        }
+
+        return $defaultLayoutColumnId;
     }
 }

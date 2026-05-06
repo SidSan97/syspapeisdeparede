@@ -18,6 +18,7 @@ use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Budget\UploadReferringFileRequest;
 use App\Http\Resources\BudgetResource;
 use App\Models\Budget;
+use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\RequestLayoutArt;
 use App\Repositories\BudgetRepository;
@@ -121,11 +122,16 @@ class BudgetController extends Controller
 
     public function createLayoutOrder(Order $order, Budget $budget)
     {
+        $budget->loadMissing(['rooms.walls.collectionModel']);
+
         // Atualizar status do orçamento
         $budget->update(['status' => 'Aprovado']);
 
-        // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
-        $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+        // Buscar coluna padrão e a coluna "Novos Layouts" para roteamento inicial dos cards
+        $firstColumn = LayoutColumnName::orderBy('id')->first();
+        $newLayoutsColumn = LayoutColumnName::query()
+            ->where('name', 'Novos Layouts')
+            ->first();
 
         if (! $firstColumn) {
             throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
@@ -140,12 +146,22 @@ class BudgetController extends Controller
             foreach ($room->walls as $wall) {
                 $description = $wall->comment_referring_model ?? $order->comment_referring_model ?? null;
 
+                $modelName = mb_strtolower(trim((string) ($wall->collectionModel?->name ?? '')));
+                $shouldStartOnNewLayouts = in_array($modelName, [
+                    'arte do shutterstock',
+                    'coleção arts',
+                    'colecao arts',
+                ], true);
+                $targetColumnId = $shouldStartOnNewLayouts && $newLayoutsColumn
+                    ? $newLayoutsColumn->id
+                    : $firstColumn->id;
+
                 $orderBudgets[] = \App\Models\OrderBudget::create([
                     'order_id' => $order->id,
                     'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
                     'status' => 'Aprovar Layout',
-                    'layout_column_names_id' => $firstColumn->id,
+                    'layout_column_names_id' => $targetColumnId,
                     'description' => $description,
                     'order_index' => $orderIdx++,
                 ]);
