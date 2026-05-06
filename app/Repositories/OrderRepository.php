@@ -73,7 +73,8 @@ class OrderRepository
                 'order' => function ($query) {
                     $query->with([
                         'rooms.walls.collectionModel.files',
-                        'user'
+                        'user',
+                        'dropshippingData',
                     ]);
                 },
                 'wall' => function ($query) {
@@ -100,7 +101,8 @@ class OrderRepository
                 'order' => function ($query) {
                     $query->with([
                         'rooms.walls.collectionModel.files',
-                        'user'
+                        'user',
+                        'dropshippingData',
                     ]);
                 },
                 'wall' => function ($query) {

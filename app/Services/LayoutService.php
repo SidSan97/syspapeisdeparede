@@ -166,7 +166,10 @@ class LayoutService
      */
     protected function transformOrder(Order $order): array
     {
-        $order->loadMissing(['rooms.walls.collectionModel.files']);
+        $order->loadMissing([
+            'rooms.walls.collectionModel.files',
+            'dropshippingData',
+        ]);
 
         $data = $order->toArray();
 

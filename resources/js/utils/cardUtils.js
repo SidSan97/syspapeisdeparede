@@ -8,18 +8,51 @@ export function formatCardId(id) {
 }
 
 /**
- * Retorna o nome de exibição do card
- * Se o card tiver membros, formata como: "00001 - JOÃO SILVA"
- * Caso contrário, retorna o nome normal do card
+ * Nome exibido no card a partir do dropshipping: em `dropshipping_data`, o campo `name`
+ * é o nome completo (PF) ou a razão social (PJ), conforme `person_type`.
+ * @param {Object|null|undefined} dropshipping
+ * @returns {string|null}
+ */
+export function getDropshippingClientDisplayName(dropshipping) {
+  if (!dropshipping || typeof dropshipping !== 'object') {
+    return null;
+  }
+
+  const rawName = dropshipping.name ?? dropshipping.nome;
+  const name =
+    typeof rawName === 'string'
+      ? rawName.trim()
+      : rawName != null
+        ? String(rawName).trim()
+        : '';
+
+  return name || null;
+}
+
+/**
+ * Retorna o nome de exibição do card.
+ * Preferência com dropshipping: "00042 - João Silva" (PF) ou "00042 - Empresa LTDA" (PJ, razão social no campo name).
+ * Fallback: mesmo formato com membros; depois `card.name`.
  * @param {Object} card - Objeto do card
- * @param {string} card.name - Nome do card
- * @param {number} card.id - ID do card
- * @param {Array} card.members - Array de membros do card
- * @param {string} defaultName - Nome padrão caso não tenha nome nem membros
- * @returns {string} Nome formatado para exibição
+ * @param {string} defaultName - Nome padrão
+ * @returns {string}
  */
 export function getCardDisplayName(card, defaultName = '') {
   if (!card) return defaultName;
+
+  const dropshipping =
+    card.order?.dropshipping_data ??
+    card.order?.dropshippingData ??
+    card.dropshipping_data ??
+    card.dropshippingData ??
+    null;
+
+  const clientName = getDropshippingClientDisplayName(dropshipping);
+  const orderId = card.order_id ?? card.order?.id;
+
+  if (clientName && orderId != null && orderId !== '') {
+    return `${formatCardId(orderId)} - ${clientName}`;
+  }
 
   // Se o card tiver membros, formatar como: 00001 - JOÃO SILVA
   if (card.members && Array.isArray(card.members) && card.members.length > 0) {
@@ -31,7 +64,6 @@ export function getCardDisplayName(card, defaultName = '') {
     return `${formattedId} - ${membersNames}`;
   }
 
-  // Caso contrário, retornar o nome normal
   return card.name || defaultName;
 }
 
