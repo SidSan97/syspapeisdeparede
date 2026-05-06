@@ -120,7 +120,7 @@
                   class="dropdown-item"
                   :to="{
                     name: 'orders.invoice',
-                    params: { orderId: order.id },
+                    params: { id: order.id },
                   }"
                 >
                   Ver nota fiscal

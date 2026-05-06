@@ -20,6 +20,7 @@ class CollectionModel extends Model
         'request_file',
         'request_collection',
         'request_layout',
+        'request_art_on_payment',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class CollectionModel extends Model
         'request_file' => 'boolean',
         'request_collection' => 'boolean',
         'request_layout' => 'boolean',
+        'request_art_on_payment' => 'boolean',
     ];
 
     protected static function boot()

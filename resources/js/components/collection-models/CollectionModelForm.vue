@@ -88,6 +88,17 @@
         Solicitar Layout ao Aprovar Pedido?
       </label>
     </div>
+    <div class="form-check form-switch mb-3">
+      <input
+        id="requiresArtOnPayment"
+        v-model="form.requests.artOnPayment"
+        class="form-check-input"
+        type="checkbox"
+      />
+      <label class="form-check-label" for="requiresArtOnPayment">
+        Solicitar Arte ao pagar pedido
+      </label>
+    </div>
   </div>
 </template>
 
@@ -119,6 +130,7 @@ const form = reactive(
       file: false,
       collection: false,
       layout: false,
+      artOnPayment: false,
     },
   }),
 );

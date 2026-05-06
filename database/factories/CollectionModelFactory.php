@@ -40,6 +40,8 @@ class CollectionModelFactory extends Factory
             'request_comment' => fake()->boolean(60),
             'request_file' => fake()->boolean(50),
             'request_collection' => fake()->boolean(30),
+            'request_layout' => fake()->boolean(25),
+            'request_art_on_payment' => fake()->boolean(20),
         ];
     }
 }

@@ -33,6 +33,7 @@ export function useModels() {
             file: false,
             collection: false,
             layout: false,
+            artOnPayment: false,
         },
     });
 
@@ -114,6 +115,7 @@ export function useModels() {
         form.requests.file = model.requests.file;
         form.requests.collection =model.requests.collection ?? false;
         form.requests.layout = model.requests.layout ?? false;
+        form.requests.artOnPayment = model.requests.artOnPayment ?? false;
     }
 
     /**

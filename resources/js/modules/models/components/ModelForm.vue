@@ -119,6 +119,19 @@
               </label>
             </div>
           </div>
+          <div class="col-md-3">
+            <div class="form-check form-switch">
+              <input
+                id="requiresArtOnPayment"
+                v-model="form.requests.artOnPayment"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label class="form-check-label" for="requiresArtOnPayment">
+                Solicitar Arte ao pagar pedido
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 

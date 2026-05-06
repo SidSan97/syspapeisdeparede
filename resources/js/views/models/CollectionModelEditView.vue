@@ -71,6 +71,7 @@ async function fetchCollectionModel() {
         file: collectionModel.requests.file,
         collection: collectionModel.requests.collection,
         layout: collectionModel.requests.layout,
+        artOnPayment: collectionModel.requests.artOnPayment ?? false,
       },
     });
   } catch (error) {

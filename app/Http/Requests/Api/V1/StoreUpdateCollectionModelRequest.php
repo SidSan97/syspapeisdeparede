@@ -31,6 +31,7 @@ class StoreUpdateCollectionModelRequest extends FormRequest
             'request_file' => ['boolean'],
             'request_collection' => ['boolean'],
             'request_layout' => ['boolean'],
+            'request_art_on_payment' => ['boolean'],
 
             'reference_files' => ['nullable', 'array', 'max:10'],
 
@@ -63,6 +64,7 @@ class StoreUpdateCollectionModelRequest extends FormRequest
             'request_file' => (bool) data_get($this->input(), 'requests.file', false),
             'request_collection' => (bool) data_get($this->input(), 'requests.collection', false),
             'request_layout' => (bool) data_get($this->input(), 'requests.layout', false),
+            'request_art_on_payment' => (bool) data_get($this->input(), 'requests.artOnPayment', false),
         ]);
 
         if ($this->has('files_to_delete')) {

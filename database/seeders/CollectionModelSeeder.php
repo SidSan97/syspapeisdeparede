@@ -21,6 +21,8 @@ class CollectionModelSeeder extends Seeder
                 'request_link' => false,
                 'request_file' => false,
                 'request_collection' => false,
+                'request_layout' => false,
+                'request_art_on_payment' => false,
             ],
             [
                 'name' => 'Personalizado com Arte Pronta',
@@ -30,6 +32,8 @@ class CollectionModelSeeder extends Seeder
                 'request_link' => false,
                 'request_file' => true,
                 'request_collection' => false,
+                'request_layout' => false,
+                'request_art_on_payment' => false,
             ],
             [
                 'name' => 'Arte do Shutterstock',
@@ -39,6 +43,8 @@ class CollectionModelSeeder extends Seeder
                 'request_link' => true,
                 'request_file' => false,
                 'request_collection' => false,
+                'request_layout' => false,
+                'request_art_on_payment' => false,
             ],
             [
                 'name' => 'Coleção Arts',
@@ -48,6 +54,8 @@ class CollectionModelSeeder extends Seeder
                 'request_link' => false,
                 'request_file' => false,
                 'request_collection' => true,
+                'request_layout' => false,
+                'request_art_on_payment' => false,
             ],
         ];
 

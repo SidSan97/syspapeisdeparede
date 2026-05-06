@@ -1,46 +1,44 @@
 {
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint . --fix --cache"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "eslint": "^9.0.0",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-vue": "^10.8.0",
-    "globals": "^17.5.0",
-    "laravel-vite-plugin": "^3.0.0",
-    "prettier": "^3.8.3",
-    "prettier-plugin-organize-imports": "^4.3.0",
-    "sass": "^1.79.3",
-    "vite": "^8.0.0"
-  },
-  "dependencies": {
-    "@tabler/icons-vue": "^3.41.1",
-    "@vuepic/vue-datepicker": "^12.1.0",
-    "@vueuse/core": "^14.2.1",
-    "axios": "^1.10.0",
-    "bootstrap": "^5.3.8",
-    "cropperjs": "^1.6.2",
-    "fastbootstrap": "^2.2.0",
-    "laravel-vue-pagination": "^4.1.3",
-    "pinia": "^2.2.2",
-    "sweetalert2": "^11.14.1",
-    "v-money3": "^3.24.1",
-    "vform": "^2.1.2",
-    "vue": "^3.5.9",
-    "vue-router": "^4.4.5",
-    "vuedraggable": "^4.1.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "vue-demi"
-    ]
-  }
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^4.6.2",
+        "@vojtechlanka/vue-simple-suggest": "^2.0.6",
+        "axios": "^1.10.0",
+        "laravel-vite-plugin": "^1.0.5",
+        "sass": "^1.79.3",
+        "vite": "^5.4.8",
+        "vue": "^3.5.9",
+        "vue-the-mask": "^0.11.1",
+		"@eslint/js": "^10.0.1"
+    },
+    "dependencies": {
+        "@aacassandra/vue3-progressbar": "^1.0.3",
+        "@tabler/icons-vue": "^3.41.1",
+		"@vuepic/vue-datepicker": "^12.1.0",
+		"@vueuse/core": "^14.2.1",
+		"vuedraggable": "^4.1.0",
+        "bootstrap": "^5.3.8",
+        "bootstrap-icons": "^1.13.1",
+        "chart.js": "^4.4.8",
+        "chartjs-adapter-date-fns": "^3.0.0",
+        "chartjs-plugin-datalabels": "^2.2.0",
+        "cropperjs": "^1.6.2",
+        "date-fns": "^4.1.0",
+        "fastbootstrap": "^2.2.0",
+        "laravel-vue-pagination": "^4.1.3",
+        "lodash": "^4.17.21",
+        "moment": "^2.30.1",
+        "pinia": "^2.2.2",
+        "sweetalert2": "^11.14.1",
+        "v-calendar": "^3.1.2",
+        "v-money3": "^3.24.1",
+        "vform": "^2.1.2",
+        "vue-chartjs": "^5.3.2",
+        "vue-router": "^4.4.5"
+    }
 }
