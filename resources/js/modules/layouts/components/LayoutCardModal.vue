@@ -46,10 +46,41 @@
                   </div>
                 </div>
               </div>
-  
-              <PowerUpActivity :card="card" @activity-updated="handleActivityUpdated" />
+
+              <PowerUpActivity
+                :card="card"
+                @activity-updated="handleActivityUpdated"
+                v-if="!isCompleted"
+              />
 
               <hr>
+
+              <div v-if="!isCompleted" class="mb-4">
+                <button
+                  type="button"
+                  class="btn btn-success btn-sm d-inline-flex align-items-center"
+                  :disabled="completing || !card?.id"
+                  @click="handleComplete"
+                >
+                  <span
+                    v-if="completing"
+                    class="spinner-border spinner-border-sm me-1"
+                    role="status"
+                  ></span>
+                  <IconCheck v-else :size="18" class="me-1" />
+                  Concluir
+                </button>
+              </div>
+              <div v-else class="alert alert-success d-flex align-items-center gap-2 py-2 mb-4">
+                <IconCircleCheck :size="20" />
+                <div>
+                  Card concluído em
+                  <strong>{{ completedAtLabel }}</strong>
+                  <span v-if="completedDurationLabel" class="ms-2 text-body-secondary">
+                    · Duração total: <strong>{{ completedDurationLabel }}</strong>
+                  </span>
+                </div>
+              </div>
 
               <DescriptionSection :card="card" typePage="layout" />
 
@@ -121,6 +152,7 @@
 import { computed, ref, toRef } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
+import { useLayoutCardCompletion } from '@/composables/useLayoutCards';
 import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
 
 import { getCardDisplayName } from '@/utils/cardUtils';
@@ -137,7 +169,7 @@ import MembersSection from '@/components/card-modal/MembersSection.vue';
 import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
 import CollectionModelsSection from './layout-card-modal/CollectionModelsSection.vue';
 
-import { IconExternalLink, IconLink } from '@tabler/icons-vue';
+import { IconCheck, IconCircleCheck, IconExternalLink, IconLink } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -156,6 +188,14 @@ const showDetails = ref(false);
 const cardRef = toRef(props, 'card');
 const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } =
   useRequestLayoutArts(cardRef);
+
+const {
+  completing,
+  isCompleted,
+  completedAtLabel,
+  completedDurationLabel,
+  handleComplete,
+} = useLayoutCardCompletion(cardRef, emit);
 
 const coverImage = computed(() => getCoverImage(props.card));
 

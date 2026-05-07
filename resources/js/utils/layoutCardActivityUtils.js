@@ -79,14 +79,38 @@ export function formatActivityCompact(totalSeconds) {
 }
 
 /**
- * Mescla os dados retornados pelo backend (start/pause/reset/advance) sobre o card.
+ * Indica se o card já foi marcado como concluído.
+ * @param {{ completed_at?: string|null, is_completed?: boolean }|null|undefined} card
+ * @returns {boolean}
+ */
+export function isCardCompleted(card) {
+  if (!card) return false;
+  if (typeof card.is_completed === 'boolean') {
+    return card.is_completed;
+  }
+  return Boolean(card.completed_at);
+}
+
+/**
+ * Mescla os dados retornados pelo backend (start/pause/reset/advance/complete) sobre o card.
  * Garante que ambos os campos persistidos e os derivados fiquem coerentes.
  * @param {object} card
- * @param {{ activity_running_since?: string|null, activity_elapsed_seconds?: number|null, activity_total_seconds?: number|null, activity_is_running?: boolean|null }} payload
+ * @param {{
+ *   activity_running_since?: string|null,
+ *   activity_elapsed_seconds?: number|null,
+ *   activity_total_seconds?: number|null,
+ *   activity_is_running?: boolean|null,
+ *   completed_at?: string|null,
+ *   is_completed?: boolean|null
+ * }} payload
  * @returns {object} novo card com os campos atualizados
  */
 export function mergeActivityPayload(card, payload) {
   if (!card || !payload) return card;
+
+  const completedAt =
+    payload.completed_at !== undefined ? payload.completed_at : card.completed_at ?? null;
+
   return {
     ...card,
     activity_running_since: payload.activity_running_since ?? null,
@@ -102,5 +126,8 @@ export function mergeActivityPayload(card, payload) {
       typeof payload.activity_is_running === 'boolean'
         ? payload.activity_is_running
         : Boolean(payload.activity_running_since),
+    completed_at: completedAt,
+    is_completed:
+      typeof payload.is_completed === 'boolean' ? payload.is_completed : Boolean(completedAt),
   };
 }

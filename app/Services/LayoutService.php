@@ -107,6 +107,8 @@ class LayoutService
                 'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds,
                 'activity_total_seconds' => (int) $orderBudget->activity_total_seconds,
                 'activity_is_running' => (bool) $orderBudget->activity_is_running,
+                'completed_at' => $orderBudget->completed_at?->toIso8601String(),
+                'is_completed' => (bool) $orderBudget->is_completed,
                 'comments' => $comments,
                 'members' => $members,
                 'history' => $history,

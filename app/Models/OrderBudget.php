@@ -30,11 +30,13 @@ class OrderBudget extends Model
         'ready_to_expedition',
         'activity_running_since',
         'activity_elapsed_seconds',
+        'completed_at',
     ];
 
     protected $appends = [
         'activity_total_seconds',
         'activity_is_running',
+        'is_completed',
     ];
 
     protected function casts(): array
@@ -53,7 +55,18 @@ class OrderBudget extends Model
             'ready_to_expedition' => 'integer:0,1',
             'activity_running_since' => 'datetime',
             'activity_elapsed_seconds' => 'integer',
+            'completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Indica se o card já foi marcado como concluído na página de Layout.
+     */
+    protected function isCompleted(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): bool => $this->completed_at !== null,
+        );
     }
 
     /**

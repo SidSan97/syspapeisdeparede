@@ -53,6 +53,8 @@ class OrderLayoutCardResource extends JsonResource
             'activity_elapsed_seconds' => (int) $this->activity_elapsed_seconds,
             'activity_total_seconds' => (int) $this->activity_total_seconds,
             'activity_is_running' => (bool) $this->activity_is_running,
+            'completed_at' => $this->completed_at?->toIso8601String(),
+            'is_completed' => (bool) $this->is_completed,
 
             'comments' => $this->comments->map(function ($comment) {
                 return [

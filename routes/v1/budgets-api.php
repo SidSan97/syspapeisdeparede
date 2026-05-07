@@ -31,6 +31,7 @@ Route::post('budgets/order-budgets/{orderBudget}/activity/start', [OrderBudgetCo
 Route::post('budgets/order-budgets/{orderBudget}/activity/pause', [OrderBudgetController::class, 'pauseActivity']);
 Route::post('budgets/order-budgets/{orderBudget}/activity/reset', [OrderBudgetController::class, 'resetActivity']);
 Route::post('budgets/order-budgets/{orderBudget}/activity/advance', [OrderBudgetController::class, 'advanceActivity']);
+Route::post('budgets/order-budgets/{orderBudget}/complete', [OrderBudgetController::class, 'complete']);
 Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt']);
 
 Route::apiResource('budgets', BudgetController::class);

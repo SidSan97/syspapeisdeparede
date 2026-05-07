@@ -7,7 +7,14 @@
         <h3 class="fs-sm fw-bold text-body m-0">Atividade</h3>
 
         <span
-          v-if="isRunning"
+          v-if="isCompleted"
+          class="badge text-bg-success d-inline-flex align-items-center gap-1"
+        >
+          <IconCircleCheck :size="14" />
+          Concluído
+        </span>
+        <span
+          v-else-if="isRunning"
           class="badge text-bg-danger d-inline-flex align-items-center gap-1"
         >
           <span class="power-up-activity-pulse" aria-hidden="true"></span>
@@ -20,15 +27,21 @@
       <div class="d-flex align-items-baseline gap-2 mb-3">
         <span
           class="power-up-activity-clock fw-semibold"
-          :class="isRunning ? 'text-danger' : 'text-body'"
-          :title="`Tempo total registrado neste cartão: ${clockLabel}`"
+          :class="clockColorClass"
+          :title="
+            isCompleted
+              ? `Duração final registrada: ${clockLabel}`
+              : `Tempo total registrado neste cartão: ${clockLabel}`
+          "
         >
           {{ clockLabel }}
         </span>
-        <small class="text-body-secondary">tempo registrado</small>
+        <small class="text-body-secondary">
+          {{ isCompleted ? 'duração final' : 'tempo registrado' }}
+        </small>
       </div>
 
-      <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+      <div v-if="!isCompleted" class="d-flex flex-wrap gap-2 align-items-center mb-2">
         <button
           v-if="!isRunning"
           type="button"
@@ -109,7 +122,17 @@
         </button>
       </div>
 
-      <p v-if="isRunning && runningSinceLabel" class="small text-body-secondary m-0">
+      <p
+        v-if="isCompleted"
+        class="small text-body-secondary m-0 d-flex align-items-center gap-1"
+      >
+        <IconLock :size="14" />
+        Temporizador bloqueado: o card foi marcado como concluído.
+      </p>
+      <p
+        v-else-if="isRunning && runningSinceLabel"
+        class="small text-body-secondary m-0"
+      >
         Em execução desde {{ runningSinceLabel }}.
       </p>
     </div>
@@ -120,7 +143,9 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 import {
+  IconCircleCheck,
   IconClockHour4,
+  IconLock,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
   IconPlus,
@@ -134,6 +159,7 @@ import {
   formatActivityClock,
   getCardTotalSeconds,
   isCardActivityRunning,
+  isCardCompleted,
   mergeActivityPayload,
 } from '@/utils/layoutCardActivityUtils';
 
@@ -159,9 +185,14 @@ const now = ref(new Date());
 let tickerId = null;
 
 const cardId = computed(() => props.card?.id ?? null);
-const isRunning = computed(() => isCardActivityRunning(props.card));
+const isCompleted = computed(() => isCardCompleted(props.card));
+const isRunning = computed(() => !isCompleted.value && isCardActivityRunning(props.card));
 const totalSeconds = computed(() => getCardTotalSeconds(props.card, now.value));
 const clockLabel = computed(() => formatActivityClock(totalSeconds.value));
+const clockColorClass = computed(() => {
+  if (isCompleted.value) return 'text-success';
+  return isRunning.value ? 'text-danger' : 'text-body';
+});
 
 const runningSinceLabel = computed(() => {
   if (!props.card?.activity_running_since) return '';
@@ -211,6 +242,8 @@ function applyPayload(payload) {
     activity_elapsed_seconds: merged.activity_elapsed_seconds,
     activity_total_seconds: merged.activity_total_seconds,
     activity_is_running: merged.activity_is_running,
+    completed_at: merged.completed_at,
+    is_completed: merged.is_completed,
   });
   now.value = new Date();
 }

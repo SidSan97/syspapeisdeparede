@@ -153,5 +153,17 @@ class LayoutCardHistoryService
         $description = "{$user->name} atualizou a porcentagem de produção para {$percentage}%.";
         $this->historyRepository->create($cardId, $description, $typePage);
     }
+
+    public function logActivityStarted(int $cardId, User $user, ?string $typePage = null): void
+    {
+        $description = "{$user->name} iniciou o temporizador do card.";
+        $this->historyRepository->create($cardId, $description, $typePage);
+    }
+
+    public function logCardCompleted(int $cardId, User $user, ?string $typePage = null): void
+    {
+        $description = "{$user->name} concluiu o card.";
+        $this->historyRepository->create($cardId, $description, $typePage);
+    }
 }
 
