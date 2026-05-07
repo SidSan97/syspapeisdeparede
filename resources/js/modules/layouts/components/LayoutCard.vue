@@ -11,9 +11,6 @@
     <div class="pt-2 px-3 pb-1">
       <div class="trello-card-footer-content">
         <p class="text-truncate m-0">{{ displayName }}</p>
-        <p v-if="workflowLine" class="trello-card-workflow-line text-truncate m-0 mt-1" :title="workflowLine">
-          {{ workflowLine }}
-        </p>
         <div class="trello-card-footer-meta">
           <div class="badge badge-custom fs-xs">
             <IconClock :size="16" />
@@ -21,6 +18,24 @@
             <span class="ps-1 pe-0.5"
               >{{ card.delivery_date_start }} - {{ card.delivery_date_end }}
             </span>
+          </div>
+          <div
+            v-if="activityLabel"
+            class="badge fs-xs trello-card-activity-badge d-inline-flex align-items-center gap-1"
+            :class="activityIsRunning ? 'text-bg-danger' : 'text-bg-light text-body'"
+            :title="
+              activityIsRunning
+                ? `Temporizador em execução · ${activityLabel}`
+                : `Tempo registrado · ${activityLabel}`
+            "
+          >
+            <span
+              v-if="activityIsRunning"
+              class="trello-card-activity-pulse"
+              aria-hidden="true"
+            ></span>
+            <IconClockHour4 v-else :size="14" />
+            <span>{{ activityLabel }}</span>
           </div>
           <div v-if="commentsCount > 0" class="trello-card-comment-count">
             <IconMessage :size="16" />
@@ -47,17 +62,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import {
   getActivitiesCount,
   getCommentsCount,
   getCoverImage,
 } from '@/modules/card-modals/composables/useCardUtils';
 import { getCardDisplayName } from '@/utils/cardUtils';
-import { buildWorkflowSummaryLine } from '@/utils/layoutCardWorkflowUtils';
+import {
+  formatActivityCompact,
+  getCardTotalSeconds,
+  isCardActivityRunning,
+} from '@/utils/layoutCardActivityUtils';
 
-// Icons
-import { IconClock, IconList, IconMessage, IconPaperclip } from '@tabler/icons-vue';
+import { IconClock, IconClockHour4, IconList, IconMessage, IconPaperclip } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -71,7 +89,43 @@ const coverImage = computed(() => getCoverImage(props.card));
 const activitiesCount = computed(() => getActivitiesCount(props.card));
 const commentsCount = computed(() => getCommentsCount(props.card));
 
-const workflowLine = computed(() => buildWorkflowSummaryLine(props.card));
+const now = ref(new Date());
+let tickerId = null;
+
+const activityIsRunning = computed(() => isCardActivityRunning(props.card));
+const activityTotalSeconds = computed(() => getCardTotalSeconds(props.card, now.value));
+const activityLabel = computed(() => {
+  if (!activityIsRunning.value && activityTotalSeconds.value === 0) return '';
+  return formatActivityCompact(activityTotalSeconds.value);
+});
+
+function startTicker() {
+  if (tickerId) return;
+  tickerId = window.setInterval(() => {
+    now.value = new Date();
+  }, 30000);
+}
+
+function stopTicker() {
+  if (!tickerId) return;
+  window.clearInterval(tickerId);
+  tickerId = null;
+}
+
+watch(
+  activityIsRunning,
+  (running) => {
+    if (running) {
+      now.value = new Date();
+      startTicker();
+    } else {
+      stopTicker();
+    }
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(stopTicker);
 
 defineEmits(['drag-start', 'click']);
 </script>
@@ -147,10 +201,34 @@ defineEmits(['drag-start', 'click']);
   width: 100%;
 }
 
-.trello-card-workflow-line {
-  font-size: 0.625rem;
-  color: var(--ds-text-subtle, var(--bs-secondary-color));
-  line-height: 1.2;
+.trello-card-activity-badge {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-size: 0.6875rem;
+  height: 1.5rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.125rem;
+}
+
+.trello-card-activity-pulse {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: trello-card-activity-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes trello-card-activity-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.4);
+  }
 }
 
 .trello-card-footer-text {

@@ -49,7 +49,7 @@
       @close="selectedCard = null"
       @member-added="handleCardMemberAdded"
       @member-removed="handleCardMemberRemoved"
-      @workflow-updated="handleWorkflowUpdated"
+      @activity-updated="handleActivityUpdated"
     />
   </section>
 </template>
@@ -95,7 +95,7 @@ function handleCardMemberRemoved(memberId) {
   if (card) card.members = (card.members ?? []).filter((m) => m.id !== memberId);
 }
 
-function handleWorkflowUpdated(payload) {
+function handleActivityUpdated(payload) {
   if (!payload || !selectedCard.value) return;
   Object.assign(selectedCard.value, payload);
   const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);

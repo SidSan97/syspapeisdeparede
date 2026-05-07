@@ -8,7 +8,6 @@ use App\Repositories\OrderBudgetRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpFoundation\Response;
 
 class OrderBudgetController extends Controller
 {
@@ -137,53 +136,79 @@ class OrderBudgetController extends Controller
     }
 
     /**
-     * Registra data/hora de início do fluxo do card no quadro de layouts.
+     * Inicia (ou retoma) o cronômetro do Power-Up Activity para o card.
      */
-    public function start(OrderBudget $orderBudget): JsonResponse
+    public function startActivity(OrderBudget $orderBudget): JsonResponse
     {
-        if ($orderBudget->started_at) {
-            return response()->json([
-                'message' => 'Este card já foi iniciado.',
-                'started_at' => $orderBudget->started_at->toIso8601String(),
-                'finished_at' => $orderBudget->finished_at?->toIso8601String(),
-            ]);
+        if (!$orderBudget->activity_running_since) {
+            $orderBudget->forceFill(['activity_running_since' => now()]);
+            $orderBudget->save();
         }
 
-        $orderBudget->forceFill(['started_at' => now()]);
-        $orderBudget->save();
-
-        return response()->json([
-            'started_at' => $orderBudget->started_at->toIso8601String(),
-            'finished_at' => $orderBudget->finished_at?->toIso8601String(),
-        ]);
+        return response()->json($this->activityPayload($orderBudget));
     }
 
     /**
-     * Registra data/hora de conclusão (após início).
+     * Pausa o cronômetro acumulando o tempo da sessão atual.
      */
-    public function finish(OrderBudget $orderBudget): JsonResponse
+    public function pauseActivity(OrderBudget $orderBudget): JsonResponse
     {
-        if (!$orderBudget->started_at) {
-            return response()->json(
-                ['message' => 'Inicie o card antes de concluir.'],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            );
+        if (!$orderBudget->activity_running_since) {
+            return response()->json($this->activityPayload($orderBudget));
         }
 
-        if ($orderBudget->finished_at) {
-            return response()->json([
-                'message' => 'Este card já foi concluído.',
-                'started_at' => $orderBudget->started_at->toIso8601String(),
-                'finished_at' => $orderBudget->finished_at->toIso8601String(),
-            ]);
-        }
+        $sessionSeconds = max(0, now()->diffInSeconds($orderBudget->activity_running_since, true));
 
-        $orderBudget->forceFill(['finished_at' => now()]);
+        $orderBudget->forceFill([
+            'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds + $sessionSeconds,
+            'activity_running_since' => null,
+        ]);
         $orderBudget->save();
 
-        return response()->json([
-            'started_at' => $orderBudget->started_at->toIso8601String(),
-            'finished_at' => $orderBudget->finished_at->toIso8601String(),
+        return response()->json($this->activityPayload($orderBudget));
+    }
+
+    /**
+     * Reinicia o cronômetro zerando todo o tempo registrado.
+     */
+    public function resetActivity(OrderBudget $orderBudget): JsonResponse
+    {
+        $orderBudget->forceFill([
+            'activity_running_since' => null,
+            'activity_elapsed_seconds' => 0,
         ]);
+        $orderBudget->save();
+
+        return response()->json($this->activityPayload($orderBudget));
+    }
+
+    /**
+     * Avança manualmente o cronômetro em uma quantidade fixa de segundos (300 ou 900).
+     */
+    public function advanceActivity(Request $request, OrderBudget $orderBudget): JsonResponse
+    {
+        $validated = $request->validate([
+            'seconds' => ['required', 'integer', 'in:300,900'],
+        ]);
+
+        $orderBudget->forceFill([
+            'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds + (int) $validated['seconds'],
+        ]);
+        $orderBudget->save();
+
+        return response()->json($this->activityPayload($orderBudget));
+    }
+
+    protected function activityPayload(OrderBudget $orderBudget): array
+    {
+        $orderBudget->refresh();
+
+        return [
+            'activity_running_since' => $orderBudget->activity_running_since?->toIso8601String(),
+            'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds,
+            'activity_total_seconds' => (int) $orderBudget->activity_total_seconds,
+            'activity_is_running' => (bool) $orderBudget->activity_is_running,
+            'server_time' => now()->toIso8601String(),
+        ];
     }
 }

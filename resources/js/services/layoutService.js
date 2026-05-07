@@ -51,15 +51,36 @@ export const layoutService = {
     return data;
   },
 
-  /** Registra início do fluxo (order_budgets.started_at). */
-  async startOrderBudget(orderBudgetId) {
-    const { data } = await http.post(`v1/budgets/order-budgets/${orderBudgetId}/start`);
+  /** Power-Up Activity: inicia/retoma o cronômetro do card. */
+  async startActivity(orderBudgetId) {
+    const { data } = await http.post(
+      `v1/budgets/order-budgets/${orderBudgetId}/activity/start`,
+    );
     return data;
   },
 
-  /** Registra conclusão do fluxo (order_budgets.finished_at). */
-  async finishOrderBudget(orderBudgetId) {
-    const { data } = await http.post(`v1/budgets/order-budgets/${orderBudgetId}/finish`);
+  /** Power-Up Activity: pausa o cronômetro acumulando o tempo da sessão. */
+  async pauseActivity(orderBudgetId) {
+    const { data } = await http.post(
+      `v1/budgets/order-budgets/${orderBudgetId}/activity/pause`,
+    );
+    return data;
+  },
+
+  /** Power-Up Activity: reinicia o cronômetro zerando todo o tempo. */
+  async resetActivity(orderBudgetId) {
+    const { data } = await http.post(
+      `v1/budgets/order-budgets/${orderBudgetId}/activity/reset`,
+    );
+    return data;
+  },
+
+  /** Power-Up Activity: avança manualmente o cronômetro em 300 ou 900 segundos. */
+  async advanceActivity(orderBudgetId, seconds) {
+    const { data } = await http.post(
+      `v1/budgets/order-budgets/${orderBudgetId}/activity/advance`,
+      { seconds },
+    );
     return data;
   },
 };
