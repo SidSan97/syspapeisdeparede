@@ -50,4 +50,16 @@ export const layoutService = {
     });
     return data;
   },
+
+  /** Registra início do fluxo (order_budgets.started_at). */
+  async startOrderBudget(orderBudgetId) {
+    const { data } = await http.post(`v1/budgets/order-budgets/${orderBudgetId}/start`);
+    return data;
+  },
+
+  /** Registra conclusão do fluxo (order_budgets.finished_at). */
+  async finishOrderBudget(orderBudgetId) {
+    const { data } = await http.post(`v1/budgets/order-budgets/${orderBudgetId}/finish`);
+    return data;
+  },
 };

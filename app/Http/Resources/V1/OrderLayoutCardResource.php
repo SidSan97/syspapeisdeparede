@@ -49,6 +49,8 @@ class OrderLayoutCardResource extends JsonResource
             'production_percentage' => $this->production_percentage,
             'tinyErp_order_id' => $this->tinyErp_order_id,
             'description' => $this->description,
+            'started_at' => $this->started_at?->toIso8601String(),
+            'finished_at' => $this->finished_at?->toIso8601String(),
 
             'comments' => $this->comments->map(function ($comment) {
                 return [

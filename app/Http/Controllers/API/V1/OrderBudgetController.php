@@ -8,6 +8,7 @@ use App\Repositories\OrderBudgetRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 
 class OrderBudgetController extends Controller
 {
@@ -133,5 +134,56 @@ class OrderBudgetController extends Controller
         $data = $this->orderBudgetRepository->removeMember($orderBudgetId, $validated['user_id'], $user, $typePage);
 
         return response()->json($data);
+    }
+
+    /**
+     * Registra data/hora de início do fluxo do card no quadro de layouts.
+     */
+    public function start(OrderBudget $orderBudget): JsonResponse
+    {
+        if ($orderBudget->started_at) {
+            return response()->json([
+                'message' => 'Este card já foi iniciado.',
+                'started_at' => $orderBudget->started_at->toIso8601String(),
+                'finished_at' => $orderBudget->finished_at?->toIso8601String(),
+            ]);
+        }
+
+        $orderBudget->forceFill(['started_at' => now()]);
+        $orderBudget->save();
+
+        return response()->json([
+            'started_at' => $orderBudget->started_at->toIso8601String(),
+            'finished_at' => $orderBudget->finished_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Registra data/hora de conclusão (após início).
+     */
+    public function finish(OrderBudget $orderBudget): JsonResponse
+    {
+        if (!$orderBudget->started_at) {
+            return response()->json(
+                ['message' => 'Inicie o card antes de concluir.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if ($orderBudget->finished_at) {
+            return response()->json([
+                'message' => 'Este card já foi concluído.',
+                'started_at' => $orderBudget->started_at->toIso8601String(),
+                'finished_at' => $orderBudget->finished_at->toIso8601String(),
+            ]);
+        }
+
+        $orderBudget->forceFill(['finished_at' => now()]);
+        $orderBudget->save();
+
+        return response()->json([
+            'started_at' => $orderBudget->started_at->toIso8601String(),
+            'finished_at' => $orderBudget->finished_at->toIso8601String(),
+        ]);
     }
 }

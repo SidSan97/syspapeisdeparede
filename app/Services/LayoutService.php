@@ -103,6 +103,8 @@ class LayoutService
                 'production_percentage' => $orderBudget->production_percentage,
                 'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
                 'description' => $orderBudget->description,
+                'started_at' => $orderBudget->started_at?->toIso8601String(),
+                'finished_at' => $orderBudget->finished_at?->toIso8601String(),
                 'comments' => $comments,
                 'members' => $members,
                 'history' => $history,

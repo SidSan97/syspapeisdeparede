@@ -27,6 +27,8 @@ Route::delete('budgets/order-budgets/{orderBudget}/comments/{comment}', [OrderBu
 Route::post('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'addMember']);
 Route::delete('budgets/order-budgets/{orderBudget}/members', [OrderBudgetController::class, 'removeMember']);
 Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [OrderBudgetController::class, 'removeMember']);
+Route::post('budgets/order-budgets/{orderBudget}/start', [OrderBudgetController::class, 'start']);
+Route::post('budgets/order-budgets/{orderBudget}/finish', [OrderBudgetController::class, 'finish']);
 Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt']);
 
 Route::apiResource('budgets', BudgetController::class);

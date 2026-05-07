@@ -27,6 +27,8 @@ class OrderBudget extends Model
         'tinyErp_order_expedition_id',
         'order_index',
         'ready_to_expedition',
+        'started_at',
+        'finished_at',
     ];
 
     protected $casts = [
@@ -41,6 +43,8 @@ class OrderBudget extends Model
         'tinyErp_order_expedition_id' => 'integer',
         'order_index' => 'integer',
         'ready_to_expedition' => 'integer:0,1',
+        'started_at' => 'datetime',
+        'finished_at' => 'datetime',
     ];
 
     public function order(): BelongsTo

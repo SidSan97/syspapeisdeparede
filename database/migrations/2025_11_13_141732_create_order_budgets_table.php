@@ -27,6 +27,8 @@ return new class extends Migration
             $table->tinyInteger('ready_to_expedition')->default(0);
             $table->string('tinyErp_order_id')->nullable();
             $table->integer('tinyErp_order_expedition_id')->nullable();
+            $table->datetime('started_at')->nullable();
+            $table->datetime('finished_at')->nullable();
             $table->timestamps();
 
             $table->foreign('budget_wall_id', 'order_budgets_budget_wall_id_fk')

@@ -11,6 +11,9 @@
     <div class="pt-2 px-3 pb-1">
       <div class="trello-card-footer-content">
         <p class="text-truncate m-0">{{ displayName }}</p>
+        <p v-if="workflowLine" class="trello-card-workflow-line text-truncate m-0 mt-1" :title="workflowLine">
+          {{ workflowLine }}
+        </p>
         <div class="trello-card-footer-meta">
           <div class="badge badge-custom fs-xs">
             <IconClock :size="16" />
@@ -51,6 +54,7 @@ import {
   getCoverImage,
 } from '@/modules/card-modals/composables/useCardUtils';
 import { getCardDisplayName } from '@/utils/cardUtils';
+import { buildWorkflowSummaryLine } from '@/utils/layoutCardWorkflowUtils';
 
 // Icons
 import { IconClock, IconList, IconMessage, IconPaperclip } from '@tabler/icons-vue';
@@ -66,6 +70,8 @@ const displayName = computed(() => getCardDisplayName(props.card));
 const coverImage = computed(() => getCoverImage(props.card));
 const activitiesCount = computed(() => getActivitiesCount(props.card));
 const commentsCount = computed(() => getCommentsCount(props.card));
+
+const workflowLine = computed(() => buildWorkflowSummaryLine(props.card));
 
 defineEmits(['drag-start', 'click']);
 </script>
@@ -139,6 +145,12 @@ defineEmits(['drag-start', 'click']);
   flex-direction: column;
   gap: 0.25rem;
   width: 100%;
+}
+
+.trello-card-workflow-line {
+  font-size: 0.625rem;
+  color: var(--ds-text-subtle, var(--bs-secondary-color));
+  line-height: 1.2;
 }
 
 .trello-card-footer-text {
