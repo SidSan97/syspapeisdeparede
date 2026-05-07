@@ -55,32 +55,14 @@
 
               <hr>
 
-              <div v-if="!isCompleted" class="mb-4">
-                <button
-                  type="button"
-                  class="btn btn-success btn-sm d-inline-flex align-items-center"
-                  :disabled="completing || !card?.id"
-                  @click="handleComplete"
-                >
-                  <span
-                    v-if="completing"
-                    class="spinner-border spinner-border-sm me-1"
-                    role="status"
-                  ></span>
-                  <IconCheck v-else :size="18" class="me-1" />
-                  Concluir
-                </button>
-              </div>
-              <div v-else class="alert alert-success d-flex align-items-center gap-2 py-2 mb-4">
-                <IconCircleCheck :size="20" />
-                <div>
-                  Card concluído em
-                  <strong>{{ completedAtLabel }}</strong>
-                  <span v-if="completedDurationLabel" class="ms-2 text-body-secondary">
-                    · Duração total: <strong>{{ completedDurationLabel }}</strong>
-                  </span>
-                </div>
-              </div>
+              <DoneCardSection
+                :is-completed="isCompleted"
+                :completing="completing"
+                :completed-at-label="completedAtLabel"
+                :completed-duration-label="completedDurationLabel"
+                :card-id="card?.id"
+                @complete="handleComplete"
+              />
 
               <DescriptionSection :card="card" typePage="layout" />
 
@@ -160,6 +142,7 @@ import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
 
 import BaseModal from '@/components/common/BaseModal.vue';
 import CommentsAndActivitySidebar from '@/components/card-modal/CommentsAndActivitySidebar.vue';
+import DoneCardSection from '@/components/card-modal/DoneCardSection.vue';
 import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
 import AttachmentsSection from './layout-card-modal/AttachmentsSection.vue';
 import LoadArtSection from '@/components/card-modal/LoadArtSection.vue';
@@ -169,7 +152,7 @@ import MembersSection from '@/components/card-modal/MembersSection.vue';
 import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
 import CollectionModelsSection from './layout-card-modal/CollectionModelsSection.vue';
 
-import { IconCheck, IconCircleCheck, IconExternalLink, IconLink } from '@tabler/icons-vue';
+import { IconExternalLink, IconLink } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
