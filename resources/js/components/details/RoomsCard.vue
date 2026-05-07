@@ -139,6 +139,12 @@
                             {{ formatDirection(continuation.direction) }}
                           </div>
                         </div>
+                        <div v-if="continuationFitLabel(continuation)" class="col-md-4">
+                          <div class="text-muted small">Encaixe</div>
+                          <div class="fw-semibold">
+                            {{ continuationFitLabel(continuation) }}
+                          </div>
+                        </div>
                         <div class="col-md-4">
                           <div class="text-muted small">Largura (m)</div>
                           <div class="fw-semibold">
@@ -187,6 +193,15 @@ const props = defineProps({
 });
 
 const { formatNumber, formatDirection, resolveStorageUrl, extractFileName } = useFormatting();
+
+function continuationFitLabel(continuation) {
+  const raw = continuation?.fit ?? continuation?.Fit;
+  if (raw == null) {
+    return '';
+  }
+  const s = String(raw).trim();
+  return s.length > 0 ? s : '';
+}
 
 const orderBudgetCards = computed(() => {
   if (!Array.isArray(props.data?.order_budgets)) {
