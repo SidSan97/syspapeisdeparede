@@ -70,6 +70,11 @@ class UpdateBudgetRequest extends FormRequest
                 'numeric',
                 'min:0.01',
             ],
+            'rooms.*.walls.*.continuations.*.fit' => [
+                'nullable',
+                'string',
+                Rule::in(['Inicial', 'Superior', 'Inferior', 'Central']),
+            ],
             'deliveryTime' => ['nullable', 'integer', 'min:0'],
             'cep' => ['nullable', 'string', 'max:9'],
             'selectedCarrier' => ['nullable', 'array'],

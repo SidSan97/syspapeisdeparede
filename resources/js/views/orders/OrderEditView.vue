@@ -285,6 +285,25 @@
                                     </select>
                                   </div>
 
+                                  <div class="mb-3">
+                                    <label
+                                      :for="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                      class="form-label"
+                                    >
+                                      Encaixe
+                                    </label>
+                                    <select
+                                      v-model="continuation.fit"
+                                      :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                      class="form-control"
+                                    >
+                                      <option value="Inicial">Inicial</option>
+                                      <option value="Superior">Superior</option>
+                                      <option value="Inferior">Inferior</option>
+                                      <option value="Central">Central</option>
+                                    </select>
+                                  </div>
+
                                   <div class="row">
                                     <div class="col-md-6 mb-3">
                                       <label
@@ -947,12 +966,13 @@ function selectFreightCarrier(index) {
 const requestLayoutArts = ref([]);
 const loadingRequestArts = ref(false);
 
-const createDefaultContinuation = () => ({
+const createDefaultContinuation = ({ initial = false } = {}) => ({
   name: '',
   direction: '',
   width: null,
   height: null,
   sameArt: false,
+  fit: initial ? 'Inicial' : 'Central',
 });
 
 const createDefaultWall = () => ({
@@ -1243,12 +1263,13 @@ function normalizeOrderFromAPI(orderData) {
           ) {
             wallData.continueSameArt = Boolean(wall.continue_same_art);
             if (wall.continuations && Array.isArray(wall.continuations)) {
-              wallData.continuations = wall.continuations.map((cont) => ({
+              wallData.continuations = wall.continuations.map((cont, idx) => ({
                 name: cont.name || '',
                 direction: cont.direction || '',
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),
+                fit: cont.fit || (idx === 0 ? 'Inicial' : 'Central'),
               }));
             }
           }
@@ -1747,7 +1768,7 @@ function addContinuation(roomIndex, wallIndex) {
   if (!wall.continueSameArt) {
     wall.continueSameArt = true;
   }
-  wall.continuations.push(createDefaultContinuation());
+  wall.continuations.push(createDefaultContinuation({ initial: false }));
 }
 
 function removeContinuation(roomIndex, wallIndex, continuationIndex) {
@@ -1773,7 +1794,7 @@ function handleContinuationToggle(roomIndex, wallIndex) {
   }
 
   if (!Array.isArray(wall.continuations) || !wall.continuations.length) {
-    wall.continuations = [createDefaultContinuation()];
+    wall.continuations = [createDefaultContinuation({ initial: true })];
   }
 }
 

@@ -4,11 +4,13 @@ import { createDefaultWall } from './useBudgetUtils';
  * Composable para manipulação da estrutura de orçamento (rooms, walls, continuations)
  */
 
-const createDefaultContinuation = () => ({
+const createDefaultContinuation = ({ initial = false } = {}) => ({
+  name: '',
   direction: '',
   width: null,
   height: null,
   sameArt: false,
+  fit: initial ? 'Inicial' : 'Central',
 });
 
 /**
@@ -42,7 +44,7 @@ export function useBudgetStructure(budget) {
     if (!wall.continueSameArt) {
       wall.continueSameArt = true;
     }
-    wall.continuations.push(createDefaultContinuation());
+    wall.continuations.push(createDefaultContinuation({ initial: false }));
   }
 
   function removeContinuation(roomIndex, wallIndex, continuationIndex) {
@@ -68,7 +70,7 @@ export function useBudgetStructure(budget) {
     }
 
     if (!Array.isArray(wall.continuations) || !wall.continuations.length) {
-      wall.continuations = [createDefaultContinuation()];
+      wall.continuations = [createDefaultContinuation({ initial: true })];
     }
   }
 

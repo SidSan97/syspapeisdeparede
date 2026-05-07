@@ -263,6 +263,25 @@
                                   </select>
                                 </div>
 
+                                <div class="mb-3">
+                                  <label
+                                    :for="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                    class="form-label"
+                                  >
+                                    Encaixe
+                                  </label>
+                                  <select
+                                    v-model="continuation.fit"
+                                    :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                    class="form-control"
+                                  >
+                                    <option value="Inicial">Inicial</option>
+                                    <option value="Superior">Superior</option>
+                                    <option value="Inferior">Inferior</option>
+                                    <option value="Central">Central</option>
+                                  </select>
+                                </div>
+
                                 <div class="row">
                                   <div class="col-md-6 mb-3">
                                     <label

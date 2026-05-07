@@ -126,12 +126,15 @@ export function normalizeBudgetFromAPI(budgetData) {
           ) {
             wallData.continueSameArt = Boolean(wall.continue_same_art);
             if (wall.continuations && Array.isArray(wall.continuations)) {
-              wallData.continuations = wall.continuations.map((cont) => ({
+              wallData.continuations = wall.continuations.map((cont, idx) => ({
                 name: cont.name || '',
                 direction: cont.direction || '',
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),
+                fit:
+                  cont.fit ||
+                  (idx === 0 ? 'Inicial' : 'Central'),
               }));
             }
           }

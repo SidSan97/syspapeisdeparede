@@ -74,6 +74,11 @@ class UpdateOrderRequest extends FormRequest
             'rooms.*.walls.*.collection_referring_model' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls.*.continueSameArt' => ['nullable', 'boolean'],
             'rooms.*.walls.*.continuations' => ['nullable', 'array'],
+            'rooms.*.walls.*.continuations.*.fit' => [
+                'nullable',
+                'string',
+                Rule::in(['Inicial', 'Superior', 'Inferior', 'Central']),
+            ],
         ];
     }
 
