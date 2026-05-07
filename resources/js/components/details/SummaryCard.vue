@@ -21,6 +21,10 @@
           <span class="text-muted">Frete:</span>
           <strong>{{ formatCurrency(data.selected_carrier_price) }}</strong>
         </div>
+        <div v-if="artsTotal > 0" class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Valor das artes:</span>
+          <strong>{{ formatCurrency(artsTotal) }}</strong>
+        </div>
         <div v-if="data.delivery_time" class="d-flex justify-content-between mb-2">
           <span class="text-muted">Prazo de entrega:</span>
           <strong>{{ formatDeliveryTime(data.delivery_time) }}</strong>
@@ -58,7 +62,7 @@
 import { computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
-import { buildBudgetSummaryText, copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
+import { copyBudgetSummary } from '@/utils/copyBudgetSummaryUtils';
 import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const props = defineProps({
@@ -79,20 +83,21 @@ const totalWalls = computed(() => {
 });
 const stripSummary = computed(() => buildStripSummaryFromRooms(props.data?.rooms || []));
 
-async function copyStripSummary() {
-  const text = buildBudgetSummaryText({
-    totalWalls: totalWalls.value,
-    totalArea: formatNumber(props.data?.total_area || 0),
-    totalVista: formatCurrency(props.data?.total_amount || 0),
-    totalPrazo: formatCurrency(props.data?.total_amount_installments || 0),
-    stripSummary: stripSummary.value || '-',
-  });
+const freightAmount = computed(() => Number(props.data?.selected_carrier_price ?? 0));
+const artsTotal = computed(() => Number(props.data?.payment_breakdown?.base?.ARTES ?? 0));
 
-  const ok = await copyBudgetSummaryText(text);
-  if (ok) {
-    toast.success('Resumo copiado para a área de transferência');
-  } else {
-    toast.error('Não foi possivel copiar o resumo.');
-  }
+async function copyStripSummary() {
+  await copyBudgetSummary(
+    {
+      totalWalls: totalWalls.value,
+      totalArea: formatNumber(props.data?.total_area || 0),
+      totalVista: formatCurrency(props.data?.total_amount || 0),
+      totalPrazo: formatCurrency(props.data?.total_amount_installments || 0),
+      stripSummary: stripSummary.value || '-',
+      freight: freightAmount.value > 0 ? formatCurrency(freightAmount.value) : '',
+      artsTotal: artsTotal.value > 0 ? formatCurrency(artsTotal.value) : '',
+    },
+    toast,
+  );
 }
 </script>

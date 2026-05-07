@@ -613,6 +613,7 @@
                   ? formatCurrency(budget.carriers[budget.selectedCarrier]?.price)
                   : ''
               "
+              :arts-total="totalModelsCost > 0 ? formatCurrency(totalModelsCost) : ''"
               :artwork-days="artworkDays"
               :transport-days="transportDays"
               :delivery-time="`${calculateDeliveryTime(budget)} dias`"

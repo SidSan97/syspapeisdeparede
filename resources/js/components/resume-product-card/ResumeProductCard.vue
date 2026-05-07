@@ -24,6 +24,11 @@
           <strong>{{ freight }}</strong>
         </div>
 
+        <div v-if="artsTotal && artsTotal !== ''" class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Valor das artes:</span>
+          <strong>{{ artsTotal }}</strong>
+        </div>
+
         <hr />
 
         <div class="d-flex justify-content-between mb-2">
@@ -78,7 +83,7 @@
 
 <script setup>
 import { useToast } from '@/composables/useToast';
-import { buildBudgetSummaryText, copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
+import { copyBudgetSummary } from '@/utils/copyBudgetSummaryUtils';
 
 const props = defineProps({
   totalRooms: {
@@ -94,6 +99,10 @@ const props = defineProps({
     required: true,
   },
   freight: {
+    type: [Number, String],
+    default: '',
+  },
+  artsTotal: {
     type: [Number, String],
     default: '',
   },
@@ -126,20 +135,18 @@ const props = defineProps({
 const toast = useToast();
 
 async function copyStripSummary() {
-  const text = buildBudgetSummaryText({
-    totalWalls: props.totalWalls,
-    totalArea: props.totalArea,
-    totalVista: props.totalVista,
-    totalPrazo: props.totalPrazo,
-    stripSummary: props.stripSummary,
-  });
-
-  const ok = await copyBudgetSummaryText(text);
-  if (ok) {
-    toast.success('Resumo copiado para a área de transferência');
-  } else {
-    toast.error('Não foi possível copiar o resumo.');
-  }
+  await copyBudgetSummary(
+    {
+      totalWalls: props.totalWalls,
+      totalArea: props.totalArea,
+      totalVista: props.totalVista,
+      totalPrazo: props.totalPrazo,
+      stripSummary: props.stripSummary,
+      freight: props.freight,
+      artsTotal: props.artsTotal,
+    },
+    toast,
+  );
 }
 </script>
 

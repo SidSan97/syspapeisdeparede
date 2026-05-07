@@ -835,6 +835,7 @@
                   ? `R$ ${budget.carriers[budget.selectedCarrier]?.price.toFixed(2)}`
                   : ''
               "
+              :arts-total="totalModelsCost > 0 ? `R$ ${totalModelsCost.toFixed(2)}` : ''"
               :artwork-days="artworkDays"
               :transport-days="transportDays"
               :delivery-time="`${calculateDeliveryTime(budget)} dias`"
