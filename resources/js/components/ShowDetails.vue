@@ -38,8 +38,6 @@
 
                             <RoomsCard :data="data" :show-wall-status="isOrder" />
 
-                            <SelectedModelsCard :data="data" />
-
                             <RequestArtsCard :data="data" :is-order="isOrder" />
                         </div>
 
@@ -91,7 +89,6 @@ import { useOrderService } from '@/services/orderService';
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
 import RoomsCard from '@/components/details/RoomsCard.vue';
-import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
 import ModelReferencesCard from '@/components/details/ModelReferencesCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';

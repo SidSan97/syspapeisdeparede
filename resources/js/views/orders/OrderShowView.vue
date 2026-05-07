@@ -46,7 +46,6 @@
               :dropshipping-data="order.dropshipping_data"
             />
             <RoomsCard :data="order" :show-wall-status="true" />
-            <SelectedModelsCard :data="order" />
             <RequestArtsCard :data="order" :is-order="true" />
           </div>
 
@@ -95,7 +94,6 @@ import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkMo
 import PaymentCard from '@/components/details/PaymentCard.vue';
 import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
 import RoomsCard from '@/components/details/RoomsCard.vue';
-import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import { orderService } from '@/services/orderService';

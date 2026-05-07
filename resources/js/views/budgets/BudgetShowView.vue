@@ -15,7 +15,6 @@
               :dropshipping-data="budget?.dropshipping_data"
             />
             <RoomsCard :data="budget" :show-wall-status="false" />
-            <SelectedModelsCard :data="budget" />
             <RequestArtsCard :data="budget" :is-order="false" />
           </div>
 
@@ -56,7 +55,6 @@ import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
 import RoomsCard from '@/components/details/RoomsCard.vue';
-import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';

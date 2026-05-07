@@ -49,74 +49,7 @@
                     </div>
                   </div>
 
-                  <!-- Modelo selecionado -->
-                  <div v-if="wall.collection_model || wall.collection_model_name" class="mb-3">
-                    <div class="text-muted small">Modelo</div>
-                    <div class="fw-semibold">
-                      {{ wall.collection_model?.name || wall.collection_model_name || '-' }}
-                    </div>
-                  </div>
-
-                  <!-- Referências do Modelo por Parede -->
-                  <div
-                    v-if="hasWallModelReferences(wall, roomIndex, wallIndex)"
-                    class="mb-3 pt-3 border-top"
-                  >
-                    <div class="text-muted small mb-2 fw-semibold">Referências do Modelo</div>
-
-                    <div
-                      v-if="getWallModelReference(wall, roomIndex, wallIndex, 'comment')"
-                      class="mb-2"
-                    >
-                      <div class="text-muted small mb-1">Descrição</div>
-                      <div class="p-2 rounded border">
-                        {{ getWallModelReference(wall, roomIndex, wallIndex, 'comment') }}
-                      </div>
-                    </div>
-
-                    <div
-                      v-if="getWallModelReference(wall, roomIndex, wallIndex, 'link')"
-                      class="mb-2"
-                    >
-                      <div class="text-muted small mb-1">Link de Referência</div>
-                      <div>
-                        <a
-                          :href="getWallModelReference(wall, roomIndex, wallIndex, 'link')"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="text-break"
-                        >
-                          {{ getWallModelReference(wall, roomIndex, wallIndex, 'link') }}
-                        </a>
-                      </div>
-                    </div>
-
-                    <div
-                      v-if="getWallModelReference(wall, roomIndex, wallIndex, 'files')?.length"
-                      class="mb-0"
-                    >
-                      <div class="text-muted small mb-2">Arquivos de Referência</div>
-                      <div class="d-flex flex-wrap gap-2">
-                        <a
-                          v-for="(file, fileIndex) in getWallModelReference(
-                            wall,
-                            roomIndex,
-                            wallIndex,
-                            'files',
-                          )"
-                          :key="fileIndex"
-                          :href="resolveStorageUrl(file)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="btn btn-sm btn-outline-default"
-                        >
-                          <IconPhoto :size="18" class="me-1" />
-
-                          {{ extractFileName(file) }}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+                  <SelectedModelsCard :wall="wall" />
 
                   <!-- Continuações -->
                   <div v-if="wall.continuations && wall.continuations.length > 0" class="mb-3">
@@ -179,7 +112,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useFormatting } from '@/composables/useFormatting';
-import { IconPhoto } from '@tabler/icons-vue';
+import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
 
 const props = defineProps({
   data: {
@@ -192,7 +125,7 @@ const props = defineProps({
   },
 });
 
-const { formatNumber, formatDirection, resolveStorageUrl, extractFileName } = useFormatting();
+const { formatNumber, formatDirection } = useFormatting();
 
 function continuationFitLabel(continuation) {
   const raw = continuation?.fit ?? continuation?.Fit;
@@ -212,40 +145,6 @@ const orderBudgetCards = computed(() => {
     (a, b) => Number(a?.order_index || 0) - Number(b?.order_index || 0),
   );
 });
-
-/**
- * Verifica se uma parede tem referências do modelo
- */
-function hasWallModelReferences(wall, roomIndex, wallIndex) {
-  const hasGlobalReferences =
-    props.data?.comment_referring_model ||
-    props.data?.link_referring_model ||
-    (props.data?.files_referring_model && props.data.files_referring_model.length > 0);
-
-  return hasGlobalReferences && (wall.collection_model || wall.collection_model_name);
-}
-
-/**
- * Obtém a referência do modelo para uma parede específica
- */
-function getWallModelReference(wall, roomIndex, wallIndex, type) {
-  if (!hasWallModelReferences(wall, roomIndex, wallIndex)) {
-    return null;
-  }
-
-  switch (type) {
-    case 'comment':
-      return props.data?.comment_referring_model || null;
-    case 'link':
-      return props.data?.link_referring_model || null;
-    case 'files':
-      return Array.isArray(props.data?.files_referring_model)
-        ? props.data.files_referring_model
-        : [];
-    default:
-      return null;
-  }
-}
 
 function normalizeStatus(rawStatus) {
   const value = String(rawStatus || '')
