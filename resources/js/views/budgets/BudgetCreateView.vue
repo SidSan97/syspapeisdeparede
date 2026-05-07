@@ -606,7 +606,10 @@ import ResumeProductCard from '@/components/resume-product-card/ResumeProductCar
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
-import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
+import {
+  calculateStripHeight as wallStripHeightForSummary,
+  useBudgetCalculations,
+} from '@/modules/budgets/composables/useBudgetCalculations';
 import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStructure';
@@ -615,7 +618,7 @@ import { validateBudget } from '@/modules/budgets/composables/useBudgetValidatio
 import { budgetService } from '@/services/budgetService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
-import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
+import { buildStripSummaryFromMetrics } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -682,7 +685,12 @@ const {
 } = useBudgetModels(budget);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
-const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
+const stripSummary = computed(() =>
+  buildStripSummaryFromMetrics(budget.rooms, (wall) => ({
+    strips: calculateStrips(wall),
+    stripHeight: wallStripHeightForSummary(wall),
+  })),
+);
 
 const transportDays = computed(() => {
   if (

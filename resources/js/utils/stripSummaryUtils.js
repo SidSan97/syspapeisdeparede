@@ -27,9 +27,19 @@ function mergeConsecutiveGroups(groups) {
   return out;
 }
 
+function formatStripGroups(groups) {
+  const merged = mergeConsecutiveGroups(groups);
+  if (!merged.length) {
+    return '';
+  }
+  return merged.map((g) => `${g.q}F de ${formatNumberBR(g.h, 2)}m`).join(' + ');
+}
+
 /**
- * Formato padrão:
- * "1F de 2,50m + 4F de 3,00m + 2F de 1,50m"
+ * Resumo construído pela sequência de paredes (carry entre paredes).
+ * Use quando o cálculo individual também usa `calculateWallsSequence`.
+ *
+ * Formato: "1F de 2,50m + 4F de 3,00m + 2F de 1,50m"
  */
 export function buildStripSummaryFromRooms(rooms = []) {
   if (!Array.isArray(rooms) || rooms.length === 0) {
@@ -53,10 +63,30 @@ export function buildStripSummaryFromRooms(rooms = []) {
     });
   });
 
-  const merged = mergeConsecutiveGroups(groups);
-  if (!merged.length) {
+  return formatStripGroups(groups);
+}
+
+export function buildStripSummaryFromMetrics(rooms = [], getMetrics) {
+  if (!Array.isArray(rooms) || rooms.length === 0 || typeof getMetrics !== 'function') {
     return '';
   }
 
-  return merged.map((g) => `${g.q}F de ${formatNumberBR(g.h, 2)}m`).join(' + ');
+  const groups = [];
+
+  rooms.forEach((room) => {
+    if (!Array.isArray(room?.walls) || room.walls.length === 0) {
+      return;
+    }
+
+    room.walls.forEach((wall) => {
+      const metric = getMetrics(wall) || {};
+      const q = Number(metric.strips ?? 0);
+      const h = Number(metric.stripHeight ?? 0);
+      if (q > 0 && Number.isFinite(h) && h > 0) {
+        groups.push({ q, h });
+      }
+    });
+  });
+
+  return formatStripGroups(groups);
 }

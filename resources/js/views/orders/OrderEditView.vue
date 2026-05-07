@@ -858,7 +858,7 @@ import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue'
 import { collectionModelService } from '@/services/collectionModelService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
-import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
+import { buildStripSummaryFromMetrics } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -1162,7 +1162,12 @@ const productModelsMap = computed(() => {
 const getModelById = (id) => productModelsMap.value.get(id);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
-const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
+const stripSummary = computed(() =>
+  buildStripSummaryFromMetrics(budget.rooms, (wall) => ({
+    strips: calculateStrips(wall),
+    stripHeight: calculateStripHeight(wall),
+  })),
+);
 
 const transportDays = computed(() => {
   if (

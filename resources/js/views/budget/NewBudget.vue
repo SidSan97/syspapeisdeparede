@@ -445,7 +445,7 @@
                                     </select>
                                 </div>
 
-                                <br> 
+                                <br>
 
                                 <span class="budget-attention-info">
                                     ATENÇÃO! OS PREÇOS DO
