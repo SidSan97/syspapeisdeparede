@@ -122,8 +122,8 @@ const isDropshippingEnabled = computed(() => order.value?.dropshipping_budget ==
 const canApproveOrder = computed(() => {
   return (
     order.value &&
-    order.value.status !== ORDER_STATUS.APPROVED &&
-    order.value.status !== ORDER_STATUS.CANCELED
+    order.value.status != ORDER_STATUS.APPROVED &&
+    order.value.status != ORDER_STATUS.CANCELED
   );
 });
 
