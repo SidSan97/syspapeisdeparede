@@ -41,6 +41,28 @@ export const budgetOrderService = {
   },
 
   /**
+   * Imagens de uma categoria com paginação (para catálogo em orçamento / pedido).
+   * @param {number|string} categoryId
+   * @param {{ page?: number, perPage?: number }} options
+   */
+  async getCollectionCategoryImagesPage(categoryId, { page = 1, perPage = 6 } = {}) {
+    const { data } = await http.get(`v1/collection-categories/${categoryId}/images`, {
+      params: { page, per_page: perPage },
+    });
+    const payload = data?.data ?? data ?? {};
+
+    return {
+      items: Array.isArray(payload.items) ? payload.items : [],
+      meta: {
+        current_page: payload.meta?.current_page ?? page,
+        per_page: payload.meta?.per_page ?? perPage,
+        total: payload.meta?.total ?? 0,
+        last_page: payload.meta?.last_page ?? 1,
+      },
+    };
+  },
+
+  /**
    * Detalhe de uma arte da coleção (categoria + imagem), para exibir na edição de orçamento/pedido.
    */
   async getCollectionImage(imageId) {

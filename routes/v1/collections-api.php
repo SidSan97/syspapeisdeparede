@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\V1\CollectionArtController;
 use App\Http\Controllers\API\V1\CollectionArtSubcategoryController;
+use App\Http\Controllers\API\V1\CollectionCategoryController;
 use App\Http\Controllers\API\V1\CollectionImageController;
 use App\Http\Controllers\API\V1\CollectionImportController;
 use App\Http\Controllers\API\V1\CollectionModelController;
@@ -9,14 +10,15 @@ use App\Http\Controllers\API\V1\MyFavoriteCollectionImageController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas adicionais para collection-categories
-Route::get('collection-categories/children/{parentId?}', [\App\Http\Controllers\API\V1\CollectionCategoryController::class, 'children']);
+Route::get('collection-categories/children/{parentId?}', [CollectionCategoryController::class, 'children']);
+Route::get('collection-categories/{collectionCategory}/images', [CollectionCategoryController::class, 'categoryImages']);
 
 Route::apiResources([
     'collection-models' => CollectionModelController::class,
     'collection-arts' => CollectionArtController::class,
     'collection-art-subcategories' => CollectionArtSubcategoryController::class,
     'collection-images' => CollectionImageController::class,
-    'collection-categories' => \App\Http\Controllers\API\V1\CollectionCategoryController::class,
+    'collection-categories' => CollectionCategoryController::class,
 ]);
 
 // Import ZIP (chunked upload + async processing)

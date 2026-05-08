@@ -4,19 +4,22 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Requests\CollectionCategories\CollectionCategoryRequest;
 use App\Http\Resources\CollectionCategoryResource;
+use App\Http\Resources\CollectionImageResource;
 use App\Models\CollectionCategory;
 use App\Repositories\CollectionCategoryRepository;
+use App\Repositories\CollectionImageRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CollectionCategoryController extends BaseController
 {
     public function __construct(
-        protected CollectionCategoryRepository $repository
+        protected CollectionCategoryRepository $repository,
+        protected CollectionImageRepository $collectionImageRepository,
     ) {
         // Deixar listagem e visualização públicas para uso externo (catálogo),
         // mantendo autenticação para operações de escrita.
-        $this->middleware('auth:sanctum')->except(['index', 'show', 'children']);
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'children', 'categoryImages']);
     }
 
     public function index(Request $request): JsonResponse
@@ -26,6 +29,7 @@ class CollectionCategoryController extends BaseController
 
         if ($query !== '') {
             $collection = $this->repository->search($query);
+
             return $this->sendResponse(
                 CollectionCategoryResource::collection($collection),
                 'Categorias encontradas'
@@ -34,6 +38,7 @@ class CollectionCategoryController extends BaseController
 
         if ($tree) {
             $collection = $this->repository->getTree();
+
             return $this->sendResponse(
                 CollectionCategoryResource::collection($collection),
                 'Árvore de categorias recuperada com sucesso'
@@ -76,10 +81,35 @@ class CollectionCategoryController extends BaseController
                     $query->with('images')->withCount('images');
                 },
                 'parent',
-                'images'
+                'images',
             ])),
             'Categoria recuperada com sucesso'
         );
+    }
+
+    /**
+     * Lista paginada de imagens da categoria (mesma ordem do resource: filhos em sequência, depois imagens diretas).
+     */
+    public function categoryImages(Request $request, CollectionCategory $collectionCategory): JsonResponse
+    {
+        $perPage = min(max((int) $request->integer('per_page', 6), 1), 50);
+        $page = max((int) $request->integer('page', 1), 1);
+
+        $paginator = $this->collectionImageRepository->paginateForCategory(
+            $collectionCategory,
+            $perPage,
+            $page,
+        );
+
+        return $this->sendResponse([
+            'items' => CollectionImageResource::collection($paginator->items()),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ], 'Imagens da categoria recuperadas com sucesso');
     }
 
     public function update(CollectionCategoryRequest $request, CollectionCategory $collectionCategory): JsonResponse
@@ -88,7 +118,7 @@ class CollectionCategoryController extends BaseController
             'children' => function ($query) {
                 $query->withCount('images');
             },
-            'parent'
+            'parent',
         ]);
 
         return $this->sendResponse(
@@ -115,4 +145,3 @@ class CollectionCategoryController extends BaseController
         );
     }
 }
-

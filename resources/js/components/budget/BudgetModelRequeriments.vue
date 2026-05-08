@@ -98,7 +98,7 @@
           <input
             v-model="collectionSearchQuery"
             type="text"
-            class="form-control"
+            class="form-control mb-2"
             placeholder="Digite para buscar uma coleção..."
             autocomplete="off"
             :disabled="disabled"
@@ -109,7 +109,7 @@
           <button
             v-if="selectedCollectionId"
             type="button"
-            class="btn btn-default"
+            class="btn btn-default mb-2"
             :disabled="disabled"
             title="Limpar seleção"
             @click.prevent="clearCollectionSelection"
@@ -160,7 +160,11 @@
           {{ imagesError }}
         </div>
         <div v-else-if="!images.length" class="text-muted small">Nenhuma arte disponível.</div>
-        <div v-else class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2">
+        <div
+          v-else
+          class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2 list-img-div"
+          @scroll.passive="onImagesScroll"
+        >
           <div v-for="image in images" :key="image.id" class="col show-collection-images">
             <div
               role="button"
@@ -197,6 +201,10 @@
               </div>
             </div>
           </div>
+          <div v-if="loadingMoreImages" class="col-12 text-center text-muted small py-2">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Carregando mais artes...
+          </div>
         </div>
       </div>
     </div>
@@ -232,9 +240,21 @@ const loadingCollections = ref(false);
 const loadingImages = ref(false);
 const collectionError = ref('');
 const imagesError = ref('');
+const imagesCategoryId = ref(null);
+const imagesPage = ref(1);
+const imagesHasMore = ref(false);
+const loadingMoreImages = ref(false);
+const IMAGES_PAGE_SIZE = 6;
 const selectionSummary = ref(null);
 const loadingSelectionSummary = ref(false);
 const selectedCategoryContext = ref(null);
+
+function resetImagesPagination() {
+  imagesCategoryId.value = null;
+  imagesPage.value = 1;
+  imagesHasMore.value = false;
+  loadingMoreImages.value = false;
+}
 
 const requiresComment = computed(() => Boolean(props.model?.requests?.comment));
 const requiresLink = computed(() => Boolean(props.model?.requests?.link));
@@ -277,6 +297,7 @@ watch(
       collectionSearchQuery.value = '';
       searchResults.value = [];
       images.value = [];
+      resetImagesPagination();
     }
   },
   { immediate: true },
@@ -453,6 +474,7 @@ function onSearchInput() {
     selectedCollectionId.value = null;
     selectedCollectionName.value = '';
     images.value = [];
+    resetImagesPagination();
   }
   performSearch();
 }
@@ -484,15 +506,67 @@ function clearCollectionSelection() {
   collectionSearchQuery.value = '';
   images.value = [];
   imagesError.value = '';
+  resetImagesPagination();
+}
+
+function onImagesScroll(event) {
+  const el = event.target;
+  if (
+    !imagesHasMore.value ||
+    loadingMoreImages.value ||
+    loadingImages.value ||
+    !imagesCategoryId.value
+  ) {
+    return;
+  }
+  const thresholdPx = 100;
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < thresholdPx) {
+    loadMoreCollectionImages();
+  }
+}
+
+async function loadMoreCollectionImages() {
+  if (
+    !imagesCategoryId.value ||
+    !imagesHasMore.value ||
+    loadingMoreImages.value ||
+    loadingImages.value
+  ) {
+    return;
+  }
+  loadingMoreImages.value = true;
+  try {
+    const nextPage = imagesPage.value + 1;
+    const { items, meta } = await budgetOrderService.getCollectionCategoryImagesPage(
+      imagesCategoryId.value,
+      { page: nextPage, perPage: IMAGES_PAGE_SIZE },
+    );
+    images.value = images.value.concat(items);
+    imagesPage.value = meta.current_page;
+    imagesHasMore.value = meta.current_page < meta.last_page;
+  } catch (error) {
+    imagesError.value =
+      error?.response?.data?.message || 'Erro ao carregar mais artes da coleção.';
+  } finally {
+    loadingMoreImages.value = false;
+  }
 }
 
 async function loadImagesForCollection(categoryId) {
   images.value = [];
   imagesError.value = '';
+  resetImagesPagination();
   if (!categoryId) return;
+  imagesCategoryId.value = categoryId;
   loadingImages.value = true;
   try {
-    images.value = await budgetOrderService.getCollectionCategoryImages(categoryId);
+    const { items, meta } = await budgetOrderService.getCollectionCategoryImagesPage(categoryId, {
+      page: 1,
+      perPage: IMAGES_PAGE_SIZE,
+    });
+    images.value = items;
+    imagesPage.value = meta.current_page;
+    imagesHasMore.value = meta.current_page < meta.last_page;
     const sid = String(props.wall.collection_referring_model || '').trim();
     if (sid) {
       const local = images.value.find((img) => String(img.id) === sid);
@@ -515,5 +589,11 @@ async function loadImagesForCollection(categoryId) {
 
 .show-collection-images {
   width: 167px;
+}
+
+.list-img-div {
+  overflow-y: auto;
+  max-height: 400px;
+  padding-top: 15px;
 }
 </style>
