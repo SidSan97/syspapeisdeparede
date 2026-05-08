@@ -216,6 +216,73 @@ export function calculateStripHeight(wall) {
   return totalMetros / totalFaixas;
 }
 
+/**
+ * Soma os metros (faixas × altura) considerando cada parede e cada continuação
+ * como uma parte independente (mesma lógica do resumo de faixas concatenado).
+ *
+ * @param {Array<{ walls?: Array<object> }>} rooms
+ * @returns {number}
+ */
+export function calculatePartsTotalArea(rooms = []) {
+  if (!Array.isArray(rooms)) {
+    return 0;
+  }
+
+  let total = 0;
+
+  rooms.forEach((room) => {
+    if (!Array.isArray(room?.walls)) {
+      return;
+    }
+
+    room.walls.forEach((wall) => {
+      const wallMetric = calculatePartMetrics(wall);
+      if (wallMetric) {
+        total += wallMetric.meters;
+      }
+
+      const enabled = !!(wall?.continueSameArt || wall?.continue_same_art);
+      const continuations =
+        enabled && Array.isArray(wall?.continuations) ? wall.continuations : [];
+
+      continuations.forEach((continuation) => {
+        const continuationMetric = calculatePartMetrics(continuation);
+        if (continuationMetric) {
+          total += continuationMetric.meters;
+        }
+      });
+    });
+  });
+
+  return total;
+}
+
+/**
+ * Calcula métricas de uma "parte" (parede principal OU continuação) tratada
+ * como um único segmento independente (sem carry de outras partes).
+ *
+ * Retorna `null` se largura/altura não forem válidas.
+ */
+export function calculatePartMetrics(part) {
+  const width = Number(part?.width) || 0;
+  const height = Number(part?.height) || 0;
+
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const isolated = { width, height };
+  const strips = calculateStrips(isolated);
+  const stripHeight = calculateStripHeight(isolated);
+  const meters = getWallArea(isolated);
+
+  if (!strips || !stripHeight) {
+    return null;
+  }
+
+  return { strips, stripHeight, meters };
+}
+
 function collapseWallForSequence(wall) {
   // Representa cada parede por 1 segmento para o cálculo sequencial entre paredes:
   // - largura = base + somatório das continuations (se existirem)

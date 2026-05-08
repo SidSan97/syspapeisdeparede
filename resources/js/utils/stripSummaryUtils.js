@@ -1,4 +1,23 @@
-import { calculateWallsSequence } from '@/utils/calculateStripsUtils.js';
+import { calculatePartMetrics, calculateWallsSequence } from '@/utils/calculateStripsUtils.js';
+
+function getWallContinuationsForSummary(wall) {
+  const enabled = !!(wall?.continueSameArt || wall?.continue_same_art);
+  if (!enabled) {
+    return [];
+  }
+  return Array.isArray(wall?.continuations) ? wall.continuations : [];
+}
+
+function pushPartGroup(groups, metrics) {
+  if (!metrics) {
+    return;
+  }
+  const q = Number(metrics.strips ?? 0);
+  const h = Number(metrics.stripHeight ?? 0);
+  if (q > 0 && Number.isFinite(h) && h > 0) {
+    groups.push({ q, h });
+  }
+}
 
 function formatNumberBR(value, decimals = 2) {
   const n = Number(value);
@@ -66,6 +85,40 @@ export function buildStripSummaryFromRooms(rooms = []) {
   return formatStripGroups(groups);
 }
 
+/**
+ * Resumo onde cada parede e cada continuação são contadas como partes
+ * INDEPENDENTES (mesmo cálculo exibido abaixo dos inputs do form).
+ *
+ * Ex.: parede 5F de 1,70m + continuação 2F de 1,20m → "5F de 1,70m + 2F de 1,20m".
+ */
+export function buildStripSummaryFromParts(rooms = []) {
+  if (!Array.isArray(rooms) || rooms.length === 0) {
+    return '';
+  }
+
+  const groups = [];
+
+  rooms.forEach((room) => {
+    if (!Array.isArray(room?.walls) || room.walls.length === 0) {
+      return;
+    }
+
+    room.walls.forEach((wall) => {
+      pushPartGroup(groups, calculatePartMetrics(wall));
+
+      getWallContinuationsForSummary(wall).forEach((continuation) => {
+        pushPartGroup(groups, calculatePartMetrics(continuation));
+      });
+    });
+  });
+
+  return formatStripGroups(groups);
+}
+
+/**
+ * Resumo construído a partir das mesmas funções de cálculo usadas pelo template
+ * de cada view (quantidade e altura por parede).
+ */
 export function buildStripSummaryFromMetrics(rooms = [], getMetrics) {
   if (!Array.isArray(rooms) || rooms.length === 0 || typeof getMetrics !== 'function') {
     return '';

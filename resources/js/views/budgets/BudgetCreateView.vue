@@ -154,6 +154,8 @@
                             </div>
                           </div>
 
+                          <WallPartMetrics :width="wall.width" :height="wall.height" />
+
                           <!-- Continuations -->
                           <div class="mb-3">
                             <template v-if="wall.width && wall.height">
@@ -316,26 +318,14 @@
                                     />
                                   </div>
                                 </div>
+
+                                <WallPartMetrics
+                                  :width="continuation.width"
+                                  :height="continuation.height"
+                                />
                               </div>
                             </div>
                           </div>
-
-                          <!-- Wall Calculation -->
-                          <div class="alert alert-success" v-if="getWallArea(wall) > 0">
-                            <strong>Metros:</strong>
-                            {{ getWallArea(wall).toFixed(2) }}
-                            <br />
-                            <strong>Quantidade de faixas:</strong>
-                            {{ calculateStrips(wall) }}
-                            <br />
-                            <strong>Tamanho da faixa:</strong>
-                            {{ formatStripHeight(wall) }}
-                            m
-                          </div>
-                          <p v-if="formatStripHeight(wall) > 6" class="mb-0 text-danger small">
-                            Obs.:<br />
-                            Faixas maiores que 6 metros são vendidas apenas em pares.
-                          </p>
 
                           <div class="mt-4">
                             <h6 class="mb-3">Definir modelo da parede</h6>
@@ -603,13 +593,11 @@
 import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import Page from '@/components/page/Page.vue';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import WallPartMetrics from '@/components/budget/WallPartMetrics.vue';
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
-import {
-  calculateStripHeight as wallStripHeightForSummary,
-  useBudgetCalculations,
-} from '@/modules/budgets/composables/useBudgetCalculations';
+import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
 import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 import { useBudgetStructure } from '@/modules/budgets/composables/useBudgetStructure';
@@ -618,7 +606,7 @@ import { validateBudget } from '@/modules/budgets/composables/useBudgetValidatio
 import { budgetService } from '@/services/budgetService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
-import { buildStripSummaryFromMetrics } from '@/utils/stripSummaryUtils';
+import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -685,12 +673,7 @@ const {
 } = useBudgetModels(budget);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
-const stripSummary = computed(() =>
-  buildStripSummaryFromMetrics(budget.rooms, (wall) => ({
-    strips: calculateStrips(wall),
-    stripHeight: wallStripHeightForSummary(wall),
-  })),
-);
+const stripSummary = computed(() => buildStripSummaryFromParts(budget.rooms));
 
 const transportDays = computed(() => {
   if (
@@ -712,9 +695,6 @@ const {
   totalBudgetVista,
   totalBudgetPrazo,
   totalBudget,
-  getWallArea,
-  calculateStrips,
-  calculateStripHeight,
   calculateDeliveryTime,
 } = useBudgetCalculations(
   budget,
@@ -734,7 +714,7 @@ const {
   handleContinuationToggle,
 } = useBudgetStructure(budget);
 
-const { formatStripHeight, formatCEP: formatCEPValue } = useBudgetFormatters();
+const { formatCEP: formatCEPValue } = useBudgetFormatters();
 const { formatCurrency } = useFormatting();
 
 // Wrapper para formatCEP que recebe event

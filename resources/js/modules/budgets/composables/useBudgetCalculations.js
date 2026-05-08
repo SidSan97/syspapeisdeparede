@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { createDefaultWall } from './useBudgetUtils';
 import {
+  calculatePartsTotalArea,
   calculateWallsSequence,
   getWallArea as getWallAreaUtils,
   calculateStrips as calculateStripsUtils,
@@ -164,15 +165,7 @@ export function useBudgetCalculations(budget, getModelById, precoVista, precoPra
     return m?.stripHeight ?? calculateStripHeightUtils(wall);
   };
 
-  const totalArea = computed(() => {
-    let area = 0;
-    budget.rooms.forEach((room) => {
-      room.walls.forEach((wall) => {
-        area += getWallAreaSeq(wall);
-      });
-    });
-    return area;
-  });
+  const totalArea = computed(() => calculatePartsTotalArea(budget.rooms));
 
   const totalModelsCost = computed(() => {
     let total = 0;

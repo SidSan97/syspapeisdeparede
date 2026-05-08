@@ -170,6 +170,8 @@
                               </div>
                             </div>
 
+                            <WallPartMetrics :width="wall.width" :height="wall.height" />
+
                             <!-- Continuations -->
                             <div class="mb-3">
                               <template v-if="wall.width && wall.height">
@@ -338,28 +340,14 @@
                                       />
                                     </div>
                                   </div>
+
+                                  <WallPartMetrics
+                                    :width="continuation.width"
+                                    :height="continuation.height"
+                                  />
                                 </div>
                               </div>
                             </div>
-
-                            <!-- Wall Calculation -->
-                            <div class="alert alert-success" v-if="getWallArea(wall) > 0">
-                              <strong>Metro:</strong>
-                              {{ getWallArea(wall).toFixed(2) }}
-                              m
-                              <br />
-                              <strong>Quantidade de faixas:</strong>
-                              {{ calculateStrips(wall) }}
-                              <br />
-                              <strong>Tamanho da faixa:</strong>
-                              {{ formatStripHeight(wall) }}
-                              m
-                            </div>
-
-                            <p v-if="formatStripHeight(wall) > 6" class="mb-0 text-danger small">
-                              Obs.:<br />
-                              Faixas maiores que 6 metros são vendidas apenas em pares.
-                            </p>
 
                             <div class="mt-4">
                               <h6 class="mb-3">Definir modelo da parede</h6>
@@ -854,11 +842,13 @@
 import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import Page from '@/components/page/Page.vue';
 import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import WallPartMetrics from '@/components/budget/WallPartMetrics.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { collectionModelService } from '@/services/collectionModelService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
-import { buildStripSummaryFromMetrics } from '@/utils/stripSummaryUtils';
+import { calculatePartsTotalArea } from '@/utils/calculateStripsUtils.js';
+import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -1162,12 +1152,7 @@ const productModelsMap = computed(() => {
 const getModelById = (id) => productModelsMap.value.get(id);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
-const stripSummary = computed(() =>
-  buildStripSummaryFromMetrics(budget.rooms, (wall) => ({
-    strips: calculateStrips(wall),
-    stripHeight: calculateStripHeight(wall),
-  })),
-);
+const stripSummary = computed(() => buildStripSummaryFromParts(budget.rooms));
 
 const transportDays = computed(() => {
   if (
@@ -1557,15 +1542,7 @@ const totalWalls = computed(() => {
   return budget.rooms.reduce((total, room) => total + room.walls.length, 0);
 });
 
-const totalArea = computed(() => {
-  let area = 0;
-  budget.rooms.forEach((room) => {
-    room.walls.forEach((wall) => {
-      area += getWallArea(wall);
-    });
-  });
-  return area;
-});
+const totalArea = computed(() => calculatePartsTotalArea(budget.rooms));
 
 // Calcular custo dos modelos
 const totalModelsCost = computed(() => {
