@@ -15,7 +15,7 @@
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Metros:</span>
-          <strong>{{ formatNumber(data.total_area) }}</strong>
+          <strong>{{ formatNumber(totalArea) }}</strong>
         </div>
         <div v-if="data.selected_carrier_price" class="d-flex justify-content-between mb-2">
           <span class="text-muted">Frete:</span>
@@ -62,8 +62,9 @@
 import { computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
+import { calculatePartsTotalArea } from '@/utils/calculateStripsUtils.js';
 import { copyBudgetSummary } from '@/utils/copyBudgetSummaryUtils';
-import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
+import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 
 const props = defineProps({
   data: {
@@ -81,7 +82,15 @@ const totalWalls = computed(() => {
     return total + (room.walls?.length || 0);
   }, 0);
 });
-const stripSummary = computed(() => buildStripSummaryFromRooms(props.data?.rooms || []));
+const stripSummary = computed(() => buildStripSummaryFromParts(props.data?.rooms || []));
+
+const totalArea = computed(() => {
+  const rooms = props.data?.rooms;
+  if (Array.isArray(rooms) && rooms.length) {
+    return calculatePartsTotalArea(rooms);
+  }
+  return Number(props.data?.total_area ?? 0);
+});
 
 const freightAmount = computed(() => Number(props.data?.selected_carrier_price ?? 0));
 const artsTotal = computed(() => Number(props.data?.payment_breakdown?.base?.ARTES ?? 0));
@@ -90,7 +99,7 @@ async function copyStripSummary() {
   await copyBudgetSummary(
     {
       totalWalls: totalWalls.value,
-      totalArea: formatNumber(props.data?.total_area || 0),
+      totalArea: formatNumber(totalArea.value),
       totalVista: formatCurrency(props.data?.total_amount || 0),
       totalPrazo: formatCurrency(props.data?.total_amount_installments || 0),
       stripSummary: stripSummary.value || '-',

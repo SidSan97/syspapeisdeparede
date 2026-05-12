@@ -42,81 +42,6 @@ function getAlturaFaixa(alturaParede) {
   return h ?? null;
 }
 
-function mergeConsecutive(groups) {
-  const out = [];
-  for (const g of groups) {
-    if (!g || g.q <= 0) continue;
-    if (out.length && Math.abs(out[out.length - 1].h - g.h) < 1e-9) {
-      out[out.length - 1].q += g.q;
-    } else {
-      out.push({ h: g.h, q: g.q });
-    }
-  }
-  return out;
-}
-
-function mustBeEven(groups, k) {
-  const last = groups.length - 1;
-  const middleRule = k !== 0 && k !== last;
-  const heightRule = groups[k].h > 6.0 + 1e-9;
-  return middleRule || heightRule;
-}
-
-function rebalanceParity(groups) {
-  let changed = true;
-  let safety = 0;
-
-  function findNextGE(k) {
-    const hk = groups[k].h;
-    for (let j = k + 1; j < groups.length; j++) {
-      if (groups[j].h + 1e-9 >= hk) return j;
-    }
-    return -1;
-  }
-
-  while (changed && safety < 800) {
-    safety++;
-    changed = false;
-    groups = mergeConsecutive(groups);
-
-    for (let k = 0; k < groups.length; k++) {
-      if (groups[k].q <= 0) continue;
-
-      if (mustBeEven(groups, k) && groups[k].q % 2 !== 0) {
-        const hk = groups[k].h;
-        const last = groups.length - 1;
-
-        // 1) promover para um grupo à direita com altura >= hk
-        const j = findNextGE(k);
-        if (j !== -1) {
-          groups[k].q -= 1;
-          groups[j].q += 1;
-          groups = mergeConsecutive(groups);
-          changed = true;
-          break;
-        }
-
-        // 2) se só houver alturas menores à direita: puxar do próximo (menor)
-        if (k < last && groups[k + 1].q > 0) {
-          groups[k + 1].q -= 1;
-          groups[k].q += 1;
-          groups = mergeConsecutive(groups);
-          changed = true;
-          break;
-        }
-
-        // 3) fallback (raro): adiciona 1 faixa para garantir paridade
-        groups[k].q += 1;
-        groups = mergeConsecutive(groups);
-        changed = true;
-        break;
-      }
-    }
-  }
-
-  return { groups, safetyExceeded: safety >= 800 };
-}
-
 function getSegments(wall) {
   const segments = [];
 
@@ -138,36 +63,31 @@ function getSegments(wall) {
   return segments;
 }
 
-function computeTotals(wall) {
-  const segments = getSegments(wall);
-  if (!segments.length) {
-    return { totalFaixas: 0, totalMetros: 0, groups: [] };
+
+function computeSequenceFromSegments(segments) {
+  if (!Array.isArray(segments) || segments.length === 0) {
+    return { perPart: [], totalFaixas: 0, totalMetros: 0, groups: [], safetyExceeded: false };
   }
 
-  // Alturas de faixa (h) para cada segmento.
-  const H = [];
-  for (let i = 0; i < segments.length; i++) {
-    const h = getAlturaFaixa(segments[i].A);
-    if (h === null) {
-      return { totalFaixas: 0, totalMetros: 0, groups: [] };
-    }
-    H.push(h);
-  }
+  const H = segments.map((seg) => getAlturaFaixa(seg.A));
 
   let carry = 0.0;
-  const perWall = [];
+  const perPartBase = [];
 
   for (let i = 0; i < segments.length; i++) {
-    const Li = segments[i].L;
+    const Li = Number(segments[i].L) || 0;
     const Hi = H[i];
     const nextH = i < segments.length - 1 ? H[i + 1] : null;
 
-    const LiEfetiva = Li - carry;
+    if (!Hi || !(Li > 0)) {
+      perPartBase.push({ q: 0, h: Hi ?? null });
+      continue;
+    }
 
+    const LiEfetiva = Li - carry;
     if (LiEfetiva <= 1e-12) {
-      // garante progresso mesmo com carry excessivo
       carry = -LiEfetiva;
-      perWall.push({ q: 0, h: Hi });
+      perPartBase.push({ q: 0, h: Hi });
       continue;
     }
 
@@ -175,28 +95,97 @@ function computeTotals(wall) {
     const cobertura = qBruto * STRIP_WIDTH;
     const novoCarry = cobertura - LiEfetiva;
 
-    // subida de altura: próximo segmento tem faixa maior
-    if (i < segments.length - 1 && nextH > Hi + 1e-9 && qBruto > 0) {
+    if (nextH && nextH > Hi + 1e-9 && qBruto > 0) {
       const q = qBruto - 1;
       const cobAgora = q * STRIP_WIDTH;
-      const faltou = LiEfetiva - cobAgora; // > 0
+      const faltou = LiEfetiva - cobAgora;
       carry = -faltou;
-      perWall.push({ q, h: Hi });
+      perPartBase.push({ q, h: Hi });
     } else {
       carry = novoCarry;
-      perWall.push({ q: qBruto, h: Hi });
+      perPartBase.push({ q: qBruto, h: Hi });
     }
   }
 
-  let groups = mergeConsecutive(perWall);
-  const Bres = rebalanceParity(groups);
-  groups = Bres.groups;
-  groups = mergeConsecutive(groups);
+  const groups0 = [];
+  for (let i = 0; i < perPartBase.length; i++) {
+    const { q, h } = perPartBase[i];
+    if (!h || q <= 0) continue;
 
-  const totalFaixas = groups.reduce((s, g) => s + g.q, 0);
-  const totalMetros = groups.reduce((s, g) => s + g.q * g.h, 0);
+    if (groups0.length && Math.abs(groups0[groups0.length - 1].h - h) < 1e-9) {
+      groups0[groups0.length - 1].q += q;
+      groups0[groups0.length - 1].indices.push(i);
+    } else {
+      groups0.push({ h, q, indices: [i] });
+    }
+  }
 
-  return { totalFaixas, totalMetros, groups, safetyExceeded: Bres.safetyExceeded };
+  const Bres = rebalanceParityGroups(groups0);
+  const groupsFinal = mergeConsecutiveGroups(Bres.groups);
+
+  const partStrips = new Array(segments.length).fill(0);
+  const partMeters = new Array(segments.length).fill(0);
+  const partStripHeight = perPartBase.map((p) => p.h ?? null);
+
+  groupsFinal.forEach((g) => {
+    const idxs = g.indices;
+    const qBaseSum = idxs.reduce((s, idx) => s + (perPartBase[idx]?.q ?? 0), 0);
+    if (!qBaseSum) return;
+
+    const exacts = idxs.map((idx) => {
+      const q0 = perPartBase[idx]?.q ?? 0;
+      return { idx, exact: (q0 / qBaseSum) * g.q, base: 0, frac: 0 };
+    });
+
+    let allocatedSum = 0;
+    exacts.forEach((e) => {
+      e.base = Math.floor(e.exact + 1e-9);
+      e.frac = e.exact - e.base;
+      allocatedSum += e.base;
+    });
+
+    const remainder = g.q - allocatedSum;
+    if (remainder > 0) {
+      exacts.sort((a, b) => b.frac - a.frac);
+      for (let r = 0; r < remainder; r++) {
+        exacts[r].base += 1;
+      }
+    } else if (remainder < 0) {
+      exacts.sort((a, b) => a.frac - b.frac);
+      for (let r = 0; r < Math.abs(remainder); r++) {
+        if (exacts[r].base > 0) exacts[r].base -= 1;
+      }
+    }
+
+    exacts.forEach((e) => {
+      partStrips[e.idx] = e.base;
+      const h = partStripHeight[e.idx];
+      partMeters[e.idx] = h ? e.base * h : 0;
+    });
+  });
+
+  const totalFaixas = partStrips.reduce((s, q) => s + q, 0);
+  const totalMetros = partMeters.reduce((s, m) => s + m, 0);
+
+  const perPart = segments.map((_, i) => ({
+    strips: partStrips[i],
+    meters: partMeters[i],
+    stripHeight: partStripHeight[i],
+  }));
+
+  const groups = groupsFinal.map((g) => ({ q: g.q, h: g.h }));
+
+  return { perPart, totalFaixas, totalMetros, groups, safetyExceeded: Bres.safetyExceeded };
+}
+
+function computeTotals(wall) {
+  const r = computeSequenceFromSegments(getSegments(wall));
+  return {
+    totalFaixas: r.totalFaixas,
+    totalMetros: r.totalMetros,
+    groups: r.groups,
+    safetyExceeded: r.safetyExceeded,
+  };
 }
 
 export function getWallArea(wall) {
@@ -216,13 +205,10 @@ export function calculateStripHeight(wall) {
   return totalMetros / totalFaixas;
 }
 
-/**
- * Soma os metros (faixas × altura) considerando cada parede e cada continuação
- * como uma parte independente (mesma lógica do resumo de faixas concatenado).
- *
- * @param {Array<{ walls?: Array<object> }>} rooms
- * @returns {number}
- */
+export function calculateWallWithContinuations(wall) {
+  return computeSequenceFromSegments(getSegments(wall));
+}
+
 export function calculatePartsTotalArea(rooms = []) {
   if (!Array.isArray(rooms)) {
     return 0;
@@ -236,33 +222,13 @@ export function calculatePartsTotalArea(rooms = []) {
     }
 
     room.walls.forEach((wall) => {
-      const wallMetric = calculatePartMetrics(wall);
-      if (wallMetric) {
-        total += wallMetric.meters;
-      }
-
-      const enabled = !!(wall?.continueSameArt || wall?.continue_same_art);
-      const continuations =
-        enabled && Array.isArray(wall?.continuations) ? wall.continuations : [];
-
-      continuations.forEach((continuation) => {
-        const continuationMetric = calculatePartMetrics(continuation);
-        if (continuationMetric) {
-          total += continuationMetric.meters;
-        }
-      });
+      total += calculateWallWithContinuations(wall).totalMetros;
     });
   });
 
   return total;
 }
 
-/**
- * Calcula métricas de uma "parte" (parede principal OU continuação) tratada
- * como um único segmento independente (sem carry de outras partes).
- *
- * Retorna `null` se largura/altura não forem válidas.
- */
 export function calculatePartMetrics(part) {
   const width = Number(part?.width) || 0;
   const height = Number(part?.height) || 0;
@@ -386,8 +352,9 @@ function rebalanceParityGroups(groups) {
 
 /**
  * Calcula de forma sequencial entre paredes (carry/sobra e reequilíbrio de paridade),
- * para bater com a lógica do arquivo HTML `2026-03-04-Calculadora Revenda.html`.
+ * para bater com a lógica do arquivo HTML `Calculadora Revenda.html`.
  *
+ * Cada parede é colapsada (parede + continuações → 1 segmento) antes da sequência.
  * Retorna métricas por parede na ordem original do array.
  */
 export function calculateWallsSequence(walls) {
@@ -396,126 +363,12 @@ export function calculateWallsSequence(walls) {
   }
 
   const collapsed = walls.map((w) => collapseWallForSequence(w));
-
-  // Alturas de faixa h[i] (uma para cada parede colapsada)
-  const H = collapsed.map((seg) => getAlturaFaixa(seg.A));
-
-  // Passo A: paredes -> (q,h) por parede, com carry e subida de altura
-  let carry = 0.0;
-  const perWallBase = [];
-  for (let i = 0; i < collapsed.length; i++) {
-    const Li = collapsed[i].L;
-    const Hi = H[i];
-    const nextH = i < collapsed.length - 1 ? H[i + 1] : null;
-
-    // Se não há largura e/ou não existe faixa de altura (ex.: A inválida),
-    // tratamos como 0 e não contribuímos para grupos.
-    if (!Hi || !(Li > 0)) {
-      perWallBase.push({ q: 0, h: Hi ?? null });
-      continue;
-    }
-
-    const LiEfetiva = Li - carry;
-    if (LiEfetiva <= 1e-12) {
-      carry = -LiEfetiva;
-      perWallBase.push({ q: 0, h: Hi });
-      continue;
-    }
-
-    const qBruto = Math.ceil(LiEfetiva / STRIP_WIDTH);
-    const cobertura = qBruto * STRIP_WIDTH;
-    const novoCarry = cobertura - LiEfetiva;
-
-    if (nextH && nextH > Hi + 1e-9 && qBruto > 0) {
-      const q = qBruto - 1;
-      const cobAgora = q * STRIP_WIDTH;
-      const faltou = LiEfetiva - cobAgora;
-      carry = -faltou;
-      perWallBase.push({ q, h: Hi });
-    } else {
-      carry = novoCarry;
-      perWallBase.push({ q: qBruto, h: Hi });
-    }
-  }
-
-  // Passo B: merge -> grupos com índices das paredes que contribuíram
-  const groups0 = [];
-  for (let i = 0; i < perWallBase.length; i++) {
-    const { q, h } = perWallBase[i];
-    if (!h || q <= 0) continue;
-
-    if (groups0.length && Math.abs(groups0[groups0.length - 1].h - h) < 1e-9) {
-      groups0[groups0.length - 1].q += q;
-      groups0[groups0.length - 1].indices.push(i);
-    } else {
-      groups0.push({ h, q, indices: [i] });
-    }
-  }
-
-  const Bres = rebalanceParityGroups(groups0);
-  const groupsFinal = mergeConsecutiveGroups(Bres.groups);
-
-  // Distribuir q ajustado de volta para cada parede do grupo (proporcional ao q base)
-  const wallStrips = new Array(walls.length).fill(0);
-  const wallMeters = new Array(walls.length).fill(0);
-  const wallStripHeight = perWallBase.map((p) => p.h ?? null);
-
-  groupsFinal.forEach((g) => {
-    const idxs = g.indices;
-    const qBaseSum = idxs.reduce((s, idx) => s + (perWallBase[idx]?.q ?? 0), 0);
-    if (!qBaseSum) return;
-
-    const exacts = idxs.map((idx) => {
-      const q0 = perWallBase[idx]?.q ?? 0;
-      return {
-        idx,
-        exact: (q0 / qBaseSum) * g.q,
-        base: 0,
-        frac: 0,
-      };
-    });
-
-    let allocatedSum = 0;
-    exacts.forEach((e) => {
-      e.base = Math.floor(e.exact + 1e-9);
-      e.frac = e.exact - e.base;
-      allocatedSum += e.base;
-    });
-
-    let remainder = g.q - allocatedSum;
-    if (remainder > 0) {
-      exacts.sort((a, b) => b.frac - a.frac);
-      for (let r = 0; r < remainder; r++) {
-        exacts[r].base += 1;
-      }
-    } else if (remainder < 0) {
-      // Ajuste defensivo: reduz nos menores frac
-      exacts.sort((a, b) => a.frac - b.frac);
-      for (let r = 0; r < Math.abs(remainder); r++) {
-        if (exacts[r].base > 0) exacts[r].base -= 1;
-      }
-    }
-
-    exacts.forEach((e) => {
-      wallStrips[e.idx] = e.base;
-      const h = wallStripHeight[e.idx];
-      wallMeters[e.idx] = h ? e.base * h : 0;
-    });
-  });
-
-  const totalFaixas = wallStrips.reduce((s, q) => s + q, 0);
-  const totalMetros = wallMeters.reduce((s, m) => s + m, 0);
-
-  const perWall = walls.map((_, i) => ({
-    strips: wallStrips[i],
-    meters: wallMeters[i],
-    stripHeight: wallStripHeight[i],
-  }));
+  const r = computeSequenceFromSegments(collapsed);
 
   return {
-    perWall,
-    totalFaixas,
-    totalMetros,
-    safetyExceeded: Bres.safetyExceeded,
+    perWall: r.perPart,
+    totalFaixas: r.totalFaixas,
+    totalMetros: r.totalMetros,
+    safetyExceeded: r.safetyExceeded,
   };
 }

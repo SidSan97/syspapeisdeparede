@@ -1,23 +1,7 @@
-import { calculatePartMetrics, calculateWallsSequence } from '@/utils/calculateStripsUtils.js';
-
-function getWallContinuationsForSummary(wall) {
-  const enabled = !!(wall?.continueSameArt || wall?.continue_same_art);
-  if (!enabled) {
-    return [];
-  }
-  return Array.isArray(wall?.continuations) ? wall.continuations : [];
-}
-
-function pushPartGroup(groups, metrics) {
-  if (!metrics) {
-    return;
-  }
-  const q = Number(metrics.strips ?? 0);
-  const h = Number(metrics.stripHeight ?? 0);
-  if (q > 0 && Number.isFinite(h) && h > 0) {
-    groups.push({ q, h });
-  }
-}
+import {
+  calculateWallWithContinuations,
+  calculateWallsSequence,
+} from '@/utils/calculateStripsUtils.js';
 
 function formatNumberBR(value, decimals = 2) {
   const n = Number(value);
@@ -30,42 +14,28 @@ function formatNumberBR(value, decimals = 2) {
   });
 }
 
-function mergeConsecutiveGroups(groups) {
-  const out = [];
-  groups.forEach((group) => {
-    if (!group || group.q <= 0 || !Number.isFinite(group.h) || group.h <= 0) {
-      return;
-    }
-    const last = out[out.length - 1];
-    if (last && Math.abs(last.h - group.h) < 1e-9) {
-      last.q += group.q;
-      return;
-    }
-    out.push({ q: group.q, h: group.h });
-  });
-  return out;
-}
-
-function formatStripGroups(groups) {
-  const merged = mergeConsecutiveGroups(groups);
-  if (!merged.length) {
+function formatGroups(groups) {
+  if (!Array.isArray(groups) || !groups.length) {
     return '';
   }
-  return merged.map((g) => `${g.q}F de ${formatNumberBR(g.h, 2)}m`).join(' + ');
+  return groups
+    .filter((g) => g && g.q > 0 && Number.isFinite(g.h) && g.h > 0)
+    .map((g) => `${g.q}F de ${formatNumberBR(g.h, 2)}m`)
+    .join(' + ');
 }
 
 /**
- * Resumo construído pela sequência de paredes (carry entre paredes).
- * Use quando o cálculo individual também usa `calculateWallsSequence`.
+ * Resumo construído pela sequência de paredes (carry entre paredes colapsadas).
+ * Cada parede é representada por 1 segmento (parede + continuações colapsadas).
  *
- * Formato: "1F de 2,50m + 4F de 3,00m + 2F de 1,50m"
+ * Mantido para compatibilidade com fluxos legados.
  */
 export function buildStripSummaryFromRooms(rooms = []) {
   if (!Array.isArray(rooms) || rooms.length === 0) {
     return '';
   }
 
-  const groups = [];
+  const parts = [];
 
   rooms.forEach((room) => {
     if (!Array.isArray(room?.walls) || room.walls.length === 0) {
@@ -77,26 +47,30 @@ export function buildStripSummaryFromRooms(rooms = []) {
       const q = Number(metric?.strips ?? 0);
       const h = Number(metric?.stripHeight ?? 0);
       if (q > 0 && Number.isFinite(h) && h > 0) {
-        groups.push({ q, h });
+        parts.push({ q, h });
       }
     });
   });
 
-  return formatStripGroups(groups);
+  return formatGroups(parts);
 }
 
 /**
- * Resumo onde cada parede e cada continuação são contadas como partes
- * INDEPENDENTES (mesmo cálculo exibido abaixo dos inputs do form).
+ * Concatena o resumo de todas as paredes do orçamento.
  *
- * Ex.: parede 5F de 1,70m + continuação 2F de 1,20m → "5F de 1,70m + 2F de 1,20m".
+ * - Paredes diferentes são processadas de forma INDEPENDENTE.
+ * - Dentro de cada parede, a parede principal + continuações seguem o algoritmo
+ *   da Calculadora do Revendedor (carry, merge consecutivo, paridade).
+ *
+ * Ex.: parede com 5F de 1,70m e continuação que vira 2F de 1,20m →
+ *   "5F de 1,70m + 2F de 1,20m".
  */
 export function buildStripSummaryFromParts(rooms = []) {
   if (!Array.isArray(rooms) || rooms.length === 0) {
     return '';
   }
 
-  const groups = [];
+  const segments = [];
 
   rooms.forEach((room) => {
     if (!Array.isArray(room?.walls) || room.walls.length === 0) {
@@ -104,15 +78,14 @@ export function buildStripSummaryFromParts(rooms = []) {
     }
 
     room.walls.forEach((wall) => {
-      pushPartGroup(groups, calculatePartMetrics(wall));
-
-      getWallContinuationsForSummary(wall).forEach((continuation) => {
-        pushPartGroup(groups, calculatePartMetrics(continuation));
+      const sequence = calculateWallWithContinuations(wall);
+      sequence.groups.forEach((g) => {
+        segments.push({ q: g.q, h: g.h });
       });
     });
   });
 
-  return formatStripGroups(groups);
+  return formatGroups(segments);
 }
 
 /**
@@ -141,5 +114,5 @@ export function buildStripSummaryFromMetrics(rooms = [], getMetrics) {
     });
   });
 
-  return formatStripGroups(groups);
+  return formatGroups(groups);
 }

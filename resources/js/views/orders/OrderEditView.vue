@@ -170,7 +170,7 @@
                               </div>
                             </div>
 
-                            <WallPartMetrics :width="wall.width" :height="wall.height" />
+                            <WallPartMetrics :metrics="getWallPartMetrics(wall, 0)" />
 
                             <!-- Continuations -->
                             <div class="mb-3">
@@ -342,8 +342,7 @@
                                   </div>
 
                                   <WallPartMetrics
-                                    :width="continuation.width"
-                                    :height="continuation.height"
+                                    :metrics="getWallPartMetrics(wall, continuationIndex + 1)"
                                   />
                                 </div>
                               </div>
@@ -847,7 +846,10 @@ import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue'
 import { collectionModelService } from '@/services/collectionModelService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
-import { calculatePartsTotalArea } from '@/utils/calculateStripsUtils.js';
+import {
+  calculatePartsTotalArea,
+  calculateWallWithContinuations,
+} from '@/utils/calculateStripsUtils.js';
 import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -1153,6 +1155,22 @@ const getModelById = (id) => productModelsMap.value.get(id);
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
 const stripSummary = computed(() => buildStripSummaryFromParts(budget.rooms));
+
+const wallSequenceMap = computed(() => {
+  const map = new WeakMap();
+  budget.rooms.forEach((room) => {
+    if (!Array.isArray(room?.walls)) return;
+    room.walls.forEach((wall) => {
+      map.set(wall, calculateWallWithContinuations(wall));
+    });
+  });
+  return map;
+});
+
+function getWallPartMetrics(wall, partIndex) {
+  const seq = wallSequenceMap.value.get(wall);
+  return seq?.perPart?.[partIndex] ?? null;
+}
 
 const transportDays = computed(() => {
   if (

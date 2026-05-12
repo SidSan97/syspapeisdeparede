@@ -173,7 +173,7 @@
                               </div>
                             </div>
 
-                            <WallPartMetrics :width="wall.width" :height="wall.height" />
+                            <WallPartMetrics :metrics="getWallPartMetrics(wall, 0)" />
 
                             <!-- Continuations -->
                             <div class="mb-3">
@@ -347,8 +347,7 @@
                                 </div>
 
                                 <WallPartMetrics
-                                  :width="continuation.width"
-                                  :height="continuation.height"
+                                  :metrics="getWallPartMetrics(wall, continuationIndex + 1)"
                                 />
                               </div>
                             </div>
@@ -625,7 +624,10 @@ import WallPartMetrics from '@/components/budget/WallPartMetrics.vue';
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
-import { useBudgetCalculations } from '@/modules/budgets/composables/useBudgetCalculations';
+import {
+  calculateStripHeight as wallStripHeightForSummary,
+  useBudgetCalculations,
+} from '@/modules/budgets/composables/useBudgetCalculations';
 import { useBudgetEditState } from '@/modules/budgets/composables/useBudgetEditState';
 import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetFormatters';
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
@@ -635,6 +637,7 @@ import { validateBudget } from '@/modules/budgets/composables/useBudgetValidatio
 import { budgetService } from '@/services/budgetService';
 import { useAuthStore } from '@/stores/auth';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
+import { calculateWallWithContinuations } from '@/utils/calculateStripsUtils.js';
 import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -706,6 +709,22 @@ const {
 
 const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
 const stripSummary = computed(() => buildStripSummaryFromParts(budget.rooms));
+
+const wallSequenceMap = computed(() => {
+  const map = new WeakMap();
+  budget.rooms.forEach((room) => {
+    if (!Array.isArray(room?.walls)) return;
+    room.walls.forEach((wall) => {
+      map.set(wall, calculateWallWithContinuations(wall));
+    });
+  });
+  return map;
+});
+
+function getWallPartMetrics(wall, partIndex) {
+  const seq = wallSequenceMap.value.get(wall);
+  return seq?.perPart?.[partIndex] ?? null;
+}
 
 const transportDays = computed(() => {
   if (
