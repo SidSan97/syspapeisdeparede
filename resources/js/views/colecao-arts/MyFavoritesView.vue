@@ -1,123 +1,121 @@
 <template>
   <section class="content">
     <Page title="Meus Favoritos" back-to="/colecao-arts">
-      <div class="container py-4">
-        <div v-if="images.length" class="mb-3 py-2 d-flex align-items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            class="btn btn-primary"
-            :disabled="selectedIds.size === 0 || downloading"
-            @click="downloadSelected"
-            title="Baixar imagens selecionadas"
-          >
-            <IconDownload :size="18" />
+      <div v-if="images.length" class="mb-3 py-2 d-flex align-items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="selectedIds.size === 0 || downloading"
+          @click="downloadSelected"
+          title="Baixar imagens selecionadas"
+        >
+          <IconDownload :size="18" />
 
-            {{ downloading ? 'Baixando...' : 'Baixar selecionadas' }}
-            <span v-if="selectedIds.size > 0">({{ selectedIds.size }})</span>
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-default btn-sm"
-            :disabled="downloading"
-            @click="selectAll"
-            title="Marcar todas as fotos"
-          >
-            <IconChecks :size="18" />
+          {{ downloading ? 'Baixando...' : 'Baixar selecionadas' }}
+          <span v-if="selectedIds.size > 0">({{ selectedIds.size }})</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-default btn-sm"
+          :disabled="downloading"
+          @click="selectAll"
+          title="Marcar todas as fotos"
+        >
+          <IconChecks :size="18" />
 
-            Marcar todas
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-default btn-sm"
-            :disabled="selectedIds.size === 0 || downloading"
-            @click="clearSelection"
-            title="Desmarcar todas as fotos"
-          >
-            <IconX :size="18" />
+          Marcar todas
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-default btn-sm"
+          :disabled="selectedIds.size === 0 || downloading"
+          @click="clearSelection"
+          title="Desmarcar todas as fotos"
+        >
+          <IconX :size="18" />
 
-            Desmarcar todas
-          </button>
-        </div>
-        <div v-if="loading" class="text-center text-muted py-5">Carregando imagens...</div>
-        <div v-else-if="!images.length" class="text-center text-muted py-5">
-          Nenhuma imagem favoritada ainda.
-        </div>
-        <div v-else class="image-gallery">
-          <figure
-            v-for="image in images"
-            :key="image.id"
-            class="image-gallery__item"
-            :class="{ 'is-selected': selectedIds.has(image.id) }"
-          >
-            <div class="form-check position-absolute top-0 start-0 m-2 z-2" @click.stop>
+          Desmarcar todas
+        </button>
+      </div>
+      <div v-if="!images.length" class="text-center text-muted py-5">
+        Nenhuma imagem favoritada ainda.
+      </div>
+      <div v-else class="image-gallery">
+        <div
+          v-for="image in images"
+          :key="image.id"
+          class="card image-gallery__item"
+          :class="{ 'is-selected': selectedIds.has(image.id) }"
+        >
+          <div class="ratio ratio-4x3 position-relative">
+            <img
+              class="card-img-top rounded-top"
+              :src="image.url"
+              :alt="image.name || image.path_name"
+              :title="image.name || image.path_name"
+              loading="lazy"
+              @error="handleImageError($event)"
+              @click="openModal(image)"
+            />
+
+            <div class="overlay-gradient d-flex flex-column justify-content-end text-white">
+              <div class="text-end position-absolute top-0 start-0 end-0 p-3">
+                <button class="btn btn-subtle" type="button" @click.stop="toggleFavorite(image)">
+                  <i class="fas fa-heart fa-lg text-danger"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer d-flex">
+            <div class="form-check me-auto" @click.stop>
               <input
                 type="checkbox"
                 class="form-check-input"
+                :id="`select-${image.id}`"
                 :value="image.id"
                 :checked="selectedIds.has(image.id)"
                 @change="toggleSelection(image.id)"
               />
-            </div>
-            <div class="image-gallery__image-wrapper">
-              <img
-                :src="image.url"
-                :alt="image.name || image.path_name"
-                :title="image.name || image.path_name"
-                loading="lazy"
-                @error="handleImageError($event)"
-                @click="openModal(image)"
-              />
-              <button
-                type="button"
-                class="image-gallery__favorite-btn is-favorited"
-                @click.stop="toggleFavorite(image)"
-                title="Remover dos favoritos"
-              >
-                <IconHeart :size="18" />
-              </button>
-            </div>
-            <figcaption v-if="image.name" class="image-gallery__caption">
-              {{ image.name }}
-            </figcaption>
-          </figure>
-        </div>
 
-        <Teleport to="body">
-          <div v-if="modalImage" class="image-modal" @click.self="closeModal">
-            <div class="image-modal__content">
-              <button type="button" class="image-modal__close" @click="closeModal">
-                <IconX :size="18" />
-              </button>
-              <img
-                :src="modalImage.url"
-                :alt="modalImage.name || modalImage.path_name"
-                @error="handleImageError($event)"
-              />
+              <label class="form-check-label" :for="`select-${image.id}`">Selecionar</label>
             </div>
           </div>
-        </Teleport>
+        </div>
       </div>
+
+      <Teleport to="body">
+        <div v-if="modalImage" class="image-modal" @click.self="closeModal">
+          <div class="image-modal__content">
+            <button type="button" class="image-modal__close" @click="closeModal">
+              <IconX :size="18" />
+            </button>
+            <img
+              :src="modalImage.url"
+              :alt="modalImage.name || modalImage.path_name"
+              @error="handleImageError($event)"
+            />
+          </div>
+        </div>
+      </Teleport>
     </Page>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { IconChecks, IconDownload, IconHeart, IconX } from '@tabler/icons-vue';
 import Page from '@/components/page/Page.vue';
+import { useCollectionFavoritesStore } from '@/stores/collectionFavoritesStore';
 import {
   useFavoriteImagesService,
   DEFAULT_COVER,
 } from '@/modules/collection-favorites-images/services/favoriteImages';
 
-const {
-  fetchFavoriteImages: fetchFavoriteImagesApi,
-  toggleFavorite: toggleFavoriteApi,
-  downloadImages,
-} = useFavoriteImagesService();
+const { downloadImages } = useFavoriteImagesService();
+const favoritesStore = useCollectionFavoritesStore();
 
-const loading = ref(false);
-const images = ref([]);
+const images = computed(() => favoritesStore.favorites);
 const modalImage = ref(null);
 const selectedIds = ref(new Set());
 const downloading = ref(false);
@@ -140,37 +138,9 @@ const clearSelection = () => {
   selectedIds.value = new Set();
 };
 
-const fetchFavoriteImages = async () => {
-  loading.value = true;
-  try {
-    images.value = await fetchFavoriteImagesApi();
-  } catch {
-    images.value = [];
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Não foi possível carregar suas imagens favoritas.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  } finally {
-    loading.value = false;
-  }
-};
-
-const toggleFavorite = async (image) => {
-  try {
-    const isFavorited = await toggleFavoriteApi(image.id);
-    if (!isFavorited) {
-      images.value = images.value.filter((img) => img.id !== image.id);
-    }
-  } catch {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Não foi possível remover o favorito. Tente novamente.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  }
+const toggleFavorite = (image) => {
+  favoritesStore.remove(image.id);
+  selectedIds.value = new Set([...selectedIds.value].filter((id) => id !== image.id));
 };
 
 const downloadSelected = async () => {
@@ -209,7 +179,6 @@ const closeModal = () => {
 };
 
 onMounted(() => {
-  fetchFavoriteImages();
   document.title = 'Meus Favoritos';
 });
 </script>
@@ -224,18 +193,6 @@ onMounted(() => {
   .image-gallery {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
-}
-
-.image-gallery__item {
-  margin: 0;
-  border-radius: 1rem;
-  overflow: hidden;
-  border: 1px solid var(--bs-border-color);
-  position: relative;
-  background: var(--bs-secondary-bg);
-  cursor: zoom-in;
-  display: flex;
-  flex-direction: column;
 }
 
 .image-gallery__item.is-selected {
@@ -256,10 +213,6 @@ onMounted(() => {
   object-fit: cover;
   transition: transform 0.3s ease;
   display: block;
-}
-
-.image-gallery__item:hover img {
-  transform: scale(1.05);
 }
 
 .image-gallery__caption {
@@ -365,8 +318,9 @@ onMounted(() => {
   opacity: 0.85;
 }
 
-.form-check-input {
-  width: 25px;
-  height: 25px;
+.overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 60%);
 }
 </style>

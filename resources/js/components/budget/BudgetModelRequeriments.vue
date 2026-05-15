@@ -338,7 +338,7 @@ watch(
 const DEFAULT_COVER = '/assets/img/no-image.jpg';
 
 function getImageUrl(image) {
-  const url = image?.url ?? image?.path_name ?? image?.pathName;
+  const url = image?.url ?? image?.still_url ?? image?.path_name ?? image?.pathName;
   if (url && (url.startsWith('/') || /^https?:\/\//i.test(url))) return url;
   if (url)
     return `${window.location.origin.replace(/\/$/, '')}/storage/${String(url).replace(/^storage\//, '')}`;

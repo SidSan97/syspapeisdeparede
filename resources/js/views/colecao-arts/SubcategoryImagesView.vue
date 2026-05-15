@@ -5,97 +5,90 @@
         <CollectionActions @saved="() => fetchSubcategoryImages(route.params.id)" />
       </template>
 
-      <div class="container py-4">
-        <!-- Busca -->
-        <div v-if="!loading && images.length" class="row mb-4">
-          <div class="col-12 col-md-6 col-lg-4">
-            <div class="input-group input-group-prefix">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Pesquisar"
-                v-model="searchTerm"
-              />
-              <span class="input-group-text">
-                <IconSearch :size="18" />
-              </span>
-            </div>
+      <!-- Busca -->
+      <div v-if="!loading && images.length" class="row mb-4">
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="input-group input-group-prefix">
+            <input type="text" class="form-control" placeholder="Pesquisar" v-model="searchTerm" />
+            <span class="input-group-text">
+              <IconSearch :size="18" />
+            </span>
           </div>
         </div>
-
-        <div v-if="loading" class="text-center text-muted py-5">Carregando imagens...</div>
-        <div v-else-if="!images.length" class="text-center text-muted py-5">
-          Nenhuma imagem cadastrada nesta categoria.
-        </div>
-        <div v-else>
-          <div v-if="!filteredImages.length" class="text-center text-muted py-5">
-            <p class="mb-0">
-              Nenhuma imagem encontrada para
-              <strong v-if="searchTerm">"{{ searchTerm }}"</strong>
-              <span v-else>os filtros atuais.</span>
-            </p>
-          </div>
-
-          <div v-else>
-            <div class="row">
-              <div v-for="image in filteredImages" :key="image.id" class="col-12 col-sm-6 col-md-4">
-                <CollectionCard
-                  :src="asset(image.url)"
-                  :title="image.name || image.path_name"
-                  @on-cover-click="openModal(image)"
-                >
-                  <template #actions>
-                    <div class="d-flex justify-content-between w-100">
-                      <!-- Compartilhar via WhatsApp -->
-                      <button
-                        type="button"
-                        class="btn btn-success"
-                        @click.stop="shareOnWhatsApp(image)"
-                        :title="`Compartilhar ${image.name || 'imagem'} no WhatsApp`"
-                      >
-                        Compartilhar
-
-                        <IconBrandWhatsapp :size="18" class="ms-2" />
-                      </button>
-
-                      <!-- Favorito (somente logado) -->
-                      <button
-                        v-if="isLoggedIn"
-                        type="button"
-                        class="image-gallery__favorite-btn"
-                        :class="{
-                          'is-favorited': image.is_favorited,
-                        }"
-                        @click.stop="toggleFavorite(image)"
-                        :title="
-                          image.is_favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
-                        "
-                      >
-                        <IconHeart :size="18" />
-                      </button>
-                    </div>
-                  </template>
-                </CollectionCard>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Teleport to="body">
-          <div v-if="modalImage" class="image-modal" @click.self="closeModal">
-            <div class="image-modal__content">
-              <button type="button" class="image-modal__close" @click="closeModal">
-                <IconX :size="18" />
-              </button>
-              <img
-                :src="modalImage.url"
-                :alt="modalImage.name || modalImage.path_name"
-                @error="handleImageError($event)"
-              />
-            </div>
-          </div>
-        </Teleport>
       </div>
+
+      <div v-if="loading" class="text-center text-muted py-5">Carregando imagens...</div>
+      <div v-else-if="!images.length" class="text-center text-muted py-5">
+        Nenhuma imagem cadastrada nesta categoria.
+      </div>
+      <div v-else>
+        <div v-if="!filteredImages.length" class="text-center text-muted py-5">
+          <p class="mb-0">
+            Nenhuma imagem encontrada para
+            <strong v-if="searchTerm">"{{ searchTerm }}"</strong>
+            <span v-else>os filtros atuais.</span>
+          </p>
+        </div>
+
+        <div v-else>
+          <div class="row">
+            <div v-for="item in galleryItems" :key="item._key" class="col-12 col-sm-6 col-md-4">
+              <CollectionCard
+                :src="asset(item.url)"
+                :title="item.name || item.path_name"
+                @on-cover-click="openModal(item)"
+              >
+                <template #actions>
+                  <div class="d-flex justify-content-between w-100">
+                    <!-- Compartilhar via WhatsApp -->
+                    <button
+                      type="button"
+                      class="btn btn-success"
+                      @click.stop="shareOnWhatsApp(item)"
+                      :title="`Compartilhar ${item.name || 'imagem'} no WhatsApp`"
+                    >
+                      <IconBrandWhatsapp :size="18" />
+
+                      Compartilhar
+                    </button>
+
+                    <!-- Favorito: apenas para imagens de capa -->
+                    <button
+                      v-if="!item._isStill"
+                      type="button"
+                      class="image-gallery__favorite-btn"
+                      :class="{ 'is-favorited': favoritesStore.isFavorited(item.id) }"
+                      @click.stop="toggleFavorite(item)"
+                      :title="
+                        favoritesStore.isFavorited(item.id)
+                          ? 'Remover dos favoritos'
+                          : 'Adicionar aos favoritos'
+                      "
+                    >
+                      <IconHeart :size="18" />
+                    </button>
+                  </div>
+                </template>
+              </CollectionCard>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Teleport to="body">
+        <div v-if="modalImage" class="image-modal" @click.self="closeModal">
+          <div class="image-modal__content">
+            <button type="button" class="image-modal__close" @click="closeModal">
+              <IconX :size="18" />
+            </button>
+            <img
+              :src="modalImage.url"
+              :alt="modalImage.name || modalImage.path_name"
+              @error="handleImageError($event)"
+            />
+          </div>
+        </div>
+      </Teleport>
     </Page>
   </section>
 </template>
@@ -104,6 +97,7 @@
 import Page from '@/components/page/Page.vue';
 import { http } from '@/lib/http';
 import { useAuthStore } from '@/stores/auth';
+import { useCollectionFavoritesStore } from '@/stores/collectionFavoritesStore';
 import { IconBrandWhatsapp, IconHeart, IconSearch, IconX } from '@tabler/icons-vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -116,8 +110,8 @@ const DEFAULT_COVER = '/assets/img/no-image.jpg';
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const favoritesStore = useCollectionFavoritesStore();
 const isAdmin = computed(() => auth.hasPermission('manage collections'));
-const isLoggedIn = computed(() => !!auth.user);
 const loading = ref(false);
 const images = ref([]);
 const modalImage = ref(null);
@@ -156,7 +150,7 @@ const normalizeImage = (image) => ({
   name: image.name ?? '',
   path_name: image.path_name ?? image.pathName ?? '',
   url: resolveImageUrl(image.url, image.path_name ?? image.pathName ?? ''),
-  is_favorited: image.is_favorited ?? false,
+  still_url: image.still_url ? resolveImageUrl(image.still_url, '') : null,
 });
 
 const filteredImages = computed(() => {
@@ -170,6 +164,30 @@ const filteredImages = computed(() => {
     const name = (image.name || image.path_name || '').toString().toLowerCase();
     return name.includes(term);
   });
+});
+
+/**
+ * Expande cada imagem em até 2 itens: cover primeiro, STILL em seguida.
+ * Itens STILL recebem _isStill: true para suprimir o botão de favorito.
+ */
+const galleryItems = computed(() => {
+  const result = [];
+
+  for (const image of filteredImages.value) {
+    result.push({ ...image, _key: `${image.id}-cover`, _isStill: false });
+
+    if (image.still_url) {
+      result.push({
+        ...image,
+        url: image.still_url,
+        name: image.name ? `${image.name} (STILL)` : 'STILL',
+        _key: `${image.id}-still`,
+        _isStill: true,
+      });
+    }
+  }
+
+  return result;
 });
 
 const fetchSubcategoryImages = async (categoryId) => {
@@ -189,25 +207,7 @@ const fetchSubcategoryImages = async (categoryId) => {
     }
 
     const imagesList = Array.isArray(payload.images) ? payload.images : [];
-    const normalizedImages = imagesList.map(normalizeImage);
-
-    // Check favorite status para usuários logados
-    if (isLoggedIn.value) {
-      await Promise.all(
-        normalizedImages.map(async (image) => {
-          try {
-            const { data: favoriteData } = await http.get(
-              `v1/collection-images/${image.id}/check-favorite`,
-            );
-            image.is_favorited = favoriteData?.data?.is_favorited ?? false;
-          } catch (error) {
-            image.is_favorited = false;
-          }
-        }),
-      );
-    }
-
-    images.value = normalizedImages;
+    images.value = imagesList.map(normalizeImage);
   } catch (error) {
     images.value = [];
     window.Swal.fire({
@@ -233,18 +233,8 @@ const closeModal = () => {
   modalImage.value = null;
 };
 
-const toggleFavorite = async (image) => {
-  try {
-    const { data } = await http.post(`v1/collection-images/${image.id}/toggle-favorite`);
-    image.is_favorited = data?.data?.is_favorited ?? false;
-  } catch (error) {
-    window.Swal.fire({
-      title: 'Erro!',
-      text: 'Não foi possível atualizar o favorito. Tente novamente.',
-      icon: 'error',
-      confirmButtonText: 'Entendi!',
-    });
-  }
+const toggleFavorite = (image) => {
+  favoritesStore.toggle(image);
 };
 
 const shareOnWhatsApp = (image) => {

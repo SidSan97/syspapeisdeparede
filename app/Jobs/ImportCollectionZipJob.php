@@ -17,6 +17,7 @@ class ImportCollectionZipJob implements ShouldQueue
     use Queueable;
 
     public int $timeout = 3600;
+
     public int $tries = 1;
 
     public function __construct(
@@ -32,7 +33,7 @@ class ImportCollectionZipJob implements ShouldQueue
             $result = $this->processZip();
 
             Cache::put("import_job:{$this->importId}", [
-                'state'  => 'completed',
+                'state' => 'completed',
                 'result' => $result,
             ], now()->addHours(2));
 
@@ -45,8 +46,8 @@ class ImportCollectionZipJob implements ShouldQueue
 
             Log::error('[ImportCollectionZipJob] Falhou', [
                 'import_id' => $this->importId,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         } finally {
             if (file_exists($this->zipPath)) {
@@ -57,7 +58,7 @@ class ImportCollectionZipJob implements ShouldQueue
 
     private function processZip(): array
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($this->zipPath) !== true) {
             throw new \RuntimeException('Não foi possível abrir o arquivo ZIP.');
@@ -66,80 +67,73 @@ class ImportCollectionZipJob implements ShouldQueue
         try {
             $offset = $this->detectOffset($zip);
 
+            // Pass 1: Construir mapas separados — capas de categoria e imagens normais
+            [$entryMap, $coverMap] = $this->buildEntryMap($zip, $offset);
+
             $stats = [
-                'categories_created'    => 0,
-                'categories_found'      => 0,
+                'categories_created' => 0,
+                'categories_found' => 0,
                 'subcategories_created' => 0,
-                'subcategories_found'   => 0,
-                'images_imported'       => 0,
-                'images_skipped'        => 0,
+                'subcategories_found' => 0,
+                'covers_set' => 0,
+                'images_imported' => 0,
+                'images_skipped' => 0,
             ];
 
-            // Caches para evitar queries repetidas por nome
-            $categoryCache    = [];
+            $categoryCache = [];
             $subcategoryCache = [];
 
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $entryName = $zip->getNameIndex($i);
+            // Pass 2a: Definir image_cover nas subcategorias
+            foreach ($coverMap as $item) {
+                [, $subcategory] = $this->resolveCategories(
+                    $item['categoryName'],
+                    $item['subcategoryName'],
+                    $categoryCache,
+                    $subcategoryCache,
+                    $stats,
+                );
 
-                // Entradas de diretório
-                if (str_ends_with($entryName, '/')) {
-                    continue;
-                }
+                $path = $this->storeEntry($zip, $item['entry'], $item['ext']);
 
-                $parts = $this->parseParts($entryName, $offset);
-
-                if ($parts === null) {
-                    continue;
-                }
-
-                [$categoryName, $subcategoryName, $filename] = $parts;
-
-                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-                if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                if ($path === null) {
                     $stats['images_skipped']++;
+
                     continue;
                 }
 
-                // Categoria raiz
-                $catKey = mb_strtolower($categoryName);
-                if (! isset($categoryCache[$catKey])) {
-                    [$cat, $created] = $this->firstOrCreateCategory($categoryName, null);
-                    $categoryCache[$catKey] = $cat;
-                    $created ? $stats['categories_created']++ : $stats['categories_found']++;
-                }
-                $category = $categoryCache[$catKey];
+                $subcategory->update(['image_cover' => $path]);
+                $stats['covers_set']++;
+            }
 
-                // Subcategoria
-                $subKey = mb_strtolower("{$categoryName}/{$subcategoryName}");
-                if (! isset($subcategoryCache[$subKey])) {
-                    [$sub, $created] = $this->firstOrCreateCategory($subcategoryName, $category->id);
-                    $subcategoryCache[$subKey] = $sub;
-                    $created ? $stats['subcategories_created']++ : $stats['subcategories_found']++;
-                }
-                $subcategory = $subcategoryCache[$subKey];
+            // Pass 2b: Persistir cada produto (um registro por nome base)
+            foreach ($entryMap as $item) {
+                [, $subcategory] = $this->resolveCategories(
+                    $item['categoryName'],
+                    $item['subcategoryName'],
+                    $categoryCache,
+                    $subcategoryCache,
+                    $stats,
+                );
 
-                // Stream direto da entrada do ZIP para o disco — sem extrair
-                $stream = $zip->getStream($entryName);
+                $coverPath = $this->storeEntry($zip, $item['coverEntry'], $item['coverExt']);
+                $stillPath = $this->storeEntry($zip, $item['stillEntry'], $item['stillExt']);
 
-                if ($stream === false) {
-                    Log::warning('[ImportCollectionZipJob] Entrada ilegível', ['entry' => $entryName]);
+                if ($coverPath === null && $stillPath === null) {
                     $stats['images_skipped']++;
+
                     continue;
                 }
 
-                $storagePath = 'collection-images/' . Str::uuid() . '.' . $ext;
-
-                Storage::disk('public')->writeStream($storagePath, $stream);
-
-                fclose($stream);
-
-                CollectionImage::create([
-                    'collection_category_id' => $subcategory->id,
-                    'name'                   => pathinfo($filename, PATHINFO_FILENAME),
-                    'path_name'              => $storagePath,
-                ]);
+                CollectionImage::updateOrCreate(
+                    [
+                        'collection_category_id' => $subcategory->id,
+                        'name' => $item['baseName'],
+                    ],
+                    array_filter([
+                        'path_name' => $coverPath,
+                        'still_path_name' => $stillPath,
+                    ], fn ($v) => $v !== null),
+                );
 
                 $stats['images_imported']++;
             }
@@ -151,6 +145,164 @@ class ImportCollectionZipJob implements ShouldQueue
     }
 
     /**
+     * Primeira passagem: percorre todas as entradas do ZIP e separa em dois mapas.
+     *
+     * - $coverMap : arquivos cujo nome base é "capa" → definem image_cover da subcategoria.
+     * - $entryMap : demais arquivos → geram registros CollectionImage (agrupados por nome base).
+     *
+     * @return array{
+     *   0: array<string, array{categoryName: string, subcategoryName: string, baseName: string, coverEntry: ?string, coverExt: ?string, stillEntry: ?string, stillExt: ?string}>,
+     *   1: array<string, array{categoryName: string, subcategoryName: string, entry: string, ext: string}>
+     * }
+     */
+    private function buildEntryMap(ZipArchive $zip, int $offset): array
+    {
+        $entryMap = [];
+        $coverMap = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entryName = $zip->getNameIndex($i);
+
+            if (str_ends_with($entryName, '/')) {
+                continue;
+            }
+
+            $parts = $this->parseParts($entryName, $offset);
+
+            if ($parts === null) {
+                continue;
+            }
+
+            [$categoryName, $subcategoryName, $filename] = $parts;
+
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                continue;
+            }
+
+            ['baseName' => $baseName, 'isStill' => $isStill] = $this->parseFilename($filename);
+
+            // Arquivo "capa" → imagem de capa da subcategoria, não um produto da coleção
+            if (mb_strtolower($baseName) === 'capa') {
+                $coverKey = mb_strtolower("{$categoryName}\x00{$subcategoryName}");
+                $coverMap[$coverKey] = [
+                    'categoryName' => $categoryName,
+                    'subcategoryName' => $subcategoryName,
+                    'entry' => $entryName,
+                    'ext' => $ext,
+                ];
+
+                continue;
+            }
+
+            $mapKey = mb_strtolower("{$categoryName}\x00{$subcategoryName}\x00{$baseName}");
+
+            if (! isset($entryMap[$mapKey])) {
+                $entryMap[$mapKey] = [
+                    'categoryName' => $categoryName,
+                    'subcategoryName' => $subcategoryName,
+                    'baseName' => $baseName,
+                    'coverEntry' => null,
+                    'coverExt' => null,
+                    'stillEntry' => null,
+                    'stillExt' => null,
+                ];
+            }
+
+            if ($isStill) {
+                $entryMap[$mapKey]['stillEntry'] = $entryName;
+                $entryMap[$mapKey]['stillExt'] = $ext;
+            } else {
+                $entryMap[$mapKey]['coverEntry'] = $entryName;
+                $entryMap[$mapKey]['coverExt'] = $ext;
+            }
+        }
+
+        return [$entryMap, $coverMap];
+    }
+
+    /**
+     * Garante existência de categoria e subcategoria, atualiza os caches e os stats.
+     *
+     * @param  array<string, CollectionCategory>  $categoryCache
+     * @param  array<string, CollectionCategory>  $subcategoryCache
+     * @param  array<string, int>  $stats
+     * @return array{0: CollectionCategory, 1: CollectionCategory}
+     */
+    private function resolveCategories(
+        string $categoryName,
+        string $subcategoryName,
+        array &$categoryCache,
+        array &$subcategoryCache,
+        array &$stats,
+    ): array {
+        $catKey = mb_strtolower($categoryName);
+        if (! isset($categoryCache[$catKey])) {
+            [$cat, $created] = $this->firstOrCreateCategory($categoryName, null);
+            $categoryCache[$catKey] = $cat;
+            $created ? $stats['categories_created']++ : $stats['categories_found']++;
+        }
+
+        $subKey = mb_strtolower("{$categoryName}/{$subcategoryName}");
+        if (! isset($subcategoryCache[$subKey])) {
+            [$sub, $created] = $this->firstOrCreateCategory($subcategoryName, $categoryCache[$catKey]->id);
+            $subcategoryCache[$subKey] = $sub;
+            $created ? $stats['subcategories_created']++ : $stats['subcategories_found']++;
+        }
+
+        return [$categoryCache[$catKey], $subcategoryCache[$subKey]];
+    }
+
+    /**
+     * Extrai o nome base e detecta se é arquivo STILL.
+     *
+     * @return array{baseName: string, isStill: bool}
+     */
+    private function parseFilename(string $filename): array
+    {
+        $nameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
+
+        if (preg_match('/^(.+?)\s*\(still\)\s*$/i', $nameWithoutExt, $matches)) {
+            return [
+                'baseName' => trim($matches[1]),
+                'isStill' => true,
+            ];
+        }
+
+        return [
+            'baseName' => $nameWithoutExt,
+            'isStill' => false,
+        ];
+    }
+
+    /**
+     * Grava uma entrada do ZIP no disco e retorna o caminho ou null em caso de falha.
+     */
+    private function storeEntry(ZipArchive $zip, ?string $entryName, ?string $ext): ?string
+    {
+        if ($entryName === null || $ext === null) {
+            return null;
+        }
+
+        $stream = $zip->getStream($entryName);
+
+        if ($stream === false) {
+            Log::warning('[ImportCollectionZipJob] Entrada ilegível', ['entry' => $entryName]);
+
+            return null;
+        }
+
+        $storagePath = 'collection-images/'.Str::uuid().'.'.$ext;
+
+        Storage::disk('public')->writeStream($storagePath, $stream);
+
+        fclose($stream);
+
+        return $storagePath;
+    }
+
+    /**
      * Detecta se o ZIP possui uma pasta wrapper (ex: criado no macOS/Windows com pasta raiz).
      * Retorna o número de níveis a ignorar no início do caminho.
      */
@@ -159,7 +311,7 @@ class ImportCollectionZipJob implements ShouldQueue
         $topLevelDirs = [];
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name  = $zip->getNameIndex($i);
+            $name = $zip->getNameIndex($i);
             $parts = $this->splitPath($name);
 
             if (empty($parts)) {
@@ -168,7 +320,6 @@ class ImportCollectionZipJob implements ShouldQueue
 
             $top = $parts[0];
 
-            // Ignora metadados do macOS
             if ($top === '__MACOSX') {
                 continue;
             }
@@ -176,7 +327,6 @@ class ImportCollectionZipJob implements ShouldQueue
             $topLevelDirs[$top] = true;
         }
 
-        // Se todos os arquivos estão sob um único diretório raiz → é wrapper
         return count($topLevelDirs) === 1 ? 1 : 0;
     }
 
@@ -187,15 +337,12 @@ class ImportCollectionZipJob implements ShouldQueue
     {
         $parts = $this->splitPath($entryName);
 
-        // Remove o wrapper
         $parts = array_slice($parts, $offset);
 
-        // Rejeita metadados do macOS e arquivos ocultos
         if (empty($parts) || $parts[0] === '__MACOSX') {
             return null;
         }
 
-        // Esperamos exatamente 3 partes: categoria / subcategoria / arquivo
         if (count($parts) !== 3) {
             return null;
         }
@@ -208,7 +355,7 @@ class ImportCollectionZipJob implements ShouldQueue
     {
         return array_values(array_filter(
             explode('/', $path),
-            fn(string $p): bool => $p !== '' && ! str_starts_with($p, '.')
+            fn (string $p): bool => $p !== '' && ! str_starts_with($p, '.')
         ));
     }
 
