@@ -112,6 +112,7 @@ class CollectionImageRepository
     public function delete(CollectionImage $collectionImage): bool
     {
         $this->deletePhysicalFile($collectionImage->path_name);
+        $this->deletePhysicalFile($collectionImage->still_path_name);
 
         return (bool) $collectionImage->delete();
     }

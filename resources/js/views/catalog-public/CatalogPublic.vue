@@ -117,7 +117,7 @@
       <!-- Level 2/3: Images grid -->
       <div v-else>
         <div class="row">
-          <div v-for="img in filteredItems" :key="img.id" class="col-12 col-sm-6 col-md-4">
+          <div v-for="img in displayItems" :key="img._key ?? img.id" class="col-12 col-sm-6 col-md-4">
             <CollectionCard
               :src="asset(img.url || defaultCover)"
               :title="img.name || img.path_name || '—'"
@@ -133,11 +133,14 @@
                     title="Compartilhar no WhatsApp"
                     style="pointer-events: auto; font-size: 0.875rem"
                   >
-                    Compartilhar
                     <IconBrandWhatsapp :size="16" />
+
+                    Compartilhar
                   </button>
 
+                  <!-- Favorito: apenas para imagens de capa -->
                   <button
+                    v-if="!img._isStill"
                     type="button"
                     class="image-gallery__favorite-btn"
                     :class="{ 'is-favorited': isFavorited(img.id) }"
@@ -281,6 +284,29 @@ const filteredItems = computed(() => {
   return sourceItems.filter((item) =>
     (item.name || item.path_name || '').toLowerCase().includes(term),
   );
+});
+
+/**
+ * No nível 2 (imagens), expande cada registro em até 2 itens: cover primeiro, STILL em seguida.
+ * Nos demais níveis retorna os itens filtrados sem modificação.
+ */
+const displayItems = computed(() => {
+  if (level.value !== 2) return filteredItems.value;
+
+  const result = [];
+  for (const img of filteredItems.value) {
+    result.push({ ...img, _key: `${img.id}-cover`, _isStill: false });
+    if (img.still_url) {
+      result.push({
+        ...img,
+        url: img.still_url,
+        name: img.name ? `${img.name} (STILL)` : '—',
+        _key: `${img.id}-still`,
+        _isStill: true,
+      });
+    }
+  }
+  return result;
 });
 
 // --- API ---
