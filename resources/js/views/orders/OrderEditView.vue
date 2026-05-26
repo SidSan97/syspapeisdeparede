@@ -2082,7 +2082,7 @@ function updateBudget() {
       originalBudget.value = JSON.parse(JSON.stringify(normalized));
       // Redirecionar para a lista de pedidos
       setTimeout(() => {
-        router.push({ name: 'orders.list' });
+        router.push({ name: 'orders.show', params: { id: orderId.value } });
       }, 1500);
     })
     .catch((error) => {
