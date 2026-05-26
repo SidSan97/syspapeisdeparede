@@ -628,5 +628,223 @@ class BudgetCalculator
 
         return $productionTime + $maxDevelopmentDays + $freightTime;
     }
+
+    /**
+     * Segmentos de uma parede: parede principal + continuações (ordem preservada).
+     *
+     * @return array<int, array{L: float, A: float}>
+     */
+    private static function getWallSegments(array $wall): array
+    {
+        $segments = [];
+
+        $baseL = (float) ($wall['width'] ?? 0);
+        $baseA = (float) ($wall['height'] ?? 0);
+        if ($baseL > 0 && $baseA > 0) {
+            $segments[] = ['L' => $baseL, 'A' => $baseA];
+        }
+
+        foreach (self::getContinuations($wall) as $continuation) {
+            $L = (float) ($continuation['width'] ?? 0);
+            $A = (float) ($continuation['height'] ?? 0);
+            if ($L > 0 && $A > 0) {
+                $segments[] = ['L' => $L, 'A' => $A];
+            }
+        }
+
+        return $segments;
+    }
+
+    /**
+     * Algoritmo da Calculadora do Revendedor aplicado a parede + continuações em sequência.
+     *
+     * @return array{
+     *     groups: array<int, array{q: int, h: float}>,
+     *     totalFaixas: int,
+     *     totalMetros: float,
+     *     safetyExceeded: bool
+     * }
+     */
+    public static function calculateWallWithContinuations(array $wall): array
+    {
+        $segments = self::getWallSegments($wall);
+
+        if (empty($segments)) {
+            return [
+                'groups' => [],
+                'totalFaixas' => 0,
+                'totalMetros' => 0.0,
+                'safetyExceeded' => false,
+            ];
+        }
+
+        $H = [];
+        foreach ($segments as $segment) {
+            $h = self::getAlturaFaixa((float) $segment['A']);
+            if ($h === null) {
+                return [
+                    'groups' => [],
+                    'totalFaixas' => 0,
+                    'totalMetros' => 0.0,
+                    'safetyExceeded' => false,
+                ];
+            }
+            $H[] = $h;
+        }
+
+        $carry = 0.0;
+        $perPartBase = [];
+        $n = count($segments);
+
+        for ($i = 0; $i < $n; $i++) {
+            $Li = (float) $segments[$i]['L'];
+            $Hi = (float) $H[$i];
+            $nextH = $i < $n - 1 ? (float) $H[$i + 1] : null;
+
+            $LiEfetiva = $Li - $carry;
+
+            if ($LiEfetiva <= 1e-12) {
+                $carry = -$LiEfetiva;
+                $perPartBase[] = ['q' => 0, 'h' => $Hi];
+                continue;
+            }
+
+            $qBruto = (int) ceil($LiEfetiva / self::STRIP_WIDTH);
+            $cobertura = $qBruto * self::STRIP_WIDTH;
+            $novoCarry = $cobertura - $LiEfetiva;
+
+            if ($i < $n - 1 && $nextH !== null && $nextH > $Hi + 1e-9 && $qBruto > 0) {
+                $q = $qBruto - 1;
+                $cobAgora = $q * self::STRIP_WIDTH;
+                $faltou = $LiEfetiva - $cobAgora;
+                $carry = -$faltou;
+                $perPartBase[] = ['q' => $q, 'h' => $Hi];
+            } else {
+                $carry = $novoCarry;
+                $perPartBase[] = ['q' => $qBruto, 'h' => $Hi];
+            }
+        }
+
+        $groups0 = [];
+        for ($i = 0; $i < count($perPartBase); $i++) {
+            $q = (int) ($perPartBase[$i]['q'] ?? 0);
+            $h = (float) ($perPartBase[$i]['h'] ?? 0);
+            if ($q <= 0) {
+                continue;
+            }
+
+            if (!empty($groups0) && abs($groups0[count($groups0) - 1]['h'] - $h) < 1e-9) {
+                $groups0[count($groups0) - 1]['q'] += $q;
+            } else {
+                $groups0[] = ['h' => $h, 'q' => $q, 'indices' => [$i]];
+            }
+        }
+
+        $bres = self::rebalanceParityGroups($groups0);
+        $groupsFinal = self::mergeConsecutiveGroups($bres['groups']);
+
+        $totalFaixas = 0;
+        $totalMetros = 0.0;
+        $groups = [];
+
+        foreach ($groupsFinal as $group) {
+            $q = (int) ($group['q'] ?? 0);
+            $h = (float) ($group['h'] ?? 0);
+            if ($q <= 0 || $h <= 0) {
+                continue;
+            }
+
+            $totalFaixas += $q;
+            $totalMetros += $q * $h;
+            $groups[] = ['q' => $q, 'h' => $h];
+        }
+
+        return [
+            'groups' => $groups,
+            'totalFaixas' => $totalFaixas,
+            'totalMetros' => round($totalMetros, 2),
+            'safetyExceeded' => (bool) ($bres['safetyExceeded'] ?? false),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{q: int, h: float}>  $groups
+     */
+    public static function formatStripGroups(array $groups): string
+    {
+        $parts = [];
+
+        foreach ($groups as $group) {
+            $q = (int) ($group['q'] ?? 0);
+            $h = (float) ($group['h'] ?? 0);
+            if ($q <= 0 || $h <= 0) {
+                continue;
+            }
+
+            $parts[] = sprintf('%dF de %sm', $q, number_format($h, 2, ',', '.'));
+        }
+
+        return implode(' + ', $parts);
+    }
+
+    /**
+     * Converte parede Eloquent/array para formato de cálculo.
+     */
+    public static function normalizeWallForCalculation(object|array $wall): array
+    {
+        if (is_array($wall)) {
+            return $wall;
+        }
+
+        return [
+            'width' => $wall->width,
+            'height' => $wall->height,
+            'continue_same_art' => (bool) ($wall->continue_same_art ?? false),
+            'continuations' => is_array($wall->continuations ?? null) ? $wall->continuations : [],
+        ];
+    }
+
+    public static function calculateRoomMeters(object|array $room): float
+    {
+        $walls = is_array($room) ? ($room['walls'] ?? []) : ($room->walls ?? []);
+        $total = 0.0;
+
+        foreach ($walls as $wall) {
+            $sequence = self::calculateWallWithContinuations(self::normalizeWallForCalculation($wall));
+            $total += (float) ($sequence['totalMetros'] ?? 0);
+        }
+
+        return round($total, 2);
+    }
+
+    public static function calculateRoomModelCost(object|array $room): float
+    {
+        $walls = is_array($room) ? ($room['walls'] ?? []) : ($room->walls ?? []);
+        $total = 0.0;
+
+        foreach ($walls as $wall) {
+            if (is_array($wall)) {
+                $model = self::getModel($wall['model'] ?? ($wall['collection_model_id'] ?? null));
+            } else {
+                $model = $wall->relationLoaded('collectionModel')
+                    ? $wall->collectionModel
+                    : self::getModel($wall->collection_model_id);
+            }
+
+            if ($model !== null) {
+                $total += (float) $model->value;
+            }
+        }
+
+        return round($total, 2);
+    }
+
+    public static function calculateRoomPriceVista(object|array $room): float
+    {
+        $meters = self::calculateRoomMeters($room);
+        $modelCost = self::calculateRoomModelCost($room);
+
+        return round(($meters * self::getPriceVista()) + $modelCost, 2);
+    }
 }
 

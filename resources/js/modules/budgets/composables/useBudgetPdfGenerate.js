@@ -1,42 +1,117 @@
 import { computed } from 'vue';
+import { calculateWallWithContinuations } from '@/utils/calculateStripsUtils.js';
+
+function formatNumberBR(value, decimals = 2) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    return '0,00';
+  }
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function formatStripGroups(groups) {
+  if (!Array.isArray(groups) || !groups.length) {
+    return '';
+  }
+
+  return groups
+    .filter((g) => g && g.q > 0 && Number.isFinite(g.h) && g.h > 0)
+    .map((g) => `${g.q}F de ${formatNumberBR(g.h, 2)}m`)
+    .join(' + ');
+}
+
+function normalizeWallForCalculation(wall) {
+  return {
+    width: wall?.width,
+    height: wall?.height,
+    continueSameArt: wall?.continueSameArt ?? wall?.continue_same_art ?? false,
+    continuations: Array.isArray(wall?.continuations) ? wall.continuations : [],
+  };
+}
+
+function getWallContinuations(wall) {
+  const enabled = !!(wall?.continueSameArt || wall?.continue_same_art);
+  if (!enabled) {
+    return [];
+  }
+  return Array.isArray(wall?.continuations) ? wall.continuations : [];
+}
 
 /**
  * Composable para lógica de geração de PDF de orçamentos
  * @param {import('vue').Ref} budget - Referência reativa do orçamento
  */
 export function useBudgetPdfGenerate(budget) {
-  /**
-   * Calcula o preço de uma parede
-   */
-  function calculateWallPrice(wall) {
-    // Usar o preço da parede se disponível, senão calcular baseado na área
-    if (wall.price !== undefined && wall.price !== null) {
-      return parseFloat(wall.price);
+  function formatWallPdfLine(wall, wallIndex = 0) {
+    const sequence = calculateWallWithContinuations(normalizeWallForCalculation(wall));
+    const stripSummary = formatStripGroups(sequence.groups);
+
+    const label = wall?.name?.trim() || `Parede ${wallIndex + 1}`;
+    const parts = [label];
+
+    if (wall?.width && wall?.height) {
+      parts.push(`${formatNumberBR(wall.width)}m x ${formatNumberBR(wall.height)}m`);
     }
-    if (wall.total_area) {
-      // Se não tiver preço direto, usar área * preço por m² (assumindo R$ 10/m² como padrão)
-      return parseFloat(wall.total_area) * 10;
+
+    let line = parts.join(' | ');
+    if (stripSummary) {
+      line += ` — ${stripSummary}`;
     }
-    if (wall.width && wall.height) {
-      const area = parseFloat(wall.width) * parseFloat(wall.height);
-      return area * 10;
-    }
-    return 0;
+
+    const continuationLines = getWallContinuations(wall).map((continuation, contIndex) => {
+      const contParts = [];
+      const contName = continuation?.name?.trim();
+      contParts.push(contName || `Continuação ${contIndex + 1}`);
+
+      if (continuation?.width && continuation?.height) {
+        contParts.push(
+          `${formatNumberBR(continuation.width)}m x ${formatNumberBR(continuation.height)}m`,
+        );
+      }
+
+      return `+ ${contParts.join(' | ')}`;
+    });
+
+    return {
+      main: line,
+      continuations: continuationLines,
+    };
   }
 
-  /**
-   * Formata os detalhes de uma parede
-   */
-  function formatWallDetails(wall) {
-    const parts = [];
-    if (wall.name) {
-      parts.push(wall.name);
-    }
-    if (wall.width && wall.height) {
-      parts.push(`${wall.width}m x ${wall.height}m`);
+  function getWallModelName(wall) {
+    return wall?.collection_model?.name || wall?.collection_model_name || '—';
+  }
+
+  function getWallModelCost(wall) {
+    const raw =
+      wall?.collection_model?.value ??
+      wall?.collection_model_value ??
+      wall?.model_value ??
+      0;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function getRoomMeters(room) {
+    if (!Array.isArray(room?.walls)) {
+      return 0;
     }
 
-    return parts.length > 0 ? parts.join(' | ') : 'Parede sem detalhes';
+    return room.walls.reduce((total, wall) => {
+      const sequence = calculateWallWithContinuations(normalizeWallForCalculation(wall));
+      return total + Number(sequence.totalMetros ?? 0);
+    }, 0);
+  }
+
+  function getRoomModelCost(room) {
+    if (!Array.isArray(room?.walls)) {
+      return 0;
+    }
+
+    return room.walls.reduce((total, wall) => total + getWallModelCost(wall), 0);
   }
 
   /**
@@ -44,123 +119,102 @@ export function useBudgetPdfGenerate(budget) {
    */
   function getCarrierName(carrierName) {
     if (!carrierName) return null;
-    // Extrair apenas o nome antes do hífen (ex: "Jadlog - Package" -> "Jadlog")
     if (carrierName.includes(' - ')) {
       return carrierName.split(' - ')[0].trim();
     }
     return carrierName.trim();
   }
 
-  /**
-   * Total de ambientes
-   */
-  const totalRooms = computed(() => {
-    if (!budget.value?.rooms) return 0;
-    return budget.value.rooms.length;
-  });
+  const totalRooms = computed(() => budget.value?.rooms?.length ?? 0);
 
-  /**
-   * Total de paredes
-   */
   const totalItems = computed(() => {
     if (!budget.value?.rooms) return 0;
-    let count = 0;
-    budget.value.rooms.forEach((room) => {
-      if (room.walls && Array.isArray(room.walls)) {
-        count += room.walls.length;
-      }
-    });
-    return count;
+    return budget.value.rooms.reduce((count, room) => {
+      return count + (Array.isArray(room.walls) ? room.walls.length : 0);
+    }, 0);
   });
 
-  /**
-   * Total de metros quadrados
-   */
   const totalMeters = computed(() => {
     if (!budget.value?.rooms) return 0;
-    let total = 0;
-    budget.value.rooms.forEach((room) => {
-      if (room.walls && Array.isArray(room.walls)) {
-        room.walls.forEach((wall) => {
-          if (wall.total_area) {
-            total += parseFloat(wall.total_area);
-          } else if (wall.width && wall.height) {
-            total += parseFloat(wall.width) * parseFloat(wall.height);
-          }
-        });
-      }
+    return budget.value.rooms.reduce((total, room) => total + getRoomMeters(room), 0);
+  });
+
+  const totalModelsCost = computed(() => {
+    if (!budget.value?.rooms) return 0;
+    return budget.value.rooms.reduce((total, room) => total + getRoomModelCost(room), 0);
+  });
+
+  const freightCost = computed(() => Number(budget.value?.selected_carrier_price ?? 0));
+
+  const wallpaperTotalCash = computed(() => {
+    const total = Number(budget.value?.total_amount ?? 0);
+    return Math.max(0, total - freightCost.value - totalModelsCost.value);
+  });
+
+  const pricePerMeterCash = computed(() => {
+    if (totalMeters.value <= 0) {
+      return 0;
+    }
+    return wallpaperTotalCash.value / totalMeters.value;
+  });
+
+  const roomSummaries = computed(() => {
+    if (!budget.value?.rooms) {
+      return [];
+    }
+
+    return budget.value.rooms.map((room, roomIndex) => {
+      const meters = getRoomMeters(room);
+      const modelCost = getRoomModelCost(room);
+      const wallpaperCost = meters * pricePerMeterCash.value;
+
+      return {
+        name: room?.name?.trim() || `Ambiente ${roomIndex + 1}`,
+        meters,
+        modelCost,
+        wallpaperCost,
+        price: wallpaperCost + modelCost,
+        walls: (room.walls ?? []).map((wall, wallIndex) => ({
+          modelName: getWallModelName(wall),
+          details: formatWallPdfLine(wall, wallIndex),
+        })),
+      };
     });
-    return total;
   });
 
   /**
-   * Total de produtos
+   * @deprecated mantido para compatibilidade
    */
+  function formatWallDetails(wall) {
+    return formatWallPdfLine(wall).main;
+  }
+
   const totalProducts = computed(() => {
-    // Usar total_amount do budget se disponível, senão calcular
     if (budget.value?.total_amount !== undefined && budget.value?.total_amount !== null) {
       return parseFloat(budget.value.total_amount);
     }
 
-    let total = 0;
-
-    if (budget.value?.rooms) {
-      budget.value.rooms.forEach((room) => {
-        if (room.walls && Array.isArray(room.walls)) {
-          room.walls.forEach((wall) => {
-            total += calculateWallPrice(wall);
-          });
-        }
-      });
-    }
-    return total;
+    return wallpaperTotalCash.value + totalModelsCost.value;
   });
 
-  /**
-   * Total do pedido (produtos + frete)
-   */
-  const totalOrder = computed(() => {
-    const products = totalProducts.value;
-    const shipping = parseFloat(budget.value?.selected_carrier_price || 0);
-    return products + shipping;
-  });
+  const totalOrder = computed(() => totalProducts.value + freightCost.value);
 
-  /**
-   * Todas as observações das paredes
-   */
-  const allObservations = computed(() => {
-    if (!budget.value?.rooms) return [];
-    const observations = [];
-
-    budget.value.rooms.forEach((room) => {
-      if (room.walls && Array.isArray(room.walls)) {
-        room.walls.forEach((wall) => {
-          if (wall.comment_referring_model && wall.comment_referring_model.trim()) {
-            observations.push(wall.comment_referring_model);
-          }
-        });
-      }
-    });
-    return observations;
-  });
-
-  /**
-   * Dados de dropshipping
-   */
-  const dropshippingData = computed(() => {
-    return budget.value?.dropshipping_data || null;
-  });
+  const dropshippingData = computed(() => budget.value?.dropshipping_data || null);
 
   return {
-    calculateWallPrice,
+    formatWallPdfLine,
     formatWallDetails,
     getCarrierName,
+    getRoomMeters,
+    getRoomModelCost,
     totalRooms,
     totalItems,
     totalMeters,
+    totalModelsCost,
     totalProducts,
     totalOrder,
-    allObservations,
+    roomSummaries,
+    pricePerMeterCash,
     dropshippingData,
   };
 }

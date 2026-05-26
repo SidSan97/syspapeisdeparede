@@ -33,7 +33,8 @@ class BudgetPdfController extends Controller
             $budget,
             $mockupPercentage,
             $cashValue,
-            $installmentValue
+            $installmentValue,
+            $validated['observations'] ?? null
         );
     }
 }

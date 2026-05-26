@@ -17,7 +17,8 @@ class GeneratePdfService
         object $budget,
         ?float $percentageValidated = null,
         ?float $cashValue = null,
-        ?float $installmentValue = null
+        ?float $installmentValue = null,
+        ?string $observations = null
     ): Response {
         $originalCashTotal = (float) $budget->total_amount;
         $originalInstallmentTotal = (float) ($budget->total_amount_installments ?? 0);
@@ -62,6 +63,7 @@ class GeneratePdfService
         $pdf = Pdf::loadView('pdf.budgets.budget', [
             'budget' => $budget,
             'financial' => $financial,
+            'observations' => $observations,
         ])->setPaper('a4');
 
         $domPdf = $pdf->getDomPDF();

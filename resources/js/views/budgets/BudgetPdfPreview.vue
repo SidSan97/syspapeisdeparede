@@ -112,39 +112,42 @@
                 <th>Item</th>
                 <th>Modelo</th>
                 <th>Metros</th>
+                <th>Preço</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="(room, roomIndex) in budget?.rooms" :key="room.id">
-                <tr>
-                  <td>
-                    <strong>{{ room.name || `Ambiente ${roomIndex + 1}` }}</strong>
-                    <div class="wall-details">
-                      <template v-for="(wall, wallIndex) in room.walls" :key="wall.id">
-                        <div v-if="wallIndex > 0" style="margin-top: 5px">
-                          {{ formatWallDetails(wall) }}
-                        </div>
-                        <div v-else>
-                          {{ formatWallDetails(wall) }}
-                        </div>
-                      </template>
+              <tr v-for="(room, roomIndex) in roomSummaries" :key="`room-${roomIndex}`">
+                <td>
+                  <strong>{{ room.name }}</strong>
+                  <div class="wall-details">
+                    <div
+                      v-for="(wall, wallIndex) in room.walls"
+                      :key="`wall-${roomIndex}-${wallIndex}`"
+                      :style="wallIndex > 0 ? { marginTop: '5px' } : undefined"
+                    >
+                      <div>{{ wall.details.main }}</div>
+                      <div
+                        v-for="(continuationLine, contIndex) in wall.details.continuations"
+                        :key="`cont-${roomIndex}-${wallIndex}-${contIndex}`"
+                        class="wall-continuation-line"
+                      >
+                        {{ continuationLine }}
+                      </div>
                     </div>
-                  </td>
-                  <td>
-                    <template v-for="(wall, wallIndex) in room.walls" :key="wall.id">
-                      <div v-if="wallIndex === 0">
-                        {{ wall.collection_model?.name || wall.collection_model_name || '—' }}
-                      </div>
-                      <div v-else style="margin-top: 5px">
-                        {{ wall.collection_model?.name || wall.collection_model_name || '—' }}
-                      </div>
-                    </template>
-                  </td>
-                  <td>
-                    {{ totalMeters.toFixed(2).replace('.', ',') }}
-                  </td>
-                </tr>
-              </template>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    v-for="(wall, wallIndex) in room.walls"
+                    :key="`model-${roomIndex}-${wallIndex}`"
+                    :style="wallIndex > 0 ? { marginTop: '5px' } : undefined"
+                  >
+                    {{ wall.modelName }}
+                  </div>
+                </td>
+                <td>{{ formatNumber(room.meters) }}</td>
+                <td>{{ formatCurrency(getRoomDisplayPrice(room)) }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -225,18 +228,17 @@
               {{ getCarrierName(budget?.selected_carrier_name) || '—' }}
             </p>
           </div>
-          <div class="pdf-info-group">
-            <strong>Modalidade de frete</strong>
-            <p class="mb-0">Contratação do Frete por conta do Destinatário (FOB)</p>
-          </div>
         </div>
 
         <!-- Observações -->
-        <div v-if="allObservations.length > 0" class="pdf-observations-section">
-          <strong>Observações</strong>
-          <div v-for="(observation, index) in allObservations" :key="index" class="mb-2">
-            <p class="mb-0">{{ observation }}</p>
-          </div>
+        <div class="pdf-observations-section">
+          <strong class="text-black">Observações</strong>
+          <textarea
+            v-model="pdfObservations"
+            class="form-control pdf-observations-input bg-light text-black"
+            rows="4"
+            placeholder="Digite observações que devem aparecer na impressão..."
+          ></textarea>
         </div>
       </div>
     </Page>
@@ -259,6 +261,7 @@ const route = useRoute();
 
 const {
   formatCurrency,
+  formatNumber,
   formatDeliveryTime,
   formatDateOnly,
   formatPhone,
@@ -280,15 +283,17 @@ const editingCash = ref(false);
 const editingInstallment = ref(false);
 const cashInputRef = ref(null);
 const installmentInputRef = ref(null);
+const pdfObservations = ref('');
 
 const {
-  formatWallDetails,
   getCarrierName,
   totalRooms,
   totalItems,
   totalMeters,
   totalOrder,
-  allObservations,
+  totalModelsCost,
+  roomSummaries,
+  pricePerMeterCash,
   dropshippingData,
 } = useBudgetPdfGenerate(budget);
 
@@ -328,6 +333,7 @@ async function generatePdf() {
       editableTotalCash.value,
       editableTotalInstallment.value,
       mockupPercentage.value,
+      pdfObservations.value.trim(),
     );
 
     toast.success('PDF gerado com sucesso');
@@ -337,6 +343,18 @@ async function generatePdf() {
   } finally {
     generatingPdf.value = false;
   }
+}
+
+function getRoomDisplayPrice(room) {
+  const freight = Number(budget.value?.selected_carrier_price ?? 0);
+  const models = totalModelsCost.value;
+  const wallpaperTotal = Math.max(0, editableTotalCash.value - freight - models);
+
+  if (totalMeters.value <= 0) {
+    return room.modelCost;
+  }
+
+  return (room.meters / totalMeters.value) * wallpaperTotal + room.modelCost;
 }
 
 function toggleEditCash() {

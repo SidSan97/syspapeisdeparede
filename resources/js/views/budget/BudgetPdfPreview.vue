@@ -224,7 +224,7 @@ const router = useRouter();
 // Services e composables
 const budgetService = useBudgetService();
 const pdfService = useBudgetPdfService();
-const { formatCurrency, formatDeliveryTime, formatDate, formatDateOnly, 
+const { formatCurrency, formatDeliveryTime, formatDate, formatDateOnly,
   formatPhone, formatAddressLine1, formatAddressLine2, formatEstimatedDate } = useFormatting();
 
 // Estado do componente

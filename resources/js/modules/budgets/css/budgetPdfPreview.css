@@ -232,6 +232,26 @@
   line-height: 1.5;
 }
 
+.pdf-observations-input {
+  margin-bottom: 12px;
+  font-size: 12px;
+  border: 1px solid #000;
+  resize: vertical;
+}
+
+.pdf-observations-preview {
+  font-size: 11px;
+  color: #000;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.wall-continuation-line {
+  font-size: 11px;
+  margin-top: 2px;
+  padding-left: 8px;
+}
+
 /* Estilos para impressão */
 @media print {
   .pdf-preview-content {

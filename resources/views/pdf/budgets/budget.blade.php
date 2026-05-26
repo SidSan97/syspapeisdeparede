@@ -250,7 +250,7 @@
 </head>
 @php
     $dropshippingData = $budget->dropshippingData;
-    
+
     // Função para formatar telefone
     function formatPhone($phone) {
         if (!$phone) return '—';
@@ -263,7 +263,7 @@
         }
         return $phone;
     }
-    
+
     // Função para formatar endereço linha 1
     function formatAddressLine1($dropshipping) {
         if (!$dropshipping) return '—';
@@ -282,7 +282,7 @@
         }
         return count($parts) > 0 ? implode('. ', $parts) : '—';
     }
-    
+
     // Função para formatar endereço linha 2
     function formatAddressLine2($dropshipping) {
         if (!$dropshipping) return '';
@@ -297,7 +297,7 @@
         }
         return count($parts) > 0 ? implode(' - ', $parts) : '';
     }
-    
+
     // Função para formatar data
     function formatDate($date) {
         if (!$date) return '—';
@@ -307,7 +307,7 @@
             return '—';
         }
     }
-    
+
     // Função para formatar data prevista
     function formatEstimatedDate($deliveryTime) {
         if (!$deliveryTime) return '—';
@@ -318,14 +318,14 @@
             return '—';
         }
     }
-    
+
     // Função para formatar tempo de entrega
     function formatDeliveryTime($deliveryTime) {
         if (!$deliveryTime) return 'Não informado';
         $days = (int)$deliveryTime;
         return $days . ' ' . ($days === 1 ? 'dia' : 'dias');
     }
-    
+
     // Função para formatar moeda
     function formatCurrency($value) {
         if ($value === null) {
@@ -337,7 +337,7 @@
         }
         return 'R$ ' . number_format($numValue, 2, ',', '.');
     }
-    
+
     // Função para obter nome da transportadora
     function getCarrierName($carrierName) {
         if (!$carrierName) return null;
@@ -346,35 +346,67 @@
         }
         return trim($carrierName);
     }
-    
-    // Função para formatar detalhes da parede
-    function formatWallDetails($wall) {
-        $parts = [];
-        if ($wall->name) {
-            $parts[] = $wall->name;
-        }
+
+    // Função para formatar detalhes da parede (inclui continuações e resumo de faixas)
+    function formatWallPdfLine($wall, int $wallIndex = 0) {
+        $wallData = \App\Support\Budget\BudgetCalculator::normalizeWallForCalculation($wall);
+        $sequence = \App\Support\Budget\BudgetCalculator::calculateWallWithContinuations($wallData);
+        $stripSummary = \App\Support\Budget\BudgetCalculator::formatStripGroups($sequence['groups'] ?? []);
+
+        $label = $wall->name ?: ('Parede ' . ($wallIndex + 1));
+        $parts = [$label];
+
         if ($wall->width && $wall->height) {
-            $parts[] = number_format($wall->width, 2, ',', '.') . 'm x ' . number_format($wall->height, 2, ',', '.') . 'm';
+            $parts[] = number_format((float)$wall->width, 2, ',', '.') . 'm x ' . number_format((float)$wall->height, 2, ',', '.') . 'm';
         }
-        return count($parts) > 0 ? implode(' | ', $parts) : 'Parede sem detalhes';
+
+        $line = implode(' | ', $parts);
+        if ($stripSummary) {
+            $line .= ' — ' . $stripSummary;
+        }
+
+        $continuations = [];
+        if (!empty($wall->continue_same_art) && is_array($wall->continuations)) {
+            foreach ($wall->continuations as $contIndex => $continuation) {
+                if (!is_array($continuation)) {
+                    continue;
+                }
+
+                $contParts = [];
+                $contName = trim((string)($continuation['name'] ?? ''));
+                if ($contName !== '') {
+                    $contParts[] = $contName;
+                } else {
+                    $contParts[] = 'Continuação ' . ($contIndex + 1);
+                }
+
+                $contWidth = (float)($continuation['width'] ?? 0);
+                $contHeight = (float)($continuation['height'] ?? 0);
+                if ($contWidth > 0 && $contHeight > 0) {
+                    $contParts[] = number_format($contWidth, 2, ',', '.') . 'm x ' . number_format($contHeight, 2, ',', '.') . 'm';
+                }
+
+                $continuations[] = '+ ' . implode(' | ', $contParts);
+            }
+        }
+
+        if (count($continuations) > 0) {
+            $line .= '<br><span style="font-size:11px;">' . implode('<br>', $continuations) . '</span>';
+        }
+
+        return $line;
     }
-    
+
     // Calcular totais
     $totalRooms = $budget->rooms ? $budget->rooms->count() : 0;
     $totalItems = 0;
     $totalMeters = 0;
-    
+
     if ($budget->rooms) {
         foreach ($budget->rooms as $room) {
             if ($room->walls) {
                 $totalItems += $room->walls->count();
-                foreach ($room->walls as $wall) {
-                    if ($wall->total_area) {
-                        $totalMeters += (float)$wall->total_area;
-                    } elseif ($wall->width && $wall->height) {
-                        $totalMeters += (float)$wall->width * (float)$wall->height;
-                    }
-                }
+                $totalMeters += \App\Support\Budget\BudgetCalculator::calculateRoomMeters($room);
             }
         }
     }
@@ -455,17 +487,22 @@
                     <th>Item</th>
                     <th>Modelo</th>
                     <th>Metros</th>
+                    <th>Preço</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($budget->rooms ?? [] as $room)
+                    @php
+                        $roomMeters = \App\Support\Budget\BudgetCalculator::calculateRoomMeters($room);
+                        $roomPrice = \App\Support\Budget\BudgetCalculator::calculateRoomPriceVista($room);
+                    @endphp
                     <tr>
                         <td>
                             <strong>{{ $room->name ?? 'Ambiente ' . $loop->iteration }}</strong>
                             <div class="wall-details">
                                 @foreach($room->walls ?? [] as $wallIndex => $wall)
                                     <div style="{{ $wallIndex > 0 ? 'margin-top: 5px;' : '' }}">
-                                        {{ formatWallDetails($wall) }}
+                                        {!! formatWallPdfLine($wall, $wallIndex) !!}
                                     </div>
                                 @endforeach
                             </div>
@@ -477,21 +514,8 @@
                                 </div>
                             @endforeach
                         </td>
-                        <td>
-                            @php
-                                $roomMeters = 0;
-                                if ($room->walls) {
-                                    foreach ($room->walls as $wall) {
-                                        if ($wall->total_area) {
-                                            $roomMeters += (float)$wall->total_area;
-                                        } elseif ($wall->width && $wall->height) {
-                                            $roomMeters += (float)$wall->width * (float)$wall->height;
-                                        }
-                                    }
-                                }
-                            @endphp
-                            {{ number_format($roomMeters, 2, ',', '.') }}
-                        </td>
+                        <td>{{ number_format($roomMeters, 2, ',', '.') }}</td>
+                        <td>{{ formatCurrency($roomPrice) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -528,20 +552,14 @@
                     <p class="mb-0">{{ getCarrierName($budget->selected_carrier_name) ?? '—' }}</p>
                 </div>
             </div>
-            <div class="pdf-shipping-group-wrapper">
-                <div class="pdf-info-group">
-                    <strong>Modalidade de frete</strong>
-                    <p class="mb-0">Contratação do Frete por conta do Destinatário (FOB)</p>
-                </div>
-            </div>
         </div>
     </div>
 
     <!-- Observações -->
-    @if($budget->comment_referring_model)
+    @if(!empty($observations))
         <div class="pdf-observations-section">
             <strong>Observações</strong>
-            <p class="mb-0">{{ $budget->comment_referring_model }}</p>
+            <p class="mb-0">{!! nl2br(e($observations)) !!}</p>
         </div>
     @endif
 </body>
