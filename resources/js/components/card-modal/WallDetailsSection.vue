@@ -124,16 +124,10 @@ function directionInstallLabel(direction) {
 }
 
 const installationDirectionsSummary = computed(() => {
-  const list = visibleContinuations.value;
-  const labels = [];
-
-  for (const c of list) {
-    const label = directionInstallLabel(c?.direction);
-    if (label && !labels.includes(label)) {
-      labels.push(label);
-    }
-  }
-
-  return labels.length ? labels.join(' / ') : '';
+  const w = props.wall;
+  const legacyFromContinuation = visibleContinuations.value[0]?.direction;
+  const direction = w?.direction ?? w?.Direction ?? legacyFromContinuation;
+  const label = directionInstallLabel(direction);
+  return label || '';
 });
 </script>

@@ -35,13 +35,19 @@
                   </div>
 
                   <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4" v-if="wall.direction">
+                      <div class="text-muted small">Direção</div>
+                      <div class="fw-semibold">
+                        {{ formatDirection(wall.direction) }}
+                      </div>
+                    </div>
+                    <div class="col-md-4">
                       <div class="text-muted small">Largura (m)</div>
                       <div class="fw-semibold">
                         {{ formatNumber(wall.width) }}
                       </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                       <div class="text-muted small">Altura (m)</div>
                       <div class="fw-semibold">
                         {{ formatNumber(wall.height) }}
@@ -64,12 +70,6 @@
                           <div class="text-muted small">Nome</div>
                           <div class="fw-semibold">
                             {{ continuation.name }}
-                          </div>
-                        </div>
-                        <div class="col-md-4">
-                          <div class="text-muted small">Direção</div>
-                          <div class="fw-semibold">
-                            {{ formatDirection(continuation.direction) }}
                           </div>
                         </div>
                         <div v-if="continuationFitLabel(continuation)" class="col-md-4">

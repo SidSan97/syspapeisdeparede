@@ -9,6 +9,7 @@ export function createDefaultWall() {
   return {
     id: null,
     name: '',
+    direction: '',
     width: null,
     height: null,
     model: null,
@@ -98,9 +99,15 @@ export function normalizeBudgetFromAPI(budgetData) {
 
       if (room.walls && Array.isArray(room.walls)) {
         room.walls.forEach((wall) => {
+          const legacyDirection =
+            wall.direction ||
+            (Array.isArray(wall.continuations) && wall.continuations[0]?.direction) ||
+            '';
+
           const wallData = {
             id: wall.id ?? null,
             name: wall.name || '',
+            direction: legacyDirection,
             width: wall.width ? Number(wall.width) : null,
             height: wall.height ? Number(wall.height) : null,
             model:
@@ -128,7 +135,6 @@ export function normalizeBudgetFromAPI(budgetData) {
             if (wall.continuations && Array.isArray(wall.continuations)) {
               wallData.continuations = wall.continuations.map((cont, idx) => ({
                 name: cont.name || '',
-                direction: cont.direction || '',
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),

@@ -17,6 +17,7 @@ return new class extends Migration
                 ->constrained('budget_rooms')
                 ->cascadeOnDelete();
             $table->string('name')->nullable();
+            $table->string('direction', 32)->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->decimal('width', 8, 2)->nullable();
             $table->decimal('height', 8, 2)->nullable();

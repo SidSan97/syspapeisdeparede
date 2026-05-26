@@ -29,6 +29,7 @@ class BudgetWallFactory extends Factory
         return [
             'tenant_id' => \App\Models\User::factory(),
             'name' => fake()->randomElement(['Parede Principal', 'Parede Lateral', 'Parede de Fundo', 'Parede']),
+            'direction' => fake()->randomElement(['left-to-right', 'right-to-left']),
             'position' => 1,
             'width' => $width,
             'height' => $height,

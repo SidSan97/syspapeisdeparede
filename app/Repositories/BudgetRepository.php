@@ -151,6 +151,7 @@ class BudgetRepository
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
+                        'direction' => $wallData['direction'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
                         'height' => $wallData['height'] ?? null,
@@ -266,6 +267,7 @@ class BudgetRepository
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
+                        'direction' => $wallData['direction'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
                         'height' => $wallData['height'] ?? null,

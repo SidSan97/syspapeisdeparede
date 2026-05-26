@@ -108,17 +108,36 @@
                             </button>
                           </div>
 
-                          <div class="mb-3">
-                            <label :for="`wall-name-${roomIndex}-${wallIndex}`" class="form-label"
-                              >Nome da Parede</label
-                            >
-                            <input
-                              v-model="wall.name"
-                              type="text"
-                              :id="`wall-name-${roomIndex}-${wallIndex}`"
-                              class="form-control"
-                              placeholder="Ex: Parede janela"
-                            />
+                          <div class="row">
+                            <div class="col-md-6 mb-3">
+                              <label :for="`wall-name-${roomIndex}-${wallIndex}`" class="form-label"
+                                >Nome da Parede</label
+                              >
+                              <input
+                                v-model="wall.name"
+                                type="text"
+                                :id="`wall-name-${roomIndex}-${wallIndex}`"
+                                class="form-control"
+                                placeholder="Ex: Parede janela"
+                              />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                              <label
+                                :for="`wall-direction-${roomIndex}-${wallIndex}`"
+                                class="form-label"
+                              >
+                                Direção
+                              </label>
+                              <select
+                                v-model="wall.direction"
+                                :id="`wall-direction-${roomIndex}-${wallIndex}`"
+                                class="form-control"
+                              >
+                                <option value="">Selecione a direção</option>
+                                <option value="left-to-right">Da esquerda para direita</option>
+                                <option value="right-to-left">Da direita para esquerda</option>
+                              </select>
+                            </div>
                           </div>
 
                           <div class="row">
@@ -189,15 +208,6 @@
                           >
                             <div class="d-flex justify-content-between align-items-center mb-2">
                               <h6 class="mb-0">Continuações da parede</h6>
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-default"
-                                @click="addContinuation(roomIndex, wallIndex)"
-                              >
-                                <IconPlus :size="16" />
-
-                                Adicionar continuação
-                              </button>
                             </div>
                             <small class="text-muted d-block mb-3">
                               Use estas continuações para representar trechos adicionais com a mesma
@@ -249,24 +259,6 @@
 
                                 <div class="mb-3">
                                   <label
-                                    :for="`continuation-direction-${roomIndex}-${wallIndex}-${continuationIndex}`"
-                                    class="form-label"
-                                  >
-                                    Direção
-                                  </label>
-                                  <select
-                                    v-model="continuation.direction"
-                                    :id="`continuation-direction-${roomIndex}-${wallIndex}-${continuationIndex}`"
-                                    class="form-control"
-                                  >
-                                    <option value="">Selecione a direção</option>
-                                    <option value="left-to-right">Da esquerda para direita</option>
-                                    <option value="right-to-left">Da direita para esquerda</option>
-                                  </select>
-                                </div>
-
-                                <div class="mb-3">
-                                  <label
                                     :for="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
                                     class="form-label"
                                   >
@@ -277,7 +269,7 @@
                                     :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
                                     class="form-control"
                                   >
-                                    <option value="Inicial">Inicial</option>
+                                    <option v-if="continuationIndex === 0" value="Inicial">Inicial</option>
                                     <option value="Superior">Superior</option>
                                     <option value="Inferior">Inferior</option>
                                     <option value="Central">Central</option>
@@ -323,6 +315,18 @@
                                   :metrics="getWallPartMetrics(wall, continuationIndex + 1)"
                                 />
                               </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-default mb-3"
+                                @click="addContinuation(roomIndex, wallIndex)"
+                              >
+                                <IconPlus :size="16" />
+
+                                Adicionar continuação
+                              </button>
                             </div>
                           </div>
 

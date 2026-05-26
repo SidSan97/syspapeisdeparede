@@ -6,7 +6,6 @@ import { createDefaultWall } from './useBudgetUtils';
 
 const createDefaultContinuation = ({ initial = false } = {}) => ({
   name: '',
-  direction: '',
   width: null,
   height: null,
   sameArt: false,

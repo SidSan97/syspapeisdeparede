@@ -40,6 +40,11 @@ class UpdateBudgetRequest extends FormRequest
             'rooms.*.name' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls' => ['required', 'array', 'min:1'],
             'rooms.*.walls.*.name' => ['nullable', 'string', 'max:255'],
+            'rooms.*.walls.*.direction' => [
+                'required',
+                'string',
+                Rule::in(['left-to-right', 'right-to-left']),
+            ],
             'rooms.*.walls.*.width' => ['required', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.height' => ['required', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.model' => ['required', 'integer', 'exists:collection_models,id'],
@@ -58,11 +63,6 @@ class UpdateBudgetRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-            ],
-            'rooms.*.walls.*.continuations.*.direction' => [
-                'required_with:rooms.*.walls.*.continuations',
-                'string',
-                Rule::in(['left-to-right', 'right-to-left']),
             ],
             'rooms.*.walls.*.continuations.*.width' => [
                 'required_with:rooms.*.walls.*.continuations',

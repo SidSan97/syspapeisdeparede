@@ -15,6 +15,7 @@ class BudgetWall extends Model
         'budget_room_id',
         'tenant_id',
         'name',
+        'direction',
         'position',
         'width',
         'height',
