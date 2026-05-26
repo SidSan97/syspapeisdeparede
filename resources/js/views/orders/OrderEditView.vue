@@ -852,6 +852,7 @@
               :total-vista="`R$ ${totalBudgetVista.toFixed(2)}`"
               :total-prazo="`R$ ${totalBudgetPrazo.toFixed(2)}`"
               :strip-summary="stripSummary"
+              :rooms="budget.rooms"
             />
           </div>
         </div>

@@ -82,8 +82,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 import { copyBudgetSummary } from '@/utils/copyBudgetSummaryUtils';
+import {
+  buildStripSummaryByRoom,
+  countTotalStripsFromSummary,
+} from '@/utils/stripSummaryUtils';
 
 const props = defineProps({
   totalRooms: {
@@ -130,18 +135,33 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  rooms: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const toast = useToast();
 
+const roomStripSummary = computed(() => {
+  if (Array.isArray(props.rooms) && props.rooms.length) {
+    return buildStripSummaryByRoom(props.rooms);
+  }
+
+  return {
+    lines: [],
+    totalStrips: countTotalStripsFromSummary(props.stripSummary),
+  };
+});
+
 async function copyStripSummary() {
   await copyBudgetSummary(
     {
-      totalWalls: props.totalWalls,
+      totalStrips: roomStripSummary.value.totalStrips,
       totalArea: props.totalArea,
       totalVista: props.totalVista,
       totalPrazo: props.totalPrazo,
-      stripSummary: props.stripSummary,
+      roomSummaryLines: roomStripSummary.value.lines,
       freight: props.freight,
       artsTotal: props.artsTotal,
     },

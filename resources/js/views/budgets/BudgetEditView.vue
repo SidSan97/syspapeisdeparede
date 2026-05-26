@@ -607,6 +607,7 @@
               :total-vista="formatCurrency(totalBudgetVista)"
               :total-prazo="formatCurrency(totalBudgetPrazo)"
               :strip-summary="stripSummary"
+              :rooms="budget.rooms"
             />
           </div>
         </div>

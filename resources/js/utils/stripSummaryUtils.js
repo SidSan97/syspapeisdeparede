@@ -89,6 +89,67 @@ export function buildStripSummaryFromParts(rooms = []) {
 }
 
 /**
+ * Resumo por ambiente/parede para cópia (WhatsApp).
+ *
+ * Ex.: "Quarto (Parede 1) - 5F de 1,50m + 4F de 1,00m"
+ *
+ * @param {Array<{ name?: string, walls?: Array<{ name?: string }> }>} rooms
+ * @returns {{ lines: string[], totalStrips: number }}
+ */
+export function buildStripSummaryByRoom(rooms = []) {
+  const lines = [];
+  let totalStrips = 0;
+
+  if (!Array.isArray(rooms) || !rooms.length) {
+    return { lines, totalStrips };
+  }
+
+  rooms.forEach((room, roomIndex) => {
+    const roomName = String(room?.name ?? '').trim() || `Ambiente ${roomIndex + 1}`;
+
+    if (!Array.isArray(room?.walls) || !room.walls.length) {
+      return;
+    }
+
+    room.walls.forEach((wall, wallIndex) => {
+      const wallName = String(wall?.name ?? '').trim() || `Parede ${wallIndex + 1}`;
+      const sequence = calculateWallWithContinuations(wall);
+      const summary = formatGroups(sequence.groups);
+
+      if (!summary) {
+        return;
+      }
+
+      totalStrips += sequence.groups.reduce((sum, group) => sum + Number(group.q ?? 0), 0);
+      lines.push(`${roomName} (${wallName}) - ${summary}`);
+    });
+  });
+
+  return { lines, totalStrips };
+}
+
+/**
+ * Soma quantidades de faixas a partir de um resumo no formato "5F de 1,50m + ...".
+ *
+ * @param {string} summary
+ * @returns {number}
+ */
+export function countTotalStripsFromSummary(summary = '') {
+  if (!summary) {
+    return 0;
+  }
+
+  let total = 0;
+  const matches = String(summary).matchAll(/(\d+)F/g);
+
+  for (const match of matches) {
+    total += Number(match[1] ?? 0);
+  }
+
+  return total;
+}
+
+/**
  * Resumo construído a partir das mesmas funções de cálculo usadas pelo template
  * de cada view (quantidade e altura por parede).
  */

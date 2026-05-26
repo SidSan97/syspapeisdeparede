@@ -64,7 +64,7 @@ import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
 import { calculatePartsTotalArea } from '@/utils/calculateStripsUtils.js';
 import { copyBudgetSummary } from '@/utils/copyBudgetSummaryUtils';
-import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
+import { buildStripSummaryByRoom, buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
 
 const props = defineProps({
   data: {
@@ -84,6 +84,8 @@ const totalWalls = computed(() => {
 });
 const stripSummary = computed(() => buildStripSummaryFromParts(props.data?.rooms || []));
 
+const roomStripSummary = computed(() => buildStripSummaryByRoom(props.data?.rooms || []));
+
 const totalArea = computed(() => {
   const rooms = props.data?.rooms;
   if (Array.isArray(rooms) && rooms.length) {
@@ -98,11 +100,11 @@ const artsTotal = computed(() => Number(props.data?.payment_breakdown?.base?.ART
 async function copyStripSummary() {
   await copyBudgetSummary(
     {
-      totalWalls: totalWalls.value,
+      totalStrips: roomStripSummary.value.totalStrips,
       totalArea: formatNumber(totalArea.value),
       totalVista: formatCurrency(props.data?.total_amount || 0),
       totalPrazo: formatCurrency(props.data?.total_amount_installments || 0),
-      stripSummary: stripSummary.value || '-',
+      roomSummaryLines: roomStripSummary.value.lines,
       freight: freightAmount.value > 0 ? formatCurrency(freightAmount.value) : '',
       artsTotal: artsTotal.value > 0 ? formatCurrency(artsTotal.value) : '',
     },

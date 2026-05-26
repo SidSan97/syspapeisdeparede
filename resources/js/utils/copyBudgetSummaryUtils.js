@@ -23,37 +23,51 @@ function isNonEmpty(value) {
   return value !== null && value !== undefined && String(value).trim() !== '';
 }
 
+const COPY_SEPARATOR = '---------------------------------';
+
 export function buildBudgetSummaryText({
-  totalWalls,
+  totalStrips = 0,
   totalArea,
   totalVista,
   totalPrazo,
-  stripSummary,
+  roomSummaryLines = [],
   freight,
   artsTotal,
 }) {
-  const resumo = stripSummary || '-';
   const lines = [
+    COPY_SEPARATOR,
     'Orçamento Papel de Parede Sob Medida:',
     '',
-    `Total: ${totalWalls} faixas • ${totalArea} m`,
+    `Total: ${totalStrips} faixas • ${totalArea} m`,
   ];
 
-  if (isNonEmpty(freight)) {
-    lines.push(`Frete: ${freight}`);
-  }
   if (isNonEmpty(artsTotal)) {
     lines.push(`Artes: ${artsTotal}`);
   }
 
-  lines.push(`À vista: ${totalVista}`, `A prazo: ${totalPrazo}`, '', `Resumo: ${resumo}`);
+  lines.push(`À vista: ${totalVista}`, `A prazo: ${totalPrazo}`, '');
+
+  if (roomSummaryLines.length) {
+    lines.push('Resumo de Ambientes:');
+    lines.push(...roomSummaryLines);
+  }
+
+  lines.push('');
 
   const missing = [];
-  if (!isNonEmpty(freight)) missing.push('frete');
-  if (!isNonEmpty(artsTotal)) missing.push('artes');
-  if (missing.length) {
-    lines.push('', `*Não estão inclusos os valores de ${missing.join(' e de ')}.*`);
+  if (!isNonEmpty(freight)) {
+    missing.push('frete');
   }
+  if (!isNonEmpty(artsTotal)) {
+    missing.push('artes');
+  }
+
+  if (missing.length) {
+    const suffix = missing.length > 1 ? missing.join(' e de ') : missing[0];
+    lines.push(`*Não estão inclusos os valores de ${suffix}.*`);
+  }
+
+  lines.push(COPY_SEPARATOR);
 
   return lines.join('\n');
 }
