@@ -1,6 +1,69 @@
 <template>
   <section class="content">
     <Page title="Orçamento" :back-to="{ name: 'budgets.list' }" :breadcrumbs="routes">
+      <template #extra>
+        <BaseDropdown v-if="budget" align="end">
+          <template #trigger="{ open, toggle }">
+            <button
+              class="btn btn-primary"
+              type="button"
+              :class="{ show: open }"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              Ações
+            </button>
+          </template>
+
+          <li>
+            <button class="dropdown-item" type="button" @click="confirmDuplicate">
+              Duplicar
+            </button>
+          </li>
+          <li>
+            <router-link
+              class="dropdown-item"
+              :class="{ disabled: !canEditBudget(budget) }"
+              :to="{
+                name: 'budgets.edit',
+                params: { id: budget.id },
+              }"
+            >
+              Editar
+            </router-link>
+          </li>
+          <li>
+            <router-link
+              class="dropdown-item"
+              :to="{
+                name: 'budgets.pdf-preview',
+                params: { id: budget.id },
+              }"
+            >
+              Imprimir
+            </router-link>
+          </li>
+          <li v-if="showCreateOrder(budget)">
+            <button class="dropdown-item" type="button" @click="confirmCreateOrder">
+              Criar pedido
+            </button>
+          </li>
+          <li v-if="!isCancelled(budget)">
+            <button class="dropdown-item" type="button" @click="confirmCancel">
+              Cancelar
+            </button>
+          </li>
+          <li>
+            <hr class="dropdown-divider" />
+          </li>
+          <li>
+            <button class="dropdown-item text-danger" type="button" @click="confirmDelete">
+              Excluir
+            </button>
+          </li>
+        </BaseDropdown>
+      </template>
+
       <div v-if="budgetStore.loadingBudgetById" class="text-center text-muted py-5">
         <div class="spinner-border" role="status">
           <span class="visually-hidden">Carregando...</span>
@@ -51,6 +114,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
+import BaseDropdown from '@/components/common/BaseDropdown.vue';
 
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
@@ -63,12 +127,17 @@ import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
 import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
 
 import { useBudgetStore } from '@/stores/budgetStore';
+import { useBudgetsList } from '@/composables/useBudgetsList';
+import { useToast } from '@/composables/useToast';
+import { budgetService } from '@/services/budgetService';
 import { orderService } from '@/services/orderService';
 import { http } from '@/lib/http';
 
 const router = useRouter();
 const route = useRoute();
 const budgetStore = useBudgetStore();
+const toast = useToast();
+const { duplicateBudget, createOrder } = useBudgetsList();
 
 const routes = [
   { path: '/', breadcrumbName: 'Início' },
@@ -85,6 +154,117 @@ const budget = computed(() => budgetStore.currentBudget);
 const isDropshippingEnabled = computed(() => {
   return budget.value?.dropshipping_budget === 1;
 });
+
+function isApprovedBudget(b) {
+  const status = (b?.status ?? '').toString().toLowerCase().trim();
+  return status === 'aprovado';
+}
+
+function hasLinkedOrder(b) {
+  const orderId = b?.order_id ?? b?.orderId;
+  if (orderId === null || orderId === undefined || orderId === '') {
+    return false;
+  }
+  const n = Number(orderId);
+  return Number.isFinite(n) && n > 0;
+}
+
+function canEditBudget(b) {
+  if (isApprovedBudget(b) && hasLinkedOrder(b)) {
+    return false;
+  }
+  return true;
+}
+
+function isCancelled(b) {
+  const status = (b?.status ?? '').toString().toLowerCase();
+  return status === 'cancelled' || status === 'cancelado';
+}
+
+function showCreateOrder(b) {
+  return (
+    b?.status === null ||
+    (b?.status && b.status.toString().toLowerCase() === 'em aberto')
+  );
+}
+
+async function confirmDuplicate() {
+  const result = await window.Swal.fire({
+    title: 'Duplicar orçamento?',
+    html: 'Tem certeza que deseja duplicar este orçamento?',
+    icon: 'question',
+    confirmButtonText: 'Duplicar',
+    cancelButtonText: 'Cancelar',
+    showCancelButton: true,
+  });
+
+  if (result.isConfirmed && budget.value) {
+    await duplicateBudget(budget.value);
+  }
+}
+
+async function confirmCreateOrder() {
+  const result = await window.Swal.fire({
+    title: 'Criar pedido?',
+    html: 'Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.',
+    icon: 'info',
+    confirmButtonText: 'Criar pedido',
+    cancelButtonText: 'Cancelar',
+    showCancelButton: true,
+  });
+
+  if (result.isConfirmed && budget.value) {
+    await createOrder(budget.value);
+  }
+}
+
+async function confirmCancel() {
+  const result = await window.Swal.fire({
+    title: 'Cancelar orçamento?',
+    html: 'Tem certeza que deseja cancelar o orçamento?',
+    icon: 'warning',
+    confirmButtonText: 'Cancelar orçamento',
+    cancelButtonText: 'Não, manter',
+    showCancelButton: true,
+  });
+
+  if (!result.isConfirmed || !budget.value?.id) {
+    return;
+  }
+
+  try {
+    await budgetService.cancel(budget.value.id);
+    toast.success('Orçamento cancelado com sucesso.');
+    await budgetStore.loadBudgetById(budget.value.id);
+  } catch (error) {
+    console.error(error);
+    toast.error('Erro ao cancelar o orçamento. Tente novamente.');
+  }
+}
+
+async function confirmDelete() {
+  const result = await window.Swal.fire({
+    title: 'Excluir orçamento?',
+    html: 'Tem certeza que deseja excluir o orçamento? Esta ação não pode ser desfeita.',
+    icon: 'warning',
+    confirmButtonText: 'Excluir',
+    cancelButtonText: 'Cancelar',
+    showCancelButton: true,
+  });
+
+  if (!result.isConfirmed || !budget.value?.id) {
+    return;
+  }
+
+  try {
+    await budgetService.delete(budget.value.id);
+    toast.success('Orçamento excluído com sucesso.');
+    router.push({ name: 'budgets.list' });
+  } catch (error) {
+    console.error(error);
+    toast.error('Opa! Erro ao excluir o orçamento. Tente novamente.');
+  }
+}
 
 async function fetchBudget() {
   const id = route.params.id;
