@@ -55,8 +55,6 @@
                     </div>
                   </div>
 
-                  <SelectedModelsCard :wall="wall" />
-
                   <!-- Continuações -->
                   <div v-if="wall.continuations && wall.continuations.length > 0" class="mb-3">
                     <div class="text-muted small mb-2">Continuações</div>
@@ -93,6 +91,8 @@
                       </div>
                     </div>
                   </div>
+
+                  <SelectedModelsCard :wall="wall" />
 
                   <!-- Cálculos da parede -->
                   <div v-if="wall.total_area" class="alert alert-success mb-0">
