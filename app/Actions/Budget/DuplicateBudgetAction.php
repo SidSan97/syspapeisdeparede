@@ -29,9 +29,6 @@ class DuplicateBudgetAction
                 'total_amount_markup' => $source->total_amount_markup,
                 'total_amount_installments_markup' => $source->total_amount_installments_markup,
                 'delivery_time' => $source->delivery_time,
-                'payment_method' => $source->payment_method,
-                'installment_limit' => $source->installment_limit,
-                'installments' => $source->installments,
                 'cep' => $source->cep,
                 'selected_carrier_name' => $source->selected_carrier_name,
                 'selected_carrier_price' => $source->selected_carrier_price,
@@ -39,7 +36,6 @@ class DuplicateBudgetAction
                 'carriers_snapshot' => $source->carriers_snapshot,
                 'primary_budget_room_id' => null,
                 'status' => $source->status,
-                'payment_file' => null,
                 'dropshipping_budget' => $source->dropshipping_budget,
             ]);
 

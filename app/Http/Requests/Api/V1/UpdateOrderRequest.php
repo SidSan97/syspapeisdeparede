@@ -29,8 +29,6 @@ class UpdateOrderRequest extends FormRequest
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'total_amount_installments' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'delivery_time' => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'payment_method' => ['sometimes', 'nullable', 'string'],
-            'installment_limit' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'installments' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'cep' => ['sometimes', 'nullable', 'string', 'max:9'],
             'selected_carrier_name' => ['sometimes', 'nullable', 'string'],
@@ -88,16 +86,6 @@ class UpdateOrderRequest extends FormRequest
         // Processar carriers_snapshot se não vier mas houver carriers no request
         if (!$this->has('carriers_snapshot') && $this->has('carriers') && is_array($this->input('carriers'))) {
             $data['carriers_snapshot'] = $this->input('carriers');
-        }
-
-        // Processar payment_method se vier como 'pix' ou 'credit_card'
-        if ($this->has('payment_method')) {
-            $paymentMethod = $this->input('payment_method');
-            if ($paymentMethod === 'credit_card') {
-                $data['payment_method'] = 'installment';
-            } elseif ($paymentMethod === 'pix') {
-                $data['payment_method'] = 'pix';
-            }
         }
 
         if (!empty($data)) {

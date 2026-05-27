@@ -52,8 +52,6 @@ export function useBudgetEditState(budget) {
       rooms: originalBudget.value.rooms || [],
       cep: originalBudget.value.cep || '',
       selectedCarrier: originalBudget.value.selectedCarrier,
-      paymentMethod: originalBudget.value.paymentMethod || '',
-      installments: originalBudget.value.installments || 1,
     };
 
     const current = {
@@ -65,8 +63,6 @@ export function useBudgetEditState(budget) {
       rooms: budget.rooms || [],
       cep: budget.cep || '',
       selectedCarrier: budget.selectedCarrier,
-      paymentMethod: budget.paymentMethod || '',
-      installments: budget.installments || 1,
     };
 
     // Normalizar antes de comparar
@@ -125,8 +121,6 @@ export function useBudgetEditState(budget) {
           rooms: budget.rooms || [],
           cep: budget.cep || '',
           selectedCarrier: budget.selectedCarrier,
-          paymentMethod: budget.paymentMethod || '',
-          installments: budget.installments || 1,
         }),
       );
 
@@ -160,8 +154,6 @@ export function useBudgetEditState(budget) {
         rooms: budget.rooms || [],
         cep: budget.cep || '',
         selectedCarrier: budget.selectedCarrier,
-        paymentMethod: budget.paymentMethod || '',
-        installments: budget.installments || 1,
       }),
     );
   }

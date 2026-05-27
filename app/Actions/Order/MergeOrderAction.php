@@ -65,7 +65,6 @@ class MergeOrderAction
                 'total_amount_installments_markup' => null,
                 'delivery_time' => $totals['delivery_time'],
                 'payment_method' => $base->payment_method,
-                'installment_limit' => $base->installment_limit,
                 'installments' => $base->installments,
                 'cep' => $base->cep,
                 'selected_carrier_name' => $base->selected_carrier_name,

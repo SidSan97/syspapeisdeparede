@@ -27,9 +27,6 @@ class Budget extends Model
         'total_amount_markup',
         'total_amount_installments_markup',
         'delivery_time',
-        'payment_method',
-        'installment_limit',
-        'installments',
         'cep',
         'selected_carrier_name',
         'selected_carrier_price',
@@ -37,7 +34,6 @@ class Budget extends Model
         'carriers_snapshot',
         'primary_budget_room_id',
         'status',
-        'payment_file',
         'dropshipping_budget',
     ];
 
@@ -48,8 +44,6 @@ class Budget extends Model
         'total_amount_markup' => 'decimal:2',
         'total_amount_installments_markup' => 'decimal:2',
         'delivery_time' => 'integer',
-        'installment_limit' => 'integer',
-        'installments' => 'integer',
         'selected_carrier_price' => 'decimal:2',
         'selected_carrier_delivery_time' => 'integer',
         'carriers_snapshot' => 'array',

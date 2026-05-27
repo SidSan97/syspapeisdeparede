@@ -133,10 +133,5 @@ export function validateBudget(
     return false;
   }
 
-  if (!budget.paymentMethod) {
-    showWarning('Por favor, selecione uma forma de pagamento');
-    return false;
-  }
-
   return true;
 }

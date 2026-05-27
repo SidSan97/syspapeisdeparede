@@ -113,13 +113,6 @@ class BudgetRepository
                 'total_amount' => $totalAmount,
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
-                'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? ($data['installmentLimit'] ?? null)
-                    : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? (int) ($data['installments'] ?? 1)
-                    : null,
                 'cep' => $data['cep'] ?? null,
                 'selected_carrier_name' => $selectedCarrier['name'] ?? null,
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
@@ -222,13 +215,6 @@ class BudgetRepository
                 'total_amount' => $totalAmount,
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
-                'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? ($data['installmentLimit'] ?? null)
-                    : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? (int) ($data['installments'] ?? 1)
-                    : null,
                 'cep' => $data['cep'] ?? null,
                 'selected_carrier_name' => $selectedCarrier['name'] ?? null,
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,

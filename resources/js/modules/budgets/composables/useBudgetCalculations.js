@@ -211,14 +211,7 @@ export function useBudgetCalculations(budget, getModelById, precoVista, precoPra
     return budget.total_amount_installments || calculatedTotalBudgetPrazo.value;
   });
 
-  const totalBudget = computed(() => {
-    if (budget.paymentMethod === 'pix') {
-      return totalBudgetVista.value;
-    } else if (budget.paymentMethod === 'credit_card') {
-      return totalBudgetPrazo.value;
-    }
-    return 0;
-  });
+  const totalBudget = computed(() => totalBudgetVista.value);
 
   return {
     totalWalls,

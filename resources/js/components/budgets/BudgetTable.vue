@@ -192,13 +192,10 @@ function isCancelled(budget) {
   return status === 'cancelled' || status === 'cancelado';
 }
 
-function isPixPayment(budget) {
-  const method = (budget?.payment_method ?? budget?.paymentMethod ?? '').toString().toLowerCase();
-  return method === 'pix';
-}
-
 function budgetCostValue(budget) {
-  const raw = isPixPayment(budget)
+  const method = (budget?.payment_method ?? budget?.paymentMethod ?? '').toString().toLowerCase();
+  const useVista = !method || method === 'pix';
+  const raw = useVista
     ? (budget?.total_amount ?? budget?.totalAmount)
     : (budget?.total_amount_installments ?? budget?.totalAmountInstallments);
   if (raw === null || raw === undefined || raw === '') {
@@ -209,7 +206,9 @@ function budgetCostValue(budget) {
 }
 
 function markupSaleValue(budget) {
-  const raw = isPixPayment(budget)
+  const method = (budget?.payment_method ?? budget?.paymentMethod ?? '').toString().toLowerCase();
+  const useVista = !method || method === 'pix';
+  const raw = useVista
     ? (budget?.total_amount_markup ?? budget?.totalAmountMarkup)
     : (budget?.total_amount_installments_markup ?? budget?.totalAmountInstallmentsMarkup);
   if (raw === null || raw === undefined || raw === '') {

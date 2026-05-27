@@ -192,9 +192,6 @@ export function normalizeBudgetFromAPI(budgetData) {
     }
   }
 
-  const normalizedPaymentMethod =
-    budgetData.payment_method === 'installment' ? 'credit_card' : budgetData.payment_method || '';
-
   const normalizedStatus =
     budgetData.status === null || budgetData.status === undefined || budgetData.status === ''
       ? null
@@ -208,9 +205,6 @@ export function normalizeBudgetFromAPI(budgetData) {
     cep: budgetData.cep || '',
     carriers: carriers,
     selectedCarrier: selectedCarrierIndex,
-    paymentMethod: normalizedPaymentMethod,
-    installmentLimit: budgetData.installment_limit || 12,
-    installments: budgetData.installments || 1,
     total_amount: budgetData.total_amount ? Number(budgetData.total_amount) : 0,
     total_amount_installments: budgetData.total_amount_installments
       ? Number(budgetData.total_amount_installments)

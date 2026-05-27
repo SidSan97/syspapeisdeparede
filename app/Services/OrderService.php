@@ -55,26 +55,6 @@ class OrderService
             throw new \InvalidArgumentException('Os pedidos devem pertencer ao mesmo revendedor.');
         }
 
-        $payBase = $this->normalizePaymentMethodForMerge($base->payment_method);
-        foreach ($orders as $o) {
-            if ($this->normalizePaymentMethodForMerge($o->payment_method) !== $payBase) {
-                throw new \InvalidArgumentException('Todos os pedidos devem ter o mesmo tipo de pagamento.');
-            }
-        }
-
-        if ($payBase === 'credit_card') {
-            $inst0 = (int) ($base->installments ?? 0);
-            $lim0 = (int) ($base->installment_limit ?? 0);
-            foreach ($orders as $o) {
-                if ((int) ($o->installments ?? 0) !== $inst0) {
-                    throw new \InvalidArgumentException('No cartão parcelado, todos os pedidos devem ter o mesmo número de parcelas.');
-                }
-                if ((int) ($o->installment_limit ?? 0) !== $lim0) {
-                    throw new \InvalidArgumentException('No cartão parcelado, todos os pedidos devem ter o mesmo limite de parcelas.');
-                }
-            }
-        }
-
         $name0 = $base->selected_carrier_name;
         $price0 = round((float) ($base->selected_carrier_price ?? 0), 2);
         $time0 = (int) ($base->selected_carrier_delivery_time ?? 0);

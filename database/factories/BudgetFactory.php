@@ -22,7 +22,6 @@ class BudgetFactory extends Factory
     public function definition(): array
     {
         $statuses = ['em aberto', 'aprovado', 'cancelado'];
-        $paymentMethods = ['dinheiro', 'cartão de crédito', 'cartão de débito', 'pix', 'boleto'];
         $carriers = ['Jadlog', 'Transportadora XYZ', 'Logística ABC', 'Express Delivery', 'Correios',
             'Total Express', 'Gateway logistico', 'Magalu Entregas', 'Magalu Fulfillment',
             'Shopee Envios', 'Netshoes Entregas', 'Via Varejo Envvias', 'AliExpress Envios',
@@ -49,9 +48,6 @@ class BudgetFactory extends Factory
                 ? round($totalAmountInstallments * $markupFactor, 2)
                 : null,
             'delivery_time' => fake()->numberBetween(7, 45),
-            'payment_method' => fake()->randomElement($paymentMethods),
-            'installment_limit' => fake()->numberBetween(1, 12),
-            'installments' => fake()->numberBetween(1, 6),
             'cep' => fake()->postcode(),
             'selected_carrier_name' => $carrier.' - Package',
             'selected_carrier_price' => fake()->randomFloat(2, 50, 500),

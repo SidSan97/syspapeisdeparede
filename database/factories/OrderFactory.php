@@ -59,8 +59,7 @@ class OrderFactory extends Factory
                 ? round($totalAmountInstallments * $markupFactor, 2)
                 : null,
             'delivery_time' => fake()->numberBetween(7, 45),
-            'payment_method' => fake()->randomElement($paymentMethods),
-            'installment_limit' => fake()->numberBetween(1, 12),
+            'payment_method' => fake()->optional()->randomElement(['pix', 'installment']),
             'installments' => fake()->numberBetween(1, 6),
             'cep' => fake()->postcode(),
             'selected_carrier_name' => $carrier.' - Package',

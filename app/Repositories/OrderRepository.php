@@ -318,9 +318,6 @@ class OrderRepository
             'total_amount_markup' => $budget->total_amount_markup,
             'total_amount_installments_markup' => $budget->total_amount_installments_markup,
             'delivery_time' => $budget->delivery_time,
-            'payment_method' => $budget->payment_method,
-            'installment_limit' => $budget->installment_limit,
-            'installments' => $budget->installments,
             'cep' => $budget->cep,
             'selected_carrier_name' => $budget->selected_carrier_name,
             'selected_carrier_price' => $budget->selected_carrier_price,
@@ -328,7 +325,6 @@ class OrderRepository
             'carriers_snapshot' => $budget->carriers_snapshot,
             'primary_budget_room_id' => $budget->primary_budget_room_id,
             'status' => $budget->status,
-            'payment_file' => $budget->payment_file,
             'dropshipping_budget' => $budget->dropshipping_budget,
         ];
     }
@@ -423,7 +419,6 @@ class OrderRepository
                 'total_amount_installments_markup' => null,
                 'delivery_time' => $totals['delivery_time'],
                 'payment_method' => $base->payment_method,
-                'installment_limit' => $base->installment_limit,
                 'installments' => $base->installments,
                 'cep' => $base->cep,
                 'selected_carrier_name' => $base->selected_carrier_name,

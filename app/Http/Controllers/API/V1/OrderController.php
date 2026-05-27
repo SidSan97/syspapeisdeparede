@@ -200,10 +200,14 @@ class OrderController extends Controller
             abort(500, 'URL de pagamento não encontrada na resposta');
         }
 
+        $storedPaymentMethod = $paymentMethod === 'credit_card' ? 'installment' : $paymentMethod;
+
         $order->update([
             'link_payment' => $paymentUrl,
             'payment_expiration_date' => $expirationDate,
             'payment_status' => $order->payment_status ?: 'unpaid',
+            'payment_method' => $storedPaymentMethod,
+            'installments' => $installments,
         ]);
 
         OrderPaymentLink::create([

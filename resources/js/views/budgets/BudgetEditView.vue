@@ -429,7 +429,7 @@
             </div>
           </div>
 
-          <!-- Sidebar: Frete e Pagamento -->
+          <!-- Sidebar: Frete e Resumo -->
           <div class="col-12 col-lg-4">
             <!-- Seção: Frete -->
             <div class="card mb-4 mt-2">
@@ -496,97 +496,11 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Seção: Pagamento -->
-            <div class="card mb-4">
-              <div class="card-body">
-                <h5 class="card-title">Pagamento</h5>
-                <div class="mb-3">
-                  <label for="freightValue" class="form-label">Valor do frete</label>
-                  <div class="input-group input-group-prefix">
-                    <input
-                      type="text"
-                      id="freightValue"
-                      class="form-control"
-                      :value="
-                        budget.selectedCarrier !== null
-                          ? budget.carriers[budget.selectedCarrier]?.price
-                              .toFixed(2)
-                              .replace('.', ',')
-                          : '0,00'
-                      "
-                      readonly
-                    />
-                    <label for="freightValue" class="input-group-text">R$</label>
-                  </div>
-                </div>
-
-                <hr class="my-4" />
-
-                <div class="mb-3">
-                  <label class="form-label">Selecione a forma de pagamento</label>
-                  <div class="row g-2">
-                    <div class="col-12 mb-2">
-                      <div
-                        class="card h-100"
-                        :class="{
-                          'border-primary': budget.paymentMethod === 'pix',
-                        }"
-                        @click="budget.paymentMethod = 'pix'"
-                        style="cursor: pointer"
-                      >
-                        <div class="card-body text-center py-3">
-                          <IconQrcode :size="32" class="mb-2" />
-
-                          <h6 class="mb-1">À Vista (PIX)</h6>
-                          <p class="text-muted small mb-0">Pagamento à vista com desconto</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-12" v-if="budget.installmentLimit > 1">
-                      <div
-                        class="card h-100"
-                        :class="{
-                          'border-primary': budget.paymentMethod === 'credit_card',
-                        }"
-                        @click="budget.paymentMethod = 'credit_card'"
-                        style="cursor: pointer"
-                      >
-                        <div class="card-body text-center py-3">
-                          <IconCreditCard :size="32" class="mb-2" />
-
-                          <h6 class="mb-1">A Prazo (Cartão ou Boleto)</h6>
-                          <p class="text-muted small mb-0">
-                            Parcelado em até
-                            {{ budget.installmentLimit }}x
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="budget.paymentMethod === 'credit_card'" class="mt-3">
-                    <label for="installments" class="form-label">Número de Parcelas</label>
-                    <select
-                      v-model.number="budget.installments"
-                      id="installments"
-                      class="form-control"
-                    >
-                      <option v-for="n in budget.installmentLimit" :key="n" :value="n">
-                        {{ n }}x
-                      </option>
-                    </select>
-                  </div>
-
-                  <br />
-
-                  <span class="budget-attention-info">
-                    ATENÇÃO! OS PREÇOS DO ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS
-                    CORRIDOS, APÓS ESSE PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
-                  </span>
-                </div>
+                <span class="budget-attention-info d-block mt-3">
+                  ATENÇÃO! OS PREÇOS DO ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS
+                  CORRIDOS, APÓS ESSE PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
+                </span>
               </div>
             </div>
 
@@ -643,7 +557,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 // Icons
-import { IconCreditCard, IconPlus, IconQrcode, IconTrash } from '@tabler/icons-vue';
+import { IconPlus, IconTrash } from '@tabler/icons-vue';
 
 const toast = useToast();
 const router = useRouter();
@@ -688,9 +602,6 @@ const budget = reactive({
   cep: '',
   carriers: [],
   selectedCarrier: null,
-  paymentMethod: '',
-  installmentLimit: 12,
-  installments: 1,
   total_amount: 0,
   total_amount_installments: 0,
   dropshipping_budget: 0,
@@ -899,11 +810,6 @@ function updateBudget() {
 
   delete payload.carriers;
   delete payload.id;
-
-  if (payload.paymentMethod === 'pix') {
-    payload.installmentLimit = null;
-    payload.installments = null;
-  }
 
   // Configurar dropshipping_budget e dropshipping_data
   payload.dropshipping_budget = enableDropshipping.value ? 1 : 0;

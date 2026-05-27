@@ -1,15 +1,3 @@
-/**
- * Normaliza método de pagamento como na API (installment → credit_card).
- * @param {string|null|undefined} method
- * @returns {string|null}
- */
-export function normalizePaymentMethod(method) {
-  if (method == null || method === '') {
-    return null;
-  }
-  return method === 'installment' ? 'credit_card' : method;
-}
-
 function digitsOnly(value) {
   return String(value ?? '').replace(/\D/g, '');
 }
@@ -42,26 +30,6 @@ export function validateMergeOrdersSelection(selectedOrders) {
     const st = String(o.status ?? '').toLowerCase();
     if (st === 'cancelado') {
       return 'Não é possível juntar pedidos cancelados.';
-    }
-  }
-
-  const pay0 = normalizePaymentMethod(first.payment_method);
-  for (const o of selectedOrders) {
-    if (normalizePaymentMethod(o.payment_method) !== pay0) {
-      return 'Todos os pedidos devem ter o mesmo tipo de pagamento.';
-    }
-  }
-
-  if (pay0 === 'credit_card') {
-    const inst0 = Number(first.installments ?? 0);
-    const limit0 = Number(first.installment_limit ?? 0);
-    for (const o of selectedOrders) {
-      if (Number(o.installments ?? 0) !== inst0) {
-        return 'No cartão parcelado, todos os pedidos devem ter o mesmo número de parcelas.';
-      }
-      if (Number(o.installment_limit ?? 0) !== limit0) {
-        return 'No cartão parcelado, todos os pedidos devem ter o mesmo limite de parcelas.';
-      }
     }
   }
 

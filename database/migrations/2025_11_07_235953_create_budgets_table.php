@@ -25,9 +25,6 @@ return new class extends Migration
             $table->decimal('total_amount_markup', 12, 2)->nullable();
             $table->decimal('total_amount_installments_markup', 12, 2)->nullable();
             $table->unsignedInteger('delivery_time')->default(0);
-            $table->string('payment_method')->nullable();
-            $table->unsignedTinyInteger('installment_limit')->nullable();
-            $table->unsignedTinyInteger('installments')->nullable();
             $table->string('cep', 9)->nullable();
             $table->string('selected_carrier_name')->nullable();
             $table->decimal('selected_carrier_price', 10, 2)->nullable();
@@ -35,11 +32,8 @@ return new class extends Migration
             $table->json('carriers_snapshot')->nullable();
             $table->unsignedBigInteger('primary_budget_room_id')->nullable();
             $table->string('status', 50)->nullable();
-            $table->string('payment_file')->nullable();
             $table->tinyInteger('dropshipping_budget')->default(0);
             $table->timestamps();
-
-            $table->index('payment_method');
         });
     }
 

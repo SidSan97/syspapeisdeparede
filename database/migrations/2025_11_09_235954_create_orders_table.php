@@ -37,9 +37,8 @@ return new class extends Migration
             $table->decimal('total_amount_installments_markup', 12, 2)->nullable();
             $table->unsignedInteger('delivery_time')->default(0);
 
-            // Payment fields
+            // Payment fields (definidos na tela de detalhes ao gerar link / registrar pagamento)
             $table->string('payment_method')->nullable();
-            $table->unsignedTinyInteger('installment_limit')->nullable();
             $table->unsignedTinyInteger('installments')->nullable();
             $table->string('payment_file')->nullable();
 
