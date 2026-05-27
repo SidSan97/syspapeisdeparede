@@ -1,6 +1,7 @@
 <template>
   <div
     class="card mb-2 production-card"
+    :class="{ 'border border-success border-2 shadow-sm': isFullyProduced }"
     :draggable="!isFullyProduced"
     @dragstart="$emit('drag-start', $event)"
     @click="$emit('click')"
@@ -26,6 +27,15 @@
             productionTimerText
           }}</span>
         </span>
+
+        <div
+          v-if="isFullyProduced"
+          class="d-flex align-items-center justify-content-start p-1 mt-2 rounded bg-success text-white small w-50"
+          title="Produção concluída (100%)"
+        >
+          <IconCircleCheck :size="18" stroke-width="2.5" />
+          <span class="ms-1">Concluído</span>
+        </div>
       </div>
 
       <div class="d-flex gap-3">
@@ -80,7 +90,13 @@ import {
 } from '@/utils/cardUtils';
 
 // Icons
-import { IconClock, IconList, IconMessage, IconPaperclip } from '@tabler/icons-vue';
+import {
+  IconCircleCheck,
+  IconClock,
+  IconList,
+  IconMessage,
+  IconPaperclip,
+} from '@tabler/icons-vue';
 import { useFormatting } from '@/composables/useFormatting';
 
 const props = defineProps({

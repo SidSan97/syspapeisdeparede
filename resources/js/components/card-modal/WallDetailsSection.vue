@@ -50,13 +50,22 @@
         </tfoot>
       </table>
     </div>
+
+    <div v-if="stripSummary" class="mt-3 small text-muted">
+      <strong class="text-body">Resumo de Faixas:</strong>
+      {{ stripSummary }}
+    </div>
+
+    <button class="btn btn-default mt-2" @click="copyStripSummary">Copiar resumo</button>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
 import { calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+import { copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
 import { IconRuler } from '@tabler/icons-vue';
 
 const props = defineProps({
@@ -66,7 +75,31 @@ const props = defineProps({
   },
 });
 
+const toast = useToast();
 const { formatNumber } = useFormatting();
+
+const stripSummary = computed(() => {
+  const w = props.wall;
+  if (!w) return '';
+
+  const groups = [];
+
+  const q0 = Number(w.strip_count);
+  const h0 = Number(w.strip_height);
+  if (Number.isFinite(q0) && q0 > 0 && Number.isFinite(h0) && h0 > 0) {
+    groups.push({ q: q0, h: h0 });
+  }
+
+  visibleContinuations.value.forEach((continuation) => {
+    const q = Number(calculateStrips(continuation));
+    const h = Number(calculateStripHeight(continuation));
+    if (Number.isFinite(q) && q > 0 && Number.isFinite(h) && h > 0) {
+      groups.push({ q, h });
+    }
+  });
+
+  return groups.map((g) => `${g.q}F de ${formatNumber(g.h)}m`).join(' + ');
+});
 
 const visibleContinuations = computed(() => {
   const w = props.wall;
@@ -130,4 +163,13 @@ const installationDirectionsSummary = computed(() => {
   const label = directionInstallLabel(direction);
   return label || '';
 });
+
+async function copyStripSummary() {
+  const ok = await copyBudgetSummaryText(stripSummary.value || '');
+  if (ok) {
+    toast?.success?.('Resumo copiado para a área de transferência');
+  } else {
+    toast?.error?.('Não foi possível copiar o resumo.');
+  }
+}
 </script>
