@@ -23,7 +23,7 @@
             <td>{{ wall.name || 'Não informado' }}</td>
             <td class="text-end">{{ formatDimensions(wall.width) }}</td>
             <td class="text-end">{{ formatDimensions(wall.height) }}</td>
-            <td class="text-end">{{ formatStripCount(wall.strip_count) }}</td>
+            <td class="text-end">{{ formatStripCount(mainWallStripCount) }}</td>
             <td class="text-end">{{ formatDimensions(wall.strip_height) }}</td>
             <td>Inicial</td>
           </tr>
@@ -31,8 +31,8 @@
             <td>{{ continuationRowLabel(continuation, index) }}</td>
             <td class="text-end">{{ formatDimensions(continuation.width) }}</td>
             <td class="text-end">{{ formatDimensions(continuation.height) }}</td>
-            <td class="text-end">{{ calculateStrips(continuation) }}</td>
-            <td class="text-end">{{ formatDimensions(calculateStripHeight(continuation)) }}</td>
+            <td class="text-end">{{ formatStripCount(continuationStripCount(index)) }}</td>
+            <td class="text-end">{{ formatDimensions(continuationStripHeight(index)) }}</td>
             <td>{{ continuationFitDisplay(continuation) }}</td>
           </tr>
         </tbody>
@@ -64,7 +64,11 @@
 import { computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
-import { calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+import {
+  calculateStrips,
+  calculateStripHeight,
+  calculateWallWithContinuations,
+} from '@/utils/calculateStripsUtils.js';
 import { copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
 import { IconRuler } from '@tabler/icons-vue';
 
@@ -78,29 +82,6 @@ const props = defineProps({
 const toast = useToast();
 const { formatNumber } = useFormatting();
 
-const stripSummary = computed(() => {
-  const w = props.wall;
-  if (!w) return '';
-
-  const groups = [];
-
-  const q0 = Number(w.strip_count);
-  const h0 = Number(w.strip_height);
-  if (Number.isFinite(q0) && q0 > 0 && Number.isFinite(h0) && h0 > 0) {
-    groups.push({ q: q0, h: h0 });
-  }
-
-  visibleContinuations.value.forEach((continuation) => {
-    const q = Number(calculateStrips(continuation));
-    const h = Number(calculateStripHeight(continuation));
-    if (Number.isFinite(q) && q > 0 && Number.isFinite(h) && h > 0) {
-      groups.push({ q, h });
-    }
-  });
-
-  return groups.map((g) => `${g.q}F de ${formatNumber(g.h)}m`).join(' + ');
-});
-
 const visibleContinuations = computed(() => {
   const w = props.wall;
   if (
@@ -112,6 +93,53 @@ const visibleContinuations = computed(() => {
     return [];
   }
   return w.continuations.filter((item) => item != null && typeof item === 'object');
+});
+
+const wallSequence = computed(() => {
+  const w = props.wall;
+  if (!w || visibleContinuations.value.length === 0) {
+    return null;
+  }
+
+  return calculateWallWithContinuations(w);
+});
+
+/** Faixas só da parede principal (sem somar continuações). */
+const mainWallStripCount = computed(() => {
+  const w = props.wall;
+  if (!w) return null;
+
+  if (wallSequence.value) {
+    const strips = wallSequence.value.perPart?.[0]?.strips;
+    return strips ?? null;
+  }
+
+  return w.strip_count;
+});
+
+const stripSummary = computed(() => {
+  const w = props.wall;
+  if (!w) return '';
+
+  const groups = [];
+
+  if (wallSequence.value) {
+    wallSequence.value.perPart.forEach((part) => {
+      const q = Number(part?.strips ?? 0);
+      const h = Number(part?.stripHeight ?? 0);
+      if (Number.isFinite(q) && q > 0 && Number.isFinite(h) && h > 0) {
+        groups.push({ q, h });
+      }
+    });
+  } else {
+    const q0 = Number(w.strip_count);
+    const h0 = Number(w.strip_height);
+    if (Number.isFinite(q0) && q0 > 0 && Number.isFinite(h0) && h0 > 0) {
+      groups.push({ q: q0, h: h0 });
+    }
+  }
+
+  return groups.map((g) => `${g.q}F de ${formatNumber(g.h)}m`).join(' + ');
 });
 
 function formatDimensions(value) {
@@ -128,6 +156,24 @@ function formatStripCount(count) {
   }
   const n = Number(count);
   return Number.isFinite(n) && n >= 0 ? String(n) : '-';
+}
+
+function continuationStripCount(index) {
+  if (wallSequence.value) {
+    return wallSequence.value.perPart?.[index + 1]?.strips ?? null;
+  }
+
+  const continuation = visibleContinuations.value[index];
+  return continuation ? calculateStrips(continuation) : null;
+}
+
+function continuationStripHeight(index) {
+  if (wallSequence.value) {
+    return wallSequence.value.perPart?.[index + 1]?.stripHeight ?? null;
+  }
+
+  const continuation = visibleContinuations.value[index];
+  return continuation ? calculateStripHeight(continuation) : null;
 }
 
 function continuationRowLabel(continuation, index) {
