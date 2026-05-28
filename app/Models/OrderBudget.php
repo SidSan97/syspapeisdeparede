@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderBudget extends Model
 {
@@ -132,6 +133,14 @@ class OrderBudget extends Model
     public function history()
     {
         return $this->hasMany(LayoutCardHistory::class, 'card_id');
+    }
+
+    /**
+     * Sessões fechadas do temporizador (cada pausa ou conclusão com timer ativo).
+     */
+    public function activitySessions(): HasMany
+    {
+        return $this->hasMany(OrderBudgetActivitySession::class)->orderBy('ended_at');
     }
 
     /**

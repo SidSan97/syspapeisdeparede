@@ -41,7 +41,7 @@
         </small>
       </div>
 
-      <div v-if="!isCompleted" class="d-flex flex-wrap gap-2 align-items-center mb-2">
+      <div v-if="!isCompleted" class="mb-2">
         <button
           v-if="!isRunning"
           type="button"
@@ -72,54 +72,25 @@
           <IconPlayerPauseFilled v-else :size="18" class="me-1" />
           Pausar
         </button>
+      </div>
 
-        <div class="vr d-none d-sm-block"></div>
-
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          :disabled="busyAdvance5 || !cardId"
-          title="Avançar 5 minutos"
-          @click="handleAdvance(300)"
-        >
-          <span
-            v-if="busyAdvance5"
-            class="spinner-border spinner-border-sm me-1"
-            role="status"
-          ></span>
-          <IconPlus v-else :size="16" class="me-1" />
-          5 min
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          :disabled="busyAdvance15 || !cardId"
-          title="Avançar 15 minutos"
-          @click="handleAdvance(900)"
-        >
-          <span
-            v-if="busyAdvance15"
-            class="spinner-border spinner-border-sm me-1"
-            role="status"
-          ></span>
-          <IconPlus v-else :size="16" class="me-1" />
-          15 min
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-danger btn-sm ms-auto"
-          :disabled="busyReset || !cardId || (totalSeconds === 0 && !isRunning)"
-          @click="handleReset"
-        >
-          <span
-            v-if="busyReset"
-            class="spinner-border spinner-border-sm me-1"
-            role="status"
-          ></span>
-          <IconRefresh v-else :size="16" class="me-1" />
-          Reiniciar
-        </button>
+      <div
+        v-if="sessionRows.length > 0"
+        class="power-up-activity-sessions small border rounded p-2 mb-2"
+      >
+        <div class="fw-semibold text-body-secondary mb-1">Data</div>
+        <ul class="list-unstyled mb-2">
+          <li
+            v-for="row in sessionRows"
+            :key="row.id"
+            class="power-up-activity-session-row text-body"
+          >
+            {{ row.label }}
+          </li>
+        </ul>
+        <div class="fw-semibold text-body border-top pt-2">
+          Tempo Total: {{ sessionsTotalLabel }}
+        </div>
       </div>
 
       <p
@@ -148,19 +119,19 @@ import {
   IconLock,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
-  IconPlus,
-  IconRefresh,
 } from '@tabler/icons-vue';
 
-import { useDialog } from '@/composables/useDialog';
 import { useToast } from '@/composables/useToast';
 import { layoutService } from '@/services/layoutService';
 import {
   formatActivityClock,
+  formatActivitySessionDate,
+  formatActivitySessionDuration,
   getCardTotalSeconds,
   isCardActivityRunning,
   isCardCompleted,
   mergeActivityPayload,
+  sumActivitySessionsSeconds,
 } from '@/utils/layoutCardActivityUtils';
 
 const props = defineProps({
@@ -173,13 +144,9 @@ const props = defineProps({
 const emit = defineEmits(['activity-updated']);
 
 const toast = useToast();
-const dialog = useDialog();
 
 const busyStart = ref(false);
 const busyPause = ref(false);
-const busyReset = ref(false);
-const busyAdvance5 = ref(false);
-const busyAdvance15 = ref(false);
 
 const now = ref(new Date());
 let tickerId = null;
@@ -192,6 +159,28 @@ const clockLabel = computed(() => formatActivityClock(totalSeconds.value));
 const clockColorClass = computed(() => {
   if (isCompleted.value) return 'text-success';
   return isRunning.value ? 'text-danger' : 'text-body';
+});
+
+const sessionRows = computed(() => {
+  const sessions = props.card?.activity_sessions;
+  if (!Array.isArray(sessions)) {
+    return [];
+  }
+
+  return sessions.map((session) => {
+    const dateLabel = formatActivitySessionDate(session.ended_at);
+    const durationLabel = formatActivitySessionDuration(session.duration_seconds);
+
+    return {
+      id: session.id,
+      label: `${dateLabel} – ${durationLabel}`,
+    };
+  });
+});
+
+const sessionsTotalLabel = computed(() => {
+  const seconds = sumActivitySessionsSeconds(props.card?.activity_sessions);
+  return formatActivitySessionDuration(seconds);
 });
 
 const runningSinceLabel = computed(() => {
@@ -242,6 +231,7 @@ function applyPayload(payload) {
     activity_elapsed_seconds: merged.activity_elapsed_seconds,
     activity_total_seconds: merged.activity_total_seconds,
     activity_is_running: merged.activity_is_running,
+    activity_sessions: merged.activity_sessions,
     completed_at: merged.completed_at,
     is_completed: merged.is_completed,
   });
@@ -276,46 +266,6 @@ async function handlePause() {
   }
 }
 
-async function handleAdvance(seconds) {
-  if (!cardId.value) return;
-  const ref5 = seconds === 300;
-  const busyRef = ref5 ? busyAdvance5 : busyAdvance15;
-  if (busyRef.value) return;
-  busyRef.value = true;
-  try {
-    const data = await layoutService.advanceActivity(cardId.value, seconds);
-    applyPayload(data);
-    toast.success(`+${Math.round(seconds / 60)} min adicionados.`);
-  } catch (error) {
-    toast.error(extractError(error, 'Não foi possível avançar o temporizador.'));
-  } finally {
-    busyRef.value = false;
-  }
-}
-
-async function handleReset() {
-  if (!cardId.value || busyReset.value) return;
-
-  const confirmed = await dialog.confirmDelete({
-    title: 'Reiniciar temporizador?',
-    text: 'Todo o tempo registrado neste cartão será zerado.',
-    confirmText: 'Sim, reiniciar',
-  });
-
-  if (!confirmed) return;
-
-  busyReset.value = true;
-  try {
-    const data = await layoutService.resetActivity(cardId.value);
-    applyPayload(data);
-    toast.success('Temporizador reiniciado.');
-  } catch (error) {
-    toast.error(extractError(error, 'Não foi possível reiniciar o temporizador.'));
-  } finally {
-    busyReset.value = false;
-  }
-}
-
 function extractError(error, fallback) {
   return error?.response?.data?.message || error?.message || fallback;
 }
@@ -326,6 +276,11 @@ function extractError(error, fallback) {
   font-variant-numeric: tabular-nums;
   font-size: 1.5rem;
   letter-spacing: 0.05em;
+}
+
+.power-up-activity-session-row {
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
 }
 
 .power-up-activity-pulse {

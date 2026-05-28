@@ -67,23 +67,6 @@ export const layoutService = {
     return data;
   },
 
-  /** Power-Up Activity: reinicia o cronômetro zerando todo o tempo. */
-  async resetActivity(orderBudgetId) {
-    const { data } = await http.post(
-      `v1/budgets/order-budgets/${orderBudgetId}/activity/reset`,
-    );
-    return data;
-  },
-
-  /** Power-Up Activity: avança manualmente o cronômetro em 300 ou 900 segundos. */
-  async advanceActivity(orderBudgetId, seconds) {
-    const { data } = await http.post(
-      `v1/budgets/order-budgets/${orderBudgetId}/activity/advance`,
-      { seconds },
-    );
-    return data;
-  },
-
   /** Marca o card como concluído (pausa o cronômetro automaticamente). */
   async completeOrderBudget(orderBudgetId) {
     const { data } = await http.post(

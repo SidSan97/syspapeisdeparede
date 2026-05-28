@@ -5,6 +5,7 @@ namespace App\Http\Resources\V1;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\LayoutService;
+use App\Services\OrderBudgetActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,6 +54,7 @@ class OrderLayoutCardResource extends JsonResource
             'activity_elapsed_seconds' => (int) $this->activity_elapsed_seconds,
             'activity_total_seconds' => (int) $this->activity_total_seconds,
             'activity_is_running' => (bool) $this->activity_is_running,
+            'activity_sessions' => app(OrderBudgetActivityService::class)->sessionsPayload($this->resource),
             'completed_at' => $this->completed_at?->toIso8601String(),
             'is_completed' => (bool) $this->is_completed,
 

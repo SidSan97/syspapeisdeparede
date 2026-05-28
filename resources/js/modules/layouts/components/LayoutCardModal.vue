@@ -50,7 +50,6 @@
               <PowerUpActivity
                 :card="card"
                 @activity-updated="handleActivityUpdated"
-                v-if="!isCompleted"
               />
 
               <hr>

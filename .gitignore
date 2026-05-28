@@ -19,3 +19,6 @@ yarn-error.log
 /.idea
 /.vscode
 /.zed
+/catalogo
+baixar_catalogo.py
+wallpaper.sqlite

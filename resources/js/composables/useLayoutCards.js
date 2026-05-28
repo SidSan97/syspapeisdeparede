@@ -67,6 +67,7 @@ export function useLayoutCardCompletion(cardRef, emit) {
         activity_elapsed_seconds: merged.activity_elapsed_seconds,
         activity_total_seconds: merged.activity_total_seconds,
         activity_is_running: merged.activity_is_running,
+        activity_sessions: merged.activity_sessions,
         completed_at: merged.completed_at,
         is_completed: merged.is_completed,
       });

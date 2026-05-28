@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
 use App\Services\LayoutCardHistoryService;
+use App\Services\OrderBudgetActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,6 +17,7 @@ class OrderBudgetController extends Controller
     public function __construct(
         protected OrderBudgetRepository $orderBudgetRepository,
         protected LayoutCardHistoryService $layoutCardHistoryService,
+        protected OrderBudgetActivityService $orderBudgetActivityService,
     ) {}
 
     public function updateDescription(Request $request, int $orderBudgetId): JsonResponse
@@ -159,7 +161,7 @@ class OrderBudgetController extends Controller
     /**
      * Pausa o cronômetro acumulando o tempo da sessão atual.
      */
-    public function pauseActivity(OrderBudget $orderBudget): JsonResponse
+    public function pauseActivity(Request $request, OrderBudget $orderBudget): JsonResponse
     {
         if ($response = $this->ensureNotCompleted($orderBudget)) {
             return $response;
@@ -169,46 +171,18 @@ class OrderBudgetController extends Controller
             return response()->json($this->activityPayload($orderBudget));
         }
 
+        $session = $this->orderBudgetActivityService->recordClosedSession($orderBudget);
+
+        if ($session && $user = $request->user()) {
+            $this->layoutCardHistoryService->logActivityPaused(
+                $orderBudget->id,
+                $user,
+                (int) $session->duration_seconds,
+                'layout',
+            );
+        }
+
         $orderBudget->forceFill($this->accumulateRunningSession($orderBudget));
-        $orderBudget->save();
-
-        return response()->json($this->activityPayload($orderBudget));
-    }
-
-    /**
-     * Reinicia o cronômetro zerando todo o tempo registrado.
-     */
-    public function resetActivity(OrderBudget $orderBudget): JsonResponse
-    {
-        if ($response = $this->ensureNotCompleted($orderBudget)) {
-            return $response;
-        }
-
-        $orderBudget->forceFill([
-            'activity_running_since' => null,
-            'activity_elapsed_seconds' => 0,
-        ]);
-        $orderBudget->save();
-
-        return response()->json($this->activityPayload($orderBudget));
-    }
-
-    /**
-     * Avança manualmente o cronômetro em uma quantidade fixa de segundos (300 ou 900).
-     */
-    public function advanceActivity(Request $request, OrderBudget $orderBudget): JsonResponse
-    {
-        if ($response = $this->ensureNotCompleted($orderBudget)) {
-            return $response;
-        }
-
-        $validated = $request->validate([
-            'seconds' => ['required', 'integer', 'in:300,900'],
-        ]);
-
-        $orderBudget->forceFill([
-            'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds + (int) $validated['seconds'],
-        ]);
         $orderBudget->save();
 
         return response()->json($this->activityPayload($orderBudget));
@@ -227,6 +201,7 @@ class OrderBudgetController extends Controller
         $attributes = ['completed_at' => now()];
 
         if ($orderBudget->activity_running_since) {
+            $this->orderBudgetActivityService->recordClosedSession($orderBudget);
             $attributes = array_merge($attributes, $this->accumulateRunningSession($orderBudget));
         }
 
@@ -273,12 +248,14 @@ class OrderBudgetController extends Controller
     protected function activityPayload(OrderBudget $orderBudget): array
     {
         $orderBudget->refresh();
+        $orderBudget->load('activitySessions');
 
         return [
             'activity_running_since' => $orderBudget->activity_running_since?->toIso8601String(),
             'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds,
             'activity_total_seconds' => (int) $orderBudget->activity_total_seconds,
             'activity_is_running' => (bool) $orderBudget->activity_is_running,
+            'activity_sessions' => $this->orderBudgetActivityService->sessionsPayload($orderBudget),
             'completed_at' => $orderBudget->completed_at?->toIso8601String(),
             'is_completed' => (bool) $orderBudget->is_completed,
             'server_time' => now()->toIso8601String(),

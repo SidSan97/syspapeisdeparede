@@ -1,9 +1,10 @@
 /**
  * Utilitários para o Power-Up Activity (cronômetro por cartão).
  *
- * O backend persiste apenas dois campos por OrderBudget:
+ * O backend persiste por OrderBudget:
  *  - activity_running_since: ISO datetime ou null. Marca o início da sessão atual em execução.
- *  - activity_elapsed_seconds: total acumulado em segundos das sessões anteriores e ajustes manuais.
+ *  - activity_elapsed_seconds: total acumulado em segundos das sessões fechadas.
+ *  - activity_sessions: lista de sessões fechadas (cada pausa ou conclusão com timer ativo).
  *
  * O total exibido em qualquer momento é a soma de `elapsed_seconds` com a duração
  * desde `running_since` até o instante atual (caso o timer esteja rodando).
@@ -65,6 +66,52 @@ export function formatActivityClock(totalSeconds) {
  * @param {number} totalSeconds
  * @returns {string}
  */
+/**
+ * Formata duração de uma sessão no estilo M:SS (ex.: 5:22).
+ * @param {number} totalSeconds
+ * @returns {string}
+ */
+export function formatActivitySessionDuration(totalSeconds) {
+  const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+/**
+ * Formata a data de encerramento da sessão (dd/mm/yy).
+ * @param {string} isoDate
+ * @returns {string}
+ */
+export function formatActivitySessionDate(isoDate) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  });
+}
+
+/**
+ * Soma a duração de todas as sessões fechadas registradas.
+ * @param {Array<{ duration_seconds?: number }>|null|undefined} sessions
+ * @returns {number}
+ */
+export function sumActivitySessionsSeconds(sessions) {
+  if (!Array.isArray(sessions)) {
+    return 0;
+  }
+
+  return sessions.reduce((total, session) => {
+    return total + Math.max(0, Number(session?.duration_seconds ?? 0));
+  }, 0);
+}
+
 export function formatActivityCompact(totalSeconds) {
   const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
   if (safe < 60) {
@@ -92,7 +139,7 @@ export function isCardCompleted(card) {
 }
 
 /**
- * Mescla os dados retornados pelo backend (start/pause/reset/advance/complete) sobre o card.
+ * Mescla os dados retornados pelo backend (start/pause/complete) sobre o card.
  * Garante que ambos os campos persistidos e os derivados fiquem coerentes.
  * @param {object} card
  * @param {{
@@ -101,7 +148,8 @@ export function isCardCompleted(card) {
  *   activity_total_seconds?: number|null,
  *   activity_is_running?: boolean|null,
  *   completed_at?: string|null,
- *   is_completed?: boolean|null
+ *   is_completed?: boolean|null,
+ *   activity_sessions?: Array<{ id: number, started_at: string, ended_at: string, duration_seconds: number }>|null
  * }} payload
  * @returns {object} novo card com os campos atualizados
  */
@@ -129,5 +177,9 @@ export function mergeActivityPayload(card, payload) {
     completed_at: completedAt,
     is_completed:
       typeof payload.is_completed === 'boolean' ? payload.is_completed : Boolean(completedAt),
+    activity_sessions:
+      payload.activity_sessions !== undefined
+        ? payload.activity_sessions
+        : card.activity_sessions ?? [],
   };
 }

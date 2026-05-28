@@ -102,7 +102,7 @@ async function handleUpload() {
     formData.append('order_id', props.card.order.id);
     formData.append('comment', comment.value);
 
-    const response = await artService.uploadArt(formData);
+    const response = await artService.upload(formData);
 
     const isSuccess = Boolean(response?.success ?? response?.id);
 

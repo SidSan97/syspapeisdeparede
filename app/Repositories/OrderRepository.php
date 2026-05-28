@@ -85,7 +85,8 @@ class OrderRepository
                 },
                 'layoutColumnName',
                 'users', // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
-                'history' // Carrega o histórico do card
+                'history', // Carrega o histórico do card
+                'activitySessions',
             ])
             ->get();
     }
@@ -113,7 +114,8 @@ class OrderRepository
                 },
                 'layoutColumnName',
                 'users', // Carrega os membros do card (busca na layout_card_user por card_id e pega os dados do usuário)
-                'history' // Carrega o histórico do card
+                'history', // Carrega o histórico do card
+                'activitySessions',
             ])
             ->get();
     }

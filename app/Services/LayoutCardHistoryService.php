@@ -90,6 +90,26 @@ class LayoutCardHistoryService
         $this->historyRepository->create($cardId, $description, $typePage);
     }
 
+    public function logActivityPaused(int $cardId, User $user, int $durationSeconds, ?string $typePage = null): void
+    {
+        $label = $this->formatDurationLabel($durationSeconds);
+        $description = "{$user->name} pausou o temporizador do card ({$label}).";
+        $this->historyRepository->create($cardId, $description, $typePage);
+    }
+
+    protected function formatDurationLabel(int $durationSeconds): string
+    {
+        $safe = max(0, $durationSeconds);
+        $minutes = intdiv($safe, 60);
+        $seconds = $safe % 60;
+
+        if ($minutes > 0) {
+            return $seconds > 0 ? "{$minutes}m {$seconds}s" : "{$minutes}m";
+        }
+
+        return "{$seconds}s";
+    }
+
     public function logCardCompleted(int $cardId, User $user, ?string $typePage = null): void
     {
         $description = "{$user->name} concluiu o card.";
