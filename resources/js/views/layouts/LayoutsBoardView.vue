@@ -51,6 +51,8 @@
       @member-removed="handleCardMemberRemoved"
       @activity-updated="handleActivityUpdated"
       @card-refreshed="handleCardRefreshed"
+      @order-cards-refreshed="handleOrderCardsRefreshed"
+      @select-card="handleSelectCard"
     />
   </section>
 </template>
@@ -108,6 +110,24 @@ function handleCardRefreshed(freshCard) {
   Object.assign(selectedCard.value, freshCard);
   const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);
   if (card) Object.assign(card, freshCard);
+}
+
+function handleOrderCardsRefreshed(layouts) {
+  if (!Array.isArray(layouts)) return;
+
+  layouts.forEach((freshCard) => {
+    const card = cards.cards.value.find((c) => Number(c.id) === Number(freshCard.id));
+    if (card) {
+      Object.assign(card, freshCard);
+    }
+  });
+}
+
+function handleSelectCard(card) {
+  if (!card?.id) return;
+
+  const boardCard = cards.cards.value.find((c) => Number(c.id) === Number(card.id));
+  selectedCard.value = boardCard ?? card;
 }
 
 function getCardsByColumn(columnId) {

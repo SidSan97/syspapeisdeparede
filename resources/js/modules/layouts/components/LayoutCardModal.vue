@@ -69,6 +69,13 @@
 
               <WallDetailsSection :wall="card.wall" />
 
+              <OthersWallsRooms
+                :cards="orderLayoutCards"
+                :current-card-id="card?.id"
+                :loading="loadingOrderCards"
+                @select="handleSelectOtherCard"
+              />
+
               <CollectionModelsSection :wall="card.wall" />
 
               <div v-if="card.budget" class="layout-modal-section">
@@ -151,6 +158,7 @@ import PowerUpActivity from '@/components/card-modal/PowerUpActivity.vue';
 import RequestArtsSection from '@/components/card-modal/RequestArtsSection.vue';
 import MembersSection from '@/components/card-modal/MembersSection.vue';
 import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
+import OthersWallsRooms from '@/components/card-modal/OthersWallsRooms.vue';
 import CollectionModelsSection from './layout-card-modal/CollectionModelsSection.vue';
 
 import { IconExternalLink, IconLink } from '@tabler/icons-vue';
@@ -167,42 +175,79 @@ const emit = defineEmits([
   'member-removed',
   'activity-updated',
   'card-refreshed',
+  'order-cards-refreshed',
+  'select-card',
 ]);
 
 const toast = useToast();
 
 const isVisible = computed(() => !!props.card);
 
-async function refreshCardFromApi() {
+const orderLayoutCards = ref([]);
+const loadingOrderCards = ref(false);
+
+function applyFreshCard(cardId) {
+  const fresh = orderLayoutCards.value.find((item) => Number(item.id) === Number(cardId));
+  if (fresh) {
+    emit('card-refreshed', fresh);
+  }
+}
+
+async function loadOrderLayoutCards() {
   const card = props.card;
   if (!card?.order_id || !card?.id) {
+    orderLayoutCards.value = [];
     return;
   }
 
   const orderId = card.order_id;
   const cardId = card.id;
 
+  loadingOrderCards.value = true;
   try {
     const layouts = await layoutService.getLayouts(orderId);
     if (!isVisible.value) {
       return;
     }
 
-    const fresh = layouts.find((item) => Number(item.id) === Number(cardId));
-    if (fresh) {
-      emit('card-refreshed', fresh);
-    }
+    orderLayoutCards.value = layouts;
+    emit('order-cards-refreshed', layouts);
+    applyFreshCard(cardId);
   } catch (error) {
     console.error(error);
     toast.error('Não foi possível atualizar os dados do card.');
+  } finally {
+    loadingOrderCards.value = false;
   }
+}
+
+function handleSelectOtherCard(card) {
+  if (!card?.id || Number(card.id) === Number(props.card?.id)) {
+    return;
+  }
+
+  emit('select-card', card);
+  applyFreshCard(card.id);
 }
 
 watch(isVisible, (visible) => {
   if (visible) {
-    refreshCardFromApi();
+    loadOrderLayoutCards();
+  } else {
+    orderLayoutCards.value = [];
   }
 });
+
+watch(
+  () => props.card?.id,
+  (cardId) => {
+    if (!cardId || !isVisible.value || orderLayoutCards.value.length === 0) {
+      return;
+    }
+
+    applyFreshCard(cardId);
+  },
+);
 
 const auth = useAuthStore();
 
