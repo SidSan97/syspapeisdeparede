@@ -1,9 +1,9 @@
 <template>
   <div v-if="loading || otherCards.length > 0" class="layout-modal-section mb-4">
-    <h5 class="layout-modal-section-title d-flex align-items-center gap-2">
+    <h3 class="layout-modal-section-title d-flex align-items-center gap-2">
       <IconLayoutGrid />
       Outras paredes do mesmo cômodo
-    </h5>
+    </h3>
 
     <div v-if="loading" class="text-body-secondary small py-2">Carregando...</div>
 
@@ -70,3 +70,9 @@ function wallRoomLabel(card) {
   return card.name;
 }
 </script>
+
+<style scoped>
+  .layout-modal-section-title {
+    font-size: 1rem;
+  }
+</style>
