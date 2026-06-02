@@ -50,6 +50,7 @@
       @member-added="handleCardMemberAdded"
       @member-removed="handleCardMemberRemoved"
       @activity-updated="handleActivityUpdated"
+      @card-refreshed="handleCardRefreshed"
     />
   </section>
 </template>
@@ -100,6 +101,13 @@ function handleActivityUpdated(payload) {
   Object.assign(selectedCard.value, payload);
   const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);
   if (card) Object.assign(card, payload);
+}
+
+function handleCardRefreshed(freshCard) {
+  if (!freshCard || !selectedCard.value) return;
+  Object.assign(selectedCard.value, freshCard);
+  const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);
+  if (card) Object.assign(card, freshCard);
 }
 
 function getCardsByColumn(columnId) {

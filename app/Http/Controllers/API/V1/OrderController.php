@@ -99,9 +99,9 @@ class OrderController extends Controller
         return response()->noContent();
     }
 
-    public function layouts()
+    public function layouts(?int $orderId = null)
     {
-        $orderBudgets = $this->repository->getLayoutsForApprove();
+        $orderBudgets = $this->repository->getLayoutsForApprove($orderId);
         $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
 
         // TODO: Migrar para resource collection.

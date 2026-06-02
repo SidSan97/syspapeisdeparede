@@ -130,11 +130,13 @@
 </template>
 
 <script setup>
-import { computed, ref, toRef } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
+import { useToast } from '@/composables/useToast';
 import { useLayoutCardCompletion } from '@/composables/useLayoutCards';
 import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
+import { layoutService } from '@/services/layoutService';
 
 import { getCardDisplayName } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
@@ -159,9 +161,48 @@ const props = defineProps({
     default: null,
   },
 });
-const emit = defineEmits(['close', 'member-added', 'member-removed', 'activity-updated']);
+const emit = defineEmits([
+  'close',
+  'member-added',
+  'member-removed',
+  'activity-updated',
+  'card-refreshed',
+]);
+
+const toast = useToast();
 
 const isVisible = computed(() => !!props.card);
+
+async function refreshCardFromApi() {
+  const card = props.card;
+  if (!card?.order_id || !card?.id) {
+    return;
+  }
+
+  const orderId = card.order_id;
+  const cardId = card.id;
+
+  try {
+    const layouts = await layoutService.getLayouts(orderId);
+    if (!isVisible.value) {
+      return;
+    }
+
+    const fresh = layouts.find((item) => Number(item.id) === Number(cardId));
+    if (fresh) {
+      emit('card-refreshed', fresh);
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error('Não foi possível atualizar os dados do card.');
+  }
+}
+
+watch(isVisible, (visible) => {
+  if (visible) {
+    refreshCardFromApi();
+  }
+});
 
 const auth = useAuthStore();
 

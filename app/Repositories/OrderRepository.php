@@ -57,11 +57,16 @@ class OrderRepository
         return Order::with('rooms.walls.collectionModel')->where('id', $id)->get();
     }
 
-    public function getLayoutsForApprove()
+    public function getLayoutsForApprove(?int $orderId = null)
     {
-        return OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
-            ->whereNotNull('budget_wall_id')
-            ->whereHas('order', function ($query) {
+        $query = OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
+            ->whereNotNull('budget_wall_id');
+
+        if ($orderId !== null) {
+            $query->where('order_id', $orderId);
+        }
+
+        return $query->whereHas('order', function ($query) {
                 // Inclui tudo exceto pedido pago E aprovado ao mesmo tempo (pagamento parcial continua na fila)
                 $query->where(function ($q) {
                     $q->where('paid', '!=', 1)
