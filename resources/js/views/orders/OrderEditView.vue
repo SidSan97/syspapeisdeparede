@@ -1264,6 +1264,11 @@ function normalizeOrderFromAPI(orderData) {
     }
   }
 
+  const normalizedPaymentMethod =
+    orderData.payment_method === 'installment'
+      ? 'credit_card'
+      : orderData.payment_method || '';
+
   return {
     id: orderData.id,
     name: orderData.name || '',
