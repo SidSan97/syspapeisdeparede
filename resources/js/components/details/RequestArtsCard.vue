@@ -570,7 +570,7 @@ async function handleRespondToInteraction(interaction) {
       artComments.value[interactionId] = '';
       await fetchRequestLayoutArts();
 
-      toast.sucess(response.data.message || 'Resposta enviada com sucesso.');
+      toast.success(response.data.message || 'Resposta enviada com sucesso.');
     } else {
       throw new Error(response.data?.message || 'Erro ao enviar resposta');
     }

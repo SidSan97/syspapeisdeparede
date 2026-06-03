@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Route;
 
 // Orçamentos
 
+Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts']);
+Route::patch('budgets/request-layout-arts/status', [BudgetController::class, 'updateRequestLayoutArtStatus']);
+
 Route::post('budgets/{budget}/copies', [BudgetController::class, 'duplicate']);
 Route::patch('budgets/{budget}/status', [BudgetController::class, 'updateStatus']);
 Route::post('budgets/{budget}/pdf', [BudgetPdfController::class, 'store']);
 Route::post('budgets/{budget}/orders', [BudgetOrderController::class, 'store']);
-
-Route::get('budgets/request-layout-arts', [BudgetController::class, 'getRequestLayoutArts']);
-Route::patch('budgets/request-layout-arts/status', [BudgetController::class, 'updateRequestLayoutArtStatus']);
 Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment']);
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);
 Route::post('budgets/upload-referring-file', [BudgetController::class, 'uploadReferringFile']);
