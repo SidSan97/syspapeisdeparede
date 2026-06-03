@@ -95,6 +95,16 @@ class StoreBudgetRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'rooms.*.walls.*.direction.required' => 'A direção da parede é obrigatória.',
+        ];
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
