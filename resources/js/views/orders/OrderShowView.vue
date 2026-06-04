@@ -161,8 +161,10 @@ async function regeneratePaymentLink() {
 
   isGeneratingPaymentLink.value = true;
   try {
-    await orderService.generatePaymentLink(order.value.id);
-    // A store já deve ter atualizado o order
+    const updatedOrder = await orderService.generatePaymentLink(order.value.id);
+    if (updatedOrder) {
+      orderStore.currentOrder = updatedOrder;
+    }
   } catch (error) {
     console.error('Erro ao regenerar link:', error);
   } finally {
@@ -202,7 +204,14 @@ async function handleGeneratePaymentLink(formValues) {
   isGeneratingPaymentLink.value = true;
 
   try {
-    await orderService.generatePaymentLinkByComponents(order.value.id, formValues);
+    const updatedOrder = await orderService.generatePaymentLinkByComponents(
+      order.value.id,
+      formValues,
+    );
+
+    if (updatedOrder) {
+      orderStore.currentOrder = updatedOrder;
+    }
 
     const isBoleto = formValues?.payment_method === 'boleto';
     await showSuccessMessage(

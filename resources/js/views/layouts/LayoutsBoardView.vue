@@ -33,6 +33,7 @@
                 draggable="true"
                 @drag-start="drag.handleDragStart($event, card)"
                 @click="selectedCard = card"
+                class="mb-2"
               />
             </LayoutBoardColumn>
           </template>

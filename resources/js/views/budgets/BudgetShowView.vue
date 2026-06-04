@@ -298,7 +298,14 @@ async function handleGeneratePaymentLink(formValues) {
   isGeneratingPaymentLink.value = true;
 
   try {
-    await orderService.generatePaymentLinkByComponents(budget.value.id, formValues);
+    const updatedBudget = await orderService.generatePaymentLinkByComponents(
+      budget.value.id,
+      formValues,
+    );
+
+    if (updatedBudget) {
+      budgetStore.currentBudget = updatedBudget;
+    }
 
     const isBoleto = formValues?.payment_method === 'boleto';
     await showSuccessMessage(
