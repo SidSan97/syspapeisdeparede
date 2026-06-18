@@ -1,6 +1,7 @@
 <template>
   <div
-    class="card rounded-3 border-0 cursor-pointer"
+    class="card rounded-3 cursor-pointer layout-card"
+    :class="{ 'border border-success border-2 shadow-sm': isCompleted, 'border-0': !isCompleted }"
     :draggable="true"
     @dragstart="$emit('drag-start', $event)"
     @click="$emit('click')"
@@ -11,6 +12,14 @@
     <div class="pt-2 px-3 pb-1">
       <div class="trello-card-footer-content">
         <p class="text-truncate m-0">{{ displayName }}</p>
+        <div
+          v-if="isCompleted"
+          class="d-flex align-items-center justify-content-start p-1 mt-1 rounded bg-success text-white small w-50"
+          title="Card concluído"
+        >
+          <IconCircleCheck :size="18" stroke-width="2.5" />
+          <span class="ms-1">Concluído</span>
+        </div>
         <div class="trello-card-footer-meta">
           <div class="badge badge-custom fs-xs">
             <IconClock :size="16" />
@@ -73,9 +82,17 @@ import {
   formatActivityCompact,
   getCardTotalSeconds,
   isCardActivityRunning,
+  isCardCompleted,
 } from '@/utils/layoutCardActivityUtils';
 
-import { IconClock, IconClockHour4, IconList, IconMessage, IconPaperclip } from '@tabler/icons-vue';
+import {
+  IconCircleCheck,
+  IconClock,
+  IconClockHour4,
+  IconList,
+  IconMessage,
+  IconPaperclip,
+} from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -86,6 +103,7 @@ const props = defineProps({
 
 const displayName = computed(() => getCardDisplayName(props.card));
 const coverImage = computed(() => getCoverImage(props.card));
+const isCompleted = computed(() => isCardCompleted(props.card));
 const activitiesCount = computed(() => getActivitiesCount(props.card));
 const commentsCount = computed(() => getCommentsCount(props.card));
 
@@ -131,7 +149,7 @@ defineEmits(['drag-start', 'click']);
 </script>
 
 <style scoped>
-.card {
+.layout-card {
   box-shadow: var(--ds-shadow-raised);
 }
 
