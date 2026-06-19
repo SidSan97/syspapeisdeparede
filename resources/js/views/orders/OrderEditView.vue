@@ -306,12 +306,12 @@
                                     >
                                       Encaixe
                                     </label>
-                                    <select
+                                    <input v-if="continuationIndex === 0" type="text" v-model="continuation.fit" :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-control" readonly>
+                                    <select v-else
                                       v-model="continuation.fit"
                                       :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
                                       class="form-control"
                                     >
-                                      <option v-if="continuationIndex === 0" value="Inicial">Inicial</option>
                                       <option value="Superior">Superior</option>
                                       <option value="Inferior">Inferior</option>
                                       <option value="Central">Central</option>
