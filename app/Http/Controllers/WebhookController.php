@@ -29,10 +29,14 @@ class WebhookController extends Controller
     protected function handleOrderPaid(array $payload): void
     {
         $data = $payload['data'] ?? [];
-        $pagarmeOrderId = $data['id'] ?? null;
-        $status = $data['status'] ?? null;
 
-        if (! $pagarmeOrderId || $status !== 'paid') {
+        if (($data['status'] ?? null) !== 'paid') {
+            return;
+        }
+
+        $paidCharge = $this->resolvePaidCharge($data);
+
+        if (! $paidCharge) {
             return;
         }
 
@@ -40,7 +44,8 @@ class WebhookController extends Controller
 
         if (! $orderId) {
             Log::warning('Webhook Pagar.me order.paid: não foi possível identificar o order_id', [
-                'pagarme_order_id' => $pagarmeOrderId,
+                'pagarme_order_id' => $data['id'] ?? null,
+                'charge_code' => $paidCharge['code'] ?? null,
                 'data_keys' => array_keys($data),
             ]);
 
@@ -52,13 +57,14 @@ class WebhookController extends Controller
         if (! $order) {
             Log::warning('Webhook Pagar.me order.paid: Order não encontrado', [
                 'order_id' => $orderId,
-                'pagarme_order_id' => $pagarmeOrderId,
+                'pagarme_order_id' => $data['id'] ?? null,
+                'charge_code' => $paidCharge['code'] ?? null,
             ]);
 
             return;
         }
 
-        $paymentLink = $this->resolvePaymentLink($order->id, $data);
+        $paymentLink = $this->resolvePaymentLink($order->id, $data, $paidCharge);
 
         if ($paymentLink && $paymentLink->status !== 'paid') {
             $paymentLink->update([
@@ -80,40 +86,64 @@ class WebhookController extends Controller
 
         Log::info('Webhook Pagar.me: pedido marcado como pago', [
             'order_id' => $orderId,
-            'pagarme_order_id' => $pagarmeOrderId,
+            'pagarme_order_id' => $data['id'] ?? null,
+            'charge_code' => $paidCharge['code'] ?? null,
             'payment_link_id' => $paymentLink?->id,
         ]);
     }
 
     /**
-     * Tenta obter o ID do Order a partir do payload.
+     * @return array<string, mixed>|null
      */
-    protected function resolveOrderId(array $data): ?int
+    protected function resolvePaidCharge(array $data): ?array
     {
-        $metadata = $data['metadata'] ?? [];
-        if (is_array($metadata) && ! empty($metadata['order_id'])) {
-            $id = (int) $metadata['order_id'];
-            return $id > 0 ? $id : null;
-        }
+        foreach ($data['charges'] ?? [] as $charge) {
+            if (! is_array($charge)) {
+                continue;
+            }
 
-        $items = $data['items'] ?? [];
-        foreach ($items as $item) {
-            $desc = (string) ($item['description'] ?? '');
-            if (preg_match('/\[order_ref:(\d+)\]/', $desc, $m)) {
-                return (int) $m[1];
+            if (($charge['status'] ?? null) === 'paid') {
+                return $charge;
             }
         }
 
         return null;
     }
 
-    protected function resolvePaymentLink(int $orderId, array $data): ?OrderPaymentLink
+    /**
+     * Extrai o ID do pedido local a partir de items[].description (ex.: "Pedido #121 - ARTES").
+     */
+    protected function resolveOrderId(array $data): ?int
     {
-        $externalOrderId = $data['id'] ?? null;
-        if ($externalOrderId) {
+        foreach ($data['items'] ?? [] as $item) {
+            $description = (string) ($item['description'] ?? '');
+
+            if (preg_match('/#(\d+)\s*-/', $description, $matches)) {
+                $id = (int) $matches[1];
+
+                if ($id > 0) {
+                    return $id;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $paidCharge
+     */
+    protected function resolvePaymentLink(int $orderId, array $data, array $paidCharge): ?OrderPaymentLink
+    {
+        $chargeCode = $paidCharge['code'] ?? null;
+
+        if ($chargeCode) {
             $link = OrderPaymentLink::query()
                 ->where('order_id', $orderId)
-                ->where('external_order_id', (string) $externalOrderId)
+                ->where(function ($query) use ($chargeCode) {
+                    $query->where('external_order_id', (string) $chargeCode)
+                        ->orWhere('external_payment_link_id', (string) $chargeCode);
+                })
                 ->first();
 
             if ($link) {
@@ -121,34 +151,30 @@ class WebhookController extends Controller
             }
         }
 
-        $metadata = $data['metadata'] ?? [];
-        if (is_array($metadata) && ! empty($metadata['internal_payment_link_id'])) {
-            return OrderPaymentLink::query()
-                ->where('order_id', $orderId)
-                ->find((int) $metadata['internal_payment_link_id']);
-        }
+        $descriptionComponents = $this->extractComponentsFromDescription($data);
+        $chargeAmount = isset($paidCharge['amount'])
+            ? round(((float) $paidCharge['amount']) / 100, 2)
+            : (isset($data['amount']) ? round(((float) $data['amount']) / 100, 2) : null);
 
-        // conciliar por componentes e valor do payload para evitar baixa no link errado.
-        $metadataComponents = $this->extractComponentsFromMetadata($metadata);
-        $payloadAmount = isset($data['amount']) ? round(((float) $data['amount']) / 100, 2) : null;
-
-        if (!empty($metadataComponents) || $payloadAmount !== null) {
+        if (! empty($descriptionComponents) || $chargeAmount !== null) {
             $pendingLinks = OrderPaymentLink::query()
                 ->where('order_id', $orderId)
                 ->where('status', 'pending')
                 ->get();
 
-            $matches = $pendingLinks->filter(function (OrderPaymentLink $link) use ($metadataComponents, $payloadAmount) {
+            $matches = $pendingLinks->filter(function (OrderPaymentLink $link) use ($descriptionComponents, $chargeAmount) {
                 $componentsMatch = true;
-                if (!empty($metadataComponents)) {
+
+                if (! empty($descriptionComponents)) {
                     $linkComponents = $this->normalizeComponentsArray($link->components ?? []);
-                    $componentsMatch = $linkComponents === $metadataComponents;
+                    $componentsMatch = $linkComponents === $descriptionComponents;
                 }
 
                 $amountMatch = true;
-                if ($payloadAmount !== null) {
+
+                if ($chargeAmount !== null) {
                     $linkAmount = round((float) ($link->amount_total ?? 0), 2);
-                    $amountMatch = abs($linkAmount - $payloadAmount) < 0.01;
+                    $amountMatch = abs($linkAmount - $chargeAmount) < 0.01;
                 }
 
                 return $componentsMatch && $amountMatch;
@@ -166,23 +192,26 @@ class WebhookController extends Controller
             ->first();
     }
 
-    protected function extractComponentsFromMetadata($metadata): array
+    /**
+     * @return list<string>
+     */
+    protected function extractComponentsFromDescription(array $data): array
     {
-        if (!is_array($metadata) || empty($metadata['components'])) {
-            return [];
+        $components = [];
+
+        foreach ($data['items'] ?? [] as $item) {
+            $description = (string) ($item['description'] ?? '');
+
+            if (preg_match('/#\d+\s*-\s*(.+)$/', $description, $matches)) {
+                $raw = trim($matches[1]);
+
+                if ($raw !== '') {
+                    $components = array_merge($components, array_map('trim', explode('+', $raw)));
+                }
+            }
         }
 
-        $raw = $metadata['components'];
-        if (is_array($raw)) {
-            return $this->normalizeComponentsArray($raw);
-        }
-
-        if (is_string($raw)) {
-            $items = array_map('trim', explode(',', $raw));
-            return $this->normalizeComponentsArray($items);
-        }
-
-        return [];
+        return $this->normalizeComponentsArray($components);
     }
 
     protected function normalizeComponentsArray(array $components): array
