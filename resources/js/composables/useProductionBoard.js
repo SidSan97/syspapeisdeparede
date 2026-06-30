@@ -7,5 +7,6 @@ export function useProductionBoard() {
     createColumnFn: productionService.createColumn,
     updateColumnFn: productionService.updateColumn,
     deleteColumnFn: productionService.deleteColumn,
+    reorderColumnsFn: productionService.reorderColumns,
   });
 }

@@ -16,6 +16,7 @@ class ProductionColumnName extends Model
      */
     protected $fillable = [
         'name',
+        'order',
     ];
 
     /**

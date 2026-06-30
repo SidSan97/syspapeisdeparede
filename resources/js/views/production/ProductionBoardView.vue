@@ -2,32 +2,44 @@
   <section class="content">
     <Page title="Produção" :full-width="true">
       <KanbanCanvas>
-        <Kanban>
-          <ProductionColumn
-            v-for="column in columns"
-            :key="column.id"
-            :column="column"
-            :count="getCardsByColumn(column.id).length || 0"
-            :total-metragem="getTotalMetragem(column.id)"
-            @update:name="handleUpdateColumn"
-            @delete="handleDeleteColumn(column.id)"
-            @dragover="drag.allowDrop"
-            @drop="drag.handleDrop($event, column.id)"
+        <div class="overflow-x-auto h-100 w-100 px-2 py-0.5">
+          <draggable
+            v-model="columns"
+            item-key="id"
+            :animation="200"
+            handle=".kanban-column-drag-handle"
+            ghost-class="kanban-column-ghost"
+            class="d-flex gap-4 h-100"
+            @end="onColumnReorder"
           >
-            <KanbanColumnSkeleton v-if="loadingCards" />
+            <template #item="{ element: column }">
+              <ProductionColumn
+                :column="column"
+                :count="getCardsByColumn(column.id).length || 0"
+                :total-metragem="getTotalMetragem(column.id)"
+                @update:name="handleUpdateColumn"
+                @delete="handleDeleteColumn(column.id)"
+                @dragover="drag.allowDrop"
+                @drop="drag.handleDrop($event, column.id)"
+              >
+                <KanbanColumnSkeleton v-if="loadingCards" />
 
-            <ProductionCard
-              v-for="card in getCardsByColumn(column.id)"
-              :key="card.id"
-              :card="card"
-              draggable="true"
-              @drag-start="drag.handleDragStart($event, card)"
-              @click="selectedCard = card"
-            />
-          </ProductionColumn>
+                <ProductionCard
+                  v-for="card in getCardsByColumn(column.id)"
+                  :key="card.id"
+                  :card="card"
+                  draggable="true"
+                  @drag-start="drag.handleDragStart($event, card)"
+                  @click="selectedCard = card"
+                />
+              </ProductionColumn>
+            </template>
 
-          <KanbanColumnAdd @create="board.createColumn" />
-        </Kanban>
+            <template #footer>
+              <KanbanColumnAdd @create="board.createColumn" />
+            </template>
+          </draggable>
+        </div>
       </KanbanCanvas>
     </Page>
 
@@ -43,6 +55,7 @@
 
 <script setup>
 import { onMounted, shallowRef } from 'vue';
+import draggable from 'vuedraggable';
 import Page from '@/components/page/Page.vue';
 import ProductCardModal from '@/modules/production/components/ProductCardModal.vue';
 import ProductionColumn from '@/modules/production/components/ProductionColumn.vue';
@@ -52,7 +65,6 @@ import { useDialog } from '@/composables/useDialog';
 
 import KanbanColumnSkeleton from '@/components/kanban/KanbanColumnSkeleton.vue';
 import KanbanCanvas from '@/components/kanban/KanbanCanvas.vue';
-import Kanban from '@/components/kanban/Kanban.vue';
 import KanbanColumnAdd from '@/components/kanban/KanbanColumnAdd.vue';
 import { useProductionBoard } from '@/composables/useProductionBoard';
 import { useKanbanDrag } from '@/composables/useKanbanDrag';
@@ -140,6 +152,11 @@ async function handleUpdateColumn(payload) {
   await board.updateColumnName(payload.columnId, payload.newName);
 }
 
+async function onColumnReorder() {
+  const orderedIds = columns.value.map((c) => c.id);
+  await board.reorderColumns(orderedIds);
+}
+
 onMounted(async () => {
   await board.fetchColumns();
   await cards.fetchCards();
@@ -153,5 +170,9 @@ onMounted(async () => {
 
 .content {
   grid-area: content;
+}
+
+.kanban-column-ghost {
+  opacity: 0.4;
 }
 </style>

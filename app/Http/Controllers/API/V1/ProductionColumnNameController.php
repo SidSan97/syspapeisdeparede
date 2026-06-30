@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ProductionColumnNameController extends Controller
 {
@@ -26,11 +27,29 @@ class ProductionColumnNameController extends Controller
     public function index(): JsonResponse
     {
         // FIXME: Usar resource collection.
-        $columns = ProductionColumnName::orderBy('id')->get();
+        $columns = ProductionColumnName::orderBy('order')->orderBy('id')->get();
 
         return response()->json([
-            'data' => $columns
+            'data' => $columns,
         ]);
+    }
+
+    public function reorder(Request $request): Response
+    {
+        $validated = $request->validate([
+            'columns' => ['required', 'array'],
+            'columns.*.id' => ['required', 'integer', Rule::exists('production_column_names', 'id')],
+            'columns.*.order' => ['required', 'integer', 'min:0'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['columns'] as $data) {
+                ProductionColumnName::where('id', $data['id'])
+                    ->update(['order' => $data['order']]);
+            }
+        });
+
+        return response()->noContent();
     }
 
     public function update(Request $request, ProductionColumnName $productionColumnName): JsonResponse

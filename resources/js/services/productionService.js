@@ -29,6 +29,10 @@ export const productionService = {
     return data;
   },
 
+  async reorderColumns(columns) {
+    await http.post('v1/production-column-names/reorder', { columns });
+  },
+
   async deleteColumn(columnId, targetColumnId) {
     await http.delete(`v1/production-column-names/${columnId}`, {
       data: {

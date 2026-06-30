@@ -7,4 +7,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('production-column-names', [ProductionColumnNameController::class, 'index']);
 Route::post('production-column-names', [ProductionColumnNameController::class, 'store']);
 Route::put('production-column-names/{productionColumnName}', [ProductionColumnNameController::class, 'update']);
+Route::post('production-column-names/reorder', [ProductionColumnNameController::class, 'reorder']);
 Route::delete('production-column-names/{column}', [ProductionColumnNameController::class, 'destroy']);
