@@ -59,21 +59,17 @@ class OrderRepository
 
     public function getLayoutsForApprove(?int $orderId = null)
     {
-        $query = OrderBudget::whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
-            ->whereNotNull('budget_wall_id');
+        $query = OrderBudget::/*whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
+            ->*/whereNotNull('budget_wall_id');
 
         if ($orderId !== null) {
             $query->where('order_id', $orderId);
         }
 
         return $query->whereHas('order', function ($query) {
-                // Inclui tudo exceto pedido pago E aprovado ao mesmo tempo (pagamento parcial continua na fila)
-                $query->where(function ($q) {
-                    $q->where('paid', '!=', 1)
-                        ->orWhere('status', '!=', 'Aprovado')
-                        ->orWhereNull('status');
-                });
-            })
+            $query->where('paid', '!=', 1)
+                ->where('status', 'Aprovado');
+        })
             ->with([
                 'order' => function ($query) {
                     $query->with([
