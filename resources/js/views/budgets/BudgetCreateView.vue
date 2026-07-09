@@ -264,9 +264,7 @@
                                   >
                                     Encaixe
                                   </label>
-                                  <input v-if="continuationIndex === 0" type="text" v-model="continuation.fit" :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-control" readonly>
                                   <select
-                                    v-else
                                     v-model="continuation.fit"
                                     :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
                                     class="form-control"

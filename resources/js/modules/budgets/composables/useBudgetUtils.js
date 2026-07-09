@@ -138,9 +138,7 @@ export function normalizeBudgetFromAPI(budgetData) {
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),
-                fit:
-                  cont.fit ||
-                  (idx === 0 ? 'Inicial' : 'Central'),
+                fit: cont.fit === 'Inicial' ? 'Central' : (cont.fit || 'Central'),
               }));
             }
           }

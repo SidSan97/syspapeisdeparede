@@ -306,8 +306,7 @@
                                     >
                                       Encaixe
                                     </label>
-                                    <input v-if="continuationIndex === 0" type="text" v-model="continuation.fit" :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-control" readonly>
-                                    <select v-else
+                                    <select
                                       v-model="continuation.fit"
                                       :id="`continuation-fit-${roomIndex}-${wallIndex}-${continuationIndex}`"
                                       class="form-control"
@@ -896,12 +895,12 @@ function selectFreightCarrier(index) {
 const requestLayoutArts = ref([]);
 const loadingRequestArts = ref(false);
 
-const createDefaultContinuation = ({ initial = false } = {}) => ({
+const createDefaultContinuation = () => ({
   name: '',
   width: null,
   height: null,
   sameArt: false,
-  fit: initial ? 'Inicial' : 'Central',
+  fit: 'Central',
 });
 
 const createDefaultWall = () => ({
@@ -1213,7 +1212,7 @@ function normalizeOrderFromAPI(orderData) {
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),
-                fit: cont.fit || (idx === 0 ? 'Inicial' : 'Central'),
+                fit: cont.fit === 'Inicial' ? 'Central' : (cont.fit || 'Central'),
               }));
             }
           }
@@ -1699,7 +1698,7 @@ function addContinuation(roomIndex, wallIndex) {
   if (!wall.continueSameArt) {
     wall.continueSameArt = true;
   }
-  wall.continuations.push(createDefaultContinuation({ initial: false }));
+  wall.continuations.push(createDefaultContinuation());
 }
 
 function removeContinuation(roomIndex, wallIndex, continuationIndex) {
@@ -1725,7 +1724,7 @@ function handleContinuationToggle(roomIndex, wallIndex) {
   }
 
   if (!Array.isArray(wall.continuations) || !wall.continuations.length) {
-    wall.continuations = [createDefaultContinuation({ initial: true })];
+    wall.continuations = [createDefaultContinuation()];
   }
 }
 
