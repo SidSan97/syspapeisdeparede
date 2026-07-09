@@ -70,6 +70,9 @@ class OrderRepository
             $query->where('paid', '!=', 1)
                 ->where('status', 'Aprovado');
         })
+            ->whereHas('wall.collectionModel', function ($query) {
+                $query->where('request_art_on_payment', false);
+            })
             ->with([
                 'order' => function ($query) {
                     $query->with([
