@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Actions\Profile\UpdateAvatarAction;
 use App\Actions\User\CreateUserAction;
 use App\Actions\User\UpdateUserAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreUserRequest;
+use App\Http\Requests\Api\V1\UpdateAvatarRequest;
 use App\Http\Requests\Api\V1\UpdateUserRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -41,7 +44,7 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['roles:id,name', 'permissions', 'wallet']);
+        $user->load(['roles:id,name', 'permissions', 'wallet', 'reseller']);
 
         return new UserResource($user);
     }
@@ -64,6 +67,18 @@ class UserController extends Controller
         $user->delete();
 
         return response()->noContent();
+    }
+
+    public function updateAvatar(User $user, UpdateAvatarRequest $request, UpdateAvatarAction $action): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $url = $action->execute($user, $request->input('image'));
+
+        return response()->json([
+            'url' => $url,
+            'message' => 'Imagem carregada com sucesso.',
+        ]);
     }
 
     public function list(Request $request)

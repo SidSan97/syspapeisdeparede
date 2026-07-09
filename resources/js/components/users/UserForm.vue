@@ -14,6 +14,34 @@
     </div>
 
     <fieldset v-else :disabled="loading">
+      <div class="row align-items-center mb-3">
+        <div class="col-auto" v-if="form.id">
+          <img
+            class="avatar avatar-xl"
+            :src="avatarUrl"
+            style="cursor: pointer"
+            @click="openAvatarModal"
+          />
+        </div>
+        <div class="col-auto">
+          <button
+            v-if="form.id"
+            class="btn btn-default"
+            type="button"
+            :disabled="loading"
+            @click="openAvatarModal"
+          >
+            Alterar foto
+          </button>
+          <small v-else class="text-muted d-block">
+            Salve o usuário para poder definir um avatar.
+          </small>
+          <small v-if="form.id && form.role === 'reseller'" class="text-muted d-block mt-1">
+            Esse será o logotipo usado na impressão dos orçamentos.
+          </small>
+        </div>
+      </div>
+
       <BaseInput
         v-model="form.name"
         label="Nome"
@@ -92,6 +120,18 @@
         <has-error :form="form" field="role"></has-error>
       </div>
 
+      <div v-if="form.role === 'reseller'" class="form-group mb-3">
+        <BaseInputLabel for="reseller_id">Revendedor vinculado</BaseInputLabel>
+        <ResellerSelect
+          id="reseller_id"
+          v-model="form.reseller_id"
+          :selected-reseller="selectedReseller"
+          :invalid="form.errors.has('reseller_id')"
+          :disabled="loading"
+        />
+        <has-error :form="form" field="reseller_id"></has-error>
+      </div>
+
       <div v-if="form.role === 'reseller'" class="row">
         <div class="col-12 mb-3">
           <div class="form-check">
@@ -120,14 +160,23 @@
         <has-error :form="form" field="wallet_balance"></has-error>
       </div>
     </fieldset>
+
+    <UserAvatarModal
+      v-if="form.id"
+      ref="avatarModal"
+      :user-id="form.id"
+      @uploaded="onAvatarUploaded"
+    />
   </div>
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import BaseInput from '@/components/common/BaseInput.vue';
 import BaseInputLabel from '@/components/common/BaseInputLabel.vue';
 import RoleSelect from '@/components/users/RoleSelect.vue';
+import ResellerSelect from '@/components/users/ResellerSelect.vue';
+import UserAvatarModal from '@/components/users/UserAvatarModal.vue';
 
 const moneyConfig = {
   decimal: ',',
@@ -157,18 +206,37 @@ const form = reactive(
     role: '',
     is_dropshipping: false,
     wallet_balance: '',
+    reseller_id: null,
   }),
 );
 
-// Garantir que is_dropshipping seja false quando role não for reseller.
+// Objeto completo do revendedor vinculado, usado apenas para exibir o rótulo
+// inicial no ResellerSelect (não é enviado no payload do formulário).
+const selectedReseller = ref(null);
+
+// URL do avatar atual, usada apenas para exibição (não é enviada no payload do formulário).
+const avatarUrl = ref('');
+const avatarModal = ref(null);
+
+function openAvatarModal() {
+  avatarModal.value?.open();
+}
+
+function onAvatarUploaded(url) {
+  avatarUrl.value = url;
+}
+
+// Garantir que is_dropshipping e reseller_id sejam limpos quando role não for reseller.
 watch(
   () => form.role,
   (newValue) => {
     if (newValue !== 'reseller') {
       form.is_dropshipping = false;
+      form.reseller_id = null;
+      selectedReseller.value = null;
     }
   },
 );
 
-defineExpose({ form });
+defineExpose({ form, selectedReseller, avatarUrl });
 </script>

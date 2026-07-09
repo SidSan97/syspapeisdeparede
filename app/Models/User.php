@@ -6,6 +6,7 @@ use App\Traits\HasUserScopes;
 use BeyondCode\Comments\Contracts\Commentator;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -45,6 +46,7 @@ class User extends Authenticatable implements Commentator // , MustVerifyEmail
         'avatar',
         'user_type_id',
         'is_dropshipping',
+        'reseller_id',
     ];
 
     protected $hidden = [
@@ -125,6 +127,14 @@ class User extends Authenticatable implements Commentator // , MustVerifyEmail
     public function wallet(): HasOne
     {
         return $this->hasOne(UserWallet::class);
+    }
+
+    /**
+     * Get the reseller this user account belongs to.
+     */
+    public function reseller(): BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
     }
 
     /**

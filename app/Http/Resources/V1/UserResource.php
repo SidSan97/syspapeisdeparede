@@ -26,6 +26,14 @@ class UserResource extends JsonResource
 
             'is_dropshipping' => (bool) $this->is_dropshipping,
 
+            'reseller_id' => $this->reseller_id,
+            'reseller' => $this->whenLoaded('reseller', fn () => $this->reseller && [
+                'id' => $this->reseller->id,
+                'name' => $this->reseller->name,
+                'fantasy_name' => $this->reseller->fantasy_name,
+                'cnpj' => $this->reseller->cnpj,
+            ]),
+
             'wallet_balance' => $this->whenLoaded('wallet', fn () => (string) $this->wallet->balance),
 
             'roles' => $this->whenLoaded('roles', function () {

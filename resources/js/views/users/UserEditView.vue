@@ -81,7 +81,10 @@ async function fetchUser() {
       role: user.roles?.[0] || '',
       is_dropshipping: Boolean(user.is_dropshipping),
       wallet_balance: parseFloat(user.wallet_balance ?? 0),
+      reseller_id: user.reseller_id ?? null,
     });
+    formRef.value.selectedReseller = user.reseller ?? null;
+    formRef.value.avatarUrl = user.avatar_url ?? '';
   } catch (error) {
     toast.error('Erro ao carregar o usuário');
     router.push({ name: 'settings.users.list' });

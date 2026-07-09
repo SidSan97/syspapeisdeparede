@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1;
 use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
@@ -26,6 +27,13 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
             'is_dropshipping' => ['nullable', 'boolean'],
             'wallet_balance' => ['nullable', 'numeric', 'min:0'],
+            'reseller_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->input('role') === UserRole::Reseller->value),
+                'integer',
+                'exists:resellers,id',
+                'unique:users,reseller_id',
+            ],
         ];
     }
 
@@ -35,19 +43,19 @@ class StoreUserRequest extends FormRequest
             'role.exists' => 'O papel selecionado não existe.',
             'email.unique' => 'O e-mail já está em uso.',
             'password.confirmed' => 'A confirmação da senha não confere.',
+            'reseller_id.required' => 'Selecione o revendedor vinculado a este usuário.',
+            'reseller_id.exists' => 'O revendedor selecionado não existe.',
+            'reseller_id.unique' => 'Este revendedor já está vinculado a outro usuário.',
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $isDropshipping = $this->input('is_dropshipping', false);
-
-        if ($this->input('role') !== UserRole::Reseller->value) {
-            $isDropshipping = false;
-        }
+        $isReseller = $this->input('role') === UserRole::Reseller->value;
 
         $this->merge([
-            'is_dropshipping' => $isDropshipping,
+            'is_dropshipping' => $isReseller ? $this->input('is_dropshipping', false) : false,
+            'reseller_id' => $isReseller ? $this->input('reseller_id') : null,
         ]);
     }
 }

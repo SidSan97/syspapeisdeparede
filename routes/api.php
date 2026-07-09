@@ -33,7 +33,7 @@ Route::middleware('throttle:60,1')
 Route::middleware('auth:web')->get('/user', function (Request $request) {
     $user = $request->user();
 
-    if (!$user) {
+    if (! $user) {
         return response()->json(['error' => 'Não autenticado'], 401);
     }
 
@@ -62,19 +62,20 @@ Route::middleware('auth:sanctum')->get('/user-api', function (Request $request) 
 
 Route::prefix('v1')->group(function () {
     // Rotas públicas
-    require __DIR__ . '/v1/collections-api.php';
+    require __DIR__.'/v1/collections-api.php';
 
     // Demais rotas autenticadas
     Route::middleware('auth:sanctum')->group(function () {
-        require __DIR__ . '/v1/profile-api.php';
-        require __DIR__ . '/v1/users-api.php';
-        require __DIR__ . '/v1/budgets-api.php';
-        require __DIR__ . '/v1/orders-api.php';
-        require __DIR__ . '/v1/layout-column-names-api.php';
-        require __DIR__ . '/v1/production-column-names-api.php';
-        require __DIR__ . '/v1/expedition-api.php';
-        require __DIR__ . '/v1/frenet-api.php';
-        require __DIR__ . '/v1/tiny-erp-api.php';
-        require __DIR__ . '/v1/wallet-api.php';
+        require __DIR__.'/v1/profile-api.php';
+        require __DIR__.'/v1/users-api.php';
+        require __DIR__.'/v1/resellers-api.php';
+        require __DIR__.'/v1/budgets-api.php';
+        require __DIR__.'/v1/orders-api.php';
+        require __DIR__.'/v1/layout-column-names-api.php';
+        require __DIR__.'/v1/production-column-names-api.php';
+        require __DIR__.'/v1/expedition-api.php';
+        require __DIR__.'/v1/frenet-api.php';
+        require __DIR__.'/v1/tiny-erp-api.php';
+        require __DIR__.'/v1/wallet-api.php';
     });
 });
