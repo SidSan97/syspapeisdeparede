@@ -60,6 +60,7 @@ return new class extends Migration
             $table->tinyInteger('paid')->default(0);
             $table->tinyInteger('nf_sent')->default(0);
             $table->string('nf_id')->nullable();
+            $table->text('observation')->nullable();
 
             $table->timestamps();
 

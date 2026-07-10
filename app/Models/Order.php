@@ -42,6 +42,7 @@ class Order extends Model
         'nf_sent',
         'nf_id',
         'flags',
+        'observation',
     ];
 
     protected $casts = [
@@ -65,6 +66,7 @@ class Order extends Model
         'nf_id' => 'string',
         'link_payment' => 'string',
         'payment_expiration_date' => 'string',
+        'observation' => 'string',
     ];
 
     /**

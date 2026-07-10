@@ -42,6 +42,17 @@
                   </select>
                 </div>
 
+                <div class="mb-3">
+                  <label for="orderObservation" class="form-label">Observação</label>
+                  <textarea
+                    v-model="budget.observation"
+                    id="orderObservation"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Observações sobre o pedido..."
+                  ></textarea>
+                </div>
+
                 <!-- Checkbox Dropshipping (para admin, revendedor ou is_dropshipping === 1) -->
                 <div v-if="canEnableDropshipping" class="mb-3">
                   <div class="form-check">
@@ -988,6 +999,7 @@ const budget = reactive({
   id: null,
   name: '',
   status: '',
+  observation: '',
   rooms: [
     {
       name: '',
@@ -1272,6 +1284,7 @@ function normalizeOrderFromAPI(orderData) {
     id: orderData.id,
     name: orderData.name || '',
     status: orderData.status || '',
+    observation: orderData.observation || '',
     rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
     cep: orderData.cep || '',
     carriers: carriers,

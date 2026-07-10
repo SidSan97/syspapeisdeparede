@@ -19,7 +19,7 @@ class UpdateOrderAction
         protected OrderEditWalletCreditService $walletService
     ) {}
 
-    public function execute(Order $order, $data): Order
+    public function execute(Order $order, array $data): Order
     {
         return DB::transaction(function () use ($order, $data) {
             $compositionBefore = null;

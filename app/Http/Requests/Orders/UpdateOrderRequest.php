@@ -50,6 +50,7 @@ class UpdateOrderRequest extends FormRequest
                 'Enviado',
             ])],
             'payment_file' => ['sometimes', 'nullable', 'string'],
+            'observation' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'comment_referring_model' => ['sometimes', 'nullable', 'string', 'max:500'],
             'link_referring_model' => ['sometimes', 'nullable', 'string', 'max:150'],
             'files_referring_model' => ['sometimes', 'nullable', 'array'],

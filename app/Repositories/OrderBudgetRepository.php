@@ -6,6 +6,7 @@ use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\LayoutCardHistoryService;
+use Illuminate\Support\Facades\DB;
 
 class OrderBudgetRepository {
 
@@ -266,47 +267,20 @@ class OrderBudgetRepository {
             ->value('id');
         $tenantId = $order->tenant_id ?? $budget->tenant_id;
 
-        $wallIds = [];
-        $orderIndex = 1;
-
-        $rooms = $budget->rooms->sortBy('position');
-        foreach ($rooms as $room) {
-            $walls = collect($room->walls)->sortBy('position');
-            foreach ($walls as $wall) {
-                $wallIds[] = $wall->id;
-
-                $orderBudget = OrderBudget::query()->firstOrNew([
-                    'order_id' => $order->id,
-                    'budget_wall_id' => $wall->id,
-                ]);
-
-                // Só define status padrão na criação para não sobrescrever fluxos já iniciados
-                if (!$orderBudget->exists) {
-                    $orderBudget->status = 'Aprovar Layout';
-                }
-
-                $orderBudget->tenant_id = $tenantId;
-                $orderBudget->layout_column_names_id = $this->resolveInitialLayoutColumnId(
-                    $wall->collectionModel?->name,
-                    $defaultLayoutColumnId,
-                    $newLayoutsColumnId
-                );
-                $orderBudget->description = $wall->comment_referring_model ?? null;
-                $orderBudget->order_index = $orderIndex++;
-                $orderBudget->save();
+        $walls = [];
+        foreach ($budget->rooms->sortBy('position') as $room) {
+            foreach (collect($room->walls)->sortBy('position') as $wall) {
+                $walls[] = $wall;
             }
         }
 
-        // Remove cards órfãos do pedido que não pertencem mais às paredes deste orçamento
-        OrderBudget::query()
-            ->where('order_id', $order->id)
-            ->whereNotNull('budget_wall_id')
-            ->when(!empty($wallIds), function ($query) use ($wallIds) {
-                $query->whereNotIn('budget_wall_id', $wallIds);
-            }, function ($query) {
-                $query->whereRaw('1 = 1');
-            })
-            ->delete();
+        $this->syncOrderBudgetCardsForWalls(
+            $order,
+            $walls,
+            $tenantId,
+            $defaultLayoutColumnId,
+            $newLayoutsColumnId
+        );
     }
 
     public function syncFromOrderRooms(Order $order): void
@@ -319,45 +293,113 @@ class OrderBudgetRepository {
             ->value('id');
         $tenantId = $order->tenant_id;
 
-        $wallIds = [];
-        $orderIndex = 1;
+        $walls = [];
+        foreach ($order->rooms->sortBy('position') as $room) {
+            foreach (collect($room->walls)->sortBy('position') as $wall) {
+                $walls[] = $wall;
+            }
+        }
 
-        $rooms = $order->rooms->sortBy('position');
-        foreach ($rooms as $room) {
-            $walls = collect($room->walls)->sortBy('position');
-            foreach ($walls as $wall) {
-                $wallIds[] = $wall->id;
+        $this->syncOrderBudgetCardsForWalls(
+            $order,
+            $walls,
+            $tenantId,
+            $defaultLayoutColumnId,
+            $newLayoutsColumnId
+        );
+    }
 
-                $orderBudget = OrderBudget::query()->firstOrNew([
-                    'order_id' => $order->id,
+    /**
+     * @param  array<int, \App\Models\BudgetWall>  $walls
+     */
+    protected function syncOrderBudgetCardsForWalls(
+        Order $order,
+        array $walls,
+        ?int $tenantId,
+        ?int $defaultLayoutColumnId,
+        ?int $newLayoutsColumnId
+    ): void {
+        $existingCards = OrderBudget::query()
+            ->where('order_id', $order->id)
+            ->orderBy('order_index')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $usedCardIds = [];
+
+        foreach ($walls as $index => $wall) {
+            $orderIndex = $index + 1;
+            $orderBudget = $existingCards->get($index);
+
+            if ($orderBudget) {
+                $orderBudget->update([
                     'budget_wall_id' => $wall->id,
+                    'tenant_id' => $tenantId,
+                    'description' => $wall->comment_referring_model ?? null,
+                    'order_index' => $orderIndex,
                 ]);
 
-                if (! $orderBudget->exists) {
-                    $orderBudget->status = 'Aprovar Layout';
-                }
+                $usedCardIds[] = $orderBudget->id;
 
-                $orderBudget->tenant_id = $tenantId;
-                $orderBudget->layout_column_names_id = $this->resolveInitialLayoutColumnId(
+                continue;
+            }
+
+            $orderBudget = OrderBudget::query()->create([
+                'order_id' => $order->id,
+                'budget_wall_id' => $wall->id,
+                'status' => 'Aprovar Layout',
+                'tenant_id' => $tenantId,
+                'layout_column_names_id' => $this->resolveInitialLayoutColumnId(
                     $wall->collectionModel?->name,
                     $defaultLayoutColumnId,
                     $newLayoutsColumnId
-                );
-                $orderBudget->description = $wall->comment_referring_model ?? null;
-                $orderBudget->order_index = $orderIndex++;
-                $orderBudget->save();
-            }
+                ),
+                'description' => $wall->comment_referring_model ?? null,
+                'order_index' => $orderIndex,
+            ]);
+
+            $usedCardIds[] = $orderBudget->id;
         }
 
         OrderBudget::query()
             ->where('order_id', $order->id)
-            ->whereNotNull('budget_wall_id')
-            ->when(! empty($wallIds), function ($query) use ($wallIds) {
-                $query->whereNotIn('budget_wall_id', $wallIds);
-            }, function ($query) {
-                $query->whereRaw('1 = 1');
+            ->when(! empty($usedCardIds), function ($query) use ($usedCardIds) {
+                $query->whereNotIn('id', $usedCardIds);
             })
+            ->get()
+            ->each(fn (OrderBudget $card) => $this->deleteOrderBudgetCard($card));
+    }
+
+    /**
+     * Desvincula cards das paredes antes de remover ambientes, preservando histórico e dependências.
+     *
+     * @param  iterable<int, \App\Models\BudgetWall>  $walls
+     */
+    public function detachCardsFromWalls(iterable $walls): void
+    {
+        $wallIds = collect($walls)->pluck('id')->filter()->values()->all();
+
+        if ($wallIds === []) {
+            return;
+        }
+
+        OrderBudget::query()
+            ->whereIn('budget_wall_id', $wallIds)
+            ->update(['budget_wall_id' => null]);
+    }
+
+    protected function deleteOrderBudgetCard(OrderBudget $card): void
+    {
+        DB::table('request_layouts_art')
+            ->where('order_budget_id', $card->id)
             ->delete();
+
+        DB::table('request_layouts_art_interactions')
+            ->where('card_id', $card->id)
+            ->delete();
+
+        $card->delete();
     }
 
     protected function resolveInitialLayoutColumnId(

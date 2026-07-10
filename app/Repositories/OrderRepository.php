@@ -189,13 +189,18 @@ class OrderRepository
 
                 $tenantId = $order->tenant_id;
 
-                $order->loadMissing('rooms');
+                $order->update(['primary_budget_room_id' => null]);
+                $order->loadMissing('rooms.walls');
+
                 foreach ($order->rooms as $existingRoom) {
                     if ($existingRoom->budget_id !== null) {
                         $existingRoom->update(['order_id' => null]);
-                    } else {
-                        $existingRoom->delete();
+
+                        continue;
                     }
+
+                    $this->orderBudgetRepository->detachCardsFromWalls($existingRoom->walls);
+                    $existingRoom->delete();
                 }
 
                 foreach ($rooms as $roomIndex => $roomData) {
