@@ -18,6 +18,10 @@
             </span>
           </div>
         </div>
+        <div class="col-12 mb-3" v-if="data.observation">
+          <label class="form-label">Observação</label>
+          <div class="fw-semibold fs-5">{{ data.observation }}</div>
+        </div>
       </div>
 
       <div v-if="isDropshippingEnabled" class="mb-3">

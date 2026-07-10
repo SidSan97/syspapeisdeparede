@@ -30,18 +30,14 @@
           </td>
           <td style="min-width: 240px">
             <router-link
-              v-if="canEditBudget(budget)"
               class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
               :to="{
-                name: 'budgets.edit',
+                name: 'budgets.show',
                 params: { id: budget.id },
               }"
             >
               {{ budget.name }}
             </router-link>
-            <span v-else class="fw-semibold text-body" :title="editBlockedTitle">
-              {{ budget.name }}
-            </span>
           </td>
           <td class="text-nowrap">
             {{ budgetCostValue(budget) != null ? formatCurrency(budgetCostValue(budget)) : '—' }}
