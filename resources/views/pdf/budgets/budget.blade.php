@@ -19,94 +19,64 @@
 
         /* Cabeçalho */
         .pdf-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #000;
         }
 
+        .pdf-header-top {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
         .pdf-logo {
-            flex: 0 0 150px;
+            display: table-cell;
+            width: 150px;
+            vertical-align: top;
         }
 
         .logo-placeholder {
             width: 120px;
             height: 80px;
             border: 2px solid #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            text-align: center;
+            line-height: 80px;
             color: #000;
             font-size: 12px;
             background: #fff;
         }
 
-        .pdf-header-right {
-            flex: 1;
+        .pdf-header-client {
+            display: table-cell;
+            vertical-align: top;
             text-align: right;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #000;
+        }
+
+        .pdf-header-client p {
+            margin: 0 0 2px 0;
+        }
+
+        .pdf-header-client-name {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
         .pdf-title {
             font-size: 24px;
             font-weight: bold;
-            margin: 0 0 5px 0;
-            color: #000;
-        }
-
-        /* Seção de Informações */
-        .pdf-info-section {
-            width: 100%;
-            margin-bottom: 30px;
-        }
-
-        .pdf-info-section-wrapper {
-            width: 100%;
-            display: table;
-            table-layout: fixed;
-        }
-
-        .pdf-info-table-wrapper {
-            display: table-cell;
-            width: 48%;
-            vertical-align: top;
-            padding-right: 15px;
-        }
-
-        .pdf-info-table-wrapper:last-child {
-            padding-right: 0;
-            padding-left: 15px;
-        }
-
-        .pdf-info-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid #000;
-            font-size: 12px;
-        }
-
-        .pdf-info-table td {
-            padding: 9px 0 0 5px;
-            border: 1px solid #000;
-            vertical-align: top;
-        }
-
-        .pdf-info-label {
-            background: #f0f0f0;
-            font-weight: bold;
-            color: #000;
-        }
-
-        .pdf-info-value {
-            background: #ffffff;
-            color: #000;
-        }
-
-        .pdf-info-value div {
             margin: 0;
-            line-height: 1.4;
+            color: #000;
+        }
+
+        .pdf-title-centered {
+            text-align: center;
+            margin-top: 24px;
         }
 
         /* Tabela de Itens */
@@ -298,27 +268,6 @@
         return count($parts) > 0 ? implode(' - ', $parts) : '';
     }
 
-    // Função para formatar data
-    function formatDate($date) {
-        if (!$date) return '—';
-        try {
-            return \Carbon\Carbon::parse($date)->format('d/m/Y');
-        } catch (\Exception $e) {
-            return '—';
-        }
-    }
-
-    // Função para formatar data prevista
-    function formatEstimatedDate($deliveryTime) {
-        if (!$deliveryTime) return '—';
-        try {
-            $estimated = \Carbon\Carbon::now()->addDays((int)$deliveryTime);
-            return $estimated->format('d/m/Y');
-        } catch (\Exception $e) {
-            return '—';
-        }
-    }
-
     // Função para formatar tempo de entrega
     function formatDeliveryTime($deliveryTime) {
         if (!$deliveryTime) return 'Não informado';
@@ -414,69 +363,36 @@
 <body>
     <!-- Cabeçalho -->
     <div class="pdf-header">
-        <div class="pdf-logo">
-            <div class="logo-placeholder">
-                Logo
-            </div>
-        </div>
-        <div class="pdf-header-right">
-            <h1 class="pdf-title">Nº {{ $budget->id ?? '—' }} - {{ $budget->name ?? '—' }}</h1>
-        </div>
-    </div>
+        <div class="pdf-header-top">
+            <!--div class="pdf-logo">
+                <div class="logo-placeholder">
+                    Logo
+                </div>
+            </div-->
 
-    <!-- Informações do Orçamento e Cliente -->
-    <div class="pdf-info-section">
-        <div class="pdf-info-section-wrapper">
-            <div class="pdf-info-table-wrapper">
-                <table class="pdf-info-table">
-                    <tbody>
-                        <tr>
-                            <td class="pdf-info-label">Cliente</td>
-                            <td class="pdf-info-value">{{ $dropshippingData ? $dropshippingData->name : '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Endereço</td>
-                            <td class="pdf-info-value">
-                                <div>{{ formatAddressLine1($dropshippingData) }}</div>
-                                <div>{{ formatAddressLine2($dropshippingData) }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Contato</td>
-                            <td class="pdf-info-value">
-                                @if($dropshippingData && $dropshippingData->phone)
-                                    <div>Fone: {{ formatPhone($dropshippingData->phone) }}</div>
-                                @endif
-                                @if($dropshippingData && $dropshippingData->email)
-                                    <div>{{ $dropshippingData->email }}</div>
-                                @endif
-                                @if(!$dropshippingData || (!$dropshippingData->phone && !$dropshippingData->email))
-                                    <div>—</div>
-                                @endif
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="pdf-info-table-wrapper">
-                <table class="pdf-info-table">
-                    <tbody>
-                        <tr>
-                            <td class="pdf-info-label">Número do pedido</td>
-                            <td class="pdf-info-value">{{ $budget->id ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Data</td>
-                            <td class="pdf-info-value">{{ formatDate($budget->created_at) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Data prevista</td>
-                            <td class="pdf-info-value">{{ formatEstimatedDate($budget->delivery_time) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            @if($dropshippingData)
+                <div class="pdf-header-client">
+                    <p class="pdf-header-client-name">{{ $dropshippingData->name ?? '—' }}</p>
+                    @if($dropshippingData->cpf_cnpj)
+                        <p>{{ $dropshippingData->cpf_cnpj }}</p>
+                    @endif
+                    @if(formatAddressLine1($dropshippingData) !== '—')
+                        <p>{{ formatAddressLine1($dropshippingData) }}</p>
+                    @endif
+                    @if(formatAddressLine2($dropshippingData))
+                        <p>{{ formatAddressLine2($dropshippingData) }}</p>
+                    @endif
+                    @if($dropshippingData->phone)
+                        <p>Fone: {{ formatPhone($dropshippingData->phone) }}</p>
+                    @endif
+                    @if($dropshippingData->email)
+                        <p>{{ $dropshippingData->email }}</p>
+                    @endif
+                </div>
+            @endif
         </div>
+
+        <h1 class="pdf-title pdf-title-centered">Proposta Comercial Nº {{ $budget->id ?? '—' }}</h1>
     </div>
 
     <!-- Tabela de Itens -->

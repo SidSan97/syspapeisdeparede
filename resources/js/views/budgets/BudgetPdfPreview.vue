@@ -35,73 +35,40 @@
       <div v-else class="pdf-preview-content">
         <!-- Cabeçalho -->
         <div class="pdf-header">
-          <div class="pdf-logo">
-            <div class="logo-placeholder">
-              <IconPhoto />
+          <div class="pdf-header-top">
+            <!--div class="pdf-logo">
+              <div class="logo-placeholder">
+                <IconPhoto />
 
-              <span>Logo</span>
+                <span>Logo</span>
+              </div>
+            </div-->
+
+            <div v-if="dropshippingData" class="pdf-header-client">
+              <p class="pdf-header-client-name">
+                {{ dropshippingData?.name || '—' }}
+              </p>
+              <p v-if="dropshippingData?.cpf_cnpj">
+                {{ dropshippingData.cpf_cnpj }}
+              </p>
+              <p v-if="formatAddressLine1(dropshippingData) !== '—'">
+                {{ formatAddressLine1(dropshippingData) }}
+              </p>
+              <p v-if="formatAddressLine2(dropshippingData)">
+                {{ formatAddressLine2(dropshippingData) }}
+              </p>
+              <p v-if="dropshippingData?.phone">
+                Fone: {{ formatPhone(dropshippingData.phone) }}
+              </p>
+              <p v-if="dropshippingData?.email">
+                {{ dropshippingData.email }}
+              </p>
             </div>
           </div>
-          <div class="pdf-header-right">
-            <h1 class="pdf-title">
-              Nº {{ budget?.id || '—' }} -
-              {{ budget?.name || '—' }}
-            </h1>
-          </div>
-        </div>
 
-        <!-- Informações do Orçamento e Cliente -->
-        <div class="pdf-info-section">
-          <table class="pdf-info-table" v-if="dropshippingData">
-            <tbody>
-              <tr>
-                <td class="pdf-info-label">Cliente</td>
-                <td class="pdf-info-value">
-                  {{ dropshippingData?.name || '—' }}
-                </td>
-              </tr>
-              <tr>
-                <td class="pdf-info-label">Endereço</td>
-                <td class="pdf-info-value">
-                  <div>
-                    {{ formatAddressLine1(dropshippingData) }}
-                  </div>
-                  <div>
-                    {{ formatAddressLine2(dropshippingData) }}
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td class="pdf-info-label">Contato</td>
-                <td class="pdf-info-value">
-                  <div v-if="dropshippingData?.phone">
-                    Fone:
-                    {{ formatPhone(dropshippingData.phone) }}
-                  </div>
-                  <div v-if="dropshippingData?.email">
-                    {{ dropshippingData.email }}
-                  </div>
-                  <div v-if="!dropshippingData?.phone && !dropshippingData?.email">—</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <table class="pdf-info-table">
-            <tbody>
-              <tr>
-                <td class="pdf-info-label">Data</td>
-                <td class="pdf-info-value">
-                  {{ formatDateOnly(budget?.created_at) }}
-                </td>
-              </tr>
-              <tr>
-                <td class="pdf-info-label">Data prevista</td>
-                <td class="pdf-info-value">
-                  {{ formatEstimatedDate(budget?.delivery_time) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <h1 class="pdf-title pdf-title-centered">
+            Proposta Comercial Nº {{ budget?.id || '—' }}
+          </h1>
         </div>
 
         <!-- Tabela de Itens -->
@@ -263,11 +230,9 @@ const {
   formatCurrency,
   formatNumber,
   formatDeliveryTime,
-  formatDateOnly,
   formatPhone,
   formatAddressLine1,
   formatAddressLine2,
-  formatEstimatedDate,
 } = useFormatting();
 
 // Estado do componente

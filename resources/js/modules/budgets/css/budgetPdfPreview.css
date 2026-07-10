@@ -9,16 +9,20 @@
 
 /* Cabeçalho */
 .pdf-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #000;
 }
 
+.pdf-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
 .pdf-logo {
-  flex: 0 0 150px;
+  flex: 0 0 auto;
 }
 
 .logo-placeholder {
@@ -39,16 +43,35 @@
   margin-bottom: 5px;
 }
 
-.pdf-header-right {
+.pdf-header-client {
   flex: 1;
   text-align: right;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #000;
+}
+
+.pdf-header-client p {
+  margin: 0 0 2px 0;
+}
+
+.pdf-header-client-name {
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 4px !important;
 }
 
 .pdf-title {
   font-size: 24px;
   font-weight: bold;
-  margin: 0 0 5px 0;
+  margin: 0;
   color: #000;
+}
+
+.pdf-title-centered {
+  text-align: center;
+  margin-top: 24px;
 }
 
 .pdf-subtitle {
