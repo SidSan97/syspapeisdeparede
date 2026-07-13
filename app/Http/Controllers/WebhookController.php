@@ -4,13 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
+use App\Repositories\OrderBudgetRepository;
 use App\Services\OrderPaymentStateService;
+use App\Services\TinyErpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
+    protected $tinyErpService;
+    protected $orderBudgetRepository;
+
+    public function __construct(TinyErpService $tinyErpService, OrderBudgetRepository $orderBudgetRepository)
+    {
+        $this->tinyErpService = $tinyErpService;
+        $this->orderBudgetRepository = $orderBudgetRepository;
+    }
+
     /**
      * Recebe notificações do Pagar.me (order.paid, etc).
      */
@@ -83,6 +94,9 @@ class WebhookController extends Controller
                 $paymentState->syncBudgetsAfterArtesPaid($order);
             }
         }
+
+        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $order->dropshipping_budget->toArray());
+        $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
 
         Log::info('Webhook Pagar.me: pedido marcado como pago', [
             'order_id' => $orderId,
