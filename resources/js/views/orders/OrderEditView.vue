@@ -793,6 +793,7 @@ import WallPartMetrics from '@/components/budget/WallPartMetrics.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { collectionModelService } from '@/services/collectionModelService';
 import { useAuthStore } from '@/stores/auth';
+import { useDialog } from '@/composables/useDialog';
 import { sumArtworkDays } from '@/utils/artWorkDaysSum';
 import {
   calculatePartsTotalArea,
@@ -819,6 +820,7 @@ import {
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
+const dialog = useDialog();
 
 const tinyErpProducts = ref([]);
 const loading = ref(false);
@@ -1722,10 +1724,23 @@ function removeContinuation(roomIndex, wallIndex, continuationIndex) {
   wall.continuations.splice(continuationIndex, 1);
 }
 
-function handleContinuationToggle(roomIndex, wallIndex) {
+async function handleContinuationToggle(roomIndex, wallIndex) {
   const wall = budget.rooms[roomIndex].walls[wallIndex];
 
   if (!wall.continueSameArt) {
+    if (Array.isArray(wall.continuations) && wall.continuations.length) {
+      const confirmed = await dialog.confirm({
+        title: 'Remover continuações desta parede?',
+        text: 'Ao desmarcar esta opção, as continuações cadastradas para esta parede serão perdidas.',
+        confirmText: 'Desmarcar',
+      });
+
+      if (!confirmed) {
+        wall.continueSameArt = true;
+        return;
+      }
+    }
+
     wall.continuations = [];
     return;
   }
