@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "resources/js/app.js",
+    "resources/js/app.ts"
+  ],
+  "project": [
+    "resources/js/**/*.{js,ts,vue}"
+  ],
+  "vite": true,
+  "vue": true
+}
