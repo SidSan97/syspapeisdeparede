@@ -117,7 +117,11 @@
       <!-- Level 2/3: Images grid -->
       <div v-else>
         <div class="row">
-          <div v-for="img in displayItems" :key="img._key ?? img.id" class="col-12 col-sm-6 col-md-4">
+          <div
+            v-for="img in displayItems"
+            :key="img._key ?? img.id"
+            class="col-12 col-sm-6 col-md-4"
+          >
             <CollectionCard
               :src="asset(img.url || defaultCover)"
               :title="img.name || img.path_name || '—'"
@@ -204,7 +208,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useStorage } from '@vueuse/core';
-import CollectionCard from '@/views/colecao-arts/components/CollectionCard.vue';
 import {
   IconSearch,
   IconHeart,
@@ -215,6 +218,7 @@ import {
   IconChevronRight,
   IconBox,
 } from '@tabler/icons-vue';
+import CollectionCard from '@/views/colecao-arts/components/CollectionCard.vue';
 import { asset } from '@/composables/useAsset';
 
 const appName = window.CatalogConfig?.appName || 'Catálogo';
