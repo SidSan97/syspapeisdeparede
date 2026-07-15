@@ -1,5 +1,8 @@
 <template>
-  <div ref="rootRef" class="d-flex align-items-center justify-content-between mb-2 px-2">
+  <div
+    ref="rootRef"
+    class="kanban-column-header-drag d-flex align-items-center justify-content-between mb-2 px-2"
+  >
     <div class="flex-grow-1">
       <slot>
         <span class="fw-semibold">{{ heading }}</span>
@@ -27,3 +30,13 @@ defineProps({
   badge: { type: Object, default: null },
 });
 </script>
+
+<style scoped>
+.kanban-column-header-drag {
+  cursor: grab;
+}
+
+.kanban-column-header-drag:active {
+  cursor: grabbing;
+}
+</style>

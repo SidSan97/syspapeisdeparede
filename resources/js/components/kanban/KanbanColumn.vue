@@ -2,7 +2,7 @@
 
 <template>
   <div class="kanban-column" v-bind="$attrs">
-    <div class="kanban-column-inner d-flex flex-column rounded-4 p-2 my-1">
+    <div class="kanban-column-inner d-flex flex-column rounded p-2 my-1">
       <slot />
     </div>
   </div>
@@ -18,5 +18,7 @@
   background-color: var(--ds-surface-sunken);
   box-shadow: var(--ds-shadow-raised);
   scroll-margin: var(--ds-space-100, 8px);
+  width: 300px;
+  max-height: 100%;
 }
 </style>
