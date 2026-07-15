@@ -1,7 +1,8 @@
 import js from '@eslint/js';
 import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import skipFormatting from '@vue/eslint-config-prettier/skip-formatting';
+import importPlugin from 'eslint-plugin-import';
 
 export default [
   {
@@ -14,17 +15,39 @@ export default [
 
   {
     files: ['**/*.{vue,js,mjs,jsx}'],
+
+    plugins: {
+      import: importPlugin,
+    },
+
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+
       globals: {
         ...globals.browser,
         ...globals.node,
       },
     },
+
     rules: {
-      'vue/no-unused-vars': 'error',
-      'no-unused-vars': 'warn',
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+
+      'import/no-unused-modules': 'error',
+
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          // alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
     },
   },
 
