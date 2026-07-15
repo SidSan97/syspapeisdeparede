@@ -135,7 +135,7 @@ const fetchSubcategoriesForRoot = async (rootId) => {
       ...subcategoriesByRoot.value,
       [rootId]: items,
     };
-  } catch (error) {
+  } catch {
     subcategoriesByRoot.value = {
       ...subcategoriesByRoot.value,
       [rootId]: [],
@@ -188,13 +188,13 @@ const fetchCollectionsForModal = async () => {
       name: (cat.name ?? '').toString(),
       parent_id: cat.parent_id ?? null,
     }));
-  } catch (error) {
+  } catch {
     availableCollections.value = [];
   }
 };
 
 const shareCatalogLink = () => {
-  const url = `${window.location.origin}/catalogo`;
+  const url = `${window.LaravelApp.appUrl}/catalogo`;
   navigator.clipboard.writeText(url).then(() => {
     window.Swal.fire({
       title: 'Link copiado!',
