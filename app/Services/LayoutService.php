@@ -5,16 +5,17 @@ namespace App\Services;
 use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class LayoutService
 {
     /**
      * Transforma uma coleção de OrderBudgets em dados formatados para layouts
      *
-     * @param Collection<int, OrderBudget> $orderBudgets
-     * @param string|null $typePage Filtro de tipo de página ('layout' ou 'product')
-     * @return array
+     * @param  Collection<int, OrderBudget>  $orderBudgets
+     * @param  string|null  $typePage  Filtro de tipo de página ('layout' ou 'product')
      */
     public function transformLayouts(Collection $orderBudgets, ?string $typePage = null): array
     {
@@ -22,7 +23,7 @@ class LayoutService
             $order = $orderBudget->order;
             $wall = $orderBudget->wall;
 
-            if (!$order || !$wall) {
+            if (! $order || ! $wall) {
                 return null;
             }
 
@@ -33,7 +34,7 @@ class LayoutService
             // Criar nome do card baseado na parede
             $roomName = $wall->room->name ?? 'Ambiente';
             $wallName = $wall->name ?? 'Parede';
-            $cardName = $order->name . ' - ' . $roomName . ' - ' . $wallName;
+            $cardName = $order->name.' - '.$roomName.' - '.$wallName;
 
             // Carregar comentários aprovados
             $orderBudget->load(['comments' => function ($query) {
@@ -125,9 +126,6 @@ class LayoutService
 
     /**
      * Busca a primeira imagem do modelo de coleção da parede
-     *
-     * @param BudgetWall $wall
-     * @return string|null
      */
     protected function getWallImage(BudgetWall $wall): ?string
     {
@@ -143,19 +141,16 @@ class LayoutService
 
     /**
      * Calcula as datas de entrega baseadas no prazo
-     *
-     * @param Order $order
-     * @return array
      */
     protected function calculateDeliveryDates(Order $order): array
     {
         $deliveryTime = $order->delivery_time ?? 0;
-        $startDate = \Carbon\Carbon::now();
+        $startDate = Carbon::now();
         $endDate = $startDate->copy()->addDays($deliveryTime);
 
         $months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-        $startFormatted = $startDate->day . ' de ' . $months[$startDate->month - 1];
-        $endFormatted = $endDate->day . ' de ' . $months[$endDate->month - 1];
+        $startFormatted = $startDate->day.' de '.$months[$startDate->month - 1];
+        $endFormatted = $endDate->day.' de '.$months[$endDate->month - 1];
 
         return [
             'start' => $startFormatted,
@@ -167,27 +162,33 @@ class LayoutService
 
     /**
      * Transforma um Order em array com dados formatados
-     *
-     * @param Order $order
-     * @return array
      */
     protected function transformOrder(Order $order): array
     {
         $order->loadMissing([
             'rooms.walls.collectionModel.files',
             'dropshippingData',
+            'user',
         ]);
 
         $data = $order->toArray();
 
-        if (!empty($data['rooms']) && is_array($data['rooms'])) {
+        $data['user'] = $order->user
+            ? [
+                'id' => $order->user->id,
+                'name' => $order->user->name,
+                'email' => $order->user->email,
+            ]
+            : null;
+
+        if (! empty($data['rooms']) && is_array($data['rooms'])) {
             foreach ($data['rooms'] as &$room) {
-                if (!empty($room['walls']) && is_array($room['walls'])) {
+                if (! empty($room['walls']) && is_array($room['walls'])) {
                     foreach ($room['walls'] as &$wall) {
                         $wall['collection_model_name'] = $wall['collection_model']['name'] ?? null;
 
                         // Transformar arquivos do modelo de coleção
-                        if (!empty($wall['collection_model']['files']) && is_array($wall['collection_model']['files'])) {
+                        if (! empty($wall['collection_model']['files']) && is_array($wall['collection_model']['files'])) {
                             $wall['collection_model']['files'] = array_map(function ($file) {
                                 return [
                                     'id' => $file['id'] ?? null,
@@ -210,9 +211,6 @@ class LayoutService
 
     /**
      * Transforma uma parede em array com dados formatados
-     *
-     * @param BudgetWall $wall
-     * @return array
      */
     protected function transformWall(BudgetWall $wall): array
     {
@@ -220,11 +218,11 @@ class LayoutService
 
         $data = $wall->toArray();
 
-        if (!empty($data['collection_model']) && is_array($data['collection_model'])) {
+        if (! empty($data['collection_model']) && is_array($data['collection_model'])) {
             $data['collection_model']['name'] = $data['collection_model']['name'] ?? null;
 
             // Transformar arquivos do modelo de coleção
-            if (!empty($data['collection_model']['files']) && is_array($data['collection_model']['files'])) {
+            if (! empty($data['collection_model']['files']) && is_array($data['collection_model']['files'])) {
                 $data['collection_model']['files'] = array_map(function ($file) {
                     return [
                         'id' => $file['id'] ?? null,
@@ -242,41 +240,36 @@ class LayoutService
 
     /**
      * Transforma arquivos de upload em array com URLs formatadas
-     *
-     * @param array|null $files
-     * @return array
      */
     protected function transformUploadedFiles(?array $files): array
     {
-        if (!is_array($files) || empty($files)) {
+        if (! is_array($files) || empty($files)) {
             return [];
         }
 
         return array_values(array_filter(array_map(function ($filePath) {
-            if (is_string($filePath) && !empty($filePath)) {
+            if (is_string($filePath) && ! empty($filePath)) {
                 return [
                     'file_path' => $filePath,
                     'url' => $this->makePublicUrl($filePath),
                     'name' => basename($filePath),
                 ];
             }
+
             return null;
         }, $files)));
     }
 
     /**
      * Gera URL pública para um arquivo
-     *
-     * @param string|null $path
-     * @return string|null
      */
     protected function makePublicUrl(?string $path): ?string
     {
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
-        $rawUrl = \Illuminate\Support\Facades\Storage::url($path);
+        $rawUrl = Storage::url($path);
 
         $appUrl = config('app.url') ?: url('/');
         $appUrl = rtrim($appUrl, '/');
@@ -284,13 +277,12 @@ class LayoutService
         $parsedPath = parse_url($rawUrl, PHP_URL_PATH) ?: $rawUrl;
         $parsedQuery = parse_url($rawUrl, PHP_URL_QUERY);
 
-        $finalUrl = $appUrl . $parsedPath;
+        $finalUrl = $appUrl.$parsedPath;
 
         if ($parsedQuery) {
-            $finalUrl .= '?' . $parsedQuery;
+            $finalUrl .= '?'.$parsedQuery;
         }
 
         return $finalUrl;
     }
 }
-

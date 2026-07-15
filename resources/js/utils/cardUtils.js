@@ -30,9 +30,9 @@ export function getDropshippingClientDisplayName(dropshipping) {
 }
 
 /**
- * Retorna o nome de exibição do card.
+ * Retorna o nome de exibição do card: "Número do pedido - Nome do cliente".
  * Preferência com dropshipping: "00042 - João Silva" (PF) ou "00042 - Empresa LTDA" (PJ, razão social no campo name).
- * Fallback: mesmo formato com membros; depois `card.name`.
+ * Fallback, em ordem: membros do card; dono do pedido (`order.user.name`); apenas o número; `card.name`.
  * @param {Object} card - Objeto do card
  * @param {string} defaultName - Nome padrão
  * @returns {string}
@@ -62,6 +62,16 @@ export function getCardDisplayName(card, defaultName = '') {
       .filter(Boolean)
       .join(', ');
     return `${formattedId} - ${membersNames}`;
+  }
+
+  // Fallback: usuário dono do pedido (cliente), sem depender de dropshipping/membros
+  const orderUserName = card.order?.user?.name;
+  if (orderUserName && orderId != null && orderId !== '') {
+    return `${formatCardId(orderId)} - ${orderUserName}`;
+  }
+
+  if (orderId != null && orderId !== '') {
+    return formatCardId(orderId);
   }
 
   return card.name || defaultName;
