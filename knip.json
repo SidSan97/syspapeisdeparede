@@ -1,8 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": [
-    "resources/js/app.js",
-    "resources/js/app.ts"
+    "resources/js/bootstrap.js"
   ],
   "project": [
     "resources/js/**/*.{js,ts,vue}"
