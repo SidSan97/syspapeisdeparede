@@ -11,7 +11,8 @@
     </div>
     <div class="pt-2 px-3 pb-1">
       <div class="trello-card-footer-content">
-        <p class="text-truncate m-0">{{ displayName }}</p>
+        <p class="text-truncate m-0 small text-body-secondary">{{ displayName }}</p>
+        <p v-if="itemName" class="text-truncate m-0">{{ itemName }}</p>
         <div
           v-if="isCompleted"
           class="d-flex align-items-center justify-content-start p-1 mt-1 rounded bg-success text-white small w-50"
@@ -102,6 +103,7 @@ const props = defineProps({
 });
 
 const displayName = computed(() => getCardDisplayName(props.card));
+const itemName = computed(() => props.card.name || '');
 const coverImage = computed(() => getCoverImage(props.card));
 const isCompleted = computed(() => isCardCompleted(props.card));
 const activitiesCount = computed(() => getActivitiesCount(props.card));

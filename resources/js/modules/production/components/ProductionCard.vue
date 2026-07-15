@@ -12,7 +12,10 @@
     <div class="card-body px-3 pt-3 pb-2 flex-grow-1 min-w-0">
       <div class="mb-2">
         <div class="d-flex gap-2 align-items-start flex-wrap">
-          <p class="fs-sm mb-0 flex-grow-1">{{ displayName }}</p>
+          <div class="flex-grow-1 min-w-0">
+            <p class="mb-0 small text-body-secondary">{{ displayName }}</p>
+            <p v-if="itemName" class="fs-sm mb-0">{{ itemName }}</p>
+          </div>
         </div>
 
         <span
@@ -115,6 +118,7 @@ let timerInterval = null;
 const currentTime = ref(new Date());
 
 const displayName = computed(() => getCardDisplayName(props.card));
+const itemName = computed(() => props.card.name || '');
 const coverImage = computed(() => getCoverImage(props.card));
 const activitiesCount = computed(() => getActivitiesCount(props.card));
 const commentsCount = computed(() => getCommentsCount(props.card));
