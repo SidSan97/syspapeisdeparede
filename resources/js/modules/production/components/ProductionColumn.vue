@@ -2,13 +2,6 @@
   <KanbanColumn ref="rootRef">
     <KanbanColumnHeader :count="count">
       <template #default>
-        <button
-          type="button"
-          class="btn btn-sm btn-subtle btn-icon kanban-column-drag-handle"
-          aria-label="Arrastar coluna"
-        >
-          <IconGripVertical :size="16" />
-        </button>
         <template v-if="!isEditing">
           <button
             type="button"
@@ -58,6 +51,7 @@
 <script setup>
 import { ref, nextTick } from 'vue';
 import { onClickOutside } from '@vueuse/core';
+import { IconDots } from '@tabler/icons-vue';
 import { useFormatting } from '@/composables/useFormatting';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
 import KanbanColumn from '@/components/kanban/KanbanColumn.vue';
@@ -65,7 +59,6 @@ import KanbanColumnCards from '@/components/kanban/KanbanColumnCards.vue';
 import KanbanColumnHeader from '@/components/kanban/KanbanColumnHeader.vue';
 
 // Icons
-import { IconDots, IconGripVertical } from '@tabler/icons-vue';
 
 const props = defineProps({
   column: { type: Object, required: true },
@@ -124,13 +117,3 @@ onClickOutside(rootRef, () => {
 });
 </script>
 
-<style scoped>
-.kanban-column-drag-handle {
-  cursor: grab;
-  color: var(--ds-text-subtle, #6c757d);
-}
-
-.kanban-column-drag-handle:active {
-  cursor: grabbing;
-}
-</style>

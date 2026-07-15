@@ -1,6 +1,7 @@
 <template>
   <div
-    class="flex-grow-1 overflow-auto px-1" style="min-height: 40px;"
+    class="flex-grow-1 overflow-y-auto overflow-x-hidden p-1"
+    style="min-height: 40px"
     :class="{ 'bg-light border rounded': isDragging }"
     @drop="handleDrop"
     @dragover.prevent

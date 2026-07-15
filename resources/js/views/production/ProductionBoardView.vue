@@ -1,47 +1,52 @@
 <template>
-  <section class="content">
-    <Page title="Produção" :full-width="true">
-      <KanbanCanvas>
-        <div class="overflow-x-auto h-100 w-100 px-2 py-0.5">
-          <draggable
-            v-model="columns"
-            item-key="id"
-            :animation="200"
-            handle=".kanban-column-drag-handle"
-            ghost-class="kanban-column-ghost"
-            class="d-flex gap-4 h-100"
-            @end="onColumnReorder"
-          >
-            <template #item="{ element: column }">
-              <ProductionColumn
-                :column="column"
-                :count="getCardsByColumn(column.id).length || 0"
-                :total-metragem="getTotalMetragem(column.id)"
-                @update:name="handleUpdateColumn"
-                @delete="handleDeleteColumn(column.id)"
-                @dragover="drag.allowDrop"
-                @drop="drag.handleDrop($event, column.id)"
-              >
-                <KanbanColumnSkeleton v-if="loadingCards" />
+  <section class="content d-flex flex-column">
+    <div class="container-fluid mt-3">
+      <PageHeader title="Produção" />
+    </div>
 
-                <ProductionCard
-                  v-for="card in getCardsByColumn(column.id)"
-                  :key="card.id"
-                  :card="card"
-                  draggable="true"
-                  @drag-start="drag.handleDragStart($event, card)"
-                  @click="selectedCard = card"
-                />
-              </ProductionColumn>
-            </template>
+    <KanbanCanvas class="flex-grow-1">
+      <div class="overflow-x-auto h-100 w-100 px-2 py-0.5">
+        <draggable
+          v-model="columns"
+          item-key="id"
+          :animation="200"
+          handle=".kanban-column-header-drag"
+          :force-fallback="true"
+          ghost-class="kanban-column-ghost"
+          drag-class="kanban-column-dragging"
+          class="d-flex gap-4 h-100"
+          @end="onColumnReorder"
+        >
+          <template #item="{ element: column }">
+            <ProductionColumn
+              :column="column"
+              :count="getCardsByColumn(column.id).length || 0"
+              :total-metragem="getTotalMetragem(column.id)"
+              @update:name="handleUpdateColumn"
+              @delete="handleDeleteColumn(column.id)"
+              @dragover="drag.allowDrop"
+              @drop="drag.handleDrop($event, column.id)"
+            >
+              <KanbanColumnSkeleton v-if="loadingCards" />
 
-            <template #footer>
-              <KanbanColumnAdd @create="board.createColumn" />
-            </template>
-          </draggable>
-        </div>
-      </KanbanCanvas>
-    </Page>
+              <ProductionCard
+                v-for="card in getCardsByColumn(column.id)"
+                :key="card.id"
+                :card="card"
+                draggable="true"
+                @drag-start="drag.handleDragStart($event, card)"
+                @click="selectedCard = card"
+                class="mb-2"
+              />
+            </ProductionColumn>
+          </template>
+
+          <template #footer>
+            <KanbanColumnAdd @create="board.createColumn" />
+          </template>
+        </draggable>
+      </div>
+    </KanbanCanvas>
 
     <ProductCardModal
       :card="selectedCard"
@@ -56,7 +61,6 @@
 <script setup>
 import { onMounted, shallowRef } from 'vue';
 import draggable from 'vuedraggable';
-import Page from '@/components/page/Page.vue';
 import ProductCardModal from '@/modules/production/components/ProductCardModal.vue';
 import ProductionColumn from '@/modules/production/components/ProductionColumn.vue';
 import ProductionCard from '@/modules/production/components/ProductionCard.vue';
@@ -70,6 +74,7 @@ import { useProductionBoard } from '@/composables/useProductionBoard';
 import { useKanbanDrag } from '@/composables/useKanbanDrag';
 import { useToast } from '@/composables/useToast';
 import { useProductionCards } from '@/composables/useProductionCards';
+import PageHeader from '@/components/page/PageHeader.vue';
 
 const dialog = useDialog();
 const toast = useToast();
@@ -174,5 +179,10 @@ onMounted(async () => {
 
 .kanban-column-ghost {
   opacity: 0.4;
+}
+
+.kanban-column-dragging {
+  transform: rotate(3deg);
+  cursor: grabbing;
 }
 </style>

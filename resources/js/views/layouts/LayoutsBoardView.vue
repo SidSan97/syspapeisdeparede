@@ -1,17 +1,19 @@
 <template>
-  <section class="content">
+  <section class="content d-flex flex-column">
     <div class="container-fluid mt-3">
       <PageHeader title="Layouts" />
     </div>
 
-    <KanbanCanvas>
-      <div class="overflow-x-auto h-100 w-100 px-2 py-0.5">
+    <KanbanCanvas class="flex-grow-1">
+      <div class="overflow-x-auto overflow-y-hidden h-100 w-100 px-2 py-0.5">
         <draggable
           v-model="columns"
           item-key="id"
           :animation="200"
-          handle=".kanban-column-drag-handle"
+          handle=".kanban-column-header-drag"
+          :force-fallback="true"
           ghost-class="kanban-column-ghost"
+          drag-class="kanban-column-dragging"
           class="d-flex gap-4 h-100"
           @end="onColumnReorder"
         >
@@ -183,5 +185,10 @@ onMounted(async () => {
 
 .kanban-column-ghost {
   opacity: 0.4;
+}
+
+.kanban-column-dragging {
+  transform: rotate(3deg);
+  cursor: grabbing;
 }
 </style>
