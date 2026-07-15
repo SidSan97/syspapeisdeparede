@@ -1,44 +1,76 @@
 <template>
-    <div v-if="data.rooms && data.rooms.some(r => r.walls && r.walls.some(w => w.collection_model || w.collection_model_name))" class="card mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0 fw-semibold">Modelos Selecionados</h5>
-        </div>
-        <div class="card-body">
-            <div v-for="(room, roomIndex) in data.rooms" :key="roomIndex">
-                <div v-if="room.walls && room.walls.some(w => w.collection_model || w.collection_model_name)" class="mb-4">
-                    <h6 class="mb-3">{{ room.name || `Ambiente ${roomIndex + 1}` }}</h6>
-                    <div v-for="(wall, wallIndex) in room.walls" :key="wallIndex">
-                        <div v-if="wall.collection_model || wall.collection_model_name" class="mb-3 pb-3 border-bottom">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="fw-semibold">{{ wall.name || `Parede ${wallIndex + 1}` }}</div>
-                                    <div class="text-muted small">
-                                        Modelo: {{ wall.collection_model?.name || wall.collection_model_name }}
-                                    </div>
-                                    <div v-if="wall.collection_model" class="text-muted small mt-1">
-                                        <span>Valor: {{ formatCurrency(wall.collection_model.value) }}</span>
-                                        <span class="ms-3">Prazo: {{ wall.collection_model.deadline }} dia(s)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div v-if="show">
+    <div v-if="hasModel" class="mb-3">
+      <div class="text-muted small">Modelo</div>
+      <div class="fw-semibold">
+        {{ modelName || '-' }}
+      </div>
+      <div v-if="hasModelDetails" class="text-muted small mt-1">
+        <span v-if="modelValueLabel">Valor: {{ modelValueLabel }}</span>
+        <span v-if="modelDeadlineLabel" class="ms-3">Prazo: {{ modelDeadlineLabel }}</span>
+      </div>
     </div>
+
+    <WallModelReferringFields v-if="hasReferringContent" :wall="wall" :compact="compact" />
+  </div>
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import WallModelReferringFields from '@/components/details/WallModelReferringFields.vue';
 import { useFormatting } from '@/composables/useFormatting';
+import { hasWallModelReferringContent } from '@/utils/wallModelReferringContent';
 
 const props = defineProps({
-    data: {
-        type: Object,
-        required: true,
-    },
+  wall: {
+    type: Object,
+    required: true,
+  },
+  compact: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const { formatCurrency } = useFormatting();
-</script>
 
+const modelName = computed(
+  () => props.wall?.collection_model?.name || props.wall?.collection_model_name || '',
+);
+
+const hasModel = computed(
+  () => Boolean(props.wall?.collection_model || props.wall?.collection_model_name),
+);
+
+const hasReferringContent = computed(() => hasWallModelReferringContent(props.wall));
+
+const show = computed(() => hasModel.value || hasReferringContent.value);
+
+const modelValueLabel = computed(() => {
+  const value = props.wall?.collection_model?.value;
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '';
+  }
+  return formatCurrency(numeric);
+});
+
+const modelDeadlineLabel = computed(() => {
+  const deadline = props.wall?.collection_model?.deadline;
+  if (deadline === null || deadline === undefined || deadline === '') {
+    return '';
+  }
+  const numeric = Number(deadline);
+  if (!Number.isFinite(numeric)) {
+    return '';
+  }
+  return `${numeric} dia${numeric === 1 ? '' : '(s)'}`;
+});
+
+const hasModelDetails = computed(
+  () => Boolean(modelValueLabel.value) || Boolean(modelDeadlineLabel.value),
+);
+</script>

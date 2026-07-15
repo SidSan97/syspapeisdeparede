@@ -1,12 +1,9 @@
 import { computed, reactive, ref } from 'vue';
-import { swalConfirmation, swalSuccess, swalError } from '@/utils/alerts';
-import { useCollectionService } from '../services/collectionService';
+import { useDialog } from '@/composables/useDialog';
+import { collectionService } from '../services/collectionService';
 
-/**
- * Composable para gerenciar coleções, subcategorias e imagens (CollectionArts).
- */
 export function useCollection() {
-  const service = useCollectionService();
+  const dialog = useDialog();
 
   // State: collections
   const collections = ref([]);
@@ -20,8 +17,6 @@ export function useCollection() {
   const expandedCollections = ref(new Set());
   const loadingSubcategories = reactive({});
   const deletingSubcategoryId = ref(null);
-  const showSubcategoryModal = ref(false);
-  const subcategoryForEdit = ref(null);
   const parentCollectionForSubcategory = ref(null);
 
   // State: images & upload
@@ -56,8 +51,7 @@ export function useCollection() {
       name: (item.name ?? '').toString(),
       image_cover: item.image_cover ?? null,
       image_cover_url:
-        item.image_cover_url ||
-        (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
+        item.image_cover_url || (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
       children: item.children ?? [],
     };
   }
@@ -69,15 +63,14 @@ export function useCollection() {
       parent_id: Number(item.parent_id ?? 0),
       image_cover: item.image_cover ?? null,
       image_cover_url:
-        item.image_cover_url ||
-        (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
+        item.image_cover_url || (item.image_cover ? resolveImageUrl(null, item.image_cover) : null),
       images_count: Number(item.images_count ?? 0),
     };
   }
 
   function sortCollections(items = []) {
     return [...items].sort((a, b) =>
-      a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+      a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }),
     );
   }
 
@@ -121,9 +114,9 @@ export function useCollection() {
   async function fetchCollections() {
     isLoadingCollections.value = true;
     try {
-      const data = await service.getCollections(true);
+      const data = await collectionService.all({ tree: true });
       const payload = data?.data ?? data ?? {};
-      const items = Array.isArray(payload) ? payload : payload.items ?? [];
+      const items = Array.isArray(payload) ? payload : (payload.items ?? []);
       const roots = items.filter((i) => !i.parent_id);
       const list = roots.map(normalizeCollection);
       collections.value = sortCollections(list);
@@ -149,7 +142,7 @@ export function useCollection() {
     if (loadingSubcategories[categoryId]) return;
     loadingSubcategories[categoryId] = true;
     try {
-      const data = await service.getCollectionChildren(categoryId);
+      const data = await collectionService.getCollectionChildren(categoryId);
       const payload = data?.data ?? data ?? [];
       const items = Array.isArray(payload) ? payload : [];
       collectionSubcategories[categoryId] = items.map(normalizeSubcategory);
@@ -170,7 +163,7 @@ export function useCollection() {
     if (!categoryId || isLoadingImages[categoryId]) return;
     isLoadingImages[categoryId] = true;
     try {
-      const data = await service.getCollectionCategory(categoryId);
+      const data = await collectionService.find(categoryId);
       const payload = data?.data ?? data ?? {};
       const imgs = Array.isArray(payload.images) ? payload.images : [];
       collectionImages[categoryId] = imgs.map((img) => ({
@@ -212,6 +205,7 @@ export function useCollection() {
   function closeCollectionModal() {
     showCollectionModal.value = false;
     collectionForEdit.value = null;
+    parentCollectionForSubcategory.value = null;
   }
 
   function onCollectionSaved(saved) {
@@ -230,27 +224,43 @@ export function useCollection() {
     closeCollectionModal();
   }
 
+  async function onItemSaved(saved) {
+    if (parentCollectionForSubcategory.value || saved.parent_id) {
+      await onSubcategorySaved(saved);
+    } else {
+      onCollectionSaved(saved);
+    }
+  }
+
   async function confirmDeleteCollection(collection) {
     if (!collection?.id || deletingCollectionId.value !== null) return;
-    const ok = await swalConfirmation(
-      'Excluir coleção?',
-      'Essa ação é <strong>irreversível!</strong>',
-      'warning',
-      'Excluir',
-      'Cancelar'
-    );
-    if (!ok.isConfirmed) return;
+
+    const confirmed = await dialog.confirmDelete({
+      title: 'Excluir coleção?',
+      text: 'Essa ação é irreversível!',
+    });
+
+    if (!confirmed) return;
+
     deletingCollectionId.value = collection.id;
     try {
-      await service.deleteCollection(collection.id);
+      await collectionService.delete(collection.id);
+
       collections.value = collections.value.filter((i) => i.id !== collection.id);
-      swalSuccess('Coleção excluída com sucesso.', 'Coleção excluída!');
+
+      dialog.success({
+        title: 'Coleção excluída!',
+        text: 'Coleção excluída com sucesso.',
+      });
+
       if (showCollectionModal.value && collectionForEdit.value?.id === collection.id) {
         closeCollectionModal();
       }
     } catch (e) {
       const msg = e?.response?.data?.message ?? 'Não foi possível excluir a coleção.';
-      swalError(msg);
+      dialog.error({
+        text: msg,
+      });
     } finally {
       deletingCollectionId.value = null;
     }
@@ -258,20 +268,21 @@ export function useCollection() {
 
   // --- Subcategory actions ---
   async function openSubcategoryModal(subcategory, parentCollection) {
-    const parent = parentCollection ?? (subcategory ? getCollectionById(subcategory.parent_id) : null);
+    const parent =
+      parentCollection ?? (subcategory ? getCollectionById(subcategory.parent_id) : null);
     if (!parent?.id && !subcategory?.parent_id) return;
     if (!subcategory && parent) {
       expandedCollections.value = new Set([...expandedCollections.value, parent.id]);
       if (!collectionSubcategories[parent.id]) await fetchSubcategories(parent.id);
     }
-    subcategoryForEdit.value = subcategory ?? null;
+    collectionForEdit.value = subcategory ?? null;
     parentCollectionForSubcategory.value = parent ?? null;
-    showSubcategoryModal.value = true;
+    showCollectionModal.value = true;
   }
 
   function closeSubcategoryModal() {
-    showSubcategoryModal.value = false;
-    subcategoryForEdit.value = null;
+    showCollectionModal.value = false;
+    collectionForEdit.value = null;
     parentCollectionForSubcategory.value = null;
   }
 
@@ -284,7 +295,7 @@ export function useCollection() {
     } else {
       collectionSubcategories[cid].push(saved);
     }
-    const wasCreate = !subcategoryForEdit.value?.id;
+    const wasCreate = !collectionForEdit.value?.id;
     closeSubcategoryModal();
     if (wasCreate) {
       selectedSubcategoryId.value = saved.id;
@@ -307,28 +318,37 @@ export function useCollection() {
 
   async function confirmDeleteSubcategory(subcategory) {
     if (!subcategory?.id || deletingSubcategoryId.value !== null) return;
-    const ok = await swalConfirmation(
-      'Excluir subcategoria?',
-      'Essa ação é <strong>irreversível!</strong> Todas as imagens associadas serão removidas.',
-      'warning',
-      'Excluir',
-      'Cancelar'
-    );
-    if (!ok.isConfirmed) return;
+
+    const confirmed = await dialog.confirmDelete({
+      title: 'Excluir subcategoria?',
+      text: 'Essa ação é irreversível! Todas as imagens associadas serão removidas.',
+    });
+
+    if (!confirmed) return;
+
     deletingSubcategoryId.value = subcategory.id;
     try {
-      await service.deleteSubcategory(subcategory.id);
+      await collectionService.delete(subcategory.id);
+
       const cid = subcategory.parent_id;
+
       if (collectionSubcategories[cid]) {
         collectionSubcategories[cid] = collectionSubcategories[cid].filter(
-          (i) => i.id !== subcategory.id
+          (i) => i.id !== subcategory.id,
         );
       }
+
       if (selectedSubcategoryId.value === subcategory.id) clearSubcategorySelection();
-      swalSuccess('Subcategoria excluída com sucesso.', 'Subcategoria excluída!');
+
+      dialog.success({
+        title: 'Subcategoria excluída!',
+        text: 'Subcategoria excluída com sucesso.',
+      });
     } catch (e) {
       const msg = e?.response?.data?.message ?? 'Não foi possível excluir a subcategoria.';
-      swalError(msg);
+      dialog.error({
+        text: msg,
+      });
     } finally {
       deletingSubcategoryId.value = null;
     }
@@ -393,7 +413,7 @@ export function useCollection() {
         formData.append(`names[${i}]`, item.name.trim());
       });
 
-      const res = await service.uploadImages(formData);
+      const res = await collectionService.uploadImages(formData);
 
       if (res?.success === false) {
         throw new Error(res?.message ?? 'Erro ao enviar imagens.');
@@ -422,7 +442,6 @@ export function useCollection() {
       });
       resetForm(fileInputRef);
       activeTab.value = 'images';
-
     } catch (e) {
       const msg =
         e?.message ??
@@ -437,17 +456,17 @@ export function useCollection() {
 
   async function confirmDeleteImage(image) {
     if (!image?.id || deletingImageId.value !== null) return;
-    const ok = await swalConfirmation(
-      'Remover imagem?',
-      'Essa ação é <strong>irreversível!</strong>',
-      'warning',
-      'Remover',
-      'Cancelar'
-    );
-    if (!ok.isConfirmed) return;
+
+    const confirmed = await dialog.confirmDelete({
+      title: 'Remover imagem?',
+      text: 'Essa ação é irreversível!',
+    });
+
+    if (!confirmed) return;
+
     deletingImageId.value = image.id;
     try {
-      await service.deleteImage(image.id);
+      await collectionService.deleteImage(image.id);
       if (selectedSubcategoryId.value) {
         collectionImages[selectedSubcategoryId.value] = (
           collectionImages[selectedSubcategoryId.value] ?? []
@@ -455,10 +474,15 @@ export function useCollection() {
         const sub = selectedSubcategory.value;
         if (sub) sub.images_count = collectionImages[selectedSubcategoryId.value].length;
       }
-      swalSuccess('Imagem removida com sucesso.', 'Imagem removida!');
+      dialog.success({
+        title: 'Imagem removida!',
+        text: 'Imagem removida com sucesso.',
+      });
     } catch (e) {
       const msg = e?.response?.data?.message ?? 'Não foi possível remover a imagem.';
-      swalError(msg);
+      dialog.error({
+        text: msg,
+      });
     } finally {
       deletingImageId.value = null;
     }
@@ -475,8 +499,6 @@ export function useCollection() {
     expandedCollections,
     loadingSubcategories,
     deletingSubcategoryId,
-    showSubcategoryModal,
-    subcategoryForEdit,
     parentCollectionForSubcategory,
     collectionImages,
     isLoadingImages,
@@ -507,6 +529,7 @@ export function useCollection() {
     openSubcategoryModal,
     closeSubcategoryModal,
     onSubcategorySaved,
+    onItemSaved,
     selectSubcategory,
     clearSubcategorySelection,
     confirmDeleteSubcategory,

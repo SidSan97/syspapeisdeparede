@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('collection_models', function (Blueprint $table) {
-            if (!Schema::hasColumn('collection_models', 'name')) {
+            if (! Schema::hasColumn('collection_models', 'name')) {
                 $table->string('name')->default('')->after('id');
             }
         });
@@ -48,7 +48,7 @@ return new class extends Migration
         });
 
         Schema::table('collection_models', function (Blueprint $table) {
-            if (!Schema::hasColumn('collection_models', 'type_model_id')) {
+            if (! Schema::hasColumn('collection_models', 'type_model_id')) {
                 $table->foreignId('type_model_id')
                     ->nullable()
                     ->constrained('models_types')
@@ -61,4 +61,3 @@ return new class extends Migration
         });
     }
 };
-

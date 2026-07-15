@@ -1,171 +1,238 @@
 <template>
   <section class="content">
-    <Page title="Tiny ERP" subtitle="Configure produtos associados à plataforma." back-to="/settings">
-      <div class="p-2">
-          <form @submit.prevent="handleSubmit">
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="gtin" class="form-label">GTIN</label>
-                <input
-                  id="gtin"
-                  v-model.trim="form.gtin"
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': form.errors.has('gtin') }"
-                  placeholder="Ex: 7891234567890"
-                />
-                <small class="form-text text-muted">Código GTIN do produto no Tiny ERP.</small>
-                <has-error :form="form" field="gtin"></has-error>
+    <Page
+      title="Tiny ERP"
+      subtitle="Configure produtos associados à plataforma."
+      :breadcrumbs="routes"
+    >
+      <form @submit.prevent="handleSubmit">
+        <div class="col-md-6">
+          <BaseInput
+            id="gtin"
+            v-model.trim="formData.gtin"
+            label="GTIN"
+            type="text"
+            placeholder="Ex: 7891234567890"
+            :class="{ 'is-invalid': errors.gtin }"
+            form-group-class="mb-3"
+          >
+            <template #bottom>
+              <div v-if="errors.gtin" class="invalid-feedback d-block">
+                {{ errors.gtin }}
               </div>
-              <div class="col-12 col-md-6">
-                <label for="cep" class="form-label">CEP</label>
-                <input
-                  id="cep"
-                  v-model.trim="form.cep"
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': form.errors.has('cep') }"
-                  placeholder="Ex: 01310-100"
-                  maxlength="9"
-                  @input="formatCep"
-                />
-                <small class="form-text text-muted">CEP do remetente dos pedidos para cálculo de frete e entrega.</small>
-                <has-error :form="form" field="cep"></has-error>
-              </div>
-              <div class="col-12 col-md-6">
-                <label for="ncm" class="form-label">NCM</label>
-                <input
-                  id="ncm"
-                  v-model.trim="form.ncm"
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': form.errors.has('ncm') }"
-                  placeholder="Ex: 4814.20.00"
-                  maxlength="10"
-                />
-                <small class="form-text text-muted">NCM do produto no Tiny ERP. Obrigatório para emissão de nota fiscal.</small>
-                <has-error :form="form" field="ncm"></has-error>
-              </div>
-            </div>
+              <small class="form-hint form-text text-muted">
+                Código GTIN do produto no Tiny ERP.
+              </small>
+            </template>
+          </BaseInput>
 
-            <hr class="my-4">
+          <BaseInput
+            id="cep"
+            v-model="formData.cep"
+            label="CEP"
+            type="text"
+            placeholder="Ex: 01310-100"
+            maxlength="9"
+            :class="{ 'is-invalid': errors.cep }"
+            form-group-class="mb-3"
+            @keyup="handleCepInput"
+          >
+            <template #bottom>
+              <div v-if="errors.cep" class="invalid-feedback d-block">
+                {{ errors.cep }}
+              </div>
+              <small class="form-hint form-text text-muted">
+                CEP do remetente dos pedidos para cálculo de frete e entrega.
+              </small>
+            </template>
+          </BaseInput>
 
-            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-end">
-              <button type="submit" class="btn btn-primary" :disabled="isSaving">
-                <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                {{ isSaving ? 'Salvando...' : 'Salvar configurações' }}
-              </button>
-            </div>
-          </form>
-      </div>
+          <BaseInput
+            id="ncm"
+            v-model.trim="formData.ncm"
+            label="NCM"
+            type="text"
+            placeholder="Ex: 4814.20.00"
+            maxlength="10"
+            :class="{ 'is-invalid': errors.ncm }"
+            form-group-class="mb-3"
+          >
+            <template #bottom>
+              <div v-if="errors.ncm" class="invalid-feedback d-block">
+                {{ errors.ncm }}
+              </div>
+              <small class="form-hint form-text text-muted">
+                NCM do produto no Tiny ERP. Obrigatório para emissão de nota fiscal.
+              </small>
+            </template>
+          </BaseInput>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+            <span
+              v-if="isSubmitting"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            {{ isSubmitting ? 'Salvando...' : 'Salvar as alterações' }}
+          </button>
+        </div>
+      </form>
     </Page>
   </section>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { ref, reactive, onMounted } from 'vue';
 import Page from '@/components/page/Page.vue';
-import Form from 'vform';
+import BaseInput from '@/components/common/BaseInput.vue';
+import { useToast } from '@/composables/useToast';
+import { http } from '@/lib/http';
 
-const router = useRouter();
-const Toast = window.Toast;
+// Composables
+const toast = useToast();
 
-const form = reactive(
-  new Form({
-    gtin: '',
-    cep: '',
-    ncm: '',
-  })
-);
+// Estado reativo
+const formData = reactive({
+  gtin: '',
+  cep: '',
+  ncm: '',
+});
 
-const isSaving = ref(false);
+const errors = reactive({
+  gtin: '',
+  cep: '',
+  ncm: '',
+});
+
+const isSubmitting = ref(false);
 const isLoading = ref(false);
 
-const formatCep = (event) => {
-  let value = event.target.value.replace(/\D/g, '');
-  if (value.length > 5) {
-    value = value.substring(0, 5) + '-' + value.substring(5, 8);
+// Constantes
+const routes = [
+  { path: '/settings', breadcrumbName: 'Configurações' },
+  { path: '/settings/tiny-erp', breadcrumbName: 'Tiny ERP' },
+];
+
+// Funções utilitárias
+const formatCep = (value) => {
+  let numbers = value.replace(/\D/g, '');
+  if (numbers.length > 5) {
+    numbers = `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
   }
-  form.cep = value;
+  return numbers;
 };
 
-const formatCepForDisplay = (cep) => {
-  if (!cep) return '';
-  const cleaned = cep.replace(/\D/g, '');
-  if (cleaned.length === 8) {
-    return cleaned.substring(0, 5) + '-' + cleaned.substring(5, 8);
-  }
-  return cep;
+const clearErrors = () => {
+  Object.keys(errors).forEach((key) => {
+    errors[key] = '';
+  });
 };
 
+// Validação
+const validateForm = () => {
+  clearErrors();
+  let isValid = true;
+
+  // Validação GTIN (8, 12, 13 ou 14 dígitos numéricos)
+  if (formData.gtin && !/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(formData.gtin)) {
+    errors.gtin = 'GTIN deve conter 8, 12, 13 ou 14 dígitos numéricos';
+    isValid = false;
+  }
+
+  // Validação CEP
+  if (formData.cep && !/^\d{5}-\d{3}$/.test(formData.cep)) {
+    errors.cep = 'CEP deve estar no formato 00000-000';
+    isValid = false;
+  }
+
+  // Validação NCM (formato XX.XX.XX ou XXXXXXXX)
+  if (formData.ncm) {
+    const ncmClean = formData.ncm.replace(/\./g, '');
+    if (!/^\d{8}$/.test(ncmClean)) {
+      errors.ncm = 'NCM deve conter 8 dígitos';
+      isValid = false;
+    }
+  }
+
+  return isValid;
+};
+
+// Manipuladores de eventos
+const handleCepInput = (event) => {
+  const rawValue = event.target.value;
+  formData.cep = formatCep(rawValue);
+};
+
+// API calls
 const loadSettings = async () => {
   isLoading.value = true;
+
   try {
-    const { data } = await axios.get('v1/tiny-erp/settings');
-    form.gtin = data.data?.gtin || '';
-    form.cep = formatCepForDisplay(data.data?.cep || '');
-    form.ncm = data.data?.ncm || '';
+    const { data } = await http.get('v1/tiny-erp/settings');
+
+    formData.gtin = data.data?.gtin || '';
+    formData.cep = data.data?.cep || '';
+    formData.ncm = data.data?.ncm || '';
+
+    clearErrors();
   } catch (error) {
     console.error('Erro ao carregar configurações:', error);
-
-    form.gtin = '';
-    form.cep = '';
-    form.ncm = '';
+    toast.error('Erro ao carregar configurações. Recarregue a página.');
   } finally {
     isLoading.value = false;
   }
 };
 
+const saveSettings = async () => {
+  const payload = {
+    gtin: formData.gtin,
+    cep: formData.cep,
+    ncm: formData.ncm,
+  };
+
+  const response = await http.post('v1/tiny-erp/settings', payload);
+  return response.data;
+};
+
 const handleSubmit = async () => {
-  if (isSaving.value) {
+  if (isSubmitting.value) return;
+
+  if (!validateForm()) {
+    toast.warning('Por favor, corrija os erros no formulário');
     return;
   }
 
+  isSubmitting.value = true;
+
   try {
-    isSaving.value = true;
-
-    if (form.cep) {
-      form.cep = form.cep.replace(/\D/g, '');
-    }
-
-    if (form.ncm) {
-      form.ncm = form.ncm.replace(/\D/g, '');
-    }
-
-    const response = await form.post('v1/tiny-erp/settings');
-
-    Toast.fire({
-      icon: 'success',
-      title: response.data.message || 'Configurações salvas com sucesso!',
-    });
-
-    if (form.cep) {
-      form.cep = formatCepForDisplay(form.cep);
-    }
-
-    await loadSettings();
+    await saveSettings();
+    toast.success('Configurações salvas com sucesso!');
   } catch (error) {
-    Toast.fire({
-      icon: 'error',
-      title: error.response?.data?.message || 'Erro ao salvar configurações. Tente novamente.',
-    });
+    console.error('Erro ao salvar:', error);
+
+    // Tratamento de erro do backend
+    if (error.response?.data?.errors) {
+      const backendErrors = error.response.data.errors;
+      Object.keys(backendErrors).forEach((field) => {
+        if (errors.hasOwnProperty(field)) {
+          errors[field] = backendErrors[field][0];
+        }
+      });
+    }
+
+    toast.error('Erro ao salvar configurações. Tente novamente.');
   } finally {
-    isSaving.value = false;
+    isSubmitting.value = false;
   }
 };
 
-onMounted(() => {
+// Lifecycle
+onMounted(async () => {
+  await loadSettings();
+
   document.title = 'Tiny ERP - Configurações';
-  loadSettings();
 });
 </script>
-
-<style scoped>
-.card {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 1rem;
-}
-</style>
-

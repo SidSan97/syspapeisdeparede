@@ -78,12 +78,18 @@ async function fetchUser() {
 
       const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : '';
 
+      const walletBalance =
+        user.wallet_balance !== undefined && user.wallet_balance !== null
+          ? Number(user.wallet_balance)
+          : 0;
+
       formRef.value.form.fill({
         id: user.id,
         name: user.name,
         email: user.email,
         role: userRole,
         is_dropshipping: isDropshipping,
+        wallet_balance: Number.isFinite(walletBalance) ? walletBalance : 0,
         email_verified_at: user.email_verified_at,
       });
     }

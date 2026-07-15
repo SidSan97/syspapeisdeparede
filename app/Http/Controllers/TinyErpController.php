@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TinyErpProductResource;
 use App\Http\Requests\TinyErp\TinyErpSettingsRequest;
 use App\Services\TinyErpService;
-use Illuminate\Support\Facades\Cache;
 use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class TinyErpController extends Controller
 {
@@ -62,6 +63,9 @@ class TinyErpController extends Controller
         ];
 
         $response = TinyErpProductResource::makeTinyErpData($data);
+
+        Setting::set('tiny_erp_price_payment', $response['precoPromocionalVista'], 'float');
+        Setting::set('tiny_erp_price_installment', $response['precoPromocionalPrazo'], 'float');
 
         Cache::put($cacheKey, $response, now()->addHours(24));
 
@@ -147,5 +151,30 @@ class TinyErpController extends Controller
                 'message' => 'Erro ao carregar tipos de transportadores',
             ], 500);
         }
+    }
+
+    public function getInvoiceByOrderId(int $orderId)
+    {
+        $cacheKey = 'tiny_erp_invoice_by_order_id_' . $orderId;
+        $cachedData = Cache::get($cacheKey);
+
+        if ($cachedData !== null) {
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData,
+            ], 200);
+        }
+        $invoice = $this->tinyErpService->searchInvoices($orderId);
+
+        if ($invoice instanceof JsonResponse) {
+            return $invoice;
+        }
+
+        Cache::put($cacheKey, $invoice, now()->addHours(24));
+
+        return response()->json([
+            'success' => true,
+            'data' => $invoice,
+        ], 200);
     }
 }

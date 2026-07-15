@@ -1,10 +1,20 @@
 <?php
 
-use App\Http\Controllers\TinyErpController;
+use App\Http\Controllers\TinyErpCarrierController;
+use App\Http\Controllers\TinyErpInvoiceController;
+use App\Http\Controllers\TinyErpSettingsController;
 use Illuminate\Support\Facades\Route;
 
-// Tiny ERP
-Route::get('tiny-erp/all', [TinyErpController::class, 'all']);
-Route::get('tiny-erp/settings', [TinyErpController::class, 'loadSettings']);
-Route::post('tiny-erp/settings', [TinyErpController::class, 'store']);
-Route::get('tiny-erp/carriers-types', [TinyErpController::class, 'loadCarriersTypes']);
+Route::prefix('tiny-erp')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+        Route::get('settings/{key}', [TinyErpSettingsController::class, 'show']);
+        Route::get('settings', [TinyErpSettingsController::class, 'index']);
+        Route::post('settings', [TinyErpSettingsController::class, 'store']);
+
+        // FIXME: mover para /products
+        Route::get('all', [TinyErpSettingsController::class, 'all']);
+
+        Route::get('carriers', [TinyErpCarrierController::class, 'index']);
+        Route::get('invoices/{order}', [TinyErpInvoiceController::class, 'show']);
+    });

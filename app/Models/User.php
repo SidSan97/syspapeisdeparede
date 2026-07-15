@@ -6,21 +6,33 @@ use App\Traits\HasUserScopes;
 use BeyondCode\Comments\Contracts\Commentator;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Passport\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements Commentator //implements MustVerifyEmail
+class User extends Authenticatable implements Commentator // , MustVerifyEmail
 {
-    use HasApiTokens;
-    use HasFactory;
-    use HasUserScopes;
-    use Notifiable;
-    use HasRoles;
+    use HasApiTokens,
+        HasFactory,
+        HasRoles,
+        HasUserScopes,
+        Notifiable;
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            UserWallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['balance' => 0]
+            );
+        });
+    }
 
     /**
      * @see https://spatie.be/docs/laravel-permission/v6/basic-usage/multiple-guards
@@ -34,6 +46,7 @@ class User extends Authenticatable implements Commentator //implements MustVerif
         'avatar',
         'user_type_id',
         'is_dropshipping',
+        'reseller_id',
     ];
 
     protected $hidden = [
@@ -52,15 +65,20 @@ class User extends Authenticatable implements Commentator //implements MustVerif
 
     public function getAvatarUrlAttribute(): string
     {
-        return $this->avatar
-            ? Storage::url($this->avatar)
-            : asset('images/avatar.svg');
+        if ($this->avatar) {
+            return Storage::url($this->avatar);
+        }
+
+        $hash = substr(md5($this->name ?? $this->email), 0, 6);
+        $name = urlencode($this->name ?? '?');
+
+        return "https://ui-avatars.com/api/?name={$name}&background={$hash}&color=fff&bold=true";
     }
 
     /**
      * Check if a comment for a specific model needs to be approved.
-     * @param mixed $model
-     * @return bool
+     *
+     * @param  mixed  $model
      */
     public function needsCommentApproval($model): bool
     {
@@ -104,6 +122,19 @@ class User extends Authenticatable implements Commentator //implements MustVerif
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(UserWallet::class);
+    }
+
+    /**
+     * Get the reseller this user account belongs to.
+     */
+    public function reseller(): BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
     }
 
     /**

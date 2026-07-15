@@ -4,12 +4,11 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\CollectionCategoryResource;
 
 class CollectionImageResource extends JsonResource
 {
     /**
-     * @param Request $request
+     * @param  Request  $request
      * @return array<string, mixed>
      */
     public function toArray($request): array
@@ -19,30 +18,26 @@ class CollectionImageResource extends JsonResource
             'collection_category_id' => $this->collection_category_id,
             'name' => $this->name,
             'path_name' => $this->path_name,
-            'url' => $this->getUrl(),
+            'url' => $this->resolveStorageUrl($this->path_name),
+            'still_path_name' => $this->still_path_name,
+            'still_url' => $this->resolveStorageUrl($this->still_path_name),
             'category' => new CollectionCategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
     }
 
-    protected function getUrl(): ?string
+    protected function resolveStorageUrl(?string $path): ?string
     {
-        if (!$this->path_name) {
-            return null;
-        }
-
-        $path = ltrim($this->path_name ?? '', '/');
+        $path = ltrim((string) ($path ?? ''), '/');
 
         if ($path === '') {
             return null;
         }
 
-        $baseUrl = config('app.url') ?: url('/');
-
+        $baseUrl = rtrim(config('app.url') ?: url('/'), '/');
         $normalizedPath = ltrim(preg_replace('#^storage/#', '', $path), '/');
 
-        return rtrim($baseUrl, '/') . '/storage/' . $normalizedPath;
+        return "{$baseUrl}/storage/{$normalizedPath}";
     }
 }
-

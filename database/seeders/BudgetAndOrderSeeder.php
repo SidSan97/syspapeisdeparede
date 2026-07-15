@@ -99,7 +99,7 @@ class BudgetAndOrderSeeder extends Seeder
                         ]);
                     }
 
-                    // Agora criar Order a partir do Budget (simulando o fluxo real)
+                    // Pedido espelhando o orçamento (mesmas colunas compartilhadas) + vínculos budget/order/rooms
                     $orderStatusFlags = fake()->randomElement([
                         ['status' => 'em aberto', 'flags' => null],
                         ['status' => 'aprovado', 'flags' => 'Pagamento recebido'],
@@ -108,36 +108,7 @@ class BudgetAndOrderSeeder extends Seeder
                         ['status' => 'cancelado', 'flags' => null],
                     ]);
 
-                    $order = Order::factory()->create([
-                        'user_id' => $budget->user_id,
-                        'tenant_id' => $budget->tenant_id,
-                        'name' => $budget->name,
-                        'total_area' => $budget->total_area,
-                        'total_amount' => $budget->total_amount,
-                        'total_amount_installments' => $budget->total_amount_installments,
-                        'delivery_time' => $budget->delivery_time,
-                        'payment_method' => $budget->payment_method,
-                        'installment_limit' => $budget->installment_limit,
-                        'installments' => $budget->installments,
-                        'cep' => $budget->cep,
-                        'selected_carrier_name' => $budget->selected_carrier_name,
-                        'selected_carrier_price' => $budget->selected_carrier_price,
-                        'selected_carrier_delivery_time' => $budget->selected_carrier_delivery_time,
-                        'carriers_snapshot' => $budget->carriers_snapshot,
-                        'primary_budget_room_id' => $budget->primary_budget_room_id,
-                        'status' => $orderStatusFlags['status'],
-                        'flags' => $orderStatusFlags['flags'],
-                        'dropshipping_budget' => $budget->dropshipping_budget,
-                    ]);
-
-                    // Atualizar order_id nos rooms do budget (fluxo real)
-                    $budget->rooms()->update(['order_id' => $order->id]);
-
-                    // Atualizar dropshipping com order_id se existir
-                    if ($budget->dropshipping_budget) {
-                        \App\Models\DropshippingData::where('budget_id', $budget->id)
-                            ->update(['order_id' => $order->id]);
-                    }
+                    $this->createOrderLinkedToBudget($budget, $orderStatusFlags);
 
                     $orderProgressBar->advance();
                 }
@@ -149,16 +120,71 @@ class BudgetAndOrderSeeder extends Seeder
             DB::commit();
 
             $this->command->newLine(2);
-            $this->command->info("✅ Criados com sucesso:");
+            $this->command->info('✅ Criados com sucesso:');
             $this->command->info("   - {$budgetCount} orçamentos");
             $this->command->info("   - {$orderCount} pedidos");
-            $this->command->info("   - Total: " . ($budgetCount + $orderCount) . " registros");
+            $this->command->info('   - Total: '.($budgetCount + $orderCount).' registros');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->command->error('❌ Erro ao criar registros: ' . $e->getMessage());
+            $this->command->error('❌ Erro ao criar registros: '.$e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Mesmas colunas compartilhadas entre budgets e orders (alinhado a OrderRepository::sharedAttributesFromBudget).
+     * Status do pedido é definido separadamente no seeder.
+     */
+    private function sharedOrderAttributesFromBudget(Budget $budget): array
+    {
+        return [
+            'user_id' => $budget->user_id,
+            'tenant_id' => $budget->tenant_id,
+            'name' => $budget->name,
+            'total_area' => $budget->total_area,
+            'total_amount' => $budget->total_amount,
+            'total_amount_installments' => $budget->total_amount_installments,
+            'total_amount_markup' => $budget->total_amount_markup,
+            'total_amount_installments_markup' => $budget->total_amount_installments_markup,
+            'delivery_time' => $budget->delivery_time,
+            'cep' => $budget->cep,
+            'selected_carrier_name' => $budget->selected_carrier_name,
+            'selected_carrier_price' => $budget->selected_carrier_price,
+            'selected_carrier_delivery_time' => $budget->selected_carrier_delivery_time,
+            'carriers_snapshot' => $budget->carriers_snapshot,
+            'primary_budget_room_id' => $budget->primary_budget_room_id,
+            'dropshipping_budget' => $budget->dropshipping_budget,
+        ];
+    }
+
+    /**
+     * Fluxo alinhado ao placeOrder: cria order com dados do budget, budgets.order_id e budget_rooms.order_id.
+     *
+     * @param  array{status: string, flags: ?string}  $orderStatusFlags
+     */
+    private function createOrderLinkedToBudget(Budget $budget, array $orderStatusFlags): Order
+    {
+        $budget->refresh();
+
+        $order = Order::factory()->create(array_merge(
+            $this->sharedOrderAttributesFromBudget($budget),
+            [
+                'status' => $orderStatusFlags['status'],
+                'flags' => $orderStatusFlags['flags'],
+            ]
+        ));
+
+        $budget->update(['order_id' => $order->getKey()]);
+
+        $budget->rooms()->update(['order_id' => $order->getKey()]);
+
+        if ($budget->dropshipping_budget) {
+            \App\Models\DropshippingData::where('budget_id', $budget->id)
+                ->update(['order_id' => $order->getKey()]);
+        }
+
+        return $order;
     }
 
     /**
@@ -190,7 +216,7 @@ class BudgetAndOrderSeeder extends Seeder
                     'width' => $width,
                     'height' => $height,
                     'total_area' => $totalArea,
-                    'collection_model_id' => !empty($collectionModelIds)
+                    'collection_model_id' => ! empty($collectionModelIds)
                         ? fake()->randomElement($collectionModelIds)
                         : \App\Models\CollectionModel::factory(),
                 ]);
@@ -199,7 +225,7 @@ class BudgetAndOrderSeeder extends Seeder
         }
 
         // Atualizar primary_budget_room_id com o primeiro room
-        if (!empty($rooms)) {
+        if (! empty($rooms)) {
             $budget->update(['primary_budget_room_id' => $rooms[0]->id]);
         }
 
@@ -212,5 +238,4 @@ class BudgetAndOrderSeeder extends Seeder
 
         $budget->update(['total_area' => round($totalArea, 2)]);
     }
-
 }

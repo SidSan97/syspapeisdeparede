@@ -20,6 +20,8 @@ return new class extends Migration
             $table->boolean('request_comment')->default(false);
             $table->boolean('request_file')->default(false);
             $table->boolean('request_collection')->default(false);
+            $table->boolean('request_layout')->default(false);
+            $table->boolean('request_art_on_payment')->default(false);
             $table->timestamps();
         });
     }
@@ -32,4 +34,3 @@ return new class extends Migration
         Schema::dropIfExists('collection_models');
     }
 };
-

@@ -29,6 +29,7 @@ class BudgetWallFactory extends Factory
         return [
             'tenant_id' => \App\Models\User::factory(),
             'name' => fake()->randomElement(['Parede Principal', 'Parede Lateral', 'Parede de Fundo', 'Parede']),
+            'direction' => fake()->randomElement(['left-to-right', 'right-to-left']),
             'position' => 1,
             'width' => $width,
             'height' => $height,
@@ -42,6 +43,7 @@ class BudgetWallFactory extends Factory
             'link_referring_model' => fake()->boolean(30) ? fake()->url() : null,
             'files_referring_model' => fake()->boolean(20) ? [fake()->url()] : null,
             'collection_referring_model' => fake()->boolean(30) ? fake()->word() : null,
+            'request_layout_referring_model' => fake()->boolean(30),
         ];
     }
 }

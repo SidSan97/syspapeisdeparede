@@ -1,37 +1,52 @@
-import axios from 'axios';
+import { http } from '@/lib/http';
 
-/**
- * Service para gerenciar chamadas de API relacionadas a comentários
- */
-export function useCommentService() {
-    async function createComment(orderBudgetId, comment) {
-        const response = await axios.post(`v1/budgets/order-budgets/${orderBudgetId}/comments`, {
-            comment: comment.trim(),
-        });
-        return response.data;
-    }
+const endpoint = '/v1/budgets/order-budgets';
 
-    async function updateComment(orderBudgetId, commentId, comment) {
-        const { data } = await axios.put(`v1/budgets/order-budgets/${orderBudgetId}/comments/${commentId}`, {
-            comment: comment.trim(),
-        });
-        return data;
-    }
+function buildCommentsUrl(orderBudgetId, commentId = null) {
+  let url = `${endpoint}/${orderBudgetId}/comments`;
 
-    async function deleteComment(orderBudgetId, commentId) {
-        const { data } = await axios.delete(`v1/budgets/order-budgets/${orderBudgetId}/comments/${commentId}`);
-        return data;
-    }
+  if (commentId) {
+    url += `/${commentId}`;
+  }
 
-    async function onDeleteComment(orderBudgetId, commentId) {
-        return deleteComment(orderBudgetId, commentId);
-    }
-
-    return {
-        createComment,
-        updateComment,
-        deleteComment,
-        onDeleteComment,
-    };
+  return url;
 }
 
+function sanitizeComment(comment) {
+  if (!comment || !comment.trim()) {
+    throw new Error('Comment cannot be empty');
+  }
+
+  return comment.trim();
+}
+
+async function unwrap(promise) {
+  const { data } = await promise;
+  return data;
+}
+
+export const commentService = {
+  async create(orderBudgetId, comment) {
+    return unwrap(
+      http.post(buildCommentsUrl(orderBudgetId), {
+        comment: sanitizeComment(comment),
+      }),
+    );
+  },
+
+  async update(orderBudgetId, commentId, comment) {
+    return unwrap(
+      http.put(buildCommentsUrl(orderBudgetId, commentId), {
+        comment: sanitizeComment(comment),
+      }),
+    );
+  },
+
+  async delete(orderBudgetId, commentId) {
+    return unwrap(http.delete(buildCommentsUrl(orderBudgetId, commentId)));
+  },
+
+  async list(orderBudgetId) {
+    return unwrap(http.get(buildCommentsUrl(orderBudgetId)));
+  },
+};

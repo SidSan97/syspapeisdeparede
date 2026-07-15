@@ -1,239 +1,136 @@
 <template>
-    <div class="production-column" :data-column-id="column.id">
-        <div class="production-column-header">
-            <div class="production-column-header-left">
-                <h3 v-if="!isEditing" class="production-column-title mb-0">
-                    {{ column.name }}
-                </h3>
-                <div v-if="!isEditing" class="production-column-metragem">
-                    Total de metros: {{ totalMetragem }}
-                </div>
-                <div v-else class="production-column-edit d-flex align-items-center gap-2">
-                    <input
-                        :value="editingName"
-                        @input="$emit('update:editingName', $event.target.value)"
-                        @keyup.enter="$emit('save')"
-                        @keyup.esc="$emit('cancel')"
-                        class="form-control form-control-sm"
-                        :ref="inputRef"
-                    />
-                    <button
-                        @click="$emit('save')"
-                        class="btn btn-primary btn-sm"
-                        :disabled="saving"
-                    >
-                        <i class="fa fa-check"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="production-column-header-right d-flex align-items-center gap-2">
-                <span class="badge production-column-count-badge">{{ cardsCount }}</span>
-                <div class="dropdown">
-                    <button
-                        class="btn btn-sm btn-link text-decoration-none p-1 production-column-menu-btn"
-                        type="button"
-                        @click.stop="$emit('toggle-menu')"
-                        :aria-expanded="menuOpen"
-                    >
-                        <i class="fa fa-ellipsis-v"></i>
-                    </button>
-                    <ul
-                        v-if="menuOpen"
-                        class="dropdown-menu dropdown-menu-end show"
-                        @click.stop
-                    >
-                        <li>
-                            <button @click="$emit('edit')" class="dropdown-item" type="button">
-                                <i class="fa fa-edit me-2"></i> Editar
-                            </button>
-                        </li>
-                        <li>
-                            <button @click="$emit('delete')" class="dropdown-item text-danger" type="button">
-                                <i class="fa fa-trash me-2"></i> Excluir
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div
-            class="production-column-content"
-            @drop="$emit('drop', $event)"
-            @dragover.prevent
-            @dragenter.prevent
+  <KanbanColumn ref="rootRef">
+    <KanbanColumnHeader :count="count">
+      <template #default>
+        <button
+          type="button"
+          class="btn btn-sm btn-subtle btn-icon kanban-column-drag-handle"
+          aria-label="Arrastar coluna"
         >
-            <slot />
-        </div>
-    </div>
+          <IconGripVertical :size="16" />
+        </button>
+        <template v-if="!isEditing">
+          <button
+            type="button"
+            class="btn btn-sm btn-subtle w-100 text-start"
+            @click="startEditing"
+          >
+            {{ column.name }}
+          </button>
+          <small class="text-muted ms-1">Total de metros: {{ totalMetragem }}</small>
+        </template>
+        <input
+          v-else
+          ref="inputRef"
+          v-model="editingName"
+          class="form-control form-control-sm"
+          @keydown="handleKeydown"
+          aria-label="Nome da coluna"
+        />
+      </template>
+
+      <template #actions>
+        <BaseDropdown align="end">
+          <template #trigger="{ open, toggle }">
+            <button
+              type="button"
+              class="btn btn-sm btn-subtle btn-icon"
+              :class="{ show: open }"
+              @click.stop="toggle"
+              :aria-expanded="open"
+              aria-label="Abrir menu da coluna"
+            >
+              <IconDots :size="18" />
+            </button>
+          </template>
+          <li><button class="dropdown-item" @click="startEditing">Editar</button></li>
+          <li><button class="dropdown-item" @click="emit('delete')">Excluir</button></li>
+        </BaseDropdown>
+      </template>
+    </KanbanColumnHeader>
+
+    <KanbanColumnCards @drop="emit('drop', $event)">
+      <slot />
+    </KanbanColumnCards>
+  </KanbanColumn>
 </template>
 
 <script setup>
+import { ref, nextTick } from 'vue';
+import { onClickOutside } from '@vueuse/core';
+import { useFormatting } from '@/composables/useFormatting';
+import BaseDropdown from '@/components/common/BaseDropdown.vue';
+import KanbanColumn from '@/components/kanban/KanbanColumn.vue';
+import KanbanColumnCards from '@/components/kanban/KanbanColumnCards.vue';
+import KanbanColumnHeader from '@/components/kanban/KanbanColumnHeader.vue';
+
+// Icons
+import { IconDots, IconGripVertical } from '@tabler/icons-vue';
+
 const props = defineProps({
-    column: {
-        type: Object,
-        required: true,
-    },
-    cardsCount: {
-        type: Number,
-        default: 0,
-    },
-    totalMetragem: {
-        type: String,
-        default: '0.00',
-    },
-    isEditing: {
-        type: Boolean,
-        default: false,
-    },
-    editingName: {
-        type: String,
-        default: '',
-    },
-    saving: {
-        type: Boolean,
-        default: false,
-    },
-    menuOpen: {
-        type: Boolean,
-        default: false,
-    },
-    inputRef: {
-        type: Object,
-        default: null,
-    },
+  column: { type: Object, required: true },
+  count: { type: Number, default: 0 },
+  totalMetragem: { type: Number, default: 0 },
 });
 
-defineEmits(['update:editingName', 'save', 'cancel', 'toggle-menu', 'edit', 'delete', 'drop']);
+const emit = defineEmits({
+  delete: null,
+  drop: (e) => e instanceof DragEvent,
+  'update:name': (payload) => payload?.columnId,
+});
+
+const { formatNumber } = useFormatting();
+
+const isEditing = ref(false);
+const editingName = ref('');
+const inputRef = ref(null);
+const rootRef = ref(null);
+
+async function startEditing() {
+  editingName.value = props.column.name;
+  isEditing.value = true;
+  await nextTick();
+  inputRef.value?.focus();
+  inputRef.value?.select();
+}
+
+function stopEditing() {
+  isEditing.value = false;
+}
+
+function save() {
+  const newName = editingName.value.trim();
+  if (newName && newName !== props.column.name) {
+    emit('update:name', {
+      columnId: props.column.id,
+      oldName: props.column.name,
+      newName,
+    });
+  }
+  stopEditing();
+}
+
+function cancel() {
+  stopEditing();
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter') save();
+  if (e.key === 'Escape') cancel();
+}
+
+onClickOutside(rootRef, () => {
+  if (isEditing.value) cancel();
+});
 </script>
 
 <style scoped>
-.production-column {
-    flex: 0 0 300px;
-    background-color: var(--bs-secondary-bg);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    max-height: 100%;
-    overflow: hidden;
+.kanban-column-drag-handle {
+  cursor: grab;
+  color: var(--ds-text-subtle, #6c757d);
 }
 
-.production-column-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
-    position: relative;
-    overflow: visible;
-    z-index: 10;
-}
-
-.production-column-header-left {
-    flex: 1;
-    min-width: 0;
-}
-
-.production-column-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--bs-body-color);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.production-column-metragem {
-    font-size: 0.75rem;
-    color: var(--bs-secondary-color);
-    margin-top: 0.25rem;
-    font-weight: 500;
-}
-
-.production-column-count-badge {
-    background-color: var(--bs-secondary-bg);
-    color: var(--bs-body-color);
-    border: 1px solid var(--bs-border-color);
-}
-
-.production-column-menu-btn {
-    color: var(--bs-body-color);
-    transition: all 0.15s ease-in-out;
-}
-
-.production-column-menu-btn:hover {
-    color: var(--bs-body-color);
-    background-color: var(--bs-secondary-bg);
-    opacity: 0.8;
-}
-
-.production-column-header-right .dropdown-menu {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    right: 0;
-    z-index: 1050;
-    min-width: 150px;
-    background-color: var(--bs-dropdown-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.375rem;
-    box-shadow: var(--bs-box-shadow-lg);
-    padding: 0.25rem 0;
-    display: block;
-}
-
-.production-column-header-right .dropdown-item {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    clear: both;
-    font-weight: 400;
-    color: var(--bs-dropdown-color);
-    text-align: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-    background-color: transparent;
-    border: 0;
-    cursor: pointer;
-    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-.production-column-header-right .dropdown-item:hover {
-    background-color: var(--bs-dropdown-link-hover-bg);
-    color: var(--bs-dropdown-link-hover-color);
-}
-
-.production-column-header-right .dropdown-item.text-danger {
-    color: var(--bs-danger);
-}
-
-.production-column-header-right .dropdown-item.text-danger:hover {
-    background-color: var(--bs-danger-bg-subtle);
-    color: var(--bs-danger);
-}
-
-.production-column-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0 0.25rem;
-}
-
-.production-column-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.production-column-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.production-column-content::-webkit-scrollbar-thumb {
-    background: var(--bs-secondary);
-    border-radius: 4px;
-    opacity: 0.5;
-}
-
-.production-column-content::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-secondary);
-    opacity: 0.7;
+.kanban-column-drag-handle:active {
+  cursor: grabbing;
 }
 </style>

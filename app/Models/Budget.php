@@ -12,19 +12,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Budget extends Model
 {
-    use HasFactory, HasTenantScope, HasBudgetScopes;
+    use HasBudgetScopes,
+        HasFactory,
+        HasTenantScope;
 
     protected $fillable = [
         'user_id',
+        'order_id',
         'tenant_id',
         'name',
         'total_area',
         'total_amount',
         'total_amount_installments',
+        'total_amount_markup',
+        'total_amount_installments_markup',
         'delivery_time',
-        'payment_method',
-        'installment_limit',
-        'installments',
         'cep',
         'selected_carrier_name',
         'selected_carrier_price',
@@ -32,7 +34,6 @@ class Budget extends Model
         'carriers_snapshot',
         'primary_budget_room_id',
         'status',
-        'payment_file',
         'dropshipping_budget',
     ];
 
@@ -40,9 +41,9 @@ class Budget extends Model
         'total_area' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'total_amount_installments' => 'decimal:2',
+        'total_amount_markup' => 'decimal:2',
+        'total_amount_installments_markup' => 'decimal:2',
         'delivery_time' => 'integer',
-        'installment_limit' => 'integer',
-        'installments' => 'integer',
         'selected_carrier_price' => 'decimal:2',
         'selected_carrier_delivery_time' => 'integer',
         'carriers_snapshot' => 'array',
@@ -56,12 +57,14 @@ class Budget extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the tenant (user) that owns the budget.
-     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(User::class, 'tenant_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function rooms(): HasMany
@@ -82,5 +85,13 @@ class Budget extends Model
     public function dropshippingData(): HasOne
     {
         return $this->hasOne(DropshippingData::class);
+    }
+
+    public function isApproved(): bool
+    {
+        // FIXME: Usar enum.
+        $statusLower = strtolower(trim((string) ($budget->status ?? '')));
+
+        return $statusLower === 'aprovado';
     }
 }

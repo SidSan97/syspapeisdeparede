@@ -36,9 +36,7 @@
                                 :dropshipping-data="dropshippingData"
                             />
 
-                            <RoomsCard :data="data" />
-
-                            <SelectedModelsCard :data="data" />
+                            <RoomsCard :data="data" :show-wall-status="isOrder" />
 
                             <RequestArtsCard :data="data" :is-order="isOrder" />
                         </div>
@@ -66,12 +64,23 @@
                 </div>
             </div>
         </Page>
+
+        <GeneratePaymentLinkModal
+            :visible="paymentLinkModalVisible"
+            :submitting="generatingPaymentLink"
+            :default-installments="Number(data?.installments || 1)"
+            :payment-breakdown="data?.payment_breakdown || null"
+            :wallet-balance="walletBalance"
+            @close="paymentLinkModalVisible = false"
+            @submit="submitGeneratePaymentLink"
+        />
     </section>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import { useAuthStore } from '@/stores/auth';
 import { USER_TYPES } from '@/constants/userTypes';
@@ -80,13 +89,13 @@ import { useOrderService } from '@/services/orderService';
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
 import RoomsCard from '@/components/details/RoomsCard.vue';
-import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
 import ModelReferencesCard from '@/components/details/ModelReferencesCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
 import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
+import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -98,6 +107,8 @@ const dropshippingData = ref(null);
 const processing = ref(false);
 const actionType = ref(null);
 const generatingPaymentLink = ref(false);
+const paymentLinkModalVisible = ref(false);
+const walletBalance = ref(0);
 
 const orderService = useOrderService();
 
@@ -135,10 +146,14 @@ async function loadData() {
 
         data.value = responseData;
 
+        if (isOrder.value) {
+            await refreshWalletBalance();
+        }
+
         // Verificar se o link de pagamento está expirado e gerar novo se necessário
         if (isOrder.value && responseData.link_payment && responseData.payment_expiration_date) {
             if (orderService.isPaymentLinkExpired(responseData.payment_expiration_date)) {
-                await generatePaymentLink(false);
+                await generatePaymentLinkLegacy(false);
             }
         }
 
@@ -191,7 +206,7 @@ async function handleApprove() {
 
         await window.Swal.fire({
             title: 'Pedido aprovado',
-            text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
+            //text: 'O pedido foi aprovado com sucesso. Consulte os DETALHES DO PEDIDO para acessar o link de pagamento.',
             icon: 'success',
             showCloseButton: true,
             confirmButtonText: 'Entendi!',
@@ -212,7 +227,62 @@ async function handleApprove() {
     }
 }
 
-async function generatePaymentLink(showSuccessMessage = true) {
+async function refreshWalletBalance() {
+    try {
+        const { data } = await axios.get('v1/wallet', { params: { page: 1 } });
+        walletBalance.value = Number(data.balance ?? 0);
+    } catch {
+        walletBalance.value = 0;
+    }
+}
+
+async function generatePaymentLink() {
+    if (!data.value?.id || !isOrder.value) {
+        return;
+    }
+
+    await refreshWalletBalance();
+    paymentLinkModalVisible.value = true;
+}
+
+async function submitGeneratePaymentLink(formValues) {
+    generatingPaymentLink.value = true;
+
+    try {
+        const responseData = await orderService.generatePaymentLinkByComponents(data.value.id, formValues);
+
+        if (responseData) {
+            data.value = responseData;
+        }
+
+        const isBoleto = formValues?.payment_method === 'boleto';
+        await window.Swal.fire({
+            title: isBoleto ? 'Pagamento realizado!' : 'Link gerado!',
+            text: isBoleto
+                ? 'O valor foi debitado do seu saldo.'
+                : 'Link de pagamento gerado com sucesso.',
+            icon: 'success',
+            confirmButtonText: 'OK',
+        });
+        paymentLinkModalVisible.value = false;
+        if (isBoleto) {
+            await refreshWalletBalance();
+        }
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || error?.message || 'Não foi possível gerar o link de pagamento.';
+
+        await window.Swal.fire({
+            title: 'Erro',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'OK',
+        });
+    } finally {
+        generatingPaymentLink.value = false;
+    }
+}
+
+async function generatePaymentLinkLegacy(showSuccessMessage = true) {
     if (!data.value?.id || !isOrder.value) {
         return;
     }

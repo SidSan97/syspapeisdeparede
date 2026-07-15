@@ -17,6 +17,7 @@ return new class extends Migration
                 ->constrained('budget_rooms')
                 ->cascadeOnDelete();
             $table->string('name')->nullable();
+            $table->string('direction', 32)->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->decimal('width', 8, 2)->nullable();
             $table->decimal('height', 8, 2)->nullable();
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->string('link_referring_model', 150)->nullable();
             $table->json('files_referring_model')->nullable();
             $table->text('collection_referring_model')->nullable();
+            $table->json('request_layout_referring_model')->nullable();
             $table->decimal('total_area', 10, 2)->default(0);
             $table->decimal('strip_height', 8, 2)->nullable();
             $table->unsignedInteger('strip_count')->default(0);

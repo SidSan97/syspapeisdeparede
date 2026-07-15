@@ -4,7 +4,7 @@
 
 - Laravel 12
 - Vue 3
-- Laravel Passport
+- Laravel Sanctum
 - FastBootstrap + Bootstrap 5 + Font Awesome 5
 - PHPUnit Test Case/Test Coverage
 
@@ -17,9 +17,19 @@
 - `php artisan key:generate`
 - `php artisan migrate`
 - `php artisan db:seed`
-- `php artisan passport:keys`
 - `npm install`
 - `composer dev`
+
+## Installation Docker (Sail)
+
+- `composer install`
+- `cp .env.example .env`
+- Atualize `.env` e defina as credenciais do banco de dados
+- `./vendor/bin/sail up -d`
+- `./vendor/bin/sail artisan key:generate`
+- `./vendor/bin/sail artisan migrate`
+- `./vendor/bin/sail artisan db:seed`
+- `./vendor/bin/sail npm install`
 
 ## Teste Unitário
 

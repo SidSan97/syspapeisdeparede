@@ -32,6 +32,8 @@ export function useModels() {
             comment: false,
             file: false,
             collection: false,
+            layout: false,
+            artOnPayment: false,
         },
     });
 
@@ -111,11 +113,9 @@ export function useModels() {
         form.requests.link = model.requests.link;
         form.requests.comment = model.requests.comment;
         form.requests.file = model.requests.file;
-        form.requests.collection =
-            model.requests.collection ??
-            model.requestCollection ??
-            model.request_collection ??
-            false;
+        form.requests.collection =model.requests.collection ?? false;
+        form.requests.layout = model.requests.layout ?? false;
+        form.requests.artOnPayment = model.requests.artOnPayment ?? false;
     }
 
     /**

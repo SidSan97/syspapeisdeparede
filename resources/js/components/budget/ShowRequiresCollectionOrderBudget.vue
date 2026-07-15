@@ -11,10 +11,7 @@
       Nenhuma coleção disponível. Entre em contato com o suporte para prosseguir.
     </div>
     <div v-else class="d-flex flex-column gap-3">
-      <template
-        v-for="wall in (walls || []).filter((w) => w.requiresCollection)"
-        :key="wall.key"
-      >
+      <template v-for="wall in (walls || []).filter((w) => w.requiresCollection)" :key="wall.key">
         <div v-if="wallSelections[wall.key]" class="collection-selection">
           <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
             <div>
@@ -22,9 +19,7 @@
               <div class="text-muted small">{{ wall.wallName }}</div>
             </div>
             <div class="w-100 w-md-50">
-              <label :for="`collection-select-${wall.key}`" class="form-label">
-                Coleção
-              </label>
+              <label :for="`collection-select-${wall.key}`" class="form-label"> Coleção </label>
               <select
                 :id="`collection-select-${wall.key}`"
                 class="form-select"
@@ -75,11 +70,8 @@
                 :value="wallSearchTerms[wall.key] ?? ''"
                 :disabled="orderSubmitting"
                 @input="setWallSearchTerm(wall.key, $event.target.value)"
-              >
-              <div
-                v-if="!getFilteredCollectionItems(wall.key).length"
-                class="text-muted small"
-              >
+              />
+              <div v-if="!getFilteredCollectionItems(wall.key).length" class="text-muted small">
                 Nenhuma arte encontrada para essa busca.
               </div>
               <div v-else class="collection-images-grid">
@@ -99,7 +91,7 @@
                     :alt="image.name ?? image.title"
                     class="collection-image-thumb"
                     @error="handleCollectionImageError"
-                  >
+                  />
                   <span class="collection-image-name text-truncate d-block w-100">
                     {{ image.name ?? image.title }}
                   </span>
@@ -155,7 +147,9 @@ defineProps({
   border-radius: 0.5rem;
   padding: 0.5rem;
   background-color: var(--bs-body-bg);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

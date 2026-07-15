@@ -1,87 +1,76 @@
 <template>
-  <div v-if="wall" class="wall-details-section">
-    <h3 class="fw-semibold text-body mb-3 d-flex align-items-center gap-2 wall-details-section-title">
-      <i class="fa fa-ruler"></i> Detalhes da Parede
-    </h3>
-    <div class="d-flex flex-column wall-details-section-content">
-      <div class="wall-details-section-grid">
-        <div class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Nome da Parede</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ wall.name || 'Não informado' }}</div>
-        </div>
-        <div class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Largura</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.width) }} m</div>
-        </div>
-        <div class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Altura</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.height) }} m</div>
-        </div>
-        <div class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Metros</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.total_area) }} m</div>
-        </div>
-        <div v-if="wall.strip_height" class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Tamanho da Faixa</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ formatNumber(wall.strip_height) }} m</div>
-        </div>
-        <div v-if="wall.strip_count" class="p-3 rounded wall-details-section-item">
-          <div class="mb-1 fw-medium wall-details-section-label">Quantidade de Faixas</div>
-          <div class="small fw-semibold text-body wall-details-section-value">{{ wall.strip_count }}</div>
-        </div>
-      </div>
+  <div v-if="wall" class="wall-details-section mb-4">
+    <h3 class="fs-6 fw-semibold text-body mb-3 d-flex align-items-center gap-2">
+      <IconRuler />
 
-      <!-- Continuações -->
-      <div v-if="wall.continue_same_art && wall.continuations && wall.continuations.length > 0" class="mt-2 wall-details-section-continuations">
-        <h4 class="small fw-semibold text-body mb-3 d-flex align-items-center gap-2 wall-details-section-continuations-title">
-          <i class="fa fa-arrows-h text-secondary"></i> Continuações
-        </h4>
-        <div class="d-flex flex-column wall-details-section-continuations-list">
-          <div
-            v-for="(continuation, index) in wall.continuations"
-            :key="index"
-            class="p-3 rounded wall-details-section-continuation-item"
-          >
-            <div class="mb-2 wall-details-section-continuation-header">
-              <span class="small fw-semibold text-body wall-details-section-continuation-number">Continuação {{ index + 1 }}</span>
-            </div>
-            <div class="d-flex flex-wrap wall-details-section-continuation-details">
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Largura:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(continuation.width) }} m</span>
+      Detalhes da Parede
+    </h3>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-bordered table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Parede</th>
+            <th scope="col" class="text-end text-nowrap">Largura (m)</th>
+            <th scope="col" class="text-end text-nowrap">Altura (m)</th>
+            <th scope="col" class="text-end text-nowrap">Qtd. Faixas</th>
+            <th scope="col" class="text-end text-nowrap">Alt. Faixas (m)</th>
+            <th scope="col">Encaixe</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ wall.name || 'Não informado' }}</td>
+            <td class="text-end">{{ formatDimensions(wall.width) }}</td>
+            <td class="text-end">{{ formatDimensions(wall.height) }}</td>
+            <td class="text-end">{{ formatStripCount(mainWallStripCount) }}</td>
+            <td class="text-end">{{ formatDimensions(wall.strip_height) }}</td>
+            <td>Inicial</td>
+          </tr>
+          <tr v-for="(continuation, index) in visibleContinuations" :key="`cont-${index}`">
+            <td>{{ continuationRowLabel(continuation, index) }}</td>
+            <td class="text-end">{{ formatDimensions(continuation.width) }}</td>
+            <td class="text-end">{{ formatDimensions(continuation.height) }}</td>
+            <td class="text-end">{{ formatStripCount(continuationStripCount(index)) }}</td>
+            <td class="text-end">{{ formatDimensions(continuationStripHeight(index)) }}</td>
+            <td>{{ continuationFitDisplay(continuation) }}</td>
+          </tr>
+        </tbody>
+        <tfoot v-if="installationDirectionsSummary" class="table-group-divider">
+          <tr>
+            <td colspan="6" class="bg-body-secondary">
+              <div
+                class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-baseline gap-2"
+              >
+                <span class="fw-semibold mb-0">Sentido de instalação:</span>
+                <span class="fw-semibold text-md-end mb-0">{{ installationDirectionsSummary }}</span>
               </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Altura:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(continuation.height) }} m</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Metro:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">
-                  {{ formatNumber(getWallArea(continuation)) }} m
-                </span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Quantidade de Faixas:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ calculateStrips(continuation) }}</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Tamanho da Faixa:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ formatNumber(calculateStripHeight(continuation)) }} m</span>
-              </div>
-              <div class="d-flex align-items-center wall-details-section-continuation-detail">
-                <span class="small text-secondary wall-details-section-continuation-label">Sentido:</span>
-                <span class="small fw-semibold text-body wall-details-section-continuation-value">{{ getDirection(continuation) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
+
+    <div v-if="stripSummary" class="mt-3 small text-muted">
+      <strong class="text-body">Resumo de Faixas:</strong>
+      {{ stripSummary }}
+    </div>
+
+    <button class="btn btn-default mt-2" @click="copyStripSummary">Copiar resumo</button>
   </div>
 </template>
 
 <script setup>
-import { getWallArea, calculateStrips, calculateStripHeight } from '@/utils/calculateStripsUtils.js';
+import { computed } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { useFormatting } from '@/composables/useFormatting';
+import {
+  calculateStrips,
+  calculateStripHeight,
+  calculateWallWithContinuations,
+} from '@/utils/calculateStripsUtils.js';
+import { copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
+import { IconRuler } from '@tabler/icons-vue';
 
 const props = defineProps({
   wall: {
@@ -90,90 +79,143 @@ const props = defineProps({
   },
 });
 
-function formatNumber(value) {
-  if (value === null || value === undefined) {
+const toast = useToast();
+const { formatNumber } = useFormatting();
+
+const visibleContinuations = computed(() => {
+  const w = props.wall;
+  if (
+    !w ||
+    !(w.continue_same_art || w.continueSameArt) ||
+    !Array.isArray(w.continuations) ||
+    !w.continuations.length
+  ) {
+    return [];
+  }
+  return w.continuations.filter((item) => item != null && typeof item === 'object');
+});
+
+const wallSequence = computed(() => {
+  const w = props.wall;
+  if (!w || visibleContinuations.value.length === 0) {
+    return null;
+  }
+
+  return calculateWallWithContinuations(w);
+});
+
+/** Faixas só da parede principal (sem somar continuações). */
+const mainWallStripCount = computed(() => {
+  const w = props.wall;
+  if (!w) return null;
+
+  if (wallSequence.value) {
+    const strips = wallSequence.value.perPart?.[0]?.strips;
+    return strips ?? null;
+  }
+
+  return w.strip_count;
+});
+
+const stripSummary = computed(() => {
+  const w = props.wall;
+  if (!w) return '';
+
+  const groups = [];
+
+  if (wallSequence.value) {
+    wallSequence.value.perPart.forEach((part) => {
+      const q = Number(part?.strips ?? 0);
+      const h = Number(part?.stripHeight ?? 0);
+      if (Number.isFinite(q) && q > 0 && Number.isFinite(h) && h > 0) {
+        groups.push({ q, h });
+      }
+    });
+  } else {
+    const q0 = Number(w.strip_count);
+    const h0 = Number(w.strip_height);
+    if (Number.isFinite(q0) && q0 > 0 && Number.isFinite(h0) && h0 > 0) {
+      groups.push({ q: q0, h: h0 });
+    }
+  }
+
+  return groups.map((g) => `${g.q}F de ${formatNumber(g.h)}m`).join(' + ');
+});
+
+function formatDimensions(value) {
+  if (value === null || value === undefined || value === '') {
     return '-';
   }
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : value;
+  const n = Number(value);
+  return Number.isFinite(n) ? formatNumber(n) : '-';
 }
 
-function getDirection(continuation) {
-  if (continuation.direction === 'left-to-right') {
-    return 'Esquerda para direita';
-  } else if (continuation.direction === 'right-to-left') {
-    return 'Direita para esquerda';
+function formatStripCount(count) {
+  if (count === null || count === undefined || count === '') {
+    return '-';
+  }
+  const n = Number(count);
+  return Number.isFinite(n) && n >= 0 ? String(n) : '-';
+}
+
+function continuationStripCount(index) {
+  if (wallSequence.value) {
+    return wallSequence.value.perPart?.[index + 1]?.strips ?? null;
+  }
+
+  const continuation = visibleContinuations.value[index];
+  return continuation ? calculateStrips(continuation) : null;
+}
+
+function continuationStripHeight(index) {
+  if (wallSequence.value) {
+    return wallSequence.value.perPart?.[index + 1]?.stripHeight ?? null;
+  }
+
+  const continuation = visibleContinuations.value[index];
+  return continuation ? calculateStripHeight(continuation) : null;
+}
+
+function continuationRowLabel(continuation, index) {
+  const raw = continuation?.name;
+  const name =
+    typeof raw === 'string' && raw.trim().length ? raw.trim() : `Continuação ${index + 1}`;
+  return name;
+}
+
+function continuationFitDisplay(continuation) {
+  const raw = continuation?.fit ?? continuation?.Fit;
+  if (raw == null) {
+    return '-';
+  }
+  const s = String(raw).trim();
+  return s.length ? s : '-';
+}
+
+function directionInstallLabel(direction) {
+  if (direction === 'left-to-right') {
+    return 'Esquerda para direita das paredes';
+  }
+  if (direction === 'right-to-left') {
+    return 'Direita para a esquerda das paredes';
   }
   return '';
 }
+
+const installationDirectionsSummary = computed(() => {
+  const w = props.wall;
+  const legacyFromContinuation = visibleContinuations.value[0]?.direction;
+  const direction = w?.direction ?? w?.Direction ?? legacyFromContinuation;
+  const label = directionInstallLabel(direction);
+  return label || '';
+});
+
+async function copyStripSummary() {
+  const ok = await copyBudgetSummaryText(stripSummary.value || '');
+  if (ok) {
+    toast?.success?.('Resumo copiado para a área de transferência');
+  } else {
+    toast?.error?.('Não foi possível copiar o resumo.');
+  }
+}
 </script>
-
-<style lang="scss" scoped>
-.wall-details-section {
-  margin-bottom: 24px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.wall-details-section-title {
-  font-size: 1rem;
-}
-
-.wall-details-section-content {
-  gap: 16px;
-}
-
-.wall-details-section-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-
-.wall-details-section-item {
-  background-color: var(--bs-secondary-bg);
-}
-
-.wall-details-section-label {
-  font-size: 0.75rem;
-}
-
-.wall-details-section-value {
-  font-size: 0.875rem;
-}
-
-.wall-details-section-continuations-title {
-  font-size: 0.875rem;
-
-  i {
-    font-size: 0.75rem;
-  }
-}
-
-.wall-details-section-continuations-list {
-  gap: 12px;
-}
-
-.wall-details-section-continuation-item {
-  background-color: var(--bs-secondary-bg);
-  border-left: 3px solid var(--bs-primary);
-}
-
-.wall-details-section-continuation-details {
-  gap: 12px;
-}
-
-.wall-details-section-continuation-detail {
-  gap: 6px;
-}
-
-.wall-details-section-continuation-label {
-  font-size: 0.75rem;
-}
-
-.wall-details-section-continuation-value {
-  font-size: 0.8125rem;
-}
-</style>
-

@@ -29,6 +29,7 @@ return new class extends Migration
             $table->unsignedBigInteger('designer_id')->comment('id do designer que carregou a arte');
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('order_budget_id');
+            $table->string('approval_status', 20)->default('pending');
             $table->unsignedBigInteger('interactions_card_id');
             $table->string('path_file', 255);
             $table->text('comment', 500)->nullable();
@@ -81,4 +82,3 @@ return new class extends Migration
         Schema::dropIfExists('request_layouts_art_interactions');
     }
 };
-

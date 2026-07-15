@@ -2,22 +2,28 @@
 
 namespace App\Repositories;
 
+use App\Actions\Budget\DuplicateBudgetAction;
 use App\Models\Budget;
+use App\Models\BudgetRoom;
 use App\Models\Order;
+use App\Models\OrderBudget;
+use App\Services\LayoutCardHistoryService;
 use App\Support\Budget\BudgetCalculator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Models\OrderBudget;
-use App\Services\LayoutCardHistoryService;
 
-class BudgetRepository {
-
+class BudgetRepository
+{
     protected $historyService;
 
-    public function __construct(LayoutCardHistoryService $historyService)
-    {
+    public function __construct(
+        LayoutCardHistoryService $historyService,
+        protected OrderRepository $orderRepository,
+        protected OrderBudgetRepository $orderBudgetRepository,
+        protected DropshippingRepository $dropshippingRepository,
+    ) {
         $this->historyService = $historyService;
     }
 
@@ -39,7 +45,7 @@ class BudgetRepository {
 
         $query = Budget::with('rooms.walls.collectionModel');
 
-        if(!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
@@ -107,13 +113,6 @@ class BudgetRepository {
                 'total_amount' => $totalAmount,
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
-                'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? ($data['installmentLimit'] ?? null)
-                    : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? (int) ($data['installments'] ?? 1)
-                    : null,
                 'cep' => $data['cep'] ?? null,
                 'selected_carrier_name' => $selectedCarrier['name'] ?? null,
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
@@ -132,15 +131,20 @@ class BudgetRepository {
                     'raw_payload' => $roomData,
                 ]);
 
+                $wallsSequence = BudgetCalculator::calculateWallsSequence($roomData['walls'] ?? []);
+
                 foreach ($roomData['walls'] as $wallIndex => $wallData) {
                     $collectionModelId = $wallData['model'] ?? null;
-                    $totalAreaWall = BudgetCalculator::calculateWallArea($wallData);
-                    $stripCount = BudgetCalculator::calculateStripCount($wallData);
-                    $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
+                    $wallMetrics = $wallsSequence['perWall'][$wallIndex] ?? null;
+
+                    $totalAreaWall = (float) ($wallMetrics['total_area'] ?? 0);
+                    $stripCount = (int) ($wallMetrics['strip_count'] ?? 0);
+                    $stripHeight = $wallMetrics['strip_height'] ?? null;
 
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
+                        'direction' => $wallData['direction'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
                         'height' => $wallData['height'] ?? null,
@@ -150,13 +154,13 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
-                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                        'link_referring_model' => $data['linkReferringModel'] ?? null,
-                        'files_referring_model' => isset($data['filesReferringModel'])
-                            ? (array) $data['filesReferringModel']
+                        'comment_referring_model' => $wallData['comment_referring_model'] ?? null,
+                        'link_referring_model' => $wallData['link_referring_model'] ?? null,
+                        'files_referring_model' => isset($wallData['files_referring_model'])
+                            ? (array) $wallData['files_referring_model']
                             : null,
                         'collection_referring_model' => $this->formatCollectionReferringModel(
-                            $data['collectionReferringModel'] ?? null
+                            $wallData['collection_referring_model'] ?? null
                         ),
                     ]);
                 }
@@ -211,13 +215,6 @@ class BudgetRepository {
                 'total_amount' => $totalAmount,
                 'total_amount_installments' => $totalAmountInstallments,
                 'delivery_time' => $deliveryTime,
-                'payment_method' => $data['paymentMethod'] ?? null,
-                'installment_limit' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? ($data['installmentLimit'] ?? null)
-                    : null,
-                'installments' => ($data['paymentMethod'] ?? null) === 'credit_card'
-                    ? (int) ($data['installments'] ?? 1)
-                    : null,
                 'cep' => $data['cep'] ?? null,
                 'selected_carrier_name' => $selectedCarrier['name'] ?? null,
                 'selected_carrier_price' => $selectedCarrier['price'] ?? null,
@@ -243,15 +240,20 @@ class BudgetRepository {
                     'raw_payload' => $roomData,
                 ]);
 
+                $wallsSequence = BudgetCalculator::calculateWallsSequence($roomData['walls'] ?? []);
+
                 foreach ($roomData['walls'] as $wallIndex => $wallData) {
                     $collectionModelId = $wallData['model'] ?? null;
-                    $totalAreaWall = BudgetCalculator::calculateWallArea($wallData);
-                    $stripCount = BudgetCalculator::calculateStripCount($wallData);
-                    $stripHeight = BudgetCalculator::calculateStripHeight($wallData);
+                    $wallMetrics = $wallsSequence['perWall'][$wallIndex] ?? null;
+
+                    $totalAreaWall = (float) ($wallMetrics['total_area'] ?? 0);
+                    $stripCount = (int) ($wallMetrics['strip_count'] ?? 0);
+                    $stripHeight = $wallMetrics['strip_height'] ?? null;
 
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
+                        'direction' => $wallData['direction'] ?? null,
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
                         'height' => $wallData['height'] ?? null,
@@ -261,13 +263,13 @@ class BudgetRepository {
                         'total_area' => $totalAreaWall,
                         'strip_height' => $stripHeight,
                         'strip_count' => $stripCount,
-                        'comment_referring_model' => $data['commentReferringModel'] ?? null,
-                        'link_referring_model' => $data['linkReferringModel'] ?? null,
-                        'files_referring_model' => isset($data['filesReferringModel'])
-                            ? (array) $data['filesReferringModel']
+                        'comment_referring_model' => $wallData['comment_referring_model'] ?? null,
+                        'link_referring_model' => $wallData['link_referring_model'] ?? null,
+                        'files_referring_model' => isset($wallData['files_referring_model'])
+                            ? (array) $wallData['files_referring_model']
                             : null,
                         'collection_referring_model' => $this->formatCollectionReferringModel(
-                            $data['collectionReferringModel'] ?? null
+                            $wallData['collection_referring_model'] ?? null
                         ),
                     ]);
                 }
@@ -285,6 +287,16 @@ class BudgetRepository {
         return $budget;
     }
 
+    public function updateMarkup(Budget $budget, float $markup): Budget
+    {
+        $budget->update([
+            'total_amount_markup' => $budget['total_amount'] * $markup,
+            'total_amount_installments_markup' => $budget['total_amount_installments'] * $markup,
+        ]);
+
+        return $budget->fresh(['rooms.walls.collectionModel']);
+    }
+
     public function cancel(Budget $budget): Budget
     {
         $budget->update([
@@ -294,124 +306,141 @@ class BudgetRepository {
         return $budget->fresh(['rooms.walls.collectionModel']);
     }
 
-    public function placeOrder(Budget $budget, array $data): Budget
+    public function placeOrder(Budget $budget, array $data = []): Budget
     {
-        $budget->loadMissing(['rooms.walls.collectionModel']);
+        return DB::transaction(function () use ($budget, $data) {
+            $budget->loadMissing(['rooms.walls.collectionModel']);
 
-        // Atualizar status do budget
-        $budget->update([
-            'status' => 'Pendente de Revisão',
-        ]);
+            $budget->update([
+                'status' => 'Aprovado',
+            ]);
 
-        // Processar dados mapeados por parede
-        $wallDataMapping = [];
-        if (!empty($data['wall_referring_model_data'])) {
-            $decoded = json_decode($data['wall_referring_model_data'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $wallDataMapping = $decoded;
+            // Processar dados mapeados por parede
+            $wallDataMapping = [];
+            if (! empty($data['wall_referring_model_data'])) {
+                $decoded = json_decode($data['wall_referring_model_data'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $wallDataMapping = $decoded;
+                }
             }
-        }
 
-        // Processar collection_referring_model mapeado por parede
-        $wallImageMapping = [];
-        if (!empty($data['collection_referring_model'])) {
-            $decoded = json_decode($data['collection_referring_model'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $wallImageMapping = $decoded;
+            // Processar collection_referring_model mapeado por parede
+            $wallImageMapping = [];
+            if (! empty($data['collection_referring_model'])) {
+                $decoded = json_decode($data['collection_referring_model'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $wallImageMapping = $decoded;
+                }
             }
-        }
 
-        // Atualizar dados de referring model em todas as walls do budget
-        $allNewFiles = [];
+            $allNewFiles = [];
 
-        foreach ($budget->rooms as $room) {
-            foreach ($room->walls as $wall) {
-                $wallUpdatePayload = [];
+            foreach ($budget->rooms as $room) {
+                foreach ($room->walls as $wall) {
+                    $wallUpdatePayload = [];
 
-                // Processar dados específicos desta parede
-                if (isset($wallDataMapping[$wall->id])) {
-                    $wallData = $wallDataMapping[$wall->id];
+                    if (isset($wallDataMapping[$wall->id])) {
+                        $wallData = $wallDataMapping[$wall->id];
 
-                    // Comentário
-                    if (isset($wallData['comment'])) {
-                        $comment = $wallData['comment'];
-                        $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
-                    }
+                        if (isset($wallData['comment'])) {
+                            $comment = $wallData['comment'];
+                            $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
+                        }
 
-                    // Link
-                    if (isset($wallData['link'])) {
-                        $link = $wallData['link'];
-                        $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
-                    }
-                }
-
-                $wallFiles = null;
-                if (isset($data['wall_files']) && is_array($data['wall_files'])) {
-                    // Tentar acessar como array aninhado
-                    if (isset($data['wall_files'][$wall->id]) && is_array($data['wall_files'][$wall->id])) {
-                        $wallFiles = $data['wall_files'][$wall->id];
-                    }
-                }
-
-                $wallFilesKey = "wall_files.{$wall->id}";
-                if (!$wallFiles && isset($data[$wallFilesKey])) {
-                    $wallFiles = $data[$wallFilesKey];
-                    if (!is_array($wallFiles)) {
-                        $wallFiles = [$wallFiles];
-                    }
-                }
-
-                if ($wallFiles && is_array($wallFiles) && !empty($wallFiles)) {
-                    $existingFiles = is_array($wall->files_referring_model)
-                        ? $wall->files_referring_model
-                        : [];
-
-                    $uploadedFiles = [];
-                    foreach ($wallFiles as $file) {
-                        if ($file instanceof UploadedFile) {
-                            $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                        if (isset($wallData['link'])) {
+                            $link = $wallData['link'];
+                            $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
                         }
                     }
 
-                    $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
-                    $newFiles = array_diff($mergedFiles, $existingFiles);
-                    $allNewFiles = array_merge($allNewFiles, $newFiles);
+                    $wallFiles = null;
+                    if (isset($data['wall_files']) && is_array($data['wall_files'])) {
+                        if (isset($data['wall_files'][$wall->id]) && is_array($data['wall_files'][$wall->id])) {
+                            $wallFiles = $data['wall_files'][$wall->id];
+                        }
+                    }
 
-                    if (!empty($mergedFiles)) {
-                        $wallUpdatePayload['files_referring_model'] = $mergedFiles;
+                    $wallFilesKey = "wall_files.{$wall->id}";
+                    if (! $wallFiles && isset($data[$wallFilesKey])) {
+                        $wallFiles = $data[$wallFilesKey];
+                        if (! is_array($wallFiles)) {
+                            $wallFiles = [$wallFiles];
+                        }
+                    }
+
+                    if ($wallFiles && is_array($wallFiles) && ! empty($wallFiles)) {
+                        $existingFiles = is_array($wall->files_referring_model)
+                            ? $wall->files_referring_model
+                            : [];
+
+                        $uploadedFiles = [];
+                        foreach ($wallFiles as $file) {
+                            if ($file instanceof UploadedFile) {
+                                $uploadedFiles[] = Storage::disk('public')->putFile('budgets/referring-models', $file);
+                            }
+                        }
+
+                        $mergedFiles = array_values(array_filter(array_unique(array_merge($existingFiles, $uploadedFiles))));
+                        $newFiles = array_diff($mergedFiles, $existingFiles);
+                        $allNewFiles = array_merge($allNewFiles, $newFiles);
+
+                        if (! empty($mergedFiles)) {
+                            $wallUpdatePayload['files_referring_model'] = $mergedFiles;
+                        }
+                    }
+
+                    if (isset($wallImageMapping[$wall->id])) {
+                        $wallUpdatePayload['collection_referring_model'] = $wallImageMapping[$wall->id];
+                    }
+
+                    if (! empty($wallUpdatePayload)) {
+                        $wall->update($wallUpdatePayload);
                     }
                 }
+            }
 
-                // Collection image
-                if (isset($wallImageMapping[$wall->id])) {
-                    $wallUpdatePayload['collection_referring_model'] = $wallImageMapping[$wall->id];
-                }
+            $budget->refresh();
 
-                if (!empty($wallUpdatePayload)) {
-                    $wall->update($wallUpdatePayload);
+            if ($budget->order_id) {
+                $order = Order::query()->findOrFail($budget->order_id);
+                $this->orderRepository->syncFromBudget($order, $budget);
+            } else {
+                $order = $this->orderRepository->createFromBudget($budget);
+                // Persiste o vínculo: budgets.order_id = id do pedido recém-criado
+                $budget->update(['order_id' => $order->getKey()]);
+            }
+
+            BudgetRoom::query()
+                ->where('budget_id', $budget->id)
+                ->update(['order_id' => $order->id]);
+
+            // Garante um card (order_budget) por parede do orçamento no pedido
+            $this->orderBudgetRepository->syncFromBudget($order, $budget);
+
+            if (! empty($allNewFiles) && Auth::check()) {
+                $user = Auth::user();
+                $orderBudgets = OrderBudget::where('order_id', $order->id)->get();
+
+                foreach ($allNewFiles as $filePath) {
+                    $fileName = basename($filePath);
+                    $fileUrl = asset('storage/'.$filePath);
+
+                    foreach ($orderBudgets as $orderBudget) {
+                        $this->historyService->logFileAttachment($orderBudget->id, $user, $fileName, $fileUrl);
+                    }
                 }
             }
-        }
 
-        // Registrar no histórico os novos arquivos adicionados
-        if (!empty($allNewFiles) && Auth::check()) {
-            $user = Auth::user();
-            // Buscar todos os OrderBudgets relacionados a este budget
-            $orderBudgets = OrderBudget::where('budget_id', $budget->id)->get();
-
-            foreach ($allNewFiles as $filePath) {
-                $fileName = basename($filePath);
-                // Criar URL pública para o arquivo
-                $fileUrl = asset('storage/' . $filePath);
-
-                // Registrar em cada card relacionado
-                foreach ($orderBudgets as $orderBudget) {
-                    $this->historyService->logFileAttachment($orderBudget->id, $user, $fileName, $fileUrl);
-                }
+            // Insere ID do pedido no dropshipping do orçamento associado
+            $dropshippingData = $this->dropshippingRepository->findDropshippingByBudgetId($budget->id);
+            if ($dropshippingData) {
+                $dropshippingData->update([
+                    'order_id' => $order->id,
+                ]);
             }
-        }
 
-        return $budget->fresh(['rooms.walls.collectionModel']);
+            return $budget->fresh(['rooms.walls.collectionModel', 'order']);
+        });
     }
 
     protected function formatCollectionReferringModel($value): ?string
@@ -438,12 +467,20 @@ class BudgetRepository {
         return $stringValue !== '' ? $stringValue : null;
     }
 
+    /**
+     * @deprecated
+     */
+    public function duplicate(Budget $source): Budget
+    {
+        return app(DuplicateBudgetAction::class)->execute($source);
+    }
+
     public function registerPayment(Order $order, UploadedFile $file): Order
     {
         return DB::transaction(function () use ($order, $file) {
             $path = $file->store('payments', ['disk' => 'public']);
 
-            if (!$path) {
+            if (! $path) {
                 throw new \Exception('Erro ao fazer upload do arquivo de pagamento.');
             }
 
@@ -451,6 +488,7 @@ class BudgetRepository {
             $order->payment_file = $path;
             $order->status = 'Aprovado';
             $order->paid = 1;
+            $order->payment_status = 'paid';
             $order->save();
 
             // Atualizar todos os order_budgets associados para 'Aprovado'

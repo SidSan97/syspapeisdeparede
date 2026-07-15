@@ -24,22 +24,17 @@ class OrderProductionController extends Controller
         DropshippingRepository $dropshippingRepository,
         TinyErpService $tinyErpService,
         OrderBudget $orderBudget
-    )
-    {
-        $this->middleware('auth:api');
+    ) {
+        $this->middleware('auth:sanctum');
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->orderBudget = $orderBudget;
         $this->dropshippingRepository = $dropshippingRepository;
         $this->tinyErpService = $tinyErpService;
     }
 
-    public function approve(Request $request): JsonResponse
+    public function approve(Order $order): JsonResponse
     {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:orders,id'],
-        ]);
-
-        $order = Order::with(['rooms.walls'])->findOrFail($validated['id']);
+        $order->load(['rooms.walls']);
 
         if ($order->dropshipping_budget) {
             $dropshippingBudget = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
@@ -88,7 +83,7 @@ class OrderProductionController extends Controller
         return response()->json($orderBudget);
     }
 
-    public function updateProductionPercentage(Request $request, int $orderBudgetId): JsonResponse
+    public function updateProductionPercentage(Order $order, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'production_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -96,13 +91,11 @@ class OrderProductionController extends Controller
 
         $user = $request->user();
         $orderBudget = $this->orderBudgetRepository->updateProductionPercentage(
-            $orderBudgetId,
+            $order->id,
             $validated['production_percentage'],
             $user,
             'product'
         );
-
-        $order = Order::findOrFail($orderBudget->order_id);
 
         if ($validated['production_percentage'] == 100) {
             // Gerar relatório de produção quando atinge 100%

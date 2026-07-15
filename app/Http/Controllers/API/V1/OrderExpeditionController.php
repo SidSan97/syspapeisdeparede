@@ -15,7 +15,7 @@ class OrderExpeditionController extends Controller
 
     public function __construct(OrderBudgetRepository $orderBudgetRepository, OrderRepository $orderRepository)
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->repository = $orderRepository;
     }

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('budgets', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('order_id')->nullable();
             $table->foreignId('user_id')
                 ->nullable()
                 ->constrained()
@@ -21,10 +22,9 @@ return new class extends Migration
             $table->decimal('total_area', 10, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->decimal('total_amount_installments', 12, 2)->default(0);
+            $table->decimal('total_amount_markup', 12, 2)->nullable();
+            $table->decimal('total_amount_installments_markup', 12, 2)->nullable();
             $table->unsignedInteger('delivery_time')->default(0);
-            $table->string('payment_method')->nullable();
-            $table->unsignedTinyInteger('installment_limit')->nullable();
-            $table->unsignedTinyInteger('installments')->nullable();
             $table->string('cep', 9)->nullable();
             $table->string('selected_carrier_name')->nullable();
             $table->decimal('selected_carrier_price', 10, 2)->nullable();
@@ -32,11 +32,8 @@ return new class extends Migration
             $table->json('carriers_snapshot')->nullable();
             $table->unsignedBigInteger('primary_budget_room_id')->nullable();
             $table->string('status', 50)->nullable();
-            $table->string('payment_file')->nullable();
             $table->tinyInteger('dropshipping_budget')->default(0);
             $table->timestamps();
-
-            $table->index('payment_method');
         });
     }
 

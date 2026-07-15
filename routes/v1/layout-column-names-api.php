@@ -6,5 +6,6 @@ use Illuminate\Support\Facades\Route;
 // Layout 'trello'
 Route::get('layout-column-names', [LayoutColumnNameController::class, 'index']);
 Route::post('layout-column-names', [LayoutColumnNameController::class, 'store']);
+Route::post('layout-column-names/reorder', [LayoutColumnNameController::class, 'reorder']);
 Route::put('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'update']);
-Route::delete('layout-column-names/{layoutColumnName}', [LayoutColumnNameController::class, 'destroy']);
+Route::delete('layout-column-names/{column}', [LayoutColumnNameController::class, 'destroy']);

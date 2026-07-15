@@ -15,6 +15,8 @@
         <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
+                    <p class="ms-1"><strong>Revendedor: </strong> {{ budget.reseller_name }}</p>
+
                     <!-- Seção: Informações Básicas -->
                     <div class="card mb-4">
                         <div class="card-body">
@@ -207,7 +209,10 @@
                                                         >
                                                             <div class="card-body">
                                                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                                                    <h6 class="mb-0">Continuação {{ continuationIndex + 1 }}</h6>
+                                                                    <h6 class="mb-0">
+                                                                        Continuação {{ continuationIndex + 1 }}
+                                                                        <span v-if="continuation.name">- {{ continuation.name }}</span>
+                                                                    </h6>
                                                                     <button
                                                                         type="button"
                                                                         class="btn btn-sm btn-outline-danger"
@@ -216,6 +221,19 @@
                                                                         <i class="fa fa-trash"></i>
                                                                     </button>
                                                                 </div>
+
+                                                        <div class="mb-3">
+                                                                    <label :for="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
+                                                                        Nome da continuação
+                                                                    </label>
+                                                                <input
+                                                                    v-model="continuation.name"
+                                                                    type="text"
+                                                                    :id="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                                                    class="form-control"
+                                                                    placeholder="Ex: Armário"
+                                                                />
+                                                        </div>
 
                                                         <div class="mb-3">
                                                                     <label :for="`continuation-direction-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
@@ -273,6 +291,52 @@
                                                         <br>
                                                         <strong>Tamanho da faixa:</strong> {{ formatStripHeight(wall) }} m
                                                     </div>
+                                                    <p
+                                                        v-if="formatStripHeight(wall) > 6"
+                                                        class="mb-0 text-danger small"
+                                                    >
+                                                        Obs.:<br />
+                                                        Faixas maiores que 6 metros são vendidas apenas em pares.
+                                                    </p>
+
+                                                    <div class="mt-4">
+                                                        <h6 class="mb-3">Definir modelo da parede</h6>
+                                                        <div v-if="modelsLoading" class="text-center text-muted py-3">
+                                                            Carregando modelos...
+                                                        </div>
+                                                        <div v-else-if="modelsError" class="alert alert-danger" role="alert">
+                                                            {{ modelsError }}
+                                                        </div>
+                                                        <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
+                                                            Nenhum modelo disponível. Tente novamente mais tarde.
+                                                        </div>
+                                                        <div v-else class="row">
+                                                            <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
+                                                                <div
+                                                                    class="card h-100 model-card"
+                                                                    :class="{ 'border-primary': wall.model === model.id }"
+                                                                    @click="wall.model = model.id"
+                                                                    style="cursor: pointer;"
+                                                                >
+                                                                    <div class="card-body d-flex flex-column">
+                                                                        <div class="mb-2">
+                                                                            <strong>{{ model.displayName }}</strong>
+                                                                        </div>
+                                                                        <div class="small text-muted">
+                                                                            <div><strong>Valor:</strong> {{ formatCurrency(model.value) }}</div>
+                                                                            <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <BudgetModelRequeriments
+                                                            v-if="wall.model"
+                                                            :wall="wall"
+                                                            :model="getModelById(wall.model)"
+                                                            :disabled="saving"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -298,55 +362,6 @@
                         </div>
                     </div>
 
-                    <!-- Seção: Definir Modelos -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Definir Modelos</h5>
-                            <div class="alert alert-info mb-4">
-                                <strong>Cada parede deve conter um modelo:</strong>
-                            </div>
-
-                                <div v-for="(room, roomIndex) in budget.rooms" :key="roomIndex" class="card mb-3">
-                                    <div class="card-header">
-                                        <strong>{{ room.name || `Ambiente ${roomIndex + 1}` }}</strong>
-                                    </div>
-                                    <div class="card-body">
-                                        <div v-for="(wall, wallIndex) in room.walls" :key="wallIndex" class="mb-4 pb-3 border-bottom">
-                                            <h6 class="mb-3">{{ wall.name || `Parede ${wallIndex + 1}` }}</h6>
-                                            <div v-if="modelsLoading" class="text-center text-muted py-4">
-                                                Carregando modelos...
-                                            </div>
-                                            <div v-else-if="modelsError" class="alert alert-danger" role="alert">
-                                                {{ modelsError }}
-                                            </div>
-                                            <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
-                                                Nenhum modelo disponível. Tente novamente mais tarde.
-                                            </div>
-                                            <div v-else class="row">
-                                                <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
-                                                    <div
-                                                        class="card h-100 model-card"
-                                                        :class="{ 'border-primary': wall.model === model.id }"
-                                                        @click="wall.model = model.id"
-                                                        style="cursor: pointer;"
-                                                    >
-                                                        <div class="card-body d-flex flex-column">
-                                                            <div class="mb-2">
-                                                                <strong>{{ model.displayName }}</strong>
-                                                            </div>
-                                                            <div class="small text-muted">
-                                                                <div><strong>Valor:</strong> {{ formatCurrency(model.value) }}</div>
-                                                                <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Sidebar: Frete e Pagamento -->
@@ -457,49 +472,34 @@
                                         <option v-for="n in budget.installmentLimit" :key="n" :value="n">{{ n }}x</option>
                                     </select>
                                 </div>
+
+                                <br>
+
+                                <span class="budget-attention-info">
+                                    ATENÇÃO! OS PREÇOS DO
+                                    ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS CORRIDOS, APÓS ESSE
+                                    PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                     <!-- Seção: Resumo -->
-                     <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Resumo</h5>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Ambientes:</span>
-                                    <strong>{{ budget.rooms.length }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Paredes:</span>
-                                    <strong>{{ totalWalls }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Metros:</span>
-                                    <strong>{{ totalArea.toFixed(2) }}</strong>
-                                </div>
-                                <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Frete:</span>
-                                    <strong>{{ formatCurrency(budget.carriers[budget.selectedCarrier]?.price) }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Previsão de entrega:</span>
-                                    <strong>{{ calculateDeliveryTime(budget) }} dias</strong>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-                                    <h5 class="mb-0 text-success">{{ formatCurrency(totalBudgetVista) }}</h5>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-                                    <h5 class="mb-0 text-primary">{{ formatCurrency(totalBudgetPrazo) }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Seção: Resumo -->
+                    <ResumeProductCard
+                      :total-rooms="budget.rooms.length"
+                      :total-walls="totalWalls"
+                      :total-area="totalArea.toFixed(2)"
+                      :freight="budget.selectedCarrier !== null
+                        ? formatCurrency(budget.carriers[budget.selectedCarrier]?.price)
+                        : ''"
+                      :arts-total="totalModelsCost > 0 ? formatCurrency(totalModelsCost) : ''"
+                      :artwork-days="artworkDays"
+                      :transport-days="transportDays"
+                      :delivery-time="`${calculateDeliveryTime(budget)} dias`"
+                      :total-vista="formatCurrency(totalBudgetVista)"
+                      :total-prazo="formatCurrency(totalBudgetPrazo)"
+                      :strip-summary="stripSummary"
+                    />
                 </div>
             </div>
         </div>
@@ -512,6 +512,8 @@ import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
+import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useBudgetService } from '@/modules/budgets/services/budgetService';
 import { normalizeBudgetFromAPI, createDefaultWall } from '@/modules/budgets/composables/useBudgetUtils';
@@ -522,6 +524,8 @@ import { useBudgetFormatters } from '@/modules/budgets/composables/useBudgetForm
 import { useBudgetModels } from '@/modules/budgets/composables/useBudgetModels';
 import { useBudgetEditState } from '@/modules/budgets/composables/useBudgetEditState';
 import { useFormatting } from '@/composables/useFormatting';
+import { sumArtworkDays } from '@/utils/artWorkDaysSum';
+import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -579,6 +583,21 @@ const {
     getModelById,
     fetchCollectionModels
 } = useBudgetModels(budget);
+
+const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
+
+const transportDays = computed(() => {
+    if (
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+    ) {
+        return Math.max(0, Number(budget.carriers[budget.selectedCarrier]?.deliveryTime ?? 0));
+    }
+
+    return '';
+});
 
 const {
     budgetId,
@@ -720,7 +739,7 @@ async function calculateFreight() {
 
 
 function updateBudget() {
-    if (!validateBudget(budget, modelsLoading, productModels, showWarning)) {
+    if (!validateBudget(budget, modelsLoading, productModels, showWarning, getModelById)) {
         return;
     }
 
@@ -847,6 +866,11 @@ function updateBudget() {
     &.border-primary {
         box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
     }
+}
+
+.budget-attention-info {
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>
 

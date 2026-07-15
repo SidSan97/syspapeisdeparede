@@ -14,6 +14,7 @@ class LayoutColumnNameSeeder extends Seeder
     {
         $columns = [
             'Desenhista',
+            'Novos Layouts',
             'Versao 01',
             'Revisão 01',
             'Revisão 02',
@@ -28,4 +29,3 @@ class LayoutColumnNameSeeder extends Seeder
         }
     }
 }
-

@@ -15,6 +15,8 @@
         <div v-else class="container py-4">
             <div class="row">
                 <div class="col-12 col-lg-8">
+                    <p class="ms-1"><strong>Revendedor: </strong> {{ budget.reseller_name }}</p>
+
                     <!-- Seção: Informações Básicas -->
                     <div class="card mb-4">
                         <div class="card-body">
@@ -209,7 +211,10 @@
                                                         >
                                                             <div class="card-body">
                                                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                                                    <h6 class="mb-0">Continuação {{ continuationIndex + 1 }}</h6>
+                                                                    <h6 class="mb-0">
+                                                                        Continuação {{ continuationIndex + 1 }}
+                                                                        <span v-if="continuation.name">- {{ continuation.name }}</span>
+                                                                    </h6>
                                                                     <button
                                                                         type="button"
                                                                         class="btn btn-sm btn-outline-danger"
@@ -218,6 +223,19 @@
                                                                         <i class="fa fa-trash"></i>
                                                                     </button>
                                                                 </div>
+
+                                                        <div class="mb-3">
+                                                                    <label :for="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
+                                                                        Nome da continuação
+                                                                    </label>
+                                                                <input
+                                                                    v-model="continuation.name"
+                                                                    type="text"
+                                                                    :id="`continuation-name-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                                                    class="form-control"
+                                                                    placeholder="Ex: Armário"
+                                                                />
+                                                        </div>
 
                                                         <div class="mb-3">
                                                                     <label :for="`continuation-direction-${roomIndex}-${wallIndex}-${continuationIndex}`" class="form-label">
@@ -275,6 +293,53 @@
                                                         <br>
                                                         <strong>Tamanho da faixa:</strong> {{ formatStripHeight(wall) }} m
                                                     </div>
+
+                                                    <p
+                                                        v-if="formatStripHeight(wall) > 6"
+                                                        class="mb-0 text-danger small"
+                                                    >
+                                                        Obs.:<br />
+                                                        Faixas maiores que 6 metros são vendidas apenas em pares.
+                                                    </p>
+
+                                                    <div class="mt-4">
+                                                        <h6 class="mb-3">Definir modelo da parede</h6>
+                                                        <div v-if="modelsLoading" class="text-center text-muted py-3">
+                                                            Carregando modelos...
+                                                        </div>
+                                                        <div v-else-if="modelsError" class="alert alert-danger" role="alert">
+                                                            {{ modelsError }}
+                                                        </div>
+                                                        <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
+                                                            Nenhum modelo disponível. Tente novamente mais tarde.
+                                                        </div>
+                                                        <div v-else class="row">
+                                                            <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
+                                                                <div
+                                                                    class="card h-100 "
+                                                                    :class="{ 'border-primary': wall.model === model.id }"
+                                                                    @click="wall.model = model.id"
+                                                                    style="cursor: pointer;"
+                                                                >
+                                                                    <div class="card-body d-flex flex-column">
+                                                                        <div class="mb-2">
+                                                                            <strong>{{ model.displayName }}</strong>
+                                                                        </div>
+                                                                        <div class="small text-muted">
+                                                                            <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>
+                                                                            <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <BudgetModelRequeriments
+                                                            v-if="wall.model"
+                                                            :wall="wall"
+                                                            :model="getModelById(wall.model)"
+                                                            :disabled="saving"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -297,56 +362,6 @@
                                 <i class="fa fa-plus fa-fw"></i> Adicionar Ambiente
                             </button>
                                 </template>
-                        </div>
-                    </div>
-
-                    <!-- Seção: Definir Modelos -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Definir Modelos</h5>
-                            <div class="alert alert-info mb-4">
-                                <strong>Cada parede deve conter um modelo:</strong>
-                            </div>
-
-                                <div v-for="(room, roomIndex) in budget.rooms" :key="roomIndex" class="card mb-3">
-                                    <div class="card-header">
-                                        <strong>{{ room.name || `Ambiente ${roomIndex + 1}` }}</strong>
-                                    </div>
-                                    <div class="card-body">
-                                        <div v-for="(wall, wallIndex) in room.walls" :key="wallIndex" class="mb-4 pb-3 border-bottom">
-                                            <h6 class="mb-3">{{ wall.name || `Parede ${wallIndex + 1}` }}</h6>
-                                            <div v-if="modelsLoading" class="text-center text-muted py-4">
-                                                Carregando modelos...
-                                            </div>
-                                            <div v-else-if="modelsError" class="alert alert-danger" role="alert">
-                                                {{ modelsError }}
-                                            </div>
-                                            <div v-else-if="!productModels.length" class="alert alert-warning" role="alert">
-                                                Nenhum modelo disponível. Tente novamente mais tarde.
-                                            </div>
-                                            <div v-else class="row">
-                                                <div class="col-lg-4 col-md-6 mb-3" v-for="model in productModels" :key="model.id">
-                                                    <div
-                                                        class="card h-100 "
-                                                        :class="{ 'border-primary': wall.model === model.id }"
-                                                        @click="wall.model = model.id"
-                                                        style="cursor: pointer;"
-                                                    >
-                                                        <div class="card-body d-flex flex-column">
-                                                            <div class="mb-2">
-                                                                <strong>{{ model.displayName }}</strong>
-                                                            </div>
-                                                            <div class="small text-muted">
-                                                                <div><strong>Valor:</strong> R$ {{ model.value.toFixed(2) }}</div>
-                                                                <div><strong>Prazo:</strong> {{ model.deadline }} dia(s)</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                         </div>
                     </div>
 
@@ -537,28 +552,60 @@
                                     </div>
                                 </div>
 
-                                <div v-if="budget.carriers && budget.carriers.length > 0" class="mt-4">
-                                    <label class="form-label">Transportadora</label>
-                                    <div class="list-group">
-                                        <div
-                                            v-for="(carrier, index) in budget.carriers"
-                                            :key="index"
-                                            :class="{ 'active': budget.selectedCarrier === index }"
-                                            @click="budget.selectedCarrier = index"
-                                            style="cursor: pointer;"
-                                        >
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ carrier.name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">Prazo: {{ carrier.deliveryTime }} dias</small>
-                                                </div>
-                                                <div class="text-end">
-                                                    <strong class="text-primary">R$ {{ carrier.price.toFixed(2) }}</strong>
+                                <div
+                                    v-if="budget.carriers && budget.carriers.length > 0"
+                                    class="mt-4"
+                                >
+                                    <template v-if="selectedFreightCarrier && !freightPickerExpanded">
+                                        <label class="form-label">Transportadora</label>
+                                        <div class="list-group freight-carrier-list">
+                                            <div class="list-group-item freight-option freight-option-summary">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ selectedFreightCarrier.name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">Prazo: {{ selectedFreightCarrier.deliveryTime }} dias</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <strong class="text-primary">R$ {{ selectedFreightCarrier.price.toFixed(2) }}</strong>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </template>
+                                    <template v-else>
+                                        <label class="form-label">Transportadora</label>
+                                        <div class="list-group freight-carrier-list">
+                                            <button
+                                                v-for="(carrier, index) in budget.carriers"
+                                                :key="index"
+                                                type="button"
+                                                class="list-group-item list-group-item-action freight-option text-start"
+                                                :class="{ active: isFreightCarrierSelected(index) }"
+                                                @click="selectFreightCarrier(index)"
+                                            >
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ carrier.name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">Prazo: {{ carrier.deliveryTime }} dias</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <strong class="text-primary freight-option-price">R$ {{ carrier.price.toFixed(2) }}</strong>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button
+                                        v-if="selectedFreightCarrier"
+                                        type="button"
+                                        class="btn btn-link btn-sm px-0 mt-2 text-decoration-none"
+                                        :disabled="!budget.cep || calculatingFreight"
+                                        @click="calculateFreight"
+                                    >
+                                        Alterar transportadora
+                                    </button>
                                 </div>
                         </div>
                     </div>
@@ -612,49 +659,34 @@
                                         <option v-for="n in budget.installmentLimit" :key="n" :value="n">{{ n }}x</option>
                                     </select>
                                 </div>
+
+                                <br>
+
+                                <span class="budget-attention-info">
+                                    ATENÇÃO! OS PREÇOS DO
+                                    ORÇAMENTO OU PEDIDOS NÃO PAGOS SERÃO MANTIDOS POR 30 DIAS CORRIDOS, APÓS ESSE
+                                    PERÍODO OS VALORES PODEM SOFRER REAJUSTES AUTOMÁTICOS.
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                     <!-- Seção: Resumo -->
-                     <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Resumo</h5>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Ambientes:</span>
-                                    <strong>{{ budget.rooms.length }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total de Paredes:</span>
-                                    <strong>{{ totalWalls }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Metros:</span>
-                                    <strong>{{ totalArea.toFixed(2) }}</strong>
-                                </div>
-                                <div v-if="budget.selectedCarrier !== null" class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Frete:</span>
-                                    <strong>R$ {{ budget.carriers[budget.selectedCarrier]?.price.toFixed(2) }}</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Previsão de entrega:</span>
-                                    <strong>{{ calculateDeliveryTime(budget) }} dias</strong>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-                                    <h5 class="mb-0 text-success">R$ {{ totalBudgetVista.toFixed(2) }}</h5>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-                                    <h5 class="mb-0 text-primary">R$ {{ totalBudgetPrazo.toFixed(2) }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Seção: Resumo -->
+                    <ResumeProductCard
+                      :total-rooms="budget.rooms.length"
+                      :total-walls="totalWalls"
+                      :total-area="totalArea.toFixed(2)"
+                      :freight="budget.selectedCarrier !== null
+                        ? `R$ ${budget.carriers[budget.selectedCarrier]?.price.toFixed(2)}`
+                        : ''"
+                      :arts-total="totalModelsCost > 0 ? `R$ ${totalModelsCost.toFixed(2)}` : ''"
+                      :artwork-days="artworkDays"
+                      :transport-days="transportDays"
+                      :delivery-time="`${calculateDeliveryTime(budget)} dias`"
+                      :total-vista="`R$ ${totalBudgetVista.toFixed(2)}`"
+                      :total-prazo="`R$ ${totalBudgetPrazo.toFixed(2)}`"
+                      :strip-summary="stripSummary"
+                    />
                 </div>
             </div>
         </div>
@@ -669,6 +701,10 @@ import axios from 'axios';
 import Page from '@/components/page/Page.vue';
 import DropshippingForm from '@/modules/budgets/components/DropshippingForm.vue';
 import { useAuthStore } from '@/stores/auth';
+import ResumeProductCard from '@/components/resume-product-card/ResumeProductCard.vue';
+import BudgetModelRequeriments from '@/components/budget/BudgetModelRequeriments.vue';
+import { sumArtworkDays } from '@/utils/artWorkDaysSum';
+import { buildStripSummaryFromRooms } from '@/utils/stripSummaryUtils';
 
 const router = useRouter();
 const route = useRoute();
@@ -704,12 +740,65 @@ const STRIP_HEIGHT_OPTIONS = [
     6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0
 ];
 const calculatingFreight = ref(false);
+const freightPickerExpanded = ref(true);
+
+const selectedFreightCarrier = computed(() => {
+    const carriers = budget.carriers;
+    if (!Array.isArray(carriers) || carriers.length === 0) {
+        return null;
+    }
+    const sel = budget.selectedCarrier;
+    if (sel === null || sel === undefined || sel === '') {
+        return null;
+    }
+    const idx = Number(sel);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= carriers.length) {
+        return null;
+    }
+    return carriers[idx];
+});
+
+function normalizedSelectedCarrierIndex() {
+    const sel = budget.selectedCarrier;
+    if (sel === null || sel === undefined || sel === '') {
+        return null;
+    }
+    const idx = Number(sel);
+    if (!Number.isFinite(idx) || idx < 0) {
+        return null;
+    }
+    return idx;
+}
+
+function isFreightCarrierSelected(index) {
+    return normalizedSelectedCarrierIndex() === index;
+}
+
+function syncFreightPickerExpanded() {
+    const carriers = budget.carriers;
+    const idx = normalizedSelectedCarrierIndex();
+    if (!Array.isArray(carriers) || carriers.length === 0) {
+        freightPickerExpanded.value = true;
+        return;
+    }
+    if (carriers.length === 1) {
+        freightPickerExpanded.value = idx === null || idx >= carriers.length;
+        return;
+    }
+    freightPickerExpanded.value = idx === null || idx >= carriers.length;
+}
+
+function selectFreightCarrier(index) {
+    budget.selectedCarrier = index;
+    freightPickerExpanded.value = false;
+}
 
 // Solicitações de arte
 const requestLayoutArts = ref([]);
 const loadingRequestArts = ref(false);
 
 const createDefaultContinuation = () => ({
+                        name: '',
                         direction: '',
                         width: null,
                         height: null,
@@ -717,12 +806,17 @@ const createDefaultContinuation = () => ({
 });
 
 const createDefaultWall = () => ({
+    id: null,
     name: '',
     width: null,
     height: null,
     model: null,
     continueSameArt: false,
-    continuations: []
+    continuations: [],
+    comment_referring_model: '',
+    link_referring_model: '',
+    files_referring_model: [],
+    collection_referring_model: ''
 });
 
 const showWarning = (message) =>
@@ -788,7 +882,12 @@ const normalizeCollectionModel = (model = {}) => {
         requests: {
             link: Boolean(model?.requests?.link),
             comment: Boolean(model?.requests?.comment),
-            file: Boolean(model?.requests?.file)
+            file: Boolean(model?.requests?.file),
+            collection: Boolean(
+                model?.requests?.collection ??
+                model?.request_collection ??
+                model?.requestCollection
+            )
         },
         link: model.link ?? '',
         comment: model.comment ?? '',
@@ -904,6 +1003,24 @@ const productModelsMap = computed(() => {
 
 const getModelById = (id) => productModelsMap.value.get(id);
 
+const artworkDays = computed(() => sumArtworkDays(budget, getModelById));
+const stripSummary = computed(() => buildStripSummaryFromRooms(budget.rooms));
+
+const transportDays = computed(() => {
+    if (
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+    ) {
+        return Math.max(
+            0,
+            Number(budget.carriers[budget.selectedCarrier]?.deliveryTime ?? 0)
+        );
+    }
+
+    return '';
+});
+
 // Função auxiliar para normalizar valores para comparação
 function normalizeForComparison(value) {
     if (value === null || value === undefined) return null;
@@ -965,12 +1082,17 @@ function normalizeOrderFromAPI(orderData) {
             if (room.walls && Array.isArray(room.walls)) {
                 room.walls.forEach((wall) => {
                     const wallData = {
+                        id: wall.id ?? null,
                         name: wall.name || '',
                         width: wall.width ? Number(wall.width) : null,
                         height: wall.height ? Number(wall.height) : null,
                         model: (wall.collection_model_id || wall.collection_model?.id) ? Number(wall.collection_model_id || wall.collection_model?.id) : null,
                         continueSameArt: false,
-                        continuations: []
+                        continuations: [],
+                        comment_referring_model: wall.comment_referring_model ?? '',
+                        link_referring_model: wall.link_referring_model ?? '',
+                        files_referring_model: Array.isArray(wall.files_referring_model) ? wall.files_referring_model : [],
+                        collection_referring_model: wall.collection_referring_model ?? ''
                     };
 
                     // Processar continuações se existirem
@@ -978,10 +1100,11 @@ function normalizeOrderFromAPI(orderData) {
                         wallData.continueSameArt = Boolean(wall.continue_same_art);
                         if (wall.continuations && Array.isArray(wall.continuations)) {
                             wallData.continuations = wall.continuations.map(cont => ({
+                                name: cont.name || '',
                                 direction: cont.direction || '',
                                 width: cont.width ? Number(cont.width) : null,
                                 height: cont.height ? Number(cont.height) : null,
-                                sameArt: false
+                                sameArt: Boolean(cont.sameArt ?? false)
                             }));
                         }
                     }
@@ -1041,14 +1164,20 @@ function normalizeOrderFromAPI(orderData) {
         rooms: rooms.length > 0 ? rooms : [{ name: '', walls: [createDefaultWall()] }],
         cep: orderData.cep || '',
         carriers: carriers,
-        selectedCarrier: selectedCarrierIndex,
+        selectedCarrier:
+            selectedCarrierIndex !== null &&
+            selectedCarrierIndex !== undefined &&
+            Number(selectedCarrierIndex) >= 0
+                ? Number(selectedCarrierIndex)
+                : null,
         paymentMethod: normalizedPaymentMethod,
         installmentLimit: orderData.installment_limit || 12,
         installments: orderData.installments || 1,
         total_amount: orderData.total_amount ? Number(orderData.total_amount) : 0,
         total_amount_installments: orderData.total_amount_installments ? Number(orderData.total_amount_installments) : 0,
         dropshipping_budget: orderData.dropshipping_budget || 0,
-        dropshipping_data: orderData.dropshipping_data || null
+        dropshipping_data: orderData.dropshipping_data || null,
+        reseller_name: orderData.reseller_name ?? null
     };
 }
 
@@ -1081,6 +1210,7 @@ async function loadOrder() {
 
         const normalized = normalizeOrderFromAPI(orderData);
         Object.assign(budget, normalized);
+        syncFreightPickerExpanded();
 
         // Carregar dados de dropshipping se existirem
         if (normalized.dropshipping_budget === 1 && normalized.dropshipping_data) {
@@ -1381,6 +1511,36 @@ function validateBudget() {
                 showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
                 return false;
             }
+
+            const model = getModelById(wall.model);
+            const requests = model?.requests ?? {};
+            const needComment = Boolean(requests.comment);
+            const needLink = Boolean(requests.link);
+            const needFile = Boolean(requests.file);
+            const needCollection = Boolean(requests.collection);
+
+            if (needComment && !String(wall.comment_referring_model ?? '').trim()) {
+                showWarning(`Informe a descrição do modelo para ${wallLabel} em ${roomLabel}.`);
+                return false;
+            }
+
+            if (needLink && !String(wall.link_referring_model ?? '').trim()) {
+                showWarning(`Informe o link de referência para ${wallLabel} em ${roomLabel}.`);
+                return false;
+            }
+
+            if (needFile) {
+                const files = Array.isArray(wall.files_referring_model) ? wall.files_referring_model : [];
+                if (!files.length) {
+                    showWarning(`Informe ao menos um arquivo de referência para ${wallLabel} em ${roomLabel}.`);
+                    return false;
+                }
+            }
+
+            if (needCollection && !String(wall.collection_referring_model ?? '').trim()) {
+                showWarning(`Selecione uma arte da coleção para ${wallLabel} em ${roomLabel}.`);
+                return false;
+            }
         }
     }
 
@@ -1553,7 +1713,15 @@ async function calculateFreight() {
     if (!budget.cep) {
         return;
     }
+    freightPickerExpanded.value = true;
     calculatingFreight.value = true;
+
+    const previousSelected =
+        budget.selectedCarrier !== null &&
+        Array.isArray(budget.carriers) &&
+        budget.carriers[budget.selectedCarrier]
+            ? { ...budget.carriers[budget.selectedCarrier] }
+            : null;
 
     try {
         const { data } = await axios.post('v1/frenet/calculate-shipping', {
@@ -1561,28 +1729,43 @@ async function calculateFreight() {
             productData: tinyErpProducts.value
         });
 
-        // Mapear os dados da resposta para o formato esperado
         if (data?.data?.ShippingSevicesArray && Array.isArray(data.data.ShippingSevicesArray)) {
             budget.carriers = data.data.ShippingSevicesArray
-                .filter(service => !service.Error) // Filtrar apenas serviços sem erro
+                .filter(service => !service.Error)
                 .map(service => ({
                     name: `${service.Carrier} - ${service.ServiceDescription}`,
                     price: parseFloat(service.ShippingPrice) || 0,
                     deliveryTime: parseInt(service.DeliveryTime) || 0
                 }));
 
-            // Resetar a seleção se não houver carriers ou se o índice selecionado não existir mais
             if (budget.carriers.length === 0) {
                 budget.selectedCarrier = null;
-            } else if (budget.selectedCarrier !== null && budget.selectedCarrier >= budget.carriers.length) {
+            } else if (
+                budget.selectedCarrier !== null &&
+                Number(budget.selectedCarrier) >= budget.carriers.length
+            ) {
                 budget.selectedCarrier = null;
+            }
+
+            if (previousSelected && budget.carriers.length > 0) {
+                let matchIdx = budget.carriers.findIndex(
+                    (c) =>
+                        c.name === previousSelected.name &&
+                        Number(c.price) === Number(previousSelected.price)
+                );
+                if (matchIdx < 0) {
+                    matchIdx = budget.carriers.findIndex((c) => c.name === previousSelected.name);
+                }
+                if (matchIdx >= 0) {
+                    budget.selectedCarrier = matchIdx;
+                } else {
+                    budget.selectedCarrier = null;
+                }
             }
         } else {
             budget.carriers = [];
             budget.selectedCarrier = null;
         }
-
-        calculatingFreight.value = false;
     } catch (error) {
         console.error('Erro ao calcular frete:', error);
         window.Swal.fire({
@@ -1590,6 +1773,8 @@ async function calculateFreight() {
             text: 'Não foi possível calcular o frete. Tente novamente mais tarde.',
             confirmButtonText: 'Entendi!',
         });
+    } finally {
+        calculatingFreight.value = false;
     }
 }
 
@@ -1710,6 +1895,27 @@ function updateBudget() {
 </script>
 
 <style scoped>
+.budget-attention-info {
+  font-size: 12px;
+  font-weight: 600;
+}
 
+.freight-carrier-list .freight-option.active {
+  background-color: #63c2de;
+  border-color: #63c2de;
+  color: #fff;
+}
+
+.freight-carrier-list .freight-option.active :deep(.text-muted) {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.freight-carrier-list .freight-option.active .freight-option-price {
+  color: #fff !important;
+}
+
+.freight-option-summary {
+  cursor: default;
+}
 </style>
 

@@ -45,6 +45,7 @@
           v-else
           :budgets="budgets"
           @view-details="openDetailsModal"
+          @duplicate="duplicateBudget"
           @generate-pdf="openPdfPreview"
           @create-order="openOrderModal"
           @edit="editBudget"
@@ -132,6 +133,7 @@ const cancelError = ref('');
 const budgetToDelete = ref(null);
 const deleting = ref(false);
 const deleteError = ref('');
+const duplicatingId = ref(null);
 
 const isAdmin = computed(() => auth.isAdmin());
 
@@ -166,6 +168,40 @@ function closeDetailsModal() {
 
 function editBudget(budget) {
   router.push({ name: 'BudgetEdit', params: { id: budget.id } });
+}
+
+async function duplicateBudget(budget) {
+  if (!budget?.id || duplicatingId.value) {
+    return;
+  }
+
+  duplicatingId.value = budget.id;
+
+  try {
+    const created = await budgetListService.duplicateBudget(budget.id);
+    const newId = created?.id ?? created?.data?.id;
+
+    await swalSuccess(
+      'Orçamento duplicado',
+      newId
+        ? `Cópia criada (#${newId}).`
+        : 'Cópia criada com sucesso.',
+    );
+
+    await fetchBudgets(filters.value, paginationData.value.current_page);
+
+    if (newId) {
+      router.push({ name: 'BudgetEdit', params: { id: newId } });
+    }
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Não foi possível duplicar o orçamento.';
+    await swalError('Erro ao duplicar', message);
+  } finally {
+    duplicatingId.value = null;
+  }
 }
 
 function openPdfPreview(budget) {

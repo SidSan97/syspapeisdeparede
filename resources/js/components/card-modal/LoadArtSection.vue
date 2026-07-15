@@ -7,9 +7,7 @@
         :id="`load-art-${cardId}`"
         v-model="showInput"
       />
-      <label class="form-check-label" :for="`load-art-${cardId}`">
-        Carregar arte
-      </label>
+      <label class="form-check-label" :for="`load-art-${cardId}`"> Carregar arte </label>
     </div>
     <div v-if="showInput" class="load-art-section-form">
       <input
@@ -36,8 +34,9 @@
         :disabled="uploading"
       >
         <span v-if="uploading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-        <i v-else class="fa fa-upload me-2"></i>
-        {{ uploading ? 'Enviando...' : 'Enviar Arte' }}
+        <IconUpload :size="18" class="me-2" v-else />
+
+        {{ uploading ? 'Enviando...' : 'Enviar arte' }}
       </button>
     </div>
   </div>
@@ -45,8 +44,10 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useArtService } from '@/modules/card-modals/services/artService';
+import { useToast } from '@/composables/useToast';
+import { artService } from '@/modules/card-modals/services/artService';
 import { useAuthStore } from '@/stores/auth';
+import { IconUpload } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -61,8 +62,8 @@ const props = defineProps({
 
 const emit = defineEmits(['art-uploaded']);
 
+const toast = useToast();
 const auth = useAuthStore();
-const artService = useArtService();
 
 const showInput = ref(false);
 const selectedFile = ref(null);
@@ -80,7 +81,13 @@ function handleFileChange(event) {
 }
 
 async function handleUpload() {
-  if (!selectedFile.value || !props.card?.id || !props.card?.order?.user_id || !props.card?.order?.id || !auth.user?.id) {
+  if (
+    !selectedFile.value ||
+    !props.card?.id ||
+    !props.card?.order?.user_id ||
+    !props.card?.order?.id ||
+    !auth.user?.id
+  ) {
     return;
   }
 
@@ -95,34 +102,30 @@ async function handleUpload() {
     formData.append('order_id', props.card.order.id);
     formData.append('comment', comment.value);
 
-    const response = await artService.uploadArt(formData);
+    const response = await artService.upload(formData);
 
-    if (response?.success) {
-      // Atualizar o card localmente
-      if (props.card) {
-        props.card.status = 'Pendente de Revisão';
-        if (props.card.order) {
-          props.card.order.status = 'Pendente de Revisão';
-        }
-      }
+    const isSuccess = Boolean(response?.success ?? response?.id);
 
-      // Limpar o formulário
-      selectedFile.value = null;
-      showInput.value = false;
-      comment.value = '';
-      if (fileInputRef.value) {
-        fileInputRef.value.value = '';
-      }
-
-      if (window.Toast) {
-        window.Toast.fire({
-          icon: 'success',
-          title: response.message || 'Arte carregada com sucesso',
-        });
-      }
-
-      emit('art-uploaded');
+    if (!isSuccess) {
+      throw new Error(response?.message || 'Resposta inválida ao enviar a arte.');
     }
+
+    if (props.card) {
+      props.card.status = 'Pendente de Revisão';
+      if (props.card.order) {
+        props.card.order.status = 'Pendente de Revisão';
+      }
+    }
+
+    selectedFile.value = null;
+    comment.value = '';
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
+
+    toast.success(response.message || 'Arte carregada com sucesso.');
+
+    emit('art-uploaded');
   } catch (error) {
     console.error('Erro ao carregar arte:', error);
     const errorMessage = error.response?.data?.message || 'Erro ao carregar arte. Tente novamente.';
@@ -138,14 +141,17 @@ async function handleUpload() {
 }
 
 // Resetar quando o card mudar
-watch(() => props.card?.id, () => {
-  showInput.value = false;
-  selectedFile.value = null;
-  comment.value = '';
-  if (fileInputRef.value) {
-    fileInputRef.value.value = '';
-  }
-});
+watch(
+  () => props.card?.id,
+  () => {
+    showInput.value = false;
+    selectedFile.value = null;
+    comment.value = '';
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
+  },
+);
 </script>
 
 <style lang="scss" scoped>
@@ -161,4 +167,3 @@ watch(() => props.card?.id, () => {
   margin-top: 12px;
 }
 </style>
-

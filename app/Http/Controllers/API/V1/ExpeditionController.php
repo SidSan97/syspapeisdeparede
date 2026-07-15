@@ -35,7 +35,7 @@ class ExpeditionController extends Controller
         DropshippingRepository $dropshippingRepository
     )
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
         $this->OrderRepository = $OrderRepository;
         $this->expeditionService = $expeditionService;
         $this->orderBudgetRepository = $orderBudgetRepository;
@@ -132,6 +132,10 @@ class ExpeditionController extends Controller
     public function searchGroupings(string $carrier): JsonResponse
     {
         $groupings = $this->tinyErpService->searchGroupings($carrier);
+
+        if ($groupings instanceof JsonResponse) {
+            return $groupings;
+        }
 
         return response()->json($groupings);
     }

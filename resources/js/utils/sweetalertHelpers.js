@@ -1,117 +1,81 @@
-/**
- * Utilitários para ajudar com SweetAlert2
- */
+import Swal from 'sweetalert2';
 
-/**
- * Cria um HTML de input com botão de copiar para usar no SweetAlert2
- * @param {string} linkId - ID único para o input e botão
- * @param {string} linkValue - Valor do link a ser exibido
- * @param {string} message - Mensagem a ser exibida acima do input (opcional)
- * @returns {string} HTML formatado
- */
-export function createLinkInputHTML(linkId, linkValue, message = null) {
-  const messageHTML = message ? `<p>${message}</p>` : '';
-  
-  return `
-    ${messageHTML}
-    <div class="mt-3">
-      <div class="input-group">
-        <input
-          type="text"
-          id="${linkId}-input"
-          class="form-control"
-          value="${linkValue}"
-          readonly
-          style="font-size: 0.875rem;"
-        />
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          id="${linkId}-button"
-          title="Copiar link"
-        >
-          <i class="fa fa-copy"></i>
-        </button>
-      </div>
-    </div>
-  `;
+const copyIconSVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-copy"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
+`;
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-/**
- * Configura o evento de copiar para um link no SweetAlert2
- * @param {string} linkId - ID único usado no createLinkInputHTML
- * @param {string} linkValue - Valor do link a ser copiado
- * @param {string} successMessage - Mensagem de sucesso personalizada (opcional)
- */
-export function setupCopyLinkHandler(linkId, linkValue, successMessage = null) {
-  const defaultMessage = 'O link foi copiado para a área de transferência.';
-  const message = successMessage || defaultMessage;
-  
-  return () => {
-    const copyButton = document.getElementById(`${linkId}-button`);
-    const linkInput = document.getElementById(`${linkId}-input`);
-    
-    if (copyButton) {
-      copyButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(linkValue);
-          window.Swal.fire({
-            title: 'Link copiado!',
-            text: message,
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        } catch (err) {
-          // Fallback para navegadores mais antigos
-          if (linkInput) {
-            linkInput.select();
-            document.execCommand('copy');
-            window.Swal.fire({
-              title: 'Link copiado!',
-              text: message,
-              icon: 'success',
-              timer: 2000,
-              showConfirmButton: false
-            });
-          }
-        }
-      });
-    }
-  };
-}
-
-/**
- * Cria uma configuração completa para SweetAlert2 com input de link e botão copiar
- * @param {Object} options - Opções de configuração
- * @param {string} options.title - Título do SweetAlert
- * @param {string} options.linkId - ID único para o input e botão
- * @param {string} options.linkValue - Valor do link a ser exibido
- * @param {string} options.message - Mensagem a ser exibida acima do input (opcional)
- * @param {string} options.successMessage - Mensagem de sucesso ao copiar (opcional)
- * @param {string} options.confirmButtonText - Texto do botão de confirmação
- * @param {string} options.cancelButtonText - Texto do botão de cancelamento
- * @param {string} options.icon - Ícone do SweetAlert (default: 'success')
- * @returns {Object} Configuração do SweetAlert2
- */
-export function createLinkAlertConfig({
+export async function showCopyLinkAlert({
   title,
-  linkId,
   linkValue,
   message = null,
-  successMessage = null,
   confirmButtonText = 'Abrir link',
   cancelButtonText = 'Fechar',
-  icon = 'success'
+  icon = 'success',
 }) {
-  return {
+  const result = await Swal.fire({
     title,
-    html: createLinkInputHTML(linkId, linkValue, message),
+
+    html: `
+      ${message ? `<p>${message}</p>` : ''}
+
+      <div class="mt-3">
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control swal-link-input"
+            readonly
+            value="${linkValue}"
+          />
+
+          <button
+            type="button"
+            class="btn btn-outline-default swal-copy-btn"
+            title="Copiar link"
+          >${copyIconSVG}</button>
+        </div>
+      </div>
+    `,
+
     icon,
+
     showCancelButton: true,
+
     confirmButtonText,
     cancelButtonText,
-    didOpen: setupCopyLinkHandler(linkId, linkValue, successMessage)
-  };
-}
 
+    didRender: () => {
+      const container = Swal.getHtmlContainer();
+
+      const copyButton = container.querySelector('.swal-copy-btn');
+
+      const input = container.querySelector('.swal-link-input');
+
+      copyButton?.addEventListener('click', async () => {
+        const success = await copyToClipboard(linkValue);
+
+        if (success) {
+          Swal.fire({
+            title: 'Link copiado!',
+            text: 'O link foi copiado para a área de transferência.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+          });
+        } else {
+          input?.select();
+        }
+      });
+    },
+  });
+
+  return result;
+}

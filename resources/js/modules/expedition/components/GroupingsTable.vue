@@ -2,7 +2,7 @@
   <div>
     <form class="g-3 align-items-center mb-4" role="search">
       <div class="d-flex">
-        <div style="min-width: 200px;">
+        <div style="min-width: 200px">
           <label for="grouping-carrier-select" class="form-label">Transportadora</label>
           <select
             id="grouping-carrier-select"
@@ -11,11 +11,7 @@
             @change="$emit('carrier-changed', $event.target.value)"
           >
             <option :value="null">Selecione uma transportadora</option>
-            <option
-              v-for="carrier in carriersList"
-              :key="carrier"
-              :value="carrier"
-            >
+            <option v-for="carrier in carriersList" :key="carrier" :value="carrier">
               {{ carrier }}
             </option>
           </select>
@@ -31,7 +27,7 @@
       <EmptyState
         v-else-if="!selectedCarrier"
         heading="Selecione uma transportadora"
-        icon="shipping-fast"
+        :icon="IconTruckDelivery"
         class="p-5"
       >
         Por favor, selecione uma transportadora para visualizar os agrupamentos.
@@ -40,7 +36,7 @@
       <EmptyState
         v-else-if="groupings.length === 0"
         heading="Nenhum agrupamento encontrado"
-        icon="shipping-fast"
+        :icon="IconTruckDelivery"
         class="p-5"
       >
         Não há agrupamentos para a transportadora selecionada no momento.
@@ -54,12 +50,14 @@
               <th scope="col">Transportadora</th>
               <th scope="col">Quantidade de Notas</th>
               <th scope="col">Data</th>
-              <th scope="col" style="width: 64px;">Opções</th>
+              <th scope="col" style="width: 64px">Opções</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="grouping in groupings" :key="grouping.id">
-              <th scope="row" class="fw-semibold">{{ grouping.idAgrupamento || '—' }}</th>
+              <th scope="row" class="fw-semibold">
+                {{ grouping.idAgrupamento || '—' }}
+              </th>
               <td>{{ selectedCarrier || '—' }}</td>
               <td>{{ grouping.expedicoes.length || 0 }}</td>
               <td>{{ formatDate(grouping.data) }}</td>
@@ -71,7 +69,7 @@
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <i class="fa fa-ellipsis-h"></i>
+                    <IconDotsVertical :size="18" />
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
@@ -89,7 +87,8 @@
                         type="button"
                         @click="$emit('print-labels', grouping.idAgrupamento)"
                       >
-                        Imprimir etiquetas {{ selectedCarrier || '' }}
+                        Imprimir etiquetas
+                        {{ selectedCarrier || '' }}
                       </button>
                     </li>
                   </ul>
@@ -104,10 +103,13 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import { formatDate } from '@/utils/dateUtils';
 import { getCarriersList } from '@/constants/carriers';
+
+// Icons
+import { IconDotsVertical, IconTruckDelivery } from '@tabler/icons-vue';
 
 const props = defineProps({
   groupings: {

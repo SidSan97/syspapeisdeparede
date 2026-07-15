@@ -13,22 +13,18 @@
               v-model="searchQuery"
             />
             <span class="input-group-text">
-              <i class="fa fa-search"></i>
+              <IconSearch :size="18" />
             </span>
           </div>
         </div>
-        <div style="min-width: 200px;">
+        <div style="min-width: 200px">
           <select
             class="form-select"
             :value="selectedCarrier"
             @change="$emit('carrier-changed', $event.target.value)"
           >
             <option :value="null">Todas as transportadoras</option>
-            <option
-              v-for="carrier in carriersList"
-              :key="carrier"
-              :value="carrier"
-            >
+            <option v-for="carrier in carriersList" :key="carrier" :value="carrier">
               {{ carrier }}
             </option>
           </select>
@@ -44,7 +40,7 @@
       <EmptyState
         v-else-if="filteredItems.length === 0"
         heading="Nenhuma nota fiscal encontrada"
-        icon="shipping-fast"
+        :icon="IconTruckDelivery"
         class="p-5"
       >
         Não há notas fiscais para expedição no momento.
@@ -52,14 +48,15 @@
 
       <div v-else>
         <!-- Barra de seleção -->
-        <div v-if="selectedCount > 0" class="d-flex align-items-center justify-content-between mb-3 p-3 rounded count-nf-section">
+        <div
+          v-if="selectedCount > 0"
+          class="d-flex align-items-center justify-content-between mb-3 p-3 rounded count-nf-section"
+        >
           <div class="d-flex align-items-center">
             <span class="fw-semibold me-2">{{ selectedCount }}</span>
             <span class="text-muted">selecionados</span>
           </div>
-          <button class="btn btn-primary" @click="$emit('expedir')">
-            Agrupar e expedir
-          </button>
+          <button class="btn btn-primary" @click="$emit('expedir')">Agrupar e expedir</button>
         </div>
 
         <div class="table-responsive">
@@ -67,7 +64,7 @@
           <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
-                <th scope="col" style="width: 50px;">
+                <th scope="col" style="width: 50px">
                   <input
                     ref="selectAllCheckbox"
                     type="checkbox"
@@ -77,12 +74,12 @@
                   />
                 </th>
                 <th class="text-nowrap" scope="col">Nome</th>
-                <th scope="col" style="width: 120px;">Data de Emissão</th>
-                <th scope="col" style="width: 100px;">Nº Pedido</th>
-                <th scope="col" style="width: 100px;">Nº Nota Fiscal</th>
+                <th scope="col" style="width: 120px">Data de Emissão</th>
+                <th scope="col" style="width: 100px">Nº Pedido</th>
+                <th scope="col" style="width: 100px">Nº Nota Fiscal</th>
                 <th class="text-nowrap" scope="col">Transportador</th>
                 <th class="text-nowrap" scope="col">Valor</th>
-                <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+                <th class="text-nowrap" scope="col" style="width: 64px">Opções</th>
               </tr>
             </thead>
             <tbody>
@@ -95,14 +92,26 @@
                     @change="$emit('toggle-invoice', invoice.nota_fiscal?.id)"
                   />
                 </th>
-                <td style="min-width: 240px;">
-                  <div class="fw-semibold">{{ invoice.nota_fiscal?.nome || '—' }}</div>
+                <td style="min-width: 240px">
+                  <div class="fw-semibold">
+                    {{ invoice.nota_fiscal?.nome || '—' }}
+                  </div>
                 </td>
-                <td>{{ invoice.nota_fiscal?.data_emissao || '—' }}</td>
-                <td class="fw-semibold">#{{ formatInvoiceNumber(invoice.nota_fiscal?.numero_ecommerce) }}</td>
-                <td class="fw-semibold">{{ invoice.nota_fiscal?.id || '—' }}</td>
-                <td>{{ invoice.nota_fiscal?.transportador?.nome || '—' }}</td>
-                <td>{{ formatCurrency(invoice.nota_fiscal?.valor || 0) }}</td>
+                <td>
+                  {{ invoice.nota_fiscal?.data_emissao || '—' }}
+                </td>
+                <td class="fw-semibold">
+                  #{{ formatInvoiceNumber(invoice.nota_fiscal?.numero_ecommerce) }}
+                </td>
+                <td class="fw-semibold">
+                  {{ invoice.nota_fiscal?.id || '—' }}
+                </td>
+                <td>
+                  {{ invoice.nota_fiscal?.transportador?.nome || '—' }}
+                </td>
+                <td>
+                  {{ formatCurrency(invoice.nota_fiscal?.valor || 0) }}
+                </td>
                 <td>
                   <div class="dropdown">
                     <button
@@ -111,7 +120,7 @@
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
-                      <i class="fa fa-ellipsis-h"></i>
+                      <IconDotsVertical :size="18" />
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
@@ -137,6 +146,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
+import { IconDotsVertical, IconSearch, IconTruckDelivery } from '@tabler/icons-vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import { getCarriersList } from '@/constants/carriers';
 
@@ -187,8 +197,7 @@ const filteredItems = computed(() => {
 
     // Filtro por transportadora
     const matchesCarrier =
-      !props.selectedCarrier ||
-      notaFiscal?.transportador?.nome === props.selectedCarrier;
+      !props.selectedCarrier || notaFiscal?.transportador?.nome === props.selectedCarrier;
 
     return matchesQuery && matchesCarrier;
   });
@@ -199,7 +208,7 @@ const selectedCount = computed(() => props.selectedInvoices.size);
 const isAllSelected = computed(() => {
   if (filteredItems.value.length === 0) return false;
   return filteredItems.value.every((invoice) =>
-    props.selectedInvoices.has(invoice.nota_fiscal?.id)
+    props.selectedInvoices.has(invoice.nota_fiscal?.id),
   );
 });
 

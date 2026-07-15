@@ -1,101 +1,91 @@
-import { ref } from 'vue';
-import { useLayoutService } from '@/services/layoutService';
-import { getCardDisplayName } from '@/utils/cardUtils';
+import { computed, ref, toValue } from 'vue';
+
+import { useKanbanCards } from './useKanbanCards';
+import { useToast } from '@/composables/useToast';
+import { layoutService } from '@/services/layoutService';
 import {
-    isImageFile,
-    getImageUrl,
-    getCoverImage,
-    getCommentsCount,
-    getActivitiesCount,
-    useCardModal,
-} from '@/modules/card-modals/composables/useCardUtils';
+  formatActivityCompact,
+  isCardCompleted,
+  mergeActivityPayload,
+} from '@/utils/layoutCardActivityUtils';
 
-/**
- * Composable para gerenciar cards de layout
- */
 export function useLayoutCards(columnsRef) {
-    const layoutService = useLayoutService();
+  return useKanbanCards(
+    {
+      fetchCardsFn: layoutService.getLayouts,
 
-    const cards = ref([]);
-    const loading = ref(false);
-    const draggedCard = ref(null);
-    const { selectedCard, openCardModal, closeCardModal } = useCardModal();
-
-    function getCardsByColumn(columnId) {
-        return cards.value.filter(card => card.column === columnId);
-    }
-
-    async function fetchLayouts() {
-        try {
-            loading.value = true;
-            const payload = await layoutService.getLayouts();
-
-            const firstColumnId = columnsRef.value.length > 0 ? columnsRef.value[0].id : null;
-            cards.value = payload.map(card => ({
-                ...card,
-                column: card.layout_column_names_id || firstColumnId,
-            }));
-        } catch (error) {
-            console.error('Erro ao carregar layouts:', error);
-            cards.value = [];
-        } finally {
-            loading.value = false;
-        }
-    }
-
-    function handleDragStart(event, card) {
-        draggedCard.value = card;
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/html', event.target.outerHTML);
-    }
-
-    async function handleDrop(event, columnId) {
-        event.preventDefault();
-        if (draggedCard.value) {
-            const cardIndex = cards.value.findIndex(c => c.id === draggedCard.value.id);
-            if (cardIndex !== -1) {
-                const oldColumnId = cards.value[cardIndex].column;
-                cards.value[cardIndex].column = columnId;
-
-                try {
-                    await layoutService.updateCardColumn(draggedCard.value.id, columnId);
-                } catch (error) {
-                    console.error('Erro ao atualizar coluna do card:', error);
-                    cards.value[cardIndex].column = oldColumnId;
-                    throw error;
-                }
-            }
-            draggedCard.value = null;
-        }
-    }
-
-    async function moveCardsToColumn(cardsToMove, targetColumnId) {
-        for (const card of cardsToMove) {
-            try {
-                await layoutService.updateCardColumn(card.id, targetColumnId);
-                card.column = targetColumnId;
-            } catch (error) {
-                console.error(`Erro ao mover card ${card.id}:`, error);
-            }
-        }
-    }
-
-    return {
-        cards,
-        loading,
-        selectedCard,
-        draggedCard,
-        getCardsByColumn,
-        getCoverImage,
-        getCommentsCount,
-        getActivitiesCount,
-        getCardDisplayName,
-        fetchLayouts,
-        handleDragStart,
-        handleDrop,
-        moveCardsToColumn,
-        openCardModal,
-        closeCardModal,
-    };
+      updateCardColumnFn: layoutService.updateCardColumn,
+    },
+    columnsRef,
+  );
 }
 
+/**
+ * Estado e ações para conclusão do card no quadro de Layout (ex.: modal).
+ *
+ * @param {import('vue').MaybeRefOrGetter<object|null|undefined>} cardRef
+ * @param {(event: 'activity-updated', payload: object) => void} emit
+ */
+export function useLayoutCardCompletion(cardRef, emit) {
+  const toast = useToast();
+  const completing = ref(false);
+
+  const isCompleted = computed(() => isCardCompleted(toValue(cardRef)));
+
+  const completedAtLabel = computed(() => {
+    const card = toValue(cardRef);
+    if (!card?.completed_at) return '';
+    const date = new Date(card.completed_at);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  });
+
+  const completedDurationLabel = computed(() => {
+    const card = toValue(cardRef);
+    const seconds = Number(card?.activity_total_seconds ?? card?.activity_elapsed_seconds);
+    if (!Number.isFinite(seconds) || seconds <= 0) return '';
+    return formatActivityCompact(seconds);
+  });
+
+  async function handleComplete() {
+    const card = toValue(cardRef);
+    if (!card?.id || completing.value || isCompleted.value) {
+      return;
+    }
+    completing.value = true;
+    try {
+      const data = await layoutService.completeOrderBudget(card.id);
+      const merged = mergeActivityPayload(card, data);
+      emit('activity-updated', {
+        activity_running_since: merged.activity_running_since,
+        activity_elapsed_seconds: merged.activity_elapsed_seconds,
+        activity_total_seconds: merged.activity_total_seconds,
+        activity_is_running: merged.activity_is_running,
+        activity_sessions: merged.activity_sessions,
+        completed_at: merged.completed_at,
+        is_completed: merged.is_completed,
+      });
+      toast.success('Card concluído.');
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || error?.message || 'Não foi possível concluir o card.';
+      toast.error(message);
+    } finally {
+      completing.value = false;
+    }
+  }
+
+  return {
+    completing,
+    isCompleted,
+    completedAtLabel,
+    completedDurationLabel,
+    handleComplete,
+  };
+}

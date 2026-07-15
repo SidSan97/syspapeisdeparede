@@ -19,100 +19,64 @@
 
         /* Cabeçalho */
         .pdf-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #000;
         }
 
+        .pdf-header-top {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
         .pdf-logo {
-            flex: 0 0 150px;
+            display: table-cell;
+            width: 150px;
+            vertical-align: top;
         }
 
         .logo-placeholder {
             width: 120px;
             height: 80px;
             border: 2px solid #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            text-align: center;
+            line-height: 80px;
             color: #000;
             font-size: 12px;
             background: #fff;
         }
 
-        .pdf-header-right {
-            flex: 1;
+        .pdf-header-client {
+            display: table-cell;
+            vertical-align: top;
             text-align: right;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #000;
+        }
+
+        .pdf-header-client p {
+            margin: 0 0 2px 0;
+        }
+
+        .pdf-header-client-name {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
         .pdf-title {
             font-size: 24px;
             font-weight: bold;
-            margin: 0 0 5px 0;
-            color: #000;
-        }
-
-        .pdf-subtitle {
-            font-size: 14px;
-            color: #000;
             margin: 0;
-        }
-
-        /* Seção de Informações */
-        .pdf-info-section {
-            width: 100%;
-            margin-bottom: 30px;
-        }
-
-        .pdf-info-section-wrapper {
-            width: 100%;
-            display: table;
-            table-layout: fixed;
-        }
-
-        .pdf-info-table-wrapper {
-            display: table-cell;
-            width: 48%;
-            vertical-align: top;
-            padding-right: 15px;
-        }
-
-        .pdf-info-table-wrapper:last-child {
-            padding-right: 0;
-            padding-left: 15px;
-        }
-
-        .pdf-info-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid #000;
-            font-size: 12px;
-        }
-
-        .pdf-info-table td {
-            padding: 9px 0 0 5px;
-            border: 1px solid #000;
-            vertical-align: top;
-        }
-
-        .pdf-info-label {
-            background: #f0f0f0;
-            font-weight: bold;
             color: #000;
         }
 
-        .pdf-info-value {
-            background: #ffffff;
-            color: #000;
-        }
-
-        .pdf-info-value div {
-            margin: 0;
-            line-height: 1.4;
+        .pdf-title-centered {
+            text-align: center;
+            margin-top: 24px;
         }
 
         /* Tabela de Itens */
@@ -256,7 +220,7 @@
 </head>
 @php
     $dropshippingData = $budget->dropshippingData;
-    
+
     // Função para formatar telefone
     function formatPhone($phone) {
         if (!$phone) return '—';
@@ -269,7 +233,7 @@
         }
         return $phone;
     }
-    
+
     // Função para formatar endereço linha 1
     function formatAddressLine1($dropshipping) {
         if (!$dropshipping) return '—';
@@ -288,7 +252,7 @@
         }
         return count($parts) > 0 ? implode('. ', $parts) : '—';
     }
-    
+
     // Função para formatar endereço linha 2
     function formatAddressLine2($dropshipping) {
         if (!$dropshipping) return '';
@@ -303,35 +267,14 @@
         }
         return count($parts) > 0 ? implode(' - ', $parts) : '';
     }
-    
-    // Função para formatar data
-    function formatDate($date) {
-        if (!$date) return '—';
-        try {
-            return \Carbon\Carbon::parse($date)->format('d/m/Y');
-        } catch (\Exception $e) {
-            return '—';
-        }
-    }
-    
-    // Função para formatar data prevista
-    function formatEstimatedDate($deliveryTime) {
-        if (!$deliveryTime) return '—';
-        try {
-            $estimated = \Carbon\Carbon::now()->addDays((int)$deliveryTime);
-            return $estimated->format('d/m/Y');
-        } catch (\Exception $e) {
-            return '—';
-        }
-    }
-    
+
     // Função para formatar tempo de entrega
     function formatDeliveryTime($deliveryTime) {
         if (!$deliveryTime) return 'Não informado';
         $days = (int)$deliveryTime;
         return $days . ' ' . ($days === 1 ? 'dia' : 'dias');
     }
-    
+
     // Função para formatar moeda
     function formatCurrency($value) {
         if ($value === null) {
@@ -343,7 +286,7 @@
         }
         return 'R$ ' . number_format($numValue, 2, ',', '.');
     }
-    
+
     // Função para obter nome da transportadora
     function getCarrierName($carrierName) {
         if (!$carrierName) return null;
@@ -352,35 +295,67 @@
         }
         return trim($carrierName);
     }
-    
-    // Função para formatar detalhes da parede
-    function formatWallDetails($wall) {
-        $parts = [];
-        if ($wall->name) {
-            $parts[] = $wall->name;
-        }
+
+    // Função para formatar detalhes da parede (inclui continuações e resumo de faixas)
+    function formatWallPdfLine($wall, int $wallIndex = 0) {
+        $wallData = \App\Support\Budget\BudgetCalculator::normalizeWallForCalculation($wall);
+        $sequence = \App\Support\Budget\BudgetCalculator::calculateWallWithContinuations($wallData);
+        $stripSummary = \App\Support\Budget\BudgetCalculator::formatStripGroups($sequence['groups'] ?? []);
+
+        $label = $wall->name ?: ('Parede ' . ($wallIndex + 1));
+        $parts = [$label];
+
         if ($wall->width && $wall->height) {
-            $parts[] = number_format($wall->width, 2, ',', '.') . 'm x ' . number_format($wall->height, 2, ',', '.') . 'm';
+            $parts[] = number_format((float)$wall->width, 2, ',', '.') . 'm x ' . number_format((float)$wall->height, 2, ',', '.') . 'm';
         }
-        return count($parts) > 0 ? implode(' | ', $parts) : 'Parede sem detalhes';
+
+        $line = implode(' | ', $parts);
+        if ($stripSummary) {
+            $line .= ' — ' . $stripSummary;
+        }
+
+        $continuations = [];
+        if (!empty($wall->continue_same_art) && is_array($wall->continuations)) {
+            foreach ($wall->continuations as $contIndex => $continuation) {
+                if (!is_array($continuation)) {
+                    continue;
+                }
+
+                $contParts = [];
+                $contName = trim((string)($continuation['name'] ?? ''));
+                if ($contName !== '') {
+                    $contParts[] = $contName;
+                } else {
+                    $contParts[] = 'Continuação ' . ($contIndex + 1);
+                }
+
+                $contWidth = (float)($continuation['width'] ?? 0);
+                $contHeight = (float)($continuation['height'] ?? 0);
+                if ($contWidth > 0 && $contHeight > 0) {
+                    $contParts[] = number_format($contWidth, 2, ',', '.') . 'm x ' . number_format($contHeight, 2, ',', '.') . 'm';
+                }
+
+                $continuations[] = '+ ' . implode(' | ', $contParts);
+            }
+        }
+
+        if (count($continuations) > 0) {
+            $line .= '<br><span style="font-size:11px;">' . implode('<br>', $continuations) . '</span>';
+        }
+
+        return $line;
     }
-    
+
     // Calcular totais
     $totalRooms = $budget->rooms ? $budget->rooms->count() : 0;
     $totalItems = 0;
     $totalMeters = 0;
-    
+
     if ($budget->rooms) {
         foreach ($budget->rooms as $room) {
             if ($room->walls) {
                 $totalItems += $room->walls->count();
-                foreach ($room->walls as $wall) {
-                    if ($wall->total_area) {
-                        $totalMeters += (float)$wall->total_area;
-                    } elseif ($wall->width && $wall->height) {
-                        $totalMeters += (float)$wall->width * (float)$wall->height;
-                    }
-                }
+                $totalMeters += \App\Support\Budget\BudgetCalculator::calculateRoomMeters($room);
             }
         }
     }
@@ -388,70 +363,36 @@
 <body>
     <!-- Cabeçalho -->
     <div class="pdf-header">
-        <div class="pdf-logo">
-            <div class="logo-placeholder">
-                Logo
-            </div>
-        </div>
-        <div class="pdf-header-right">
-            <h1 class="pdf-title">Orçamento de venda Nº {{ $budget->id ?? '—' }}</h1>
-            <p class="pdf-subtitle">{{ $budget->name ?? '—' }}</p>
-        </div>
-    </div>
+        <div class="pdf-header-top">
+            <!--div class="pdf-logo">
+                <div class="logo-placeholder">
+                    Logo
+                </div>
+            </div-->
 
-    <!-- Informações do Orçamento e Cliente -->
-    <div class="pdf-info-section">
-        <div class="pdf-info-section-wrapper">
-            <div class="pdf-info-table-wrapper">
-                <table class="pdf-info-table">
-                    <tbody>
-                        <tr>
-                            <td class="pdf-info-label">Cliente</td>
-                            <td class="pdf-info-value">{{ $dropshippingData ? $dropshippingData->name : '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Endereço</td>
-                            <td class="pdf-info-value">
-                                <div>{{ formatAddressLine1($dropshippingData) }}</div>
-                                <div>{{ formatAddressLine2($dropshippingData) }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Contato</td>
-                            <td class="pdf-info-value">
-                                @if($dropshippingData && $dropshippingData->phone)
-                                    <div>Fone: {{ formatPhone($dropshippingData->phone) }}</div>
-                                @endif
-                                @if($dropshippingData && $dropshippingData->email)
-                                    <div>{{ $dropshippingData->email }}</div>
-                                @endif
-                                @if(!$dropshippingData || (!$dropshippingData->phone && !$dropshippingData->email))
-                                    <div>—</div>
-                                @endif
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="pdf-info-table-wrapper">
-                <table class="pdf-info-table">
-                    <tbody>
-                        <tr>
-                            <td class="pdf-info-label">Número do pedido</td>
-                            <td class="pdf-info-value">{{ $budget->id ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Data</td>
-                            <td class="pdf-info-value">{{ formatDate($budget->created_at) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="pdf-info-label">Data prevista</td>
-                            <td class="pdf-info-value">{{ formatEstimatedDate($budget->delivery_time) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            @if($dropshippingData)
+                <div class="pdf-header-client">
+                    <p class="pdf-header-client-name">{{ $dropshippingData->name ?? '—' }}</p>
+                    @if($dropshippingData->cpf_cnpj)
+                        <p>{{ $dropshippingData->cpf_cnpj }}</p>
+                    @endif
+                    @if(formatAddressLine1($dropshippingData) !== '—')
+                        <p>{{ formatAddressLine1($dropshippingData) }}</p>
+                    @endif
+                    @if(formatAddressLine2($dropshippingData))
+                        <p>{{ formatAddressLine2($dropshippingData) }}</p>
+                    @endif
+                    @if($dropshippingData->phone)
+                        <p>Fone: {{ formatPhone($dropshippingData->phone) }}</p>
+                    @endif
+                    @if($dropshippingData->email)
+                        <p>{{ $dropshippingData->email }}</p>
+                    @endif
+                </div>
+            @endif
         </div>
+
+        <h1 class="pdf-title pdf-title-centered">Proposta Comercial Nº {{ $budget->id ?? '—' }}</h1>
     </div>
 
     <!-- Tabela de Itens -->
@@ -461,19 +402,23 @@
                 <tr>
                     <th>Item</th>
                     <th>Modelo</th>
-                    <th>Quantidade de Paredes</th>
                     <th>Metros</th>
+                    <th>Preço</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($budget->rooms ?? [] as $room)
+                    @php
+                        $roomMeters = \App\Support\Budget\BudgetCalculator::calculateRoomMeters($room);
+                        $roomPrice = \App\Support\Budget\BudgetCalculator::calculateRoomPriceVista($room);
+                    @endphp
                     <tr>
                         <td>
                             <strong>{{ $room->name ?? 'Ambiente ' . $loop->iteration }}</strong>
                             <div class="wall-details">
                                 @foreach($room->walls ?? [] as $wallIndex => $wall)
                                     <div style="{{ $wallIndex > 0 ? 'margin-top: 5px;' : '' }}">
-                                        {{ formatWallDetails($wall) }}
+                                        {!! formatWallPdfLine($wall, $wallIndex) !!}
                                     </div>
                                 @endforeach
                             </div>
@@ -485,22 +430,8 @@
                                 </div>
                             @endforeach
                         </td>
-                        <td>{{ $room->walls ? $room->walls->count() : 0 }}</td>
-                        <td>
-                            @php
-                                $roomMeters = 0;
-                                if ($room->walls) {
-                                    foreach ($room->walls as $wall) {
-                                        if ($wall->total_area) {
-                                            $roomMeters += (float)$wall->total_area;
-                                        } elseif ($wall->width && $wall->height) {
-                                            $roomMeters += (float)$wall->width * (float)$wall->height;
-                                        }
-                                    }
-                                }
-                            @endphp
-                            {{ number_format($roomMeters, 2, ',', '.') }}
-                        </td>
+                        <td>{{ number_format($roomMeters, 2, ',', '.') }}</td>
+                        <td>{{ formatCurrency($roomPrice) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -525,11 +456,6 @@
             @if($financial['installment_total_formatted'] !== null)
                 <p class="pdf-total-installment"><strong>Total a Prazo:</strong> {{ $financial['installment_total_formatted'] }}</p>
             @endif
-            @if(isset($financial['mockup_percentage']) && $financial['mockup_percentage'] > 0)
-                <p class="pdf-mockup-info">
-                    <strong>Mockup:</strong> {{ number_format($financial['mockup_percentage'], 2, ',', '.') }}%
-                </p>
-            @endif
         </div>
     </div>
 
@@ -542,20 +468,14 @@
                     <p class="mb-0">{{ getCarrierName($budget->selected_carrier_name) ?? '—' }}</p>
                 </div>
             </div>
-            <div class="pdf-shipping-group-wrapper">
-                <div class="pdf-info-group">
-                    <strong>Modalidade de frete</strong>
-                    <p class="mb-0">Contratação do Frete por conta do Destinatário (FOB)</p>
-                </div>
-            </div>
         </div>
     </div>
 
     <!-- Observações -->
-    @if($budget->comment_referring_model)
+    @if(!empty($observations))
         <div class="pdf-observations-section">
             <strong>Observações</strong>
-            <p class="mb-0">{{ $budget->comment_referring_model }}</p>
+            <p class="mb-0">{!! nl2br(e($observations)) !!}</p>
         </div>
     @endif
 </body>

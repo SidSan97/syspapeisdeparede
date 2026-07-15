@@ -34,7 +34,9 @@ class TinyErpService
                 'formato' => 'json',
             ];
 
-            $gtin = config('app.tiny_erp_settings.gtin');
+            $gtin = config('app.tiny_erp_settings.tiny_erp_gtin')
+                ?? config('app.tiny_erp_settings.gtin');
+
             if (!empty($gtin)) {
                 $params['gtin'] = $gtin;
             }
@@ -237,7 +239,7 @@ class TinyErpService
         }
     }
 
-    public function searchInvoices(): JsonResponse|array
+    public function searchInvoices($orderId = null): JsonResponse|array
     {
         try {
             $params = [
@@ -245,6 +247,10 @@ class TinyErpService
                 'formato' => 'json',
                 'situacao' => 6, // 6 = Emitida
             ];
+
+            if ($orderId) {
+                $params['numeroEcommerce'] = (int)$orderId;
+            }
 
             $queryString = http_build_query($params);
             $url = $this->apiUrl . '/notas.fiscais.pesquisa.php?' . $queryString;
@@ -599,10 +605,14 @@ class TinyErpService
                         "item" => [
                             "descricao" => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
                             "valor_unitario" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
-                            "gtin_ean" => config('app.tiny_erp_settings.gtin') ?? '',
+                            "gtin_ean" => config('app.tiny_erp_settings.tiny_erp_gtin')
+                                ?? config('app.tiny_erp_settings.gtin')
+                                ?? '',
                             "quantidade" => 1,
                             "unidade" => "UN",
-                            "ncm" => config('app.tiny_erp_settings.ncm') ?? "4814.20.00",
+                            "ncm" => config('app.tiny_erp_settings.tiny_erp_ncm')
+                                ?? config('app.tiny_erp_settings.ncm')
+                                ?? "4814.20.00",
                             "tipo" => "P",
                             "origem" => "0"
                         ]

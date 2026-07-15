@@ -15,7 +15,7 @@ class RoleController extends BaseController
     public function __construct(
         protected Role $repository
     ) {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
     }
 
     public function list()

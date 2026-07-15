@@ -20,7 +20,7 @@ class CollectionModelResource extends JsonResource
                 return [
                     'id' => $file->id,
                     'name' => $file->file_name,
-                    'url' => $this->makePublicUrl($file->file_path),
+                    'url' => asset(Storage::url($file->file_path)),
                 ];
             });
         }, collect());
@@ -37,8 +37,12 @@ class CollectionModelResource extends JsonResource
                 'comment' => (bool) $this->request_comment,
                 'file' => (bool) $this->request_file,
                 'collection' => (bool) $this->request_collection,
+                'layout' => (bool) $this->request_layout,
+                'artOnPayment' => (bool) $this->request_art_on_payment,
             ],
             'requestCollection' => (bool) $this->request_collection,
+            'requestLayout' => (bool) $this->request_layout,
+            'requestArtOnPayment' => (bool) $this->request_art_on_payment,
             'link' => null,
             'comment' => null,
             'files' => $files,
@@ -48,28 +52,4 @@ class CollectionModelResource extends JsonResource
             'updatedAt' => $this->updated_at,
         ];
     }
-
-    protected function makePublicUrl(?string $path): ?string
-    {
-        if (!$path) {
-            return null;
-        }
-
-        $rawUrl = Storage::url($path);
-
-        $appUrl = config('app.url') ?: url('/');
-        $appUrl = rtrim($appUrl, '/');
-
-        $parsedPath = parse_url($rawUrl, PHP_URL_PATH) ?: $rawUrl;
-        $parsedQuery = parse_url($rawUrl, PHP_URL_QUERY);
-
-        $finalUrl = $appUrl . $parsedPath;
-
-        if ($parsedQuery) {
-            $finalUrl .= '?' . $parsedQuery;
-        }
-
-        return $finalUrl;
-    }
 }
-

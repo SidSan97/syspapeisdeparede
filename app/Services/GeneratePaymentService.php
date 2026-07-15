@@ -71,6 +71,15 @@ class GeneratePaymentService
     */
     protected function makePixPayloadData(array $budget): array
     {
+        $itemName = $budget['item_name'] ?? ("Papel de parede / " . ($budget['name'] ?? 'Pedido'));
+        $itemDescription = $budget['item_description'] ?? $this->buildItemDescription($budget);
+        $itemAmount = isset($budget['item_amount'])
+            ? (int) $budget['item_amount']
+            : intval(($budget['total_amount'] ?? 0) * 100);
+        $shippingCost = isset($budget['shipping_cost'])
+            ? (int) $budget['shipping_cost']
+            : intval(($budget['carrier_price'] ?? 0) * 100);
+
         return [
             "is_building" => false,
             "payment_settings" => [
@@ -88,14 +97,15 @@ class GeneratePaymentService
             "cart_settings" => [
                 "items" => [
                     [
-                        "name" => "Papel de parede / " . $budget['name'],
-                        "amount" => intval($budget['total_amount'] * 100), //valor do item em centavos
+                        "name" => $itemName,
+                        "amount" => $itemAmount, // valor em centavos
                         "default_quantity" => 1,
-                        "description" => $budget['comments'] ?? ''
+                        "description" => $itemDescription
                     ]
                 ],
-                "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
+                "shipping_cost" => $shippingCost // valor do frete em centavos
             ],
+            "metadata" => $budget['metadata'] ?? $this->buildMetadata($budget),
             "type" => "order",
             "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
@@ -108,6 +118,18 @@ class GeneratePaymentService
     */
     protected function makeCreditCardPayloadData(array $budget): array
     {
+        $itemName = $budget['item_name'] ?? ("Papel de parede / " . ($budget['name'] ?? 'Pedido'));
+        $itemDescription = $budget['item_description'] ?? $this->buildItemDescription($budget);
+        $itemAmount = isset($budget['item_amount'])
+            ? (int) $budget['item_amount']
+            : intval(($budget['total_amount_installments'] ?? 0) * 100);
+        $shippingCost = isset($budget['shipping_cost'])
+            ? (int) $budget['shipping_cost']
+            : intval(($budget['carrier_price'] ?? 0) * 100);
+        $installmentTotal = isset($budget['installment_total'])
+            ? (int) $budget['installment_total']
+            : intval(($budget['total_amount_installments'] ?? 0) * 100);
+
         return [
             "is_building" => false,
             "payment_settings" => [
@@ -118,7 +140,7 @@ class GeneratePaymentService
                     "installments" => [
                         [
                             "number" => $budget['installments'] ?? 1,
-                            "total" => intval(($budget['total_amount_installments'] ?? 0) * 100) //valor do item em centavos
+                            "total" => $installmentTotal // valor em centavos
                         ]
                     ],
                     "operation_type" => "auth_and_capture",
@@ -128,17 +150,38 @@ class GeneratePaymentService
             "cart_settings" => [
                 "items" => [
                     [
-                        "name" => "Papel de parede / " . $budget['name'],
-                        "amount" => intval(($budget['total_amount_installments'] ?? 0) * 100), //valor do item em centavos
-                        "description" => $budget['comments'] ?? '',
+                        "name" => $itemName,
+                        "amount" => $itemAmount, // valor em centavos
+                        "description" => $itemDescription,
                         "default_quantity" => 1
                     ]
                 ],
-                "shipping_cost" => intval(($budget['carrier_price'] ?? 0) * 100) //valor do frete em centavos
+                "shipping_cost" => $shippingCost // valor do frete em centavos
             ],
+            "metadata" => $budget['metadata'] ?? $this->buildMetadata($budget),
             "name" => "Papel de parede",
             "type" => "order",
             "expires_at" => now()->addHours(24)->toIso8601String() //24h a partir de agora
         ];
+    }
+
+    protected function buildItemDescription(array $budget): string
+    {
+        $comments = trim((string) ($budget['comments'] ?? ''));
+        $ref = isset($budget['id']) ? " [order_ref:{$budget['id']}]" : '';
+
+        return $comments !== '' ? $comments . $ref : ltrim($ref);
+    }
+
+    /**
+     * Metadata para vincular o pedido Pagar.me ao nosso Order (usado no webhook).
+     */
+    protected function buildMetadata(array $budget): array
+    {
+        if (! isset($budget['id'])) {
+            return [];
+        }
+
+        return ['order_id' => (string) $budget['id']];
     }
 }

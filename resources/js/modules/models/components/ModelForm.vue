@@ -106,6 +106,32 @@
               </label>
             </div>
           </div>
+          <div class="col-md-3">
+            <div class="form-check form-switch">
+              <input
+                id="requiresLayout"
+                v-model="form.requests.layout"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label class="form-check-label" for="requiresLayout">
+                Solicitar Layout ao Aprovar Pedido?
+              </label>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check form-switch">
+              <input
+                id="requiresArtOnPayment"
+                v-model="form.requests.artOnPayment"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label class="form-check-label" for="requiresArtOnPayment">
+                Solicitar Arte ao pagar pedido
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -156,9 +182,11 @@ const moneyConfig = {
   thousands: '.',
   precision: 2,
   prefix: '',
-  allowBlank: true,
+  allowBlank: false,
   min: 0,
+  max: null,
   disableNegative: true,
+  minimumNumberOfCharacters: 0,
 };
 
 function handleSubmit() {

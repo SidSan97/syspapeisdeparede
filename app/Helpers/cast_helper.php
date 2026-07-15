@@ -110,31 +110,39 @@ if (! function_exists('phone_view')) {
         return preg_replace("/(\d{2})(\d{1})(\d{4})/", '($1) $2 $3-$4', $value);
     }
 }
+
 if (! function_exists('zip_code_db')) {
 
     /**
-     * Formata campo de telefone para salvar no banco de dados.
+     * Formata o CEP para salvar no banco de dados (somente números).
      *
      * @param  string  $value
      * @return string
      */
     function zip_code_db($value)
     {
-        return str_replace(['(', ')', '-', ' ', '.'], [''], $value);
+        // Remove tudo que não for dígito
+        return preg_replace('/\D/', '', $value);
     }
 }
 
 if (! function_exists('zip_code_view')) {
 
     /**
-     * Formata campo de telefone para exibir nas views.
+     * Formata o CEP para exibir nas views (XXXXX-XXX).
      *
      * @param  string  $value
      * @return string
      */
     function zip_code_view($value)
     {
-        return preg_replace("/(\d{5})(\d{3})/", '$1-$2', $value);
+        $digits = preg_replace('/\D/', '', $value);
+
+        if (strlen($digits) === 8) {
+            return preg_replace("/(\d{5})(\d{3})/", '$1-$2', $digits);
+        }
+
+        return $value;
     }
 }
 

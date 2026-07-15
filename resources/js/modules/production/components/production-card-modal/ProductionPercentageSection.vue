@@ -3,13 +3,14 @@
     <div v-if="!isEditing" class="production-percentage-section-display">
       <strong>
         <span>Total produzido: </span>
-      </strong> {{ formatProductionPercentage(card.production_percentage) }}%
+      </strong>
+      {{ formatProductionPercentage(card.production_percentage) }}%
       <button
         class="production-percentage-section-edit-btn"
         @click="startEditing"
         title="Editar porcentagem"
       >
-        <i class="fa fa-edit fa-fw"></i>
+        <IconEdit />
       </button>
     </div>
     <div v-else class="production-percentage-section-edit">
@@ -29,17 +30,10 @@
         <span class="production-percentage-section-input-suffix">%</span>
       </div>
       <div class="production-percentage-section-actions">
-        <button
-          class="production-percentage-section-cancel"
-          @click="cancelEditing"
-        >
+        <button class="production-percentage-section-cancel" @click="cancelEditing">
           Cancelar
         </button>
-        <button
-          class="production-percentage-section-save"
-          @click="save"
-          :disabled="isSaving"
-        >
+        <button class="production-percentage-section-save" @click="save" :disabled="isSaving">
           {{ isSaving ? 'Salvando...' : 'Salvar' }}
         </button>
       </div>
@@ -49,7 +43,9 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import axios from 'axios';
+import { useToast } from '@/composables/useToast';
+import { IconEdit } from '@tabler/icons-vue';
+import { http } from '@/lib/http';
 
 const props = defineProps({
   card: {
@@ -60,19 +56,25 @@ const props = defineProps({
 
 const emit = defineEmits(['percentage-updated']);
 
+const toast = useToast();
+
 const isEditing = ref(false);
 const productionPercentageText = ref(0);
 const originalProductionPercentage = ref(0);
 const isSaving = ref(false);
 
 // Inicializar quando o card mudar
-watch(() => props.card?.production_percentage, (newPercentage) => {
-  if (newPercentage !== undefined) {
-    productionPercentageText.value = newPercentage || 0;
-    originalProductionPercentage.value = newPercentage || 0;
-    isEditing.value = false;
-  }
-}, { immediate: true });
+watch(
+  () => props.card?.production_percentage,
+  (newPercentage) => {
+    if (newPercentage !== undefined) {
+      productionPercentageText.value = newPercentage || 0;
+      originalProductionPercentage.value = newPercentage || 0;
+      isEditing.value = false;
+    }
+  },
+  { immediate: true },
+);
 
 function formatProductionPercentage(value) {
   if (value === null || value === undefined) {
@@ -109,7 +111,8 @@ async function save() {
     return;
   }
 
-  const isFullyProduced = props.card.production_percentage === 100 || Number(props.card.production_percentage) === 100;
+  const isFullyProduced =
+    props.card.production_percentage === 100 || Number(props.card.production_percentage) === 100;
   const isChangingFrom100 = isFullyProduced && percentage !== 100;
 
   if (isChangingFrom100) {
@@ -133,9 +136,12 @@ async function save() {
   isSaving.value = true;
 
   try {
-    const response = await axios.put(`v1/orders/order-budgets/${props.card.id}/production-percentage`, {
-      production_percentage: percentage,
-    });
+    const response = await http.put(
+      `v1/orders/order-budgets/${props.card.id}/production-percentage`,
+      {
+        production_percentage: percentage,
+      },
+    );
 
     const updated = response?.data || null;
 
@@ -147,17 +153,14 @@ async function save() {
     originalProductionPercentage.value = props.card?.production_percentage ?? percentage;
     isEditing.value = false;
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: 'Porcentagem de produção atualizada com sucesso',
-      });
-    }
+    toast.success('Porcentagem de produção atualizada com sucesso.');
 
     emit('percentage-updated', percentage);
   } catch (error) {
     console.error('Erro ao atualizar porcentagem:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao atualizar porcentagem de produção. Tente novamente.';
+    const errorMessage =
+      error.response?.data?.message ||
+      'Erro ao atualizar porcentagem de produção. Tente novamente.';
 
     if (window.Swal) {
       window.Swal.fire('Erro!', errorMessage, 'error');
@@ -243,7 +246,7 @@ async function save() {
     margin: 0;
   }
 
-  &[type=number] {
+  &[type='number'] {
     -moz-appearance: textfield;
     appearance: textfield;
   }
@@ -294,4 +297,3 @@ async function save() {
   }
 }
 </style>
-

@@ -137,14 +137,16 @@
   }
 }
 
-.layout-modal-activity-item { //
+.layout-modal-activity-item {
+  //
   padding: 0.75rem;
   background-color: var(--bs-card-bg);
   border-radius: 0.375rem;
   border: 1px solid var(--bs-border-color);
 }
 
-.layout-modal-activity-avatar { //
+.layout-modal-activity-avatar {
+  //
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -157,25 +159,30 @@
   flex-shrink: 0;
 }
 
-.layout-modal-activity-author { //
+.layout-modal-activity-author {
+  //
   font-weight: 600;
   font-size: 0.8125rem;
 }
 
-.layout-modal-activity-date { //
+.layout-modal-activity-date {
+  //
   font-size: 0.75rem;
 }
 
-.layout-modal-activity-content { //
+.layout-modal-activity-content {
+  //
   font-size: 0.8125rem;
   line-height: 1.4;
 }
 
-.layout-modal-activity-item.is-history { //
+.layout-modal-activity-item.is-history {
+  //
   border-left: 3px solid var(--bs-success);
 }
 
-.layout-modal-activity-icon { //
+.layout-modal-activity-icon {
+  //
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -188,7 +195,8 @@
   flex-shrink: 0;
 }
 
-.layout-modal-description { //
+.layout-modal-description {
+  //
   padding: 1rem;
   border-radius: 0.5rem;
   min-height: 80px;

@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\BudgetWall;
-use App\Models\OrderBudget;
 use App\Models\Order;
+use App\Models\OrderBudget;
 use Illuminate\Support\Collection;
 
 class LayoutService
@@ -103,13 +103,20 @@ class LayoutService
                 'production_percentage' => $orderBudget->production_percentage,
                 'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
                 'description' => $orderBudget->description,
+                'activity_running_since' => $orderBudget->activity_running_since?->toIso8601String(),
+                'activity_elapsed_seconds' => (int) $orderBudget->activity_elapsed_seconds,
+                'activity_total_seconds' => (int) $orderBudget->activity_total_seconds,
+                'activity_is_running' => (bool) $orderBudget->activity_is_running,
+                'activity_sessions' => app(OrderBudgetActivityService::class)->sessionsPayload($orderBudget),
+                'completed_at' => $orderBudget->completed_at?->toIso8601String(),
+                'is_completed' => (bool) $orderBudget->is_completed,
                 'comments' => $comments,
                 'members' => $members,
                 'history' => $history,
                 'image' => $wallImage,
                 'order' => $this->transformOrder($order),
                 'wall' => $this->transformWall($wall),
-                'uploaded_files' => $this->transformUploadedFiles($order->files_referring_model ?? []),
+                'uploaded_files' => $this->transformUploadedFiles($wall->files_referring_model ?? []),
                 'created_at' => $orderBudget->created_at,
                 'updated_at' => $orderBudget->updated_at,
             ];
@@ -166,7 +173,10 @@ class LayoutService
      */
     protected function transformOrder(Order $order): array
     {
-        $order->loadMissing(['rooms.walls.collectionModel.files']);
+        $order->loadMissing([
+            'rooms.walls.collectionModel.files',
+            'dropshippingData',
+        ]);
 
         $data = $order->toArray();
 

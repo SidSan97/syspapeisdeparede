@@ -1,17 +1,19 @@
 <template>
-  <aside class="p-4 border-start h-100">
-    <div class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header">
-      <h3 class="fs-sm">
-        <i class="far fa-comment-alt me-2"></i>
+  <aside class="comments-activity-sidebar p-4 border-start h-100">
+    <div
+      class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header"
+    >
+      <h3 class="fs-sm m-0">
+        <IconMessage :size="18" class="me-2" />
 
         Comentários e atividade
-    </h3>
+      </h3>
       <button class="btn btn-default" type="button" @click="toggleDetails">
         {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
       </button>
     </div>
 
-    <CommentInput v-model="newCommentText" @save="saveNewComment"/>
+    <CommentInput v-model="newCommentText" @save="saveNewComment" />
 
     <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
     <div v-if="showDetails">
@@ -41,23 +43,31 @@
           >
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="d-flex align-items-center gap-2">
-                <div v-if="activity.type !== 'history'" class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar" :style="{ backgroundColor: getAvatarColor(getActivityUser(activity)) }">
+                <div
+                  v-if="activity.type !== 'history'"
+                  class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar"
+                  :style="{
+                    backgroundColor: getAvatarColor(getActivityUser(activity)),
+                  }"
+                >
                   {{ getInitials(getActivityUser(activity)) }}
                 </div>
-                <div v-else class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white flex-shrink-0 comments-activity-icon">
-                  <i class="fa fa-history"></i>
-                </div>
-                <span v-if="activity.type !== 'history'" class="fw-semibold text-body comments-activity-author">{{ getActivityUser(activity) }}</span>
+                <BaseAvatar v-else :icon="IconHistory" variant="success" />
+                <span
+                  v-if="activity.type !== 'history'"
+                  class="fw-semibold text-body comments-activity-author"
+                  >{{ getActivityUser(activity) }}</span
+                >
                 <span v-else class="fw-semibold text-body comments-activity-author">Histórico</span>
               </div>
-              <span class="comments-activity-date">{{ formatDate(activity.created_at || activity.date) }}</span>
+              <span class="comments-activity-date">{{
+                formatDate(activity.created_at || activity.date)
+              }}</span>
             </div>
             <div class="comments-activity-content" v-html="getActivityText(activity)"></div>
           </div>
         </div>
-        <div v-else class="comments-activity-info text-muted">
-          Nenhuma atividade registrada.
-        </div>
+        <div v-else class="comments-activity-info text-muted">Nenhuma atividade registrada.</div>
       </div>
     </div>
   </aside>
@@ -65,9 +75,14 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useCommentService } from '@/modules/card-modals/services/commentService';
+import { useToast } from '@/composables/useToast';
+import { commentService } from '@/modules/card-modals/services/commentService';
 import CommentInput from '@/components/CommentInput.vue';
 import CommentItem from '@/components/CommentItem.vue';
+
+// Icons
+import { IconHistory, IconMessage } from '@tabler/icons-vue';
+import BaseAvatar from '../common/BaseAvatar.vue';
 
 const props = defineProps({
   card: {
@@ -85,9 +100,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:showDetails', 'comment-added', 'comment-updated', 'comment-deleted']);
+const emit = defineEmits([
+  'update:showDetails',
+  'comment-added',
+  'comment-updated',
+  'comment-deleted',
+]);
 
-const commentService = useCommentService();
+const toast = useToast();
 
 const isEditingComment = ref(false);
 const newCommentText = ref('');
@@ -107,7 +127,7 @@ watch(
     }
     localComments.value = props.card.comments.filter((c) => c != null);
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 
 const comments = computed(() => localComments.value);
@@ -219,8 +239,16 @@ function getAvatarColor(name) {
   }
 
   const colors = [
-    '#00b8d9', '#00a86b', '#0065ff', '#5243aa', '#ff5630',
-    '#ff8b00', '#36b37e', '#ffab00', '#6554c0', '#00c7e6',
+    '#00b8d9',
+    '#00a86b',
+    '#0065ff',
+    '#5243aa',
+    '#ff5630',
+    '#ff8b00',
+    '#36b37e',
+    '#ffab00',
+    '#6554c0',
+    '#00c7e6',
   ];
 
   let hash = 0;
@@ -247,7 +275,7 @@ async function saveNewComment() {
   isSavingComment.value = true;
 
   try {
-    const response = await commentService.createComment(props.card.id, newCommentText.value);
+    const response = await commentService.create(props.card.id, newCommentText.value);
 
     const commentFromApi = response?.data ?? response;
     const newComment = {
@@ -259,17 +287,13 @@ async function saveNewComment() {
     newCommentText.value = '';
     isEditingComment.value = false;
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Comentário adicionado com sucesso',
-      });
-    }
+    toast.success(response.message || 'Comentário adicionado com sucesso');
 
     emit('comment-added', newComment);
   } catch (error) {
     console.error('Erro ao adicionar comentário:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
+    const errorMessage =
+      error.response?.data?.message || 'Erro ao adicionar comentário. Tente novamente.';
 
     if (window.Swal) {
       window.Swal.fire('Erro!', errorMessage, 'error');
@@ -291,7 +315,7 @@ function cancelEditComment() {
   editingCommentText.value = '';
 }
 
-async function onUpdateComment({id, newComment}) {
+async function onUpdateComment({ id, newComment }) {
   if (!props.card?.id || !newComment.trim()) {
     return;
   }
@@ -299,7 +323,7 @@ async function onUpdateComment({id, newComment}) {
   isSavingComment.value = true;
 
   try {
-    const response = await commentService.updateComment(props.card.id, id, newComment);
+    const response = await commentService.update(props.card.id, id, newComment);
 
     const index = localComments.value.findIndex((c) => c.id === id);
     if (index !== -1) {
@@ -313,17 +337,13 @@ async function onUpdateComment({id, newComment}) {
     editingCommentId.value = null;
     editingCommentText.value = '';
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: response.message || 'Comentário atualizado com sucesso',
-      });
-    }
+    toast.success(response.message || 'Comentário atualizado com sucesso');
 
     emit('comment-updated', response.data);
   } catch (error) {
     console.error('Erro ao atualizar comentário:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao atualizar comentário. Tente novamente.';
+    const errorMessage =
+      error.response?.data?.message || 'Erro ao atualizar comentário. Tente novamente.';
 
     if (window.Swal) {
       window.Swal.fire('Erro!', errorMessage, 'error');
@@ -336,26 +356,20 @@ async function onUpdateComment({id, newComment}) {
 }
 
 async function onDeleteComment(commentId) {
-  if (!props.card?.id) {
-    return;
-  }
+  if (!props.card?.id) return;
 
   try {
-    await commentService.onDeleteComment(props.card.id, commentId);
+    await commentService.delete(props.card.id, commentId);
 
     localComments.value = localComments.value.filter((c) => c.id !== commentId);
 
-    if (window.Toast) {
-      window.Toast.fire({
-        icon: 'success',
-        title: 'Comentário excluído com sucesso',
-      });
-    }
+    toast.success('Comentário excluído com sucesso');
 
     emit('comment-deleted', commentId);
   } catch (error) {
     console.error('Erro ao excluir comentário:', error);
-    const errorMessage = error.response?.data?.message || 'Erro ao excluir comentário. Tente novamente.';
+    const errorMessage =
+      error.response?.data?.message || 'Erro ao excluir comentário. Tente novamente.';
 
     if (window.Swal) {
       window.Swal.fire('Erro!', errorMessage, 'error');
@@ -371,7 +385,7 @@ async function onDeleteComment(commentId) {
   top: 1.5rem;
   max-height: calc(90vh - 200px);
   overflow-y: auto;
-  background-color: var(--bs-secondary-bg);
+  background-color: var(--ds-surface-sunken);
 }
 
 .comments-activity-sidebar-title {
@@ -437,4 +451,3 @@ async function onDeleteComment(commentId) {
   line-height: 1.5;
 }
 </style>
-

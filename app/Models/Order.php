@@ -21,9 +21,10 @@ class Order extends Model
         'total_area',
         'total_amount',
         'total_amount_installments',
+        'total_amount_markup',
+        'total_amount_installments_markup',
         'delivery_time',
         'payment_method',
-        'installment_limit',
         'installments',
         'cep',
         'selected_carrier_name',
@@ -37,17 +38,20 @@ class Order extends Model
         'link_payment',
         'payment_expiration_date',
         'paid',
+        'payment_status',
         'nf_sent',
         'nf_id',
         'flags',
+        'observation',
     ];
 
     protected $casts = [
         'total_area' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'total_amount_installments' => 'decimal:2',
+        'total_amount_markup' => 'decimal:2',
+        'total_amount_installments_markup' => 'decimal:2',
         'delivery_time' => 'integer',
-        'installment_limit' => 'integer',
         'installments' => 'integer',
         'selected_carrier_price' => 'decimal:2',
         'selected_carrier_delivery_time' => 'integer',
@@ -57,10 +61,12 @@ class Order extends Model
         'flags' => 'string',
         'dropshipping_budget' => 'integer',
         'paid' => 'integer:0,1',
+        'payment_status' => 'string',
         'nf_sent' => 'integer:0,1',
         'nf_id' => 'string',
         'link_payment' => 'string',
         'payment_expiration_date' => 'string',
+        'observation' => 'string',
     ];
 
     /**
@@ -100,6 +106,11 @@ class Order extends Model
     public function orderBudgets(): HasMany
     {
         return $this->hasMany(OrderBudget::class);
+    }
+
+    public function paymentLinks(): HasMany
+    {
+        return $this->hasMany(OrderPaymentLink::class);
     }
 }
 

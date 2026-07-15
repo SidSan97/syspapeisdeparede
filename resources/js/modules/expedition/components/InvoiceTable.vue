@@ -13,7 +13,7 @@
               v-model="searchQuery"
             />
             <span class="input-group-text">
-              <i class="fa fa-search"></i>
+              <IconSearch :size="18" />
             </span>
           </div>
         </div>
@@ -28,7 +28,7 @@
       <EmptyState
         v-else-if="filteredItems.length === 0"
         heading="Nenhum pedido encontrado"
-        icon="shipping-fast"
+        :icon="IconTruckDelivery"
         class="p-5"
       >
         Não há pedidos prontos para faturar no momento.
@@ -38,23 +38,29 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col" style="width: 64px;">ID</th>
-              <th scope="col" style="width: 64px;">Data</th>
+              <th scope="col" style="width: 64px">ID</th>
+              <th scope="col" style="width: 64px">Data</th>
               <th class="text-nowrap" scope="col">Pedido</th>
-              <th class="text-nowrap" scope="col" style="width: 120px;">Valor total</th>
-              <th class="text-nowrap" scope="col" style="width: 120px;">Status</th>
-              <th class="text-nowrap" scope="col" style="width: 64px;">Opções</th>
+              <th class="text-nowrap" scope="col" style="width: 120px">Valor total</th>
+              <th class="text-nowrap" scope="col" style="width: 120px">Status</th>
+              <th class="text-nowrap" scope="col" style="width: 64px">Opções</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="invoice in filteredItems" :key="invoice.id">
               <th scope="row">{{ invoice.id }}</th>
-              <td>{{ formatDate(invoice?.created_at || invoice.created_at) }}</td>
-              <td style="min-width: 240px;">
-                <div class="fw-semibold">{{ invoice?.name || '—' }}</div>
+              <td>
+                {{ formatDate(invoice?.created_at || invoice.created_at) }}
+              </td>
+              <td style="min-width: 240px">
+                <div class="fw-semibold">
+                  {{ invoice?.name || '—' }}
+                </div>
                 <small class="text-muted">Pedido #{{ invoice.order_id }}</small>
               </td>
-              <td>{{ formatCurrency(invoice?.total_amount || 0) }}</td>
+              <td>
+                {{ formatCurrency(invoice?.total_amount || 0) }}
+              </td>
               <td>
                 <div class="d-flex align-items-center">
                   <span
@@ -74,7 +80,7 @@
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <i class="fa fa-ellipsis-h"></i>
+                    <IconDotsVertical :size="18" />
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li v-if="invoice?.nf_sent === 0">
@@ -110,6 +116,9 @@
 import { computed, ref } from 'vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import { formatDate } from '@/utils/dateUtils';
+
+// Icons
+import { IconDotsVertical, IconSearch, IconTruckDelivery } from '@tabler/icons-vue';
 
 const props = defineProps({
   invoices: {

@@ -26,4 +26,3 @@ return new class extends Migration
         Schema::dropIfExists('layout_column_names');
     }
 };
-

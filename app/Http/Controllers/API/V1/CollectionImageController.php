@@ -16,7 +16,19 @@ class CollectionImageController extends BaseController
     public function __construct(
         protected CollectionImageRepository $repository
     ) {
-        $this->middleware('auth:api');
+        // Deixar listagem pública para uso externo (catálogo),
+        // mantendo autenticação para criação/remoção.
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
+    }
+
+    public function show(CollectionImage $collectionImage): JsonResponse
+    {
+        $collectionImage->load(['category.parent']);
+
+        return $this->sendResponse(
+            new CollectionImageResource($collectionImage),
+            'Imagem recuperada com sucesso'
+        );
     }
 
     public function index(): JsonResponse
@@ -31,12 +43,12 @@ class CollectionImageController extends BaseController
                 ->listGroupedByCollection()
                 ->map(function (CollectionCategory $category) {
                     $allImages = collect();
-                    
+
                     // Imagens diretas da categoria
                     if ($category->images) {
                         $allImages = $allImages->merge($category->images);
                     }
-                    
+
                     // Imagens dos filhos
                     if ($category->children) {
                         foreach ($category->children as $child) {
@@ -45,7 +57,7 @@ class CollectionImageController extends BaseController
                             }
                         }
                     }
-                    
+
                     return [
                         'id' => $category->id,
                         'name' => $category->name,
@@ -78,39 +90,70 @@ class CollectionImageController extends BaseController
     {
         Log::info('[CollectionImage] Store request received', [
             'user_id' => optional(Auth::user())->id,
-            'collection_arts_id' => $request->input('collection_arts_id'),
+            'collection_category_id' => $request->input('collection_category_id'),
+            'collection_category_ids' => $request->input('collection_category_ids', []),
             'images_count' => count($request->file('images', [])),
         ]);
 
         try {
-            $category = CollectionCategory::findOrFail($request->input('collection_category_id'));
-
             $files = $request->file('images', []);
             $names = $request->input('names', []);
 
-            $this->repository->storeMany($category, $files, $names);
-            $category->load(['images', 'parent']);
+            $singleCategoryId = $request->input('collection_category_id');
+            $multipleCategoryIds = $request->input('collection_category_ids', []);
 
-            $allImages = $category->images;
+            if ($singleCategoryId && empty($multipleCategoryIds)) {
+                $category = CollectionCategory::findOrFail($singleCategoryId);
 
-            Log::info('[CollectionImage] Store request succeeded', [
-                'user_id' => optional(Auth::user())->id,
-                'category_id' => $category->id,
-                'parent_id' => $category->parent_id,
-                'total_images' => $allImages->count(),
-            ]);
+                $this->repository->storeMany($category, $files, $names);
+                $category->load(['images', 'parent']);
 
-            $rootCategory = $category->getRoot();
+                $allImages = $category->images;
 
-            return $this->sendResponse(
-                [
+                Log::info('[CollectionImage] Store request succeeded (single)', [
+                    'user_id' => optional(Auth::user())->id,
+                    'category_id' => $category->id,
+                    'parent_id' => $category->parent_id,
+                    'total_images' => $allImages->count(),
+                ]);
+
+                $rootCategory = $category->getRoot();
+
+                return $this->sendResponse(
                     [
-                        'id' => $rootCategory->id,
-                        'name' => $rootCategory->name,
-                        'images' => CollectionImageResource::collection($allImages),
+                        [
+                            'id' => $rootCategory->id,
+                            'name' => $rootCategory->name,
+                            'images' => CollectionImageResource::collection($allImages),
+                        ],
                     ],
-                ],
-                'Imagens adicionadas com sucesso'
+                    'Imagens adicionadas com sucesso'
+                );
+            }
+
+            if (!empty($multipleCategoryIds)) {
+                $categories = CollectionCategory::query()
+                    ->whereIn('id', $multipleCategoryIds)
+                    ->get();
+
+                $storedImages = $this->repository->storeManyForCategories($categories, $files, $names);
+
+                Log::info('[CollectionImage] Store request succeeded (multiple)', [
+                    'user_id' => optional(Auth::user())->id,
+                    'category_ids' => $multipleCategoryIds,
+                    'stored_images' => $storedImages->count(),
+                ]);
+
+                return $this->sendResponse(
+                    CollectionImageResource::collection($storedImages),
+                    'Imagens adicionadas com sucesso'
+                );
+            }
+
+            return $this->sendError(
+                'Nenhuma categoria válida informada para o envio das imagens.',
+                [],
+                422
             );
         } catch (\Throwable $exception) {
             Log::error('[CollectionImage] Store request failed', [

@@ -38,8 +38,7 @@
           </div>
         </div>
         <div class="pdf-header-right">
-          <h1 class="pdf-title">Orçamento Nº {{ budget?.id || '—' }}</h1>
-          <p class="pdf-subtitle">{{ budget?.name || '—' }}</p>
+          <h1 class="pdf-title">Nº {{ budget?.id || '—' }} - {{ budget?.name || '—' }}</h1>
         </div>
       </div>
 
@@ -89,7 +88,6 @@
             <tr>
               <th>Item</th>
               <th>Modelo</th>
-              <th>Quantidade de Paredes</th>
               <th>Metros</th>
             </tr>
           </thead>
@@ -119,7 +117,6 @@
                     </div>
                   </template>
                 </td>
-                <td>{{ room.walls?.length || 0 }}</td>
                 <td>{{ totalMeters.toFixed(2).replace('.', ',') }}</td>
               </tr>
             </template>
@@ -174,13 +171,15 @@
             />
           </p>
           <p class="pdf-mockup-input">
-            <strong>Ou insira o valor do mockup (%):</strong>
+            <strong>Markup Multiplicador (Mín.: 2,1)</strong>
             <input
               type="number"
               v-model.number="mockupPercentage"
               step="0.01"
               class="pdf-edit-input"
-              placeholder="0.00"
+              :placeholder="String(MOCKUP_MIN)"
+              :min="MOCKUP_MIN"
+              @blur="enforceMockupMin"
             />
           </p>
         </div>
@@ -225,7 +224,7 @@ const router = useRouter();
 // Services e composables
 const budgetService = useBudgetService();
 const pdfService = useBudgetPdfService();
-const { formatCurrency, formatDeliveryTime, formatDate, formatDateOnly, 
+const { formatCurrency, formatDeliveryTime, formatDate, formatDateOnly,
   formatPhone, formatAddressLine1, formatAddressLine2, formatEstimatedDate } = useFormatting();
 
 // Estado do componente
@@ -235,7 +234,8 @@ const error = ref(null);
 const generatingPdf = ref(false);
 const editableTotalCash = ref(0);
 const editableTotalInstallment = ref(0);
-const mockupPercentage = ref(0);
+const MOCKUP_MIN = 2.1;
+const mockupPercentage = ref(MOCKUP_MIN);
 const editingCash = ref(false);
 const editingInstallment = ref(false);
 const cashInputRef = ref(null);
@@ -276,6 +276,7 @@ async function loadBudget() {
 async function generatePdf() {
     if (!budget.value?.id) return;
 
+    enforceMockupMin();
     generatingPdf.value = true;
     try {
         await pdfService.generatePdf(
@@ -323,14 +324,18 @@ function toggleEditInstallment() {
     }
 }
 
+function enforceMockupMin() {
+    const num = Number(mockupPercentage.value);
+    if (Number.isNaN(num) || num < MOCKUP_MIN) {
+        mockupPercentage.value = MOCKUP_MIN;
+    }
+}
+
 // Watch para inicializar valores editáveis quando o budget for carregado
 watch([budget, totalOrder], () => {
     if (budget.value) {
         editableTotalCash.value = parseFloat(budget.value?.total_amount || totalOrder.value || 0);
         editableTotalInstallment.value = parseFloat(budget.value?.total_amount_installments || totalOrder.value || 0);
-        if (mockupPercentage.value === 0) {
-            mockupPercentage.value = 0;
-        }
     }
 }, { immediate: true });
 

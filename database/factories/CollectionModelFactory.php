@@ -33,13 +33,15 @@ class CollectionModelFactory extends Factory
         ];
 
         return [
-            'name' => fake()->randomElement($modelNames) . ' ' . fake()->word(),
+            'name' => fake()->randomElement($modelNames).' '.fake()->word(),
             'value' => fake()->randomFloat(2, 50, 500),
             'deadline' => fake()->numberBetween(5, 30),
             'request_link' => fake()->boolean(40),
             'request_comment' => fake()->boolean(60),
             'request_file' => fake()->boolean(50),
             'request_collection' => fake()->boolean(30),
+            'request_layout' => fake()->boolean(25),
+            'request_art_on_payment' => fake()->boolean(20),
         ];
     }
 }

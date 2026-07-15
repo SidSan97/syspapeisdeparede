@@ -15,6 +15,7 @@ class CollectionImage extends Model
         'collection_category_id',
         'name',
         'path_name',
+        'still_path_name',
     ];
 
     public function category(): BelongsTo
@@ -28,4 +29,3 @@ class CollectionImage extends Model
             ->withTimestamps();
     }
 }
-

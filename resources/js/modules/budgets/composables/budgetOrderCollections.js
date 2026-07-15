@@ -35,10 +35,7 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
       const roomId = room?.id ?? `room-${roomIndex}`;
 
       (room?.walls ?? []).forEach((wall, wallIndex) => {
-        const collectionModel =
-          wall?.collection_model ??
-          wall?.collectionModel ??
-          null;
+        const collectionModel = wall?.collection_model ?? wall?.collectionModel ?? null;
 
         if (!collectionModel) {
           return;
@@ -137,16 +134,13 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
       resolveStorageUrl(image.path_name ?? image.pathName ?? '') ??
       COLLECTION_IMAGE_PLACEHOLDER;
 
-    const rawId =
-      image.id ??
-      image.collection_image_id ??
-      image.collectionImageId ??
-      null;
+    const rawId = image.id ?? image.collection_image_id ?? image.collectionImageId ?? null;
 
     const numericId = rawId === null ? null : Number(rawId);
     const finalId = Number.isNaN(numericId) ? null : numericId;
 
-    const finalUrl = !resolvedUrl || resolvedUrl === '#' ? COLLECTION_IMAGE_PLACEHOLDER : resolvedUrl;
+    const finalUrl =
+      !resolvedUrl || resolvedUrl === '#' ? COLLECTION_IMAGE_PLACEHOLDER : resolvedUrl;
 
     const nameStr = image.name != null ? String(image.name).trim() : '';
     const displayName =
@@ -225,9 +219,7 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     try {
       const images = await budgetOrderService.getCollectionCategoryImages(categoryId);
 
-      state.items = Array.isArray(images)
-        ? images.map(normalizeCollectionImage)
-        : [];
+      state.items = Array.isArray(images) ? images.map(normalizeCollectionImage) : [];
     } catch (error) {
       state.error = 'Não foi possível carregar as imagens desta coleção.';
     } finally {
@@ -246,10 +238,7 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     if (!term) {
       return items;
     }
-    return items.filter(
-      (img) =>
-        (img.name ?? img.title ?? '').toLowerCase().includes(term)
-    );
+    return items.filter((img) => (img.name ?? img.title ?? '').toLowerCase().includes(term));
   }
 
   function setWallSearchTerm(wallKey, value) {
@@ -353,4 +342,3 @@ export function useBudgetOrderCollections(budget, requiresCollection) {
     resetWallSelections,
   };
 }
-

@@ -49,6 +49,12 @@ export function normalizeModel(model = {}) {
                 model?.requestCollection ??
                 model?.request_collection
             ),
+            layout: Boolean(model?.requests?.layout ?? model?.requestLayout ?? model?.request_layout),
+            artOnPayment: Boolean(
+                model?.requests?.artOnPayment ??
+                model?.requestArtOnPayment ??
+                model?.request_art_on_payment
+            ),
         },
         link: model.link ?? '',
         comment: model.comment ?? '',
@@ -120,7 +126,8 @@ export function buildModelFormData(formData) {
     form.append('requests[comment]', formData.requests?.comment ? 1 : 0);
     form.append('requests[file]', formData.requests?.file ? 1 : 0);
     form.append('requests[collection]', formData.requests?.collection ? 1 : 0);
-
+    form.append('requests[layout]', formData.requests?.layout ? 1 : 0);
+    form.append('requests[artOnPayment]', formData.requests?.artOnPayment ? 1 : 0);
     return form;
 }
 

@@ -33,11 +33,12 @@ return new class extends Migration
             $table->decimal('total_area', 10, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->decimal('total_amount_installments', 12, 2)->default(0);
+            $table->decimal('total_amount_markup', 12, 2)->nullable();
+            $table->decimal('total_amount_installments_markup', 12, 2)->nullable();
             $table->unsignedInteger('delivery_time')->default(0);
 
-            // Payment fields
+            // Payment fields (definidos na tela de detalhes ao gerar link / registrar pagamento)
             $table->string('payment_method')->nullable();
-            $table->unsignedTinyInteger('installment_limit')->nullable();
             $table->unsignedTinyInteger('installments')->nullable();
             $table->string('payment_file')->nullable();
 
@@ -59,6 +60,7 @@ return new class extends Migration
             $table->tinyInteger('paid')->default(0);
             $table->tinyInteger('nf_sent')->default(0);
             $table->string('nf_id')->nullable();
+            $table->text('observation')->nullable();
 
             $table->timestamps();
 
@@ -76,4 +78,3 @@ return new class extends Migration
         Schema::dropIfExists('orders');
     }
 };
-

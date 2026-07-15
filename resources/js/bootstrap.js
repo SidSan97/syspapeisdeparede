@@ -1,7 +1,4 @@
-import Swal from 'sweetalert2';
-
-import _ from 'lodash'
-window._ = _
+import 'bootstrap';
 
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
@@ -10,36 +7,18 @@ window._ = _
  */
 
 import axios from 'axios';
+import Swal from 'sweetalert2';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-window.axios.defaults.baseURL = document.head.querySelector(
-    'meta[name="api-base-url"]'
-).content
+window.axios.defaults.baseURL = document.head.querySelector('meta[name="api-base-url"]').content;
 
-window.axios.interceptors.response.use(
-    function (response) {
-        return response
-    },
-    function (error) {
-        if ([401, 419].includes(error.response.status)) {
-            // Usar baseUrl do LaravelApp para considerar subdiretórios
-            const baseUrl = window.LaravelApp?.baseUrl || '';
-            window.location.href = `${baseUrl}/login`
-        }
-
-        return Promise.reject(error)
-    }
-)
-
-let token = document.head.querySelector('meta[name="csrf-token"]')
+let token = document.head.querySelector('meta[name="csrf-token"]');
 
 if (token) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content
+  window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
 } else {
-    console.error(
-        'CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token'
-    )
+  console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
 }
 
 /**
@@ -63,3 +42,27 @@ if (token) {
 //     forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
 //     enabledTransports: ['ws', 'wss'],
 // });
+
+window.Swal = Swal.mixin({
+  customClass: {
+    popup: 'bg-body',
+    title: 'h5 text-start text-body',
+    htmlContainer: 'fs-6 text-body text-start',
+    actions: 'justify-content-end w-100 px-5',
+    cancelButton: 'btn btn-subtle',
+    confirmButton: 'btn btn-primary',
+  },
+  allowOutsideClick: false,
+});
+
+window.Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  },
+});

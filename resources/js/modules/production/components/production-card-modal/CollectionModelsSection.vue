@@ -1,24 +1,38 @@
 <template>
-  <div v-if="wall && wall.collection_model" class="collection-models-section">
+  <div
+    v-if="wall && (wall.collection_model || hasWallModelReferringContent(wall))"
+    class="collection-models-section"
+  >
     <!-- Modelos selecionados -->
-    <div class="collection-models-section-item">
+    <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
-        <i class="fa fa-cube"></i> Modelos selecionados
+        <IconCube />
+
+        Modelos selecionados
       </h3>
       <div v-if="wall.collection_model.name" class="collection-models-section-name">
         {{ wall.collection_model.name }}
       </div>
-      <div v-else class="collection-models-section-empty text-muted">
-        Nenhum modelo selecionado
-      </div>
+      <div v-else class="collection-models-section-empty text-muted">Nenhum modelo selecionado</div>
     </div>
 
+    <WallModelReferringFields
+      v-if="hasWallModelReferringContent(wall)"
+      :wall="wall"
+      class="collection-models-section-item"
+    />
+
     <!-- Imagens da Parede Específica -->
-    <div class="collection-models-section-item">
+    <div v-if="wall.collection_model" class="collection-models-section-item">
       <h3 class="collection-models-section-title d-flex align-items-center gap-2 mb-1">
-        <i class="fa fa-image"></i> Imagens da Parede
+        <IconPhoto />
+
+        Imagens da Parede
       </h3>
-      <div v-if="wall.collection_model.files && wall.collection_model.files.length > 0" class="collection-models-section-images">
+      <div
+        v-if="wall.collection_model.files && wall.collection_model.files.length > 0"
+        class="collection-models-section-images"
+      >
         <div
           v-for="(file, fileIndex) in wall.collection_model.files"
           :key="fileIndex"
@@ -35,7 +49,11 @@
 </template>
 
 <script setup>
-const props = defineProps({
+import WallModelReferringFields from '@/components/details/WallModelReferringFields.vue';
+import { hasWallModelReferringContent } from '@/utils/wallModelReferringContent';
+import { IconCube, IconPhoto } from '@tabler/icons-vue';
+
+defineProps({
   wall: {
     type: Object,
     default: null,
@@ -114,4 +132,3 @@ function getImageUrl(file) {
   }
 }
 </style>
-

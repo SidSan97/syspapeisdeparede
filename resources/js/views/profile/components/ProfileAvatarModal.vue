@@ -1,127 +1,89 @@
 <template>
-  <div class="modal fade" id="avatar-modal" tabindex="-1" aria-labelledby="avatar-modal-label" ref="crop-modal"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="avatar-modal-label">Atualizar foto de perfil</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="file" accept="image/*" class="form-control mb-3" @change="onFileChange" />
-          <div v-if="imageUrl" class="text-center">
-            <img ref="image" :src="imageUrl" class="img-fluid" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-subtle" data-bs-dismiss="modal">Cancelar</button>
-          <button class="btn btn-primary" @click="cropAndUpload()">Carregar</button>
-        </div>
+  <BaseModal v-model="isOpen" title="Atualizar foto de perfil">
+    <template #body>
+      <input type="file" accept="image/*" class="form-control mb-3" @change="onFileChange" />
+
+      <div v-if="imageUrl" class="text-center">
+        <img ref="imageEl" :src="imageUrl" class="img-fluid" />
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #footer>
+      <button class="btn btn-subtle" @click="close">Cancelar</button>
+
+      <button class="btn btn-primary" @click="cropAndUpload">Carregar</button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick, useTemplateRef } from 'vue'
-import Cropper from 'cropperjs'
-import 'cropperjs/dist/cropper.min.css'
+import { ref, nextTick, watch } from 'vue';
+import Cropper from 'cropperjs';
+import 'cropperjs/dist/cropper.min.css';
+import BaseModal from '@/components/common/BaseModal.vue';
 
-const avatarPreview = ref(null)
-const imageUrl = ref(null)
-const cropper = ref(null)
-const cropModal = ref(null)
-const avatarTriggers = ref([])
+const isOpen = ref(false);
 
-const cropModalRef = useTemplateRef('crop-modal')
-const imageRef = useTemplateRef('image')
+const imageUrl = ref(null);
+const imageEl = ref(null);
+const cropper = ref(null);
 
-const openModal = () => {
-  if (!cropModal.value) {
-    cropModal.value = new window.bootstrap.Modal(cropModalRef.value)
-  }
-
-  cropModal.value.show()
+function open() {
+  isOpen.value = true;
 }
 
-const handleAvatarClick = (event) => {
-  event?.preventDefault()
-  openModal()
+function close() {
+  isOpen.value = false;
 }
 
-const bindAvatarTriggers = () => {
-  avatarTriggers.value = Array.from(document.querySelectorAll('.avatar-box'))
-  avatarTriggers.value.forEach((el) => el.addEventListener('click', handleAvatarClick))
-}
-
-const unbindAvatarTriggers = () => {
-  avatarTriggers.value.forEach((el) => el.removeEventListener('click', handleAvatarClick))
-  avatarTriggers.value = []
-}
-
-function closeModal() {
-  cropModal.value?.hide()
-  imageUrl.value = null
-
-  if (cropper.value) {
-    cropper.value.destroy()
-    cropper.value = null
-  }
-}
+defineExpose({ open, close });
 
 function onFileChange(event) {
-  const file = event.target.files[0]
+  const file = event.target.files[0];
 
-  if (file && file.type.startsWith('image/')) {
-    imageUrl.value = URL.createObjectURL(file)
+  if (!file || !file.type.startsWith('image/')) return;
 
-    nextTick(() => {
-      const imgEl = imageRef.value
-      if (!imgEl) return
-
-      imgEl.onload = () => {
-        if (cropper.value) {
-          cropper.value.destroy()
-        }
-
-        cropper.value = new Cropper(imgEl, {
-          aspectRatio: 1,
-          viewMode: 1
-        })
-      }
-    })
-  }
+  imageUrl.value = URL.createObjectURL(file);
 }
 
+watch(imageUrl, async () => {
+  if (!imageUrl.value) return;
+
+  await nextTick();
+
+  if (!imageEl.value) return;
+
+  // recria cropper sempre que trocar imagem
+  if (cropper.value) {
+    cropper.value.destroy();
+  }
+
+  cropper.value = new Cropper(imageEl.value, {
+    aspectRatio: 1,
+    viewMode: 1,
+  });
+});
+
 function cropAndUpload() {
-  if (!cropper.value) return
+  if (!cropper.value) return;
 
   const canvas = cropper.value.getCroppedCanvas({
     width: 300,
     height: 300,
     imageSmoothingEnabled: true,
-    imageSmoothingQuality: 'high'
-  })
+    imageSmoothingQuality: 'high',
+  });
 
-  const base64Image = canvas.toDataURL('image/jpeg', 0.9)
+  const base64Image = canvas.toDataURL('image/jpeg', 0.9);
 
-  axios.post('v1/profile/avatar', { image: base64Image })
+  axios
+    .put('v1/profile/avatar', { image: base64Image })
     .then(() => {
-      avatarPreview.value = base64Image
-      closeModal()
-      window.location.reload()
+      close();
+      window.location.reload();
     })
-    .catch(error => {
-      console.error('Erro ao enviar avatar:', error)
-    })
+    .catch((err) => {
+      console.error('Erro ao enviar avatar:', err);
+    });
 }
-
-onMounted(() => {
-  cropModal.value = new window.bootstrap.Modal(cropModalRef.value)
-  bindAvatarTriggers()
-})
-
-onBeforeUnmount(() => {
-  unbindAvatarTriggers()
-})
 </script>

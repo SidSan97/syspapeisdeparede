@@ -22,6 +22,7 @@ class RequestLayoutArt extends Model
         'interactions_card_id',
         'comment',
         'path_file',
+        'approval_status',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class RequestLayoutArt extends Model
         'interactions_card_id' => 'integer',
         'path_file' => 'string',
         'comment' => 'string',
+        'approval_status' => 'string',
     ];
 
     /**

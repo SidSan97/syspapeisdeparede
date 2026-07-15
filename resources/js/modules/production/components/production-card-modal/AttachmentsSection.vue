@@ -1,7 +1,9 @@
 <template>
   <div v-if="attachments && attachments.length > 0" class="attachments-section">
     <h3 class="d-flex align-items-center gap-2 text-body mb-3 attachments-section-title">
-      <i class="fa fa-paperclip text-primary"></i> Anexos
+      <IconPaperclip class="text-primary" />
+
+      Anexos
     </h3>
     <div class="d-flex flex-column gap-3">
       <div
@@ -9,14 +11,16 @@
         :key="fileIndex"
         class="d-flex gap-3 p-3 align-items-center attachments-section-item"
       >
-        <div class="overflow-hidden bg-body d-flex align-items-center justify-content-center attachments-section-item-preview">
+        <div
+          class="overflow-hidden bg-body d-flex align-items-center justify-content-center attachments-section-item-preview"
+        >
           <img
             v-if="isImageFile(file)"
             class="w-100 h-100"
             :src="getImageUrl(file)"
             :alt="getAttachmentName(file, fileIndex)"
           />
-          <i v-else class="fa fa-file fa-fw text-secondary"></i>
+          <IconFile v-else class="text-secondary" />
         </div>
         <div class="d-flex flex-column gap-2 flex-grow-1">
           <div class="fw-semibold text-body attachments-section-item-name">
@@ -40,6 +44,8 @@
 </template>
 
 <script setup>
+import { IconFile, IconPaperclip } from '@tabler/icons-vue';
+
 const props = defineProps({
   attachments: {
     type: Array,
@@ -82,7 +88,7 @@ function isImageFile(file) {
     return true;
   }
   const name = (file.name || file.original_name || file.file_name || '').toLowerCase();
-  return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some(ext => name.endsWith(ext));
+  return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].some((ext) => name.endsWith(ext));
 }
 
 function formatDate(date) {
@@ -151,4 +157,3 @@ function formatDate(date) {
   }
 }
 </style>
-

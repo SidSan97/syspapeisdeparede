@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers\API\V1;
 
-use App\Http\Requests\Users\UserRequest;
+use App\Actions\Profile\UpdateAvatarAction;
+use App\Actions\User\CreateUserAction;
+use App\Actions\User\UpdateUserAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\StoreUserRequest;
+use App\Http\Requests\Api\V1\UpdateAvatarRequest;
+use App\Http\Requests\Api\V1\UpdateUserRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class UserController extends BaseController
+class UserController extends Controller
 {
     public function __construct()
     {
@@ -18,63 +25,39 @@ class UserController extends BaseController
     {
         $users = User::with('roles:id,name')
             ->search($request->search)
-            ->when($request->filled('role'), fn($query) => $query->role($request->role))
+            ->when($request->filled('role'), fn ($query) => $query->role($request->role))
             ->latest()
             ->paginate();
 
         return UserResource::collection($users);
     }
 
-    public function list()
+    public function store(StoreUserRequest $request, CreateUserAction $action)
     {
-        $users = User::with('roles:id,name')->get();
-
-        return $this->sendResponse($users, 'Lista de usuários');
-    }
-
-    /**
-     * COMO OS ADMINS PODEM FAZER OPERAÇÕES DE REVENDEDORES,
-     * ESTARÃO NOS FILTROS
-     */
-    public function listResellers()
-    {
-        $users = User::with('roles')->role(['reseller', 'admin'])->get();
-
-        return UserResource::collection($users);
-    }
-
-    public function listDesigners()
-    {
-        $users = User::with('roles')->role(['designer'])->get();
-
-        return UserResource::collection($users);
-    }
-
-    public function store(UserRequest $request)
-    {
-        $data = $request->safe()->except('role');
-
-        $user = User::create($data);
-
-        $user->assignRole($request->validated('role'));
+        $user = $action->execute(
+            $request->safe()->except('role'),
+            $request->validated('role'),
+        );
 
         return new UserResource($user);
     }
 
     public function show(User $user)
     {
-        $user->load(['roles:id,name', 'permissions']);
+        $user->load(['roles:id,name', 'permissions', 'wallet', 'reseller']);
 
         return new UserResource($user);
     }
 
-    public function update(User $user, UserRequest $request)
+    public function update(User $user, UpdateUserRequest $request, UpdateUserAction $action)
     {
-        $data = $request->safe()->except('role');
-        $role = $request->validated('role');
+        $user = $action->execute(
+            $user,
+            $request->safe()->except('role'),
+            $request->validated('role'),
+        );
 
-        $user->update($data);
-        $user->syncRoles([$role]);
+        $user->load('wallet');
 
         return new UserResource($user);
     }
@@ -84,5 +67,34 @@ class UserController extends BaseController
         $user->delete();
 
         return response()->noContent();
+    }
+
+    public function updateAvatar(User $user, UpdateAvatarRequest $request, UpdateAvatarAction $action): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $url = $action->execute($user, $request->input('image'));
+
+        return response()->json([
+            'url' => $url,
+            'message' => 'Imagem carregada com sucesso.',
+        ]);
+    }
+
+    public function list(Request $request)
+    {
+        $roles = $request->query('role');
+
+        $query = User::with('roles');
+
+        if ($roles) {
+            $roleArray = explode(',', $roles);
+
+            $query->role($roleArray);
+        }
+
+        $users = $query->get();
+
+        return UserResource::collection($users);
     }
 }

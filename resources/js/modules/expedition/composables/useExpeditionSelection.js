@@ -1,9 +1,7 @@
 import { computed, ref } from 'vue';
-import { useExpeditionService } from '../services/expeditionService';
+import { expeditionService } from '../services/expeditionService';
 
 export function useExpeditionSelection(invoicesList, searchInvoices) {
-  const expeditionService = useExpeditionService();
-
   const selectedInvoices = ref(new Set());
 
   const filteredExpeditions = computed(() => {
@@ -13,7 +11,7 @@ export function useExpeditionSelection(invoicesList, searchInvoices) {
   const isAllSelected = computed(() => {
     if (filteredExpeditions.value.length === 0) return false;
     return filteredExpeditions.value.every((invoice) =>
-      selectedInvoices.value.has(invoice.nota_fiscal?.id)
+      selectedInvoices.value.has(invoice.nota_fiscal?.id),
     );
   });
 
@@ -56,17 +54,17 @@ export function useExpeditionSelection(invoicesList, searchInvoices) {
         return;
       }
 
-      const selectedInvoicesData = filteredExpeditions.value.filter(invoice =>
-        invoiceIds.includes(invoice.nota_fiscal?.id)
+      const selectedInvoicesData = filteredExpeditions.value.filter((invoice) =>
+        invoiceIds.includes(invoice.nota_fiscal?.id),
       );
 
       const orderIds = selectedInvoicesData
-        .map(invoice => invoice.nota_fiscal?.numero_ecommerce)
-        .filter(orderId => orderId);
+        .map((invoice) => invoice.nota_fiscal?.numero_ecommerce)
+        .filter((orderId) => orderId);
 
       const transporters = selectedInvoicesData
-        .map(invoice => invoice.nota_fiscal?.transportador?.nome)
-        .filter(transporter => transporter);
+        .map((invoice) => invoice.nota_fiscal?.transportador?.nome)
+        .filter((transporter) => transporter);
 
       if (transporters.length === 0 || transporters.length !== selectedInvoicesData.length) {
         loading.value = false;
@@ -80,7 +78,9 @@ export function useExpeditionSelection(invoicesList, searchInvoices) {
       }
 
       const firstTransporter = transporters[0];
-      const allSameTransporter = transporters.every(transporter => transporter === firstTransporter);
+      const allSameTransporter = transporters.every(
+        (transporter) => transporter === firstTransporter,
+      );
 
       if (!allSameTransporter) {
         loading.value = false;
@@ -96,7 +96,7 @@ export function useExpeditionSelection(invoicesList, searchInvoices) {
       const data = await expeditionService.sendInvoiceToExpedition(
         invoiceIds,
         firstTransporter,
-        orderIds
+        orderIds,
       );
 
       if (data.success) {
@@ -114,7 +114,9 @@ export function useExpeditionSelection(invoicesList, searchInvoices) {
       console.error('Erro ao enviar notas fiscais para expedição:', error);
       window.Swal.fire({
         title: 'Erro ao enviar notas fiscais!',
-        text: error.response?.data?.message || 'Não foi possível enviar as notas fiscais para expedição. Tente novamente mais tarde.',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível enviar as notas fiscais para expedição. Tente novamente mais tarde.',
         icon: 'error',
         confirmButtonText: 'Entendi!',
       });

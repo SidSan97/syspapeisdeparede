@@ -17,6 +17,7 @@ class LayoutColumnName extends Model
      */
     protected $fillable = [
         'name',
+        'order',
     ];
 
     /**
@@ -34,4 +35,3 @@ class LayoutColumnName extends Model
         return $this->hasMany(OrderBudget::class, 'layout_column_names_id');
     }
 }
-

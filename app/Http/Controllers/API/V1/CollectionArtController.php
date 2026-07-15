@@ -14,7 +14,7 @@ class CollectionArtController extends BaseController
     public function __construct(
         protected CollectionArtRepository $repository
     ) {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
     }
 
     public function index(Request $request): JsonResponse

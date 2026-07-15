@@ -4,39 +4,66 @@
  * @returns {string} ID formatado com 5 dígitos (ex: 1 -> "00001", 100 -> "00100")
  */
 export function formatCardId(id) {
-  if (!id) {
-    return '00000';
-  }
-  return String(id).padStart(5, '0');
+  return id ? String(id).padStart(5, '0') : '00000';
 }
 
 /**
- * Retorna o nome de exibição do card
- * Se o card tiver membros, formata como: "00001 - JOÃO SILVA"
- * Caso contrário, retorna o nome normal do card
- * @param {Object} card - Objeto do card
- * @param {string} card.name - Nome do card
- * @param {number} card.id - ID do card
- * @param {Array} card.members - Array de membros do card
- * @param {string} defaultName - Nome padrão caso não tenha nome nem membros
- * @returns {string} Nome formatado para exibição
+ * Nome exibido no card a partir do dropshipping: em `dropshipping_data`, o campo `name`
+ * é o nome completo (PF) ou a razão social (PJ), conforme `person_type`.
+ * @param {Object|null|undefined} dropshipping
+ * @returns {string|null}
  */
-export function getCardDisplayName(card, defaultName = 'aaa') {
-  if (!card) {
-    return defaultName;
+export function getDropshippingClientDisplayName(dropshipping) {
+  if (!dropshipping || typeof dropshipping !== 'object') {
+    return null;
+  }
+
+  const rawName = dropshipping.name ?? dropshipping.nome;
+  const name =
+    typeof rawName === 'string'
+      ? rawName.trim()
+      : rawName != null
+        ? String(rawName).trim()
+        : '';
+
+  return name || null;
+}
+
+/**
+ * Retorna o nome de exibição do card.
+ * Preferência com dropshipping: "00042 - João Silva" (PF) ou "00042 - Empresa LTDA" (PJ, razão social no campo name).
+ * Fallback: mesmo formato com membros; depois `card.name`.
+ * @param {Object} card - Objeto do card
+ * @param {string} defaultName - Nome padrão
+ * @returns {string}
+ */
+export function getCardDisplayName(card, defaultName = '') {
+  if (!card) return defaultName;
+
+  const dropshipping =
+    card.order?.dropshipping_data ??
+    card.order?.dropshippingData ??
+    card.dropshipping_data ??
+    card.dropshippingData ??
+    null;
+
+  const clientName = getDropshippingClientDisplayName(dropshipping);
+  const orderId = card.order_id ?? card.order?.id;
+
+  if (clientName && orderId != null && orderId !== '') {
+    return `${formatCardId(orderId)} - ${clientName}`;
   }
 
   // Se o card tiver membros, formatar como: 00001 - JOÃO SILVA
   if (card.members && Array.isArray(card.members) && card.members.length > 0) {
-    const formattedId = formatCardId(card.id);
+    const formattedId = formatCardId(card.order_id);
     const membersNames = card.members
-      .map(m => m.name?.toUpperCase() || '')
+      .map((m) => m.name?.toUpperCase() || '')
       .filter(Boolean)
       .join(', ');
     return `${formattedId} - ${membersNames}`;
   }
 
-  // Caso contrário, retornar o nome normal
   return card.name || defaultName;
 }
 
@@ -65,6 +92,44 @@ export function parseDate(dateString) {
     return null;
   }
   return date;
+}
+
+/**
+ * Data de calendário local a partir de YYYY-MM-DD ou fallback para parseDate.
+ * Evita interpretar "2026-04-28" como meia-noite UTC (desloca o dia em timezones BR).
+ * @param {string|null|undefined} value
+ * @returns {Date|null}
+ */
+export function parseCalendarDateLocal(value) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const y = Number(iso[1]);
+    const mo = Number(iso[2]) - 1;
+    const d = Number(iso[3]);
+    return new Date(y, mo, d);
+  }
+  return parseDate(s);
+}
+
+/**
+ * Dias corridos entre o dia de "hoje" e o dia do prazo (ambos no fuso local).
+ * @param {Date} deadlineDate
+ * @param {Date} now
+ * @returns {number} positivo = dias restantes, 0 = vence hoje, negativo = atraso em dias
+ */
+export function calendarDaysUntil(deadlineDate, now) {
+  const n = now instanceof Date ? now : new Date(now);
+  const startToday = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const endDay = new Date(
+    deadlineDate.getFullYear(),
+    deadlineDate.getMonth(),
+    deadlineDate.getDate(),
+  );
+  return Math.round((endDay.getTime() - startToday.getTime()) / 86400000);
 }
 
 /**
@@ -152,90 +217,86 @@ export function getTimerClass(card, currentTime, prefix = 'trello-card-timer') {
 }
 
 /**
- * Retorna o texto do timer baseado na data de entrega do card
- * Se a data passou e production_percentage < 100, mostra "Atrasado"
- * @param {Object} card - Objeto do card
- * @param {string} card.delivery_date_end_full - Data final de entrega completa
- * @param {number} card.production_percentage - Percentual de produção (0-100)
- * @param {Date} currentTime - Data/hora atual
- * @returns {string|null} Texto do timer ou null se não houver data
+ * Texto da tarja de prazo (produção): dias corridos até delivery_date_end_full vs hoje.
+ * @param {Object} card
+ * @param {string} card.delivery_date_end_full
+ * @param {Date} currentTime
+ * @returns {string|null}
  */
 export function getProductionTimerText(card, currentTime) {
   if (!card || !card.delivery_date_end_full) {
     return null;
   }
 
-  const deliveryDate = parseDate(card.delivery_date_end_full);
+  const deliveryDate = parseCalendarDateLocal(card.delivery_date_end_full);
   if (!deliveryDate) {
     return null;
   }
 
   const now = currentTime instanceof Date ? currentTime : new Date(currentTime);
-  const diffMs = deliveryDate.getTime() - now.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const days = calendarDaysUntil(deliveryDate, now);
 
-  // Se já passou da data E production_percentage < 100, mostrar "Atrasado"
-  if (diffMs < 0) {
-    const productionPercentage = Number(card.production_percentage) || 0;
-    if (productionPercentage < 100) {
-      return 'Atrasado';
-    }
-    // Se já está 100%, não mostrar timer
-    return null;
+  if (days < 0) {
+    const a = Math.abs(days);
+    return a === 1 ? '1 dia de atraso' : `${a} dias de atraso`;
   }
-
-  // Se ainda não chegou na data
-  if (diffDays > 0) {
-    return `${diffDays} ${diffDays === 1 ? 'dia' : 'dias'} restante${diffDays > 1 ? 's' : ''}`;
-  } else if (diffHours > 0) {
-    return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} restante${diffHours > 1 ? 's' : ''}`;
-  } else if (diffMinutes > 0) {
-    return `${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'} restante${diffMinutes > 1 ? 's' : ''}`;
-  } else {
-    return 'Menos de 1 minuto';
+  if (days === 0) {
+    return 'Vence hoje';
   }
+  if (days === 1) {
+    return '1 dia restante';
+  }
+  return `${days} dias restantes`;
 }
 
 /**
- * Retorna a classe CSS do timer de produção baseado no status
- * @param {Object} card - Objeto do card
- * @param {string} card.delivery_date_end_full - Data final de entrega completa
- * @param {number} card.production_percentage - Percentual de produção (0-100)
- * @param {Date} currentTime - Data/hora atual
- * @param {string} prefix - Prefixo da classe CSS (ex: 'production-card-timer')
- * @returns {string} Classe CSS do timer
+ * Modificador de cor da tarja de prazo: verde (≥6 dias), laranja (&lt;6 dias e não atrasado), vermelho (atrasado).
+ * @param {Object} card
+ * @param {string} card.delivery_date_end_full
+ * @param {Date} currentTime
+ * @param {string} _prefix legado, ignorado
+ * @returns {string} modificador (`production-deadline-badge--success|warning|danger`) ou vazio
  */
-export function getProductionTimerClass(card, currentTime, prefix = 'production-card-timer') {
+export function getProductionTimerClass(card, currentTime, _prefix = 'production-card-timer') {
   if (!card || !card.delivery_date_end_full) {
     return '';
   }
 
-  const deliveryDate = parseDate(card.delivery_date_end_full);
+  const deliveryDate = parseCalendarDateLocal(card.delivery_date_end_full);
   if (!deliveryDate) {
     return '';
   }
 
   const now = currentTime instanceof Date ? currentTime : new Date(currentTime);
-  const diffMs = deliveryDate.getTime() - now.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const days = calendarDaysUntil(deliveryDate, now);
 
-  // Se já passou da data E production_percentage < 100, mostrar como atrasado
-  if (diffMs < 0) {
-    const productionPercentage = Number(card.production_percentage) || 0;
-    if (productionPercentage < 100) {
-      return `${prefix}-overdue`;
-    }
-    return '';
+  if (days < 0) {
+    return 'production-deadline-badge--danger';
   }
-
-  // Se está próximo do prazo (menos de 3 dias)
-  if (diffDays <= 3) {
-    return `${prefix}-urgent`;
+  if (days < 6) {
+    return 'production-deadline-badge--warning';
   }
-
-  return `${prefix}-normal`;
+  return 'production-deadline-badge--success';
 }
 
+/**
+ * Classe Bootstrap para badge do status do order budget (layout de produção).
+ * @param {string|null|undefined} status
+ * @returns {string}
+ */
+export function getOrderBudgetStatusBadgeClass(status) {
+  if (!status) {
+    return 'bg-secondary';
+  }
+  const s = String(status).toLowerCase();
+  if (s.includes('aprovar layout')) {
+    return 'bg-warning text-dark';
+  }
+  if (s.includes('pendente')) {
+    return 'bg-info';
+  }
+  if (s.includes('aprovad') || s.includes('conclu')) {
+    return 'bg-success';
+  }
+  return 'bg-secondary';
+}

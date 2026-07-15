@@ -6,14 +6,22 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "@vitejs/plugin-vue": "^6.0.0",
-        "laravel-vite-plugin": "^2.0.0",
-        "sass": "^1.97.3",
-        "vite": "^7.0.4"
+        "@vitejs/plugin-vue": "^4.6.2",
+        "@vojtechlanka/vue-simple-suggest": "^2.0.6",
+        "axios": "^1.10.0",
+        "laravel-vite-plugin": "^1.0.5",
+        "sass": "^1.79.3",
+        "vite": "^5.4.8",
+        "vue": "^3.5.9",
+        "vue-the-mask": "^0.11.1",
+		"@eslint/js": "^10.0.1"
     },
     "dependencies": {
         "@aacassandra/vue3-progressbar": "^1.0.3",
-        "@vuepic/vue-datepicker": "^9.0.3",
+        "@tabler/icons-vue": "^3.41.1",
+		"@vuepic/vue-datepicker": "^12.1.0",
+		"@vueuse/core": "^14.2.1",
+		"vuedraggable": "^4.1.0",
         "bootstrap": "^5.3.8",
         "bootstrap-icons": "^1.13.1",
         "chart.js": "^4.4.8",

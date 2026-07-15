@@ -1,0 +1,22 @@
+{
+    "agents": [
+        "claude_code",
+        "cursor"
+    ],
+    "guidelines": true,
+    "mcp": true,
+    "nightwatch_mcp": false,
+    "packages": [
+        "spatie/laravel-medialibrary"
+    ],
+    "sail": true,
+    "skills": [
+        "laravel-best-practices",
+        "medialibrary-development",
+        "create-adaptable-composable",
+        "laravel-php-standards",
+        "vue-best-practices",
+        "vue-pinia-best-practices",
+        "vue-router-best-practices"
+    ]
+}

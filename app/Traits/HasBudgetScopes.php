@@ -10,10 +10,9 @@ trait HasBudgetScopes
      */
     public function scopeForUser($query, $user)
     {
-        if (!$user->isAdmin() && !$user->isCommercial()) {
+        if (! $user->isAdmin() && ! $user->isCommercial()) {
             return $query->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('tenant_id', $user->id);
+                $q->where('user_id', $user->id)->orWhere('tenant_id', $user->id);
             });
         }
 
@@ -30,8 +29,7 @@ trait HasBudgetScopes
         }
 
         return $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-                ->orWhere('id', 'like', "%{$search}%");
+            $q->where('name', 'like', "%{$search}%")->orWhere('id', 'like', "%{$search}%");
         });
     }
 
@@ -40,7 +38,7 @@ trait HasBudgetScopes
      */
     public function scopeByStatus($query, ?string $status)
     {
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             return $query->where('status', $status);
         }
 
@@ -52,11 +50,11 @@ trait HasBudgetScopes
      */
     public function scopeByDateRange($query, ?string $dateFrom = null, ?string $dateTo = null)
     {
-        if (!empty($dateFrom)) {
+        if (! empty($dateFrom)) {
             $query->whereDate('created_at', '>=', $dateFrom);
         }
 
-        if (!empty($dateTo)) {
+        if (! empty($dateTo)) {
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
@@ -68,11 +66,10 @@ trait HasBudgetScopes
      */
     public function scopeByUserId($query, ?int $userId)
     {
-        if (!empty($userId)) {
+        if (! empty($userId)) {
             return $query->where('user_id', $userId);
         }
 
         return $query;
     }
 }
-
