@@ -1,4 +1,5 @@
 import { createDefaultWall } from './useBudgetUtils';
+import { useDialog } from '@/composables/useDialog';
 
 /**
  * Composable para manipulação da estrutura de orçamento (rooms, walls, continuations)
@@ -16,6 +17,8 @@ const createDefaultContinuation = () => ({
  * Composable para gerenciar a estrutura do orçamento
  */
 export function useBudgetStructure(budget) {
+  const dialog = useDialog();
+
   function addRoom() {
     budget.rooms.push({
       name: '',
@@ -54,10 +57,23 @@ export function useBudgetStructure(budget) {
     wall.continuations.splice(continuationIndex, 1);
   }
 
-  function handleContinuationToggle(roomIndex, wallIndex) {
+  async function handleContinuationToggle(roomIndex, wallIndex) {
     const wall = budget.rooms[roomIndex].walls[wallIndex];
 
     if (!wall.continueSameArt) {
+      if (Array.isArray(wall.continuations) && wall.continuations.length) {
+        const confirmed = await dialog.confirm({
+          title: 'Remover continuações desta parede?',
+          text: 'Ao desmarcar esta opção, as continuações cadastradas para esta parede serão perdidas.',
+          confirmText: 'Desmarcar',
+        });
+
+        if (!confirmed) {
+          wall.continueSameArt = true;
+          return;
+        }
+      }
+
       wall.continuations = [];
       return;
     }
