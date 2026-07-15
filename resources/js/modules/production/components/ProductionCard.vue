@@ -81,6 +81,28 @@
       <div v-if="hasProductionDate" class="mt-2">
         <span class="small text-body-secondary"> Produção: {{ productionDateText }} </span>
       </div>
+
+      <div v-if="stripGroups.length" class="table-responsive mt-2">
+        <table class="table table-sm table-bordered mb-0 align-middle production-strips-table">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="text-end text-nowrap">Qtd. Faixas</th>
+              <th scope="col" class="text-end text-nowrap">Alt. Faixas (m)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(group, index) in stripGroups" :key="index">
+              <td class="text-end">{{ group.q }}</td>
+              <td class="text-end">{{ formatNumber(group.h) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="installationDirectionText" class="mt-2 small">
+        <span class="text-body-secondary d-block">Instalação:</span>
+        <span class="text-body">{{ installationDirectionText }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -105,6 +127,7 @@ import {
   getProductionTimerText,
   getProductionTimerClass,
 } from '@/utils/cardUtils';
+import { calculateWallWithContinuations } from '@/utils/calculateStripsUtils';
 
 // Icons
 import { useFormatting } from '@/composables/useFormatting';
@@ -118,7 +141,7 @@ const props = defineProps({
 
 const emit = defineEmits(['drag-start', 'click']);
 
-const { formatDateOnly } = useFormatting();
+const { formatDateOnly, formatNumber } = useFormatting();
 
 let timerInterval = null;
 
@@ -145,6 +168,47 @@ const deliveryBadgeClass = computed(() =>
 );
 const hasProductionDate = computed(() => Boolean(props.card.production_date));
 const productionDateText = computed(() => formatDateOnly(props.card.production_date));
+
+// Faixas
+const stripGroups = computed(() => {
+  const wall = props.card.wall;
+  if (!wall) return [];
+
+  const groups = [];
+  calculateWallWithContinuations(wall).perPart.forEach((part) => {
+    const q = Number(part?.strips ?? 0);
+    const h = Number(part?.stripHeight ?? 0);
+    if (!Number.isFinite(q) || q <= 0 || !Number.isFinite(h) || h <= 0) return;
+
+    const last = groups[groups.length - 1];
+    if (last && Math.abs(last.h - h) < 1e-9) {
+      last.q += q;
+    } else {
+      groups.push({ q, h });
+    }
+  });
+
+  return groups;
+});
+
+function directionInstallLabel(direction) {
+  if (direction === 'left-to-right') {
+    return 'Esquerda para direita das paredes';
+  }
+  if (direction === 'right-to-left') {
+    return 'Direita para a esquerda das paredes';
+  }
+  return '';
+}
+
+const installationDirectionText = computed(() => {
+  const wall = props.card.wall;
+  if (!wall) return '';
+
+  const legacyFromContinuation = wall.continuations?.[0]?.direction;
+  const direction = wall.direction ?? wall.Direction ?? legacyFromContinuation;
+  return directionInstallLabel(direction);
+});
 
 // Counters
 const commentsCount = computed(() => getCommentsCount(props.card));
