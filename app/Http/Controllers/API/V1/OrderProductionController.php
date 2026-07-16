@@ -11,6 +11,7 @@ use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
 use App\Http\Resources\OrderResource;
 use App\Http\Controllers\Controller;
+use App\Support\OrderBudgetStatus;
 use App\Support\OrderStatus;
 
 class OrderProductionController extends Controller
@@ -60,7 +61,7 @@ class OrderProductionController extends Controller
         }
 
         $this->orderBudget->where('order_id', $order->id)
-            ->update(['status' => 'Liberado para produção']);
+            ->update(['status' => OrderBudgetStatus::RELEASED_FOR_PRODUCTION]);
 
         return (new OrderResource($order->refresh()))->response();
     }

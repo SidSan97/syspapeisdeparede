@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\OrderBudget;
 use App\Models\RequestLayoutArt;
 use App\Models\RequestLayoutArtInteraction;
+use App\Support\OrderBudgetStatus;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -50,13 +51,13 @@ class RequestLayoutArtRepository
             $orderBudget = OrderBudget::findOrFail($orderBudgetId);
 
             $orderBudget->update([
-                'status' => 'Pendente de Revisão',
+                'status' => OrderBudgetStatus::PENDING_REVIEW,
             ]);
 
             // Atualizar status do orçamento
             if ($orderBudget->budget) {
                 $orderBudget->budget->update([
-                    'status' => 'Pendente de Revisão',
+                    'status' => OrderBudgetStatus::PENDING_REVIEW,
                 ]);
             }
 

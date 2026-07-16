@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
-use App\Services\TinyErpService;
 use App\Repositories\OrderBudgetRepository;
+use App\Support\OrderBudgetStatus;
 
 class OrderPaymentStateService
 {
@@ -70,16 +70,18 @@ class OrderPaymentStateService
 
             $model = $wall->collectionModel;
             if (! $model || ! $model->request_link) {
-                if ($orderBudget->status !== 'Arte Recebida') {
-                    $orderBudget->update(['status' => 'Arte Recebida']);
+                if (! OrderBudgetStatus::is($orderBudget->status, OrderBudgetStatus::ART_RECEIVED)) {
+                    $orderBudget->update(['status' => OrderBudgetStatus::ART_RECEIVED]);
                 }
 
                 continue;
             }
 
-            $newStatus = $this->wallHasReferringLink($wall) ? 'Arte Recebida' : 'Aguardando Arte';
+            $newStatus = $this->wallHasReferringLink($wall)
+                ? OrderBudgetStatus::ART_RECEIVED
+                : OrderBudgetStatus::WAITING_ART;
 
-            if ($orderBudget->status !== $newStatus) {
+            if (! OrderBudgetStatus::is($orderBudget->status, $newStatus)) {
                 $orderBudget->update(['status' => $newStatus]);
             }
         }

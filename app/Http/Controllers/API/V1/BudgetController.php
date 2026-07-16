@@ -31,6 +31,7 @@ use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
 use App\Services\TinyErpService;
 use App\Support\DocumentValidator;
+use App\Support\OrderBudgetStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -160,7 +161,7 @@ class BudgetController extends Controller
                     'order_id' => $order->id,
                     'tenant_id' => $tenantId,
                     'budget_wall_id' => $wall->id,
-                    'status' => 'Aprovar Layout',
+                    'status' => OrderBudgetStatus::APPROVE_LAYOUT,
                     'layout_column_names_id' => $targetColumnId,
                     'description' => $description,
                     'order_index' => $orderIdx++,

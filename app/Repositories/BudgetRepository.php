@@ -9,6 +9,8 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\LayoutCardHistoryService;
 use App\Support\Budget\BudgetCalculator;
+use App\Support\OrderBudgetStatus;
+use App\Support\OrderStatus;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +37,7 @@ class BudgetRepository
     public function getPendingReview()
     {
         return Budget::with('rooms.walls.collectionModel')
-            ->where('status', 'Pendente de Revisão')
+            ->whereIn('status', OrderBudgetStatus::variants(OrderBudgetStatus::PENDING_REVIEW))
             ->get();
     }
 
@@ -486,14 +488,14 @@ class BudgetRepository
 
             // Atualizar o pedido com o arquivo de pagamento e status
             $order->payment_file = $path;
-            $order->status = 'Aprovado';
+            $order->status = OrderStatus::APPROVED;
             $order->paid = 1;
             $order->payment_status = 'paid';
             $order->save();
 
             // Atualizar todos os order_budgets associados para 'Aprovado'
             OrderBudget::where('order_id', $order->id)
-                ->update(['status' => 'Aprovado']);
+                ->update(['status' => OrderBudgetStatus::APPROVED]);
 
             return $order->fresh();
         });
