@@ -95,9 +95,6 @@ class WebhookController extends Controller
             }
         }
 
-        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $order->dropshipping_budget->toArray());
-        $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
-
         Log::info('Webhook Pagar.me: pedido marcado como pago', [
             'order_id' => $orderId,
             'pagarme_order_id' => $data['id'] ?? null,
