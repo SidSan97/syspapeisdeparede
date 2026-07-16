@@ -11,6 +11,7 @@ use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
 use App\Http\Resources\OrderResource;
 use App\Http\Controllers\Controller;
+use App\Support\OrderStatus;
 
 class OrderProductionController extends Controller
 {
@@ -49,7 +50,7 @@ class OrderProductionController extends Controller
         }
 
         $textFlag   = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
-        $order->update(['status' => 'Aprovado', 'flags' => $textFlag]);
+        $order->update(['status' => OrderStatus::APPROVED, 'flags' => $textFlag]);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
         $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();

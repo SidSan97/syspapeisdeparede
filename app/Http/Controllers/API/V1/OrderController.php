@@ -24,6 +24,7 @@ use App\Services\OrderBoletoWalletPaymentService;
 use App\Services\OrderPaymentCompositionService;
 use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
+use App\Support\OrderStatus;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
@@ -289,7 +290,7 @@ class OrderController extends Controller
     public function cancel(Order $order): JsonResponse
     {
         $order->update([
-            'status' => 'Cancelado',
+            'status' => OrderStatus::CANCELED,
         ]);
 
         return (new OrderResource($order))->response();

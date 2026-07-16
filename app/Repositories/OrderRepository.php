@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\OrderService;
 use App\Support\Budget\BudgetCalculator;
+use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
@@ -68,7 +69,7 @@ class OrderRepository
 
         return $query->whereHas('order', function ($query) {
             $query->where('paid', '!=', 1)
-                ->where('status', 'Aprovado');
+                ->whereIn('status', OrderStatus::variants(OrderStatus::APPROVED));
         })
             ->whereHas('wall.collectionModel', function ($query) {
                 $query->where('request_art_on_payment', false);
@@ -100,7 +101,7 @@ class OrderRepository
         return OrderBudget::whereNotNull('budget_wall_id')
             ->whereHas('order', function ($query) {
                 $query->where('paid', 1);
-                $query->whereIn('status', ['Aprovado', 'Em produção', 'Enviado']);
+                $query->whereIn('status', OrderStatus::production());
             })
             ->with([
                 'order' => function ($query) {
@@ -267,7 +268,7 @@ class OrderRepository
     public function cancel(Order $order): Order
     {
         $order->update([
-            'status' => 'Cancelado',
+            'status' => OrderStatus::CANCELED,
         ]);
 
         return $order->fresh(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom']);
@@ -343,7 +344,7 @@ class OrderRepository
     public function createFromBudget(Budget $budget, array $additionalData = []): Order
     {
         $attributes = $this->sharedAttributesFromBudget($budget);
-        $attributes['status'] = 'Em aberto';
+        $attributes['status'] = OrderStatus::OPEN;
 
         return $this->create($attributes);
     }
@@ -436,7 +437,7 @@ class OrderRepository
                 'selected_carrier_price' => $base->selected_carrier_price,
                 'selected_carrier_delivery_time' => $base->selected_carrier_delivery_time,
                 'carriers_snapshot' => $base->carriers_snapshot,
-                'status' => 'Em aberto',
+                'status' => OrderStatus::OPEN,
                 'dropshipping_budget' => $allDs ? 1 : 0,
                 'paid' => 0,
                 'payment_status' => 'unpaid',
@@ -503,7 +504,7 @@ class OrderRepository
 
             $this->orderBudgetRepository->syncFromOrderRooms($order->fresh(['rooms.walls']));
 
-            Order::query()->whereIn('id', $orderIds)->update(['status' => 'Cancelado']);
+            Order::query()->whereIn('id', $orderIds)->update(['status' => OrderStatus::CANCELED]);
 
             return $order->fresh(['user', 'tenant', 'primaryRoom', 'rooms.walls.collectionModel', 'dropshippingData']);
         });
