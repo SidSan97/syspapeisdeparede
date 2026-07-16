@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
+use App\Services\TinyErpService;
+use App\Repositories\OrderBudgetRepository;
 
 class OrderPaymentStateService
 {
     public function __construct(
-        protected OrderPaymentCompositionService $compositionService
+        protected OrderPaymentCompositionService $compositionService,
+        protected TinyErpService $tinyErpService,
+        protected OrderBudgetRepository $orderBudgetRepository
     ) {}
 
     /**
@@ -37,6 +41,9 @@ class OrderPaymentStateService
             'paid' => $isPaid ? 1 : 0,
             'payment_status' => $paymentStatus,
         ]);
+
+        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $order->dropshipping_budget->toArray());
+        $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
     }
 
     public function linkContainsArtes(OrderPaymentLink $link): bool
