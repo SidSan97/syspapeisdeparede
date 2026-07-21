@@ -7,6 +7,7 @@ use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Services\OrderService;
 use App\Support\Budget\BudgetCalculator;
+use App\Support\OrderStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -71,7 +72,7 @@ class MergeOrderAction
                 'selected_carrier_price' => $base->selected_carrier_price,
                 'selected_carrier_delivery_time' => $base->selected_carrier_delivery_time,
                 'carriers_snapshot' => $base->carriers_snapshot,
-                'status' => 'Em aberto',
+                'status' => OrderStatus::OPEN,
                 'dropshipping_budget' => $allDs ? 1 : 0,
                 'paid' => 0,
                 'payment_status' => 'unpaid',
@@ -137,7 +138,7 @@ class MergeOrderAction
 
             $this->orderBudgetRepository->syncFromOrderRooms($order->fresh(['rooms.walls']));
 
-            Order::query()->whereIn('id', $ids)->update(['status' => 'Cancelado']);
+            Order::query()->whereIn('id', $ids)->update(['status' => OrderStatus::CANCELED]);
 
             return $order->fresh(['user', 'tenant', 'primaryRoom', 'rooms.walls.collectionModel', 'dropshippingData']);
         });

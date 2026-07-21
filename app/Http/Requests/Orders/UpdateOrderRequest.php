@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Orders;
 
 use App\Models\CollectionModel;
+use App\Support\OrderStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -39,16 +40,7 @@ class UpdateOrderRequest extends FormRequest
             'selected_carrier_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'selected_carrier_delivery_time' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'carriers_snapshot' => ['sometimes', 'nullable', 'array'],
-            'status' => ['sometimes', 'nullable', 'string', Rule::in([
-                'em aberto',
-                'Em aberto',
-                'aprovado',
-                'Aprovado',
-                'cancelado',
-                'Cancelado',
-                'Em produção',
-                'Enviado',
-            ])],
+            'status' => ['sometimes', 'nullable', 'string', Rule::in(OrderStatus::all())],
             'payment_file' => ['sometimes', 'nullable', 'string'],
             'observation' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'comment_referring_model' => ['sometimes', 'nullable', 'string', 'max:500'],

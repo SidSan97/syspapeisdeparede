@@ -6,6 +6,7 @@ use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\LayoutCardHistoryService;
+use App\Support\OrderBudgetStatus;
 use Illuminate\Support\Facades\DB;
 
 class OrderBudgetRepository {
@@ -348,7 +349,7 @@ class OrderBudgetRepository {
             $orderBudget = OrderBudget::query()->create([
                 'order_id' => $order->id,
                 'budget_wall_id' => $wall->id,
-                'status' => 'Aprovar Layout',
+                'status' => OrderBudgetStatus::APPROVE_LAYOUT,
                 'tenant_id' => $tenantId,
                 'layout_column_names_id' => $this->resolveInitialLayoutColumnId(
                     $wall->collectionModel?->name,

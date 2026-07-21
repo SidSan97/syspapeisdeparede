@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
+use App\Repositories\OrderBudgetRepository;
+use App\Support\OrderBudgetStatus;
 
 class OrderPaymentStateService
 {
     public function __construct(
-        protected OrderPaymentCompositionService $compositionService
+        protected OrderPaymentCompositionService $compositionService,
+        protected TinyErpService $tinyErpService,
+        protected OrderBudgetRepository $orderBudgetRepository
     ) {}
 
     /**
@@ -37,6 +41,9 @@ class OrderPaymentStateService
             'paid' => $isPaid ? 1 : 0,
             'payment_status' => $paymentStatus,
         ]);
+
+        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $order->dropshipping_budget->toArray());
+        $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
     }
 
     public function linkContainsArtes(OrderPaymentLink $link): bool
@@ -63,16 +70,18 @@ class OrderPaymentStateService
 
             $model = $wall->collectionModel;
             if (! $model || ! $model->request_link) {
-                if ($orderBudget->status !== 'Arte Recebida') {
-                    $orderBudget->update(['status' => 'Arte Recebida']);
+                if (! OrderBudgetStatus::is($orderBudget->status, OrderBudgetStatus::ART_RECEIVED)) {
+                    $orderBudget->update(['status' => OrderBudgetStatus::ART_RECEIVED]);
                 }
 
                 continue;
             }
 
-            $newStatus = $this->wallHasReferringLink($wall) ? 'Arte Recebida' : 'Aguardando Arte';
+            $newStatus = $this->wallHasReferringLink($wall)
+                ? OrderBudgetStatus::ART_RECEIVED
+                : OrderBudgetStatus::WAITING_ART;
 
-            if ($orderBudget->status !== $newStatus) {
+            if (! OrderBudgetStatus::is($orderBudget->status, $newStatus)) {
                 $orderBudget->update(['status' => $newStatus]);
             }
         }
