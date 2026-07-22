@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Api\V1;
+namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreBudgetPdfRequest extends FormRequest
+class IndexBudgetPreviewRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -20,11 +20,8 @@ class StoreBudgetPdfRequest extends FormRequest
         return [
             'percentage' => ['nullable', 'numeric', 'min:0'],
             'mockup_percentage' => ['nullable', 'numeric', 'min:0'],
-            'cash_value' => ['nullable', 'numeric', 'min:0'],
-            'total_amount' => ['nullable', 'numeric', 'min:0'],
-            'installment_value' => ['nullable', 'numeric', 'min:0'],
-            'total_amount_installments' => ['nullable', 'numeric', 'min:0'],
             'observations' => ['nullable', 'string', 'max:5000'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }

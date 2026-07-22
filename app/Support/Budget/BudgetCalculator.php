@@ -10,7 +10,9 @@ class BudgetCalculator
     protected static ?array $tinyErpAllData = null;
 
     public const STRIP_WIDTH = 0.6;
+
     private const EXTRA = 0.07;
+
     private const MAX_H = 12.0;
 
     public const STRIP_HEIGHT_OPTIONS = [
@@ -42,6 +44,7 @@ class BudgetCalculator
     protected static function getPriceVista(): float
     {
         $data = self::getTinyErpAllData();
+
         return (float) ($data['precoPromocionalVista'] ?? 0);
     }
 
@@ -51,6 +54,7 @@ class BudgetCalculator
     protected static function getPricePrazo(): float
     {
         $data = self::getTinyErpAllData();
+
         return (float) ($data['precoPromocionalPrazo'] ?? 0);
     }
 
@@ -63,7 +67,7 @@ class BudgetCalculator
 
         $continuations = $wall['continuations'] ?? [];
 
-        if (!is_array($continuations)) {
+        if (! is_array($continuations)) {
             return [];
         }
 
@@ -158,11 +162,11 @@ class BudgetCalculator
         $out = [];
 
         foreach ($groups as $g) {
-            if (!$g || ($g['q'] ?? 0) <= 0) {
+            if (! $g || ($g['q'] ?? 0) <= 0) {
                 continue;
             }
 
-            if (!empty($out) && abs($out[count($out) - 1]['h'] - $g['h']) < 1e-9) {
+            if (! empty($out) && abs($out[count($out) - 1]['h'] - $g['h']) < 1e-9) {
                 $out[count($out) - 1]['q'] += $g['q'];
                 $out[count($out) - 1]['indices'] = array_merge(
                     $out[count($out) - 1]['indices'],
@@ -253,7 +257,6 @@ class BudgetCalculator
      * Calcula os strips de uma sala na ordem das paredes (carry + subida de altura + paridade).
      * Retorna métricas por parede na MESMA ordem do array de entrada.
      *
-     * @param array $walls
      * @return array{perWall: array<int, array{strip_count:int, strip_height:?float, total_area:float}>, totalFaixas:int, totalMetros:float, safetyExceeded:bool}
      */
     public static function calculateWallsSequence(array $walls): array
@@ -288,7 +291,7 @@ class BudgetCalculator
             $stripHeights[$i] = $h;
         }
 
-        if (!$valid) {
+        if (! $valid) {
             $perWall = [];
             foreach ($walls as $_) {
                 $perWall[] = ['strip_count' => 0, 'strip_height' => null, 'total_area' => 0.0];
@@ -317,6 +320,7 @@ class BudgetCalculator
             if ($LiEfetiva <= 1e-12) {
                 $carry = -$LiEfetiva;
                 $perWallBase[] = ['q' => 0, 'h' => $Hi];
+
                 continue;
             }
 
@@ -341,9 +345,11 @@ class BudgetCalculator
         for ($i = 0; $i < count($perWallBase); $i++) {
             $q = (int) ($perWallBase[$i]['q'] ?? 0);
             $h = (float) ($perWallBase[$i]['h'] ?? 0);
-            if ($q <= 0) continue;
+            if ($q <= 0) {
+                continue;
+            }
 
-            if (!empty($groups0) && abs($groups0[count($groups0) - 1]['h'] - $h) < 1e-9) {
+            if (! empty($groups0) && abs($groups0[count($groups0) - 1]['h'] - $h) < 1e-9) {
                 $groups0[count($groups0) - 1]['q'] += $q;
                 $groups0[count($groups0) - 1]['indices'][] = $i;
             } else {
@@ -368,13 +374,17 @@ class BudgetCalculator
 
         foreach ($groupsFinal as $g) {
             $indices = $g['indices'] ?? [];
-            if (empty($indices)) continue;
+            if (empty($indices)) {
+                continue;
+            }
 
             $qBaseSum = 0;
             foreach ($indices as $idx) {
                 $qBaseSum += (int) ($perWallBase[$idx]['q'] ?? 0);
             }
-            if ($qBaseSum <= 0) continue;
+            if ($qBaseSum <= 0) {
+                continue;
+            }
 
             $hk = (float) $g['h'];
             foreach ($indices as $idx) {
@@ -706,6 +716,7 @@ class BudgetCalculator
             if ($LiEfetiva <= 1e-12) {
                 $carry = -$LiEfetiva;
                 $perPartBase[] = ['q' => 0, 'h' => $Hi];
+
                 continue;
             }
 
@@ -733,7 +744,7 @@ class BudgetCalculator
                 continue;
             }
 
-            if (!empty($groups0) && abs($groups0[count($groups0) - 1]['h'] - $h) < 1e-9) {
+            if (! empty($groups0) && abs($groups0[count($groups0) - 1]['h'] - $h) < 1e-9) {
                 $groups0[count($groups0) - 1]['q'] += $q;
             } else {
                 $groups0[] = ['h' => $h, 'q' => $q, 'indices' => [$i]];
@@ -846,5 +857,12 @@ class BudgetCalculator
 
         return round(($meters * self::getPriceVista()) + $modelCost, 2);
     }
-}
 
+    public static function calculateRoomPricePrazo(object|array $room): float
+    {
+        $meters = self::calculateRoomMeters($room);
+        $modelCost = self::calculateRoomModelCost($room);
+
+        return round(($meters * self::getPricePrazo()) + $modelCost, 2);
+    }
+}

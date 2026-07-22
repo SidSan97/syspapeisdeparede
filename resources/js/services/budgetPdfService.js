@@ -1,6 +1,6 @@
 import { http } from '@/lib/http';
 
-const endpoint = '/v1/budgets';
+const endpoint = '/budgets';
 
 export const budgetPdfService = {
   async generatePdf(id, totalAmount, totalAmountInstallments, mockupPercentage, observations = '') {
@@ -8,7 +8,7 @@ export const budgetPdfService = {
       total_amount: totalAmount,
       total_amount_installments: totalAmountInstallments,
       mockup_percentage: mockupPercentage,
-      observations: observations || null,
+      notes: observations || null,
     };
 
     const response = await http.post(`${endpoint}/${id}/pdf`, payload, {

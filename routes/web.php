@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BudgetPreviewController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublicCatalogController;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,9 @@ Route::get('/home', HomeController::class)->name('home');
 Route::get('home', function () {
     return redirect('/dashboard');
 });
+
+Route::get('/budgets/{budget}/preview', [BudgetPreviewController::class, 'index']);
+Route::post('/budgets/{budget}/pdf', [BudgetPreviewController::class, 'download']);
 
 // Rotas públicas para o catálogo de coleções/imagens (sem exigir login)
 // Route::get('colecao-arts/{vue_capture?}', PublicCatalogController::class)
