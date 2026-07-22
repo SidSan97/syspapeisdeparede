@@ -9,8 +9,8 @@ enum UserRole: string
     case Production = 'production';
     case Commercial = 'commercial';
     case Expedition = 'expedition';
-    case Representative = 'representatives';
-    case Architect = 'architects';
+    case Representative = 'representatives'; // FIXME: typo plural.
+    case Architect = 'architects'; // FIXME: typo plural.
     case Admin = 'admin';
 
     public function label(): string
@@ -25,5 +25,13 @@ enum UserRole: string
             self::Architect => 'Arquiteto',
             self::Admin => 'Administrador',
         };
+    }
+
+    public static function internal(): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $role) => $role !== self::Reseller
+        );
     }
 }

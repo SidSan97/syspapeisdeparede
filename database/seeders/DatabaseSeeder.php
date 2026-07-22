@@ -23,5 +23,11 @@ class DatabaseSeeder extends Seeder
             ProductionColumnNameSeeder::class,
             // BudgetAndOrderSeeder::class,
         ]);
+
+        if (app()->environment('local')) {
+            $this->call([
+                DevelopmentSeeder::class,
+            ]);
+        }
     }
 }
