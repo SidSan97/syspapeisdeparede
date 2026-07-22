@@ -218,7 +218,7 @@ function buildPreviewUrl() {
     params.set('notes', pdfObservations.value.trim());
   }
 
-  return `/budgets/${budget.value.id}/preview?${params.toString()}`;
+  return `${window.LaravelApp.appUrl}/budgets/${budget.value.id}/preview?${params.toString()}`;
 }
 
 const refreshPreviewUrl = useDebounceFn(() => {

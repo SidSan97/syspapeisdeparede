@@ -13,7 +13,7 @@
             <tr>
                 <td>
                     <b>{{ $item['title'] }}</b>
-                    <p>{{ $item['description'] }}</p>
+                    <p>{!! $item['description'] !!}</p>
                 </td>
                 <td>{{ $item['model_name'] }}</td>
                 <td style="text-align: right;">{{ $item['meters'] }}</td>
