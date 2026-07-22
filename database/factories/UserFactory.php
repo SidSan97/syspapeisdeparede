@@ -2,12 +2,15 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
+use App\Models\Reseller;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -40,5 +43,19 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function role(UserRole $role): static
+    {
+        return $this->afterCreating(
+            fn (User $user) => $user->assignRole($role->value)
+        );
+    }
+
+    public function reseller(): static
+    {
+        return $this
+            ->role(UserRole::Reseller)
+            ->for(Reseller::factory());
     }
 }
