@@ -123,9 +123,10 @@
               </li>
               <li>
                 <button
-                  class="dropdown-item text-danger"
+                  class="dropdown-item"
                   type="button"
                   @click="$emit('delete', budget)"
+                  style="color: var(--ds-text-danger)"
                 >
                   Excluir
                 </button>
@@ -140,10 +141,10 @@
 
 <script setup>
 import { IconDotsVertical } from '@tabler/icons-vue';
+import BudgetStatusBadge from './BudgetStatusBadge.vue';
 import { formatDate } from '@/utils/dateUtils';
 import { useFormatting } from '@/composables/useFormatting';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
-import BudgetStatusBadge from './BudgetStatusBadge.vue';
 
 const { formatCurrency } = useFormatting();
 

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\API\V1\BudgetController;
 use App\Http\Controllers\API\V1\BudgetOrderController;
-use App\Http\Controllers\API\V1\BudgetPdfController;
 use App\Http\Controllers\API\V1\OrderBudgetController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +12,6 @@ Route::patch('budgets/request-layout-arts/status', [BudgetController::class, 'up
 
 Route::post('budgets/{budget}/copies', [BudgetController::class, 'duplicate']);
 Route::patch('budgets/{budget}/status', [BudgetController::class, 'updateStatus']);
-Route::post('budgets/{budget}/pdf', [BudgetPdfController::class, 'store']);
 Route::post('budgets/{budget}/orders', [BudgetOrderController::class, 'store']);
 Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment']);
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);
