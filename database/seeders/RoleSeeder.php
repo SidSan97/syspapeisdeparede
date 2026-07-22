@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
@@ -9,24 +10,15 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        $roles = [
-            'admin',
-            'reseller',
-            'designer',
-            'production',
-            'commercial',
-            'expedition',
-            'representatives',
-            'architects',
-        ];
-
-        foreach ($roles as $roleName) {
-            Role::firstOrCreate(['name' => $roleName]);
+        foreach (UserRole::cases() as $role) {
+            Role::firstOrCreate([
+                'name' => $role->value,
+            ]);
         }
 
         $superAdmin = Role::firstOrCreate(['name' => 'super admin']);
 
-        $admin = Role::where('name', 'admin')->first();
+        $admin = Role::where('name', UserRole::Admin->value)->first();
         if ($admin) {
             $admin->givePermissionTo([
                 'users.create',
