@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('person_type')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('cep', 9)->nullable();
+            $table->string('cep', 10)->nullable();
             $table->string('uf', 2)->nullable();
             $table->string('city')->nullable();
             $table->string('neighborhood')->nullable();
