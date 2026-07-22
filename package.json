@@ -12,7 +12,6 @@
     "devDependencies": {
         "@eslint/js": "^9.39.5",
         "@vitejs/plugin-vue": "^4.6.2",
-        "@vojtechlanka/vue-simple-suggest": "^2.1.0",
         "@vue/eslint-config-prettier": "^10.2.0",
         "axios": "^1.18.1",
         "eslint": "^9.39.5",
@@ -51,6 +50,7 @@
         "vue": "^3.5.39",
         "vue-chartjs": "^5.3.4",
         "vue-router": "^4.6.4",
+        "vue-select": "4.0.0-beta.6",
         "vue-the-mask": "^0.11.1",
         "vuedraggable": "^4.1.0"
     }
