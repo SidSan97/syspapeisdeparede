@@ -11,7 +11,7 @@ export const budgetPdfService = {
       notes: observations || null,
     };
 
-    const response = await http.post(`${endpoint}/${id}/pdf`, payload, {
+    const response = await http.post(`${window.LaravelApp.appUrl}${endpoint}/${id}/pdf`, payload, {
       responseType: 'blob',
     });
 
