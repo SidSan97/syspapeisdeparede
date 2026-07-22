@@ -89,6 +89,9 @@ importers:
       vue-router:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.39(typescript@6.0.2))
+      vue-select:
+        specifier: 4.0.0-beta.6
+        version: 4.0.0-beta.6(vue@3.5.39(typescript@6.0.2))
       vue-the-mask:
         specifier: ^0.11.1
         version: 0.11.1
@@ -102,9 +105,6 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^4.6.2
         version: 4.6.2(vite@5.4.21(lightningcss@1.32.0)(sass@1.101.0))(vue@3.5.39(typescript@6.0.2))
-      '@vojtechlanka/vue-simple-suggest':
-        specifier: ^2.1.0
-        version: 2.1.0(vue@3.5.39(typescript@6.0.2))
       '@vue/eslint-config-prettier':
         specifier: ^10.2.0
         version: 10.2.0(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
@@ -1035,11 +1035,6 @@ packages:
     peerDependencies:
       vite: ^4.0.0 || ^5.0.0
       vue: ^3.2.25
-
-  '@vojtechlanka/vue-simple-suggest@2.1.0':
-    resolution: {integrity: sha512-uw/z1T8p7+hMQebNG58Ow2LLPWdq069YpkA62fmcguVYBLKzlmcANRXxH5wVpzfsSEbftA5O/8m60V83UbnR3w==}
-    peerDependencies:
-      vue: 3.x
 
   '@vue/compiler-core@3.5.39':
     resolution: {integrity: sha512-16KBTEXAJCpDr0mwlw+AZyhu8iyC7R3S2vBwsI7QnWJU6X3WKc9VKeNEZpiMdZ569qWhz9574L3vV55qRL0Vtw==}
@@ -2377,6 +2372,11 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
+  vue-select@4.0.0-beta.6:
+    resolution: {integrity: sha512-K+zrNBSpwMPhAxYLTCl56gaMrWZGgayoWCLqe5rWwkB8aUbAUh7u6sXjIR7v4ckp2WKC7zEEUY27g6h1MRsIHw==}
+    peerDependencies:
+      vue: 3.x
+
   vue-the-mask@0.11.1:
     resolution: {integrity: sha512-UquSfnSWejD0zAfcD+3jJ1chUAkOAyoxya9Lxh9acCRtrlmGcAIvd0cQYraWqKenbuZJUdum+S174atv2AuEHQ==}
 
@@ -3135,10 +3135,6 @@ snapshots:
   '@vitejs/plugin-vue@4.6.2(vite@5.4.21(lightningcss@1.32.0)(sass@1.101.0))(vue@3.5.39(typescript@6.0.2))':
     dependencies:
       vite: 5.4.21(lightningcss@1.32.0)(sass@1.101.0)
-      vue: 3.5.39(typescript@6.0.2)
-
-  '@vojtechlanka/vue-simple-suggest@2.1.0(vue@3.5.39(typescript@6.0.2))':
-    dependencies:
       vue: 3.5.39(typescript@6.0.2)
 
   '@vue/compiler-core@3.5.39':
@@ -4761,6 +4757,10 @@ snapshots:
       vue: 3.5.39(typescript@6.0.2)
 
   vue-screen-utils@1.0.0-beta.13(vue@3.5.39(typescript@6.0.2)):
+    dependencies:
+      vue: 3.5.39(typescript@6.0.2)
+
+  vue-select@4.0.0-beta.6(vue@3.5.39(typescript@6.0.2)):
     dependencies:
       vue: 3.5.39(typescript@6.0.2)
 
