@@ -5,20 +5,18 @@
         <BaseDropdown v-if="budget" align="end">
           <template #trigger="{ open, toggle }">
             <button
-              class="btn btn-primary"
+              class="btn btn-default"
               type="button"
               :class="{ show: open }"
               :aria-expanded="open"
               @click="toggle"
             >
-              Ações
+              Ações <IconChevronDown size="14" />
             </button>
           </template>
 
           <li>
-            <button class="dropdown-item" type="button" @click="confirmDuplicate">
-              Duplicar
-            </button>
+            <button class="dropdown-item" type="button" @click="confirmDuplicate">Duplicar</button>
           </li>
           <li>
             <router-link
@@ -49,15 +47,18 @@
             </button>
           </li>
           <li v-if="!isCancelled(budget)">
-            <button class="dropdown-item" type="button" @click="confirmCancel">
-              Cancelar
-            </button>
+            <button class="dropdown-item" type="button" @click="confirmCancel">Cancelar</button>
           </li>
           <li>
             <hr class="dropdown-divider" />
           </li>
           <li>
-            <button class="dropdown-item text-danger" type="button" @click="confirmDelete">
+            <button
+              class="dropdown-item"
+              type="button"
+              @click="confirmDelete"
+              style="color: var(--ds-text-danger)"
+            >
               Excluir
             </button>
           </li>
@@ -112,6 +113,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { IconChevronDown } from '@tabler/icons-vue';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
@@ -182,10 +184,7 @@ function isCancelled(b) {
 }
 
 function showCreateOrder(b) {
-  return (
-    b?.status === null ||
-    (b?.status && b.status.toString().toLowerCase() === 'em aberto')
-  );
+  return b?.status === null || (b?.status && b.status.toString().toLowerCase() === 'em aberto');
 }
 
 async function confirmDuplicate() {
