@@ -269,9 +269,9 @@ class OrderController extends Controller
         return array_values(array_unique($adjustments));
     }
 
-    public function productionLayouts(): JsonResponse
+    public function productionLayouts(?int $orderId = null): JsonResponse
     {
-        $orderBudgets = $this->repository->getLayoutsForProduction();
+        $orderBudgets = $this->repository->getLayoutsForProduction($orderId);
 
         $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
 
