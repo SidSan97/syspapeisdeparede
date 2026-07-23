@@ -11,7 +11,7 @@ Route::get('orders', [OrderController::class, 'index']);
 Route::post('orders/merge', [OrderController::class, 'merge']);
 Route::get('orders/layouts/{orderId?}', [OrderController::class, 'layouts']);
 
-Route::get('orders/production-layouts', [OrderController::class, 'productionLayouts']);
+Route::get('orders/production-layouts/{orderId?}', [OrderController::class, 'productionLayouts']);
 Route::get('orders/expedition', [OrderExpeditionController::class, 'expedition']);
 Route::get('orders/ready-for-invoice', [OrderExpeditionController::class, 'readyForInvoice']);
 Route::post('orders/{order}/approve', [OrderProductionController::class, 'approve']);

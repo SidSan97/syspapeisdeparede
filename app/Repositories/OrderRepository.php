@@ -97,13 +97,18 @@ class OrderRepository
             ->get();
     }
 
-    public function getLayoutsForProduction()
+    public function getLayoutsForProduction(?int $orderId = null)
     {
-        return OrderBudget::whereNotNull('budget_wall_id')
-            ->whereHas('order', function ($query) {
-                $query->where('paid', 1);
-                $query->whereIn('status', OrderStatus::production());
-            })
+        $query = OrderBudget::whereNotNull('budget_wall_id');
+
+        if ($orderId !== null) {
+            $query->where('order_id', $orderId);
+        }
+
+        return $query->whereHas('order', function ($query) {
+            $query->where('paid', 1);
+            $query->whereIn('status', OrderStatus::production());
+        })
             ->with([
                 'order' => function ($query) {
                     $query->with([

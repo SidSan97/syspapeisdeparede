@@ -73,6 +73,13 @@
 
             <WallDetailsSection :wall="card.wall" />
 
+            <OthersWallsRooms
+                :cards="orderProductCards"
+                :current-card-id="card?.id"
+                :loading="loadingOrderProductCards"
+                @select="handleSelectOtherProductCard"
+              />
+
             <CollectionModelsSection :wall="card.wall" />
 
             <div v-if="card.budget" class="layout-modal-section">
@@ -136,6 +143,7 @@ import {
 import { useToast } from '@/composables/useToast';
 import { useAuthStore } from '@/stores/auth';
 import { useProductionReportsStore } from '@/stores/productionReports';
+import { productionService } from '@/services/productionService';
 import { getCardDisplayName, getOrderBudgetStatusBadgeClass } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
 import BaseModal from '@/components/common/BaseModal.vue';
@@ -143,6 +151,7 @@ import MembersSection from '@/components/card-modal/MembersSection.vue';
 import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
 import AttachmentsSection from './production-card-modal/AttachmentsSection.vue';
 import WallDetailsSection from '@/components/card-modal/WallDetailsSection.vue';
+import OthersWallsRooms from '@/components/card-modal/OthersWallsRooms.vue';
 import CollectionModelsSection from './production-card-modal/CollectionModelsSection.vue';
 import ProductionPercentageSection from './production-card-modal/ProductionPercentageSection.vue';
 import ProductionReportsSection from './production-card-modal/ProductionReportsSection.vue';
@@ -157,9 +166,20 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['close', 'card-updated', 'member-added', 'member-removed']);
+const emit = defineEmits([
+  'close',
+  'card-updated',
+  'member-added',
+  'member-removed',
+  'card-refreshed',
+  'order-cards-refreshed',
+  'select-card',
+]);
 
 const isVisible = computed(() => !!props.card);
+
+const orderProductCards = ref([]);
+const loadingOrderProductCards = ref(false);
 
 const toast = useToast();
 const auth = useAuthStore();
@@ -187,6 +207,50 @@ const markingAsProduced = computed(() => {
 const coverImage = computed(() => {
   return getCoverImage(props.card);
 });
+
+function applyFreshCard(cardId) {
+  const fresh = orderProductCards.value.find((item) => Number(item.id) === Number(cardId));
+  if (fresh) {
+    emit('card-refreshed', fresh);
+  }
+}
+
+async function loadOrderProductCards() {
+  const card = props.card;
+  if (!card?.order_id || !card?.id) {
+    orderProductCards.value = [];
+    return;
+  }
+
+  const orderId = card.order_id;
+  const cardId = card.id;
+
+  loadingOrderProductCards.value = true;
+  try {
+    const layouts = await productionService.getLayouts(orderId);
+    if (!isVisible.value) {
+      return;
+    }
+
+    orderProductCards.value = layouts;
+    emit('order-cards-refreshed', layouts);
+    applyFreshCard(cardId);
+  } catch (error) {
+    console.error(error);
+    toast.error('Não foi possível atualizar os dados do card.');
+  } finally {
+    loadingOrderProductCards.value = false;
+  }
+}
+
+function handleSelectOtherProductCard(card) {
+  if (!card?.id || Number(card.id) === Number(props.card?.id)) {
+    return;
+  }
+
+  emit('select-card', card);
+  applyFreshCard(card.id);
+}
 
 function handleClose() {
   emit('close');
@@ -228,13 +292,26 @@ async function markAsProduced() {
   }
 }
 
-// Buscar dados quando o card mudar
+watch(isVisible, (visible) => {
+  if (visible) {
+    loadOrderProductCards();
+  } else {
+    orderProductCards.value = [];
+  }
+});
+
 watch(
   () => props.card?.id,
   (newCardId) => {
     if (newCardId) {
       productionReportsStore.fetchProductionReports(newCardId);
     }
+
+    if (!newCardId || !isVisible.value || orderProductCards.value.length === 0) {
+      return;
+    }
+
+    applyFreshCard(newCardId);
   },
   { immediate: true },
 );

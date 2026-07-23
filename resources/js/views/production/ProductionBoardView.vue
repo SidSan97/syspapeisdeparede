@@ -54,6 +54,9 @@
       @card-updated="handleCardUpdated"
       @member-added="handleCardMemberAdded"
       @member-removed="handleCardMemberRemoved"
+      @card-refreshed="handleCardRefreshed"
+      @order-cards-refreshed="handleOrderCardsRefreshed"
+      @select-card="handleSelectCard"
     />
   </section>
 </template>
@@ -112,6 +115,31 @@ function handleCardMemberRemoved(memberId) {
   if (!selectedCard.value) return;
   const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);
   if (card) card.members = (card.members ?? []).filter((m) => m.id !== memberId);
+}
+
+function handleCardRefreshed(freshCard) {
+  if (!freshCard || !selectedCard.value) return;
+  Object.assign(selectedCard.value, freshCard);
+  const card = cards.cards.value.find((c) => c.id === selectedCard.value.id);
+  if (card) Object.assign(card, freshCard);
+}
+
+function handleOrderCardsRefreshed(layouts) {
+  if (!Array.isArray(layouts)) return;
+
+  layouts.forEach((freshCard) => {
+    const card = cards.cards.value.find((c) => Number(c.id) === Number(freshCard.id));
+    if (card) {
+      Object.assign(card, freshCard);
+    }
+  });
+}
+
+function handleSelectCard(card) {
+  if (!card?.id) return;
+
+  const boardCard = cards.cards.value.find((c) => Number(c.id) === Number(card.id));
+  selectedCard.value = boardCard ?? card;
 }
 
 function getCardsByColumn(columnId) {

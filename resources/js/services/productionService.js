@@ -6,8 +6,10 @@ export const productionService = {
     return data.data;
   },
 
-  async getLayouts() {
-    const { data } = await http.get('v1/orders/production-layouts');
+  async getLayouts(orderId = null) {
+    const { data } = await http.get(
+      `v1/orders/production-layouts${orderId ? `/${orderId}` : ''}`,
+    );
 
     const layouts = Array.isArray(data) ? data : [];
 
