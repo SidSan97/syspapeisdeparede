@@ -107,6 +107,13 @@
       @close="closePaymentModal"
       @submit="handleGeneratePaymentLink"
     />
+    <CreateOrderModal
+      v-model="createOrderModalOpen"
+      :budget="budget"
+      :submitting="creatingOrder"
+      @confirm="handleCreateOrderConfirm"
+      @close="closeCreateOrderModal"
+    />
   </section>
 </template>
 
@@ -127,6 +134,7 @@ import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
 import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
 import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
+import CreateOrderModal from '@/components/budgets/CreateOrderModal.vue';
 
 import { useBudgetStore } from '@/stores/budgetStore';
 import { useBudgetsList } from '@/composables/useBudgetsList';
@@ -150,6 +158,8 @@ const routes = [
 const isGeneratingPaymentLink = ref(false);
 const isPaymentModalOpen = ref(false);
 const walletBalance = ref(0);
+const createOrderModalOpen = ref(false);
+const creatingOrder = ref(false);
 
 const budget = computed(() => budgetStore.currentBudget);
 
@@ -203,17 +213,34 @@ async function confirmDuplicate() {
 }
 
 async function confirmCreateOrder() {
-  const result = await window.Swal.fire({
-    title: 'Criar pedido?',
-    html: 'Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.',
-    icon: 'info',
-    confirmButtonText: 'Criar pedido',
-    cancelButtonText: 'Cancelar',
-    showCancelButton: true,
-  });
+  if (!budget.value) {
+    return;
+  }
 
-  if (result.isConfirmed && budget.value) {
-    await createOrder(budget.value);
+  createOrderModalOpen.value = true;
+}
+
+function closeCreateOrderModal() {
+  if (creatingOrder.value) {
+    return;
+  }
+
+  createOrderModalOpen.value = false;
+}
+
+async function handleCreateOrderConfirm({ budget: selectedBudget, walls }) {
+  if (!selectedBudget?.id || creatingOrder.value) {
+    return;
+  }
+
+  creatingOrder.value = true;
+  try {
+    await createOrder(selectedBudget, { walls });
+    createOrderModalOpen.value = false;
+  } catch (error) {
+    // Erro já tratado no composable
+  } finally {
+    creatingOrder.value = false;
   }
 }
 

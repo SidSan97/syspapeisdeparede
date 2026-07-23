@@ -317,7 +317,11 @@ class BudgetRepository
                 'status' => 'Aprovado',
             ]);
 
-            // Processar dados mapeados por parede
+            $wallsById = collect($data['walls'] ?? [])
+                ->filter(fn ($wall) => is_array($wall) && ! empty($wall['id']))
+                ->keyBy(fn ($wall) => (int) $wall['id']);
+
+            // Processar dados mapeados por parede (formato legado)
             $wallDataMapping = [];
             if (! empty($data['wall_referring_model_data'])) {
                 $decoded = json_decode($data['wall_referring_model_data'], true);
@@ -340,6 +344,41 @@ class BudgetRepository
             foreach ($budget->rooms as $room) {
                 foreach ($room->walls as $wall) {
                     $wallUpdatePayload = [];
+                    $wallPayload = $wallsById->get($wall->id);
+
+                    if (is_array($wallPayload)) {
+                        if (array_key_exists('model', $wallPayload)) {
+                            $wallUpdatePayload['collection_model_id'] = $wallPayload['model'] !== null && $wallPayload['model'] !== ''
+                                ? (int) $wallPayload['model']
+                                : null;
+                        }
+
+                        if (array_key_exists('comment_referring_model', $wallPayload)) {
+                            $comment = $wallPayload['comment_referring_model'];
+                            $wallUpdatePayload['comment_referring_model'] = $comment !== null && $comment !== '' ? $comment : null;
+                        }
+
+                        if (array_key_exists('link_referring_model', $wallPayload)) {
+                            $link = $wallPayload['link_referring_model'];
+                            $wallUpdatePayload['link_referring_model'] = $link !== null && $link !== '' ? $link : null;
+                        }
+
+                        if (array_key_exists('files_referring_model', $wallPayload)) {
+                            $files = is_array($wallPayload['files_referring_model'])
+                                ? array_values(array_filter(array_map(
+                                    static fn ($file) => trim((string) $file),
+                                    $wallPayload['files_referring_model']
+                                ), static fn ($file) => $file !== ''))
+                                : [];
+                            $wallUpdatePayload['files_referring_model'] = $files ?: null;
+                        }
+
+                        if (array_key_exists('collection_referring_model', $wallPayload)) {
+                            $wallUpdatePayload['collection_referring_model'] = $this->formatCollectionReferringModel(
+                                $wallPayload['collection_referring_model'] ?? null
+                            );
+                        }
+                    }
 
                     if (isset($wallDataMapping[$wall->id])) {
                         $wallData = $wallDataMapping[$wall->id];
@@ -401,7 +440,8 @@ class BudgetRepository
                 }
             }
 
-            $budget->refresh();
+            $budget->refresh()->load(['rooms.walls']);
+            $this->recalculateBudgetTotalsFromRooms($budget);
 
             if ($budget->order_id) {
                 $order = Order::query()->findOrFail($budget->order_id);
@@ -443,6 +483,53 @@ class BudgetRepository
 
             return $budget->fresh(['rooms.walls.collectionModel', 'order']);
         });
+    }
+
+    /**
+     * Recalcula totais e prazo do orçamento a partir das paredes já persistidas.
+     */
+    protected function recalculateBudgetTotalsFromRooms(Budget $budget): void
+    {
+        $rooms = [];
+
+        foreach ($budget->rooms->sortBy('position') as $room) {
+            $walls = [];
+
+            foreach ($room->walls->sortBy('position') as $wall) {
+                $walls[] = [
+                    'model' => $wall->collection_model_id,
+                    'width' => $wall->width,
+                    'height' => $wall->height,
+                    'continueSameArt' => (bool) $wall->continue_same_art,
+                    'continuations' => $wall->continuations ?? [],
+                ];
+            }
+
+            $rooms[] = [
+                'name' => $room->name,
+                'walls' => $walls,
+            ];
+        }
+
+        $selectedCarrier = $budget->selected_carrier_price !== null
+            ? [
+                'name' => $budget->selected_carrier_name,
+                'price' => (float) $budget->selected_carrier_price,
+                'deliveryTime' => (int) ($budget->selected_carrier_delivery_time ?? 0),
+            ]
+            : null;
+
+        $totalArea = BudgetCalculator::calculateTotalArea($rooms);
+        $totalAmount = BudgetCalculator::calculateTotalAmountVista($totalArea, $rooms, $selectedCarrier);
+        $totalAmountInstallments = BudgetCalculator::calculateTotalAmountPrazo($totalArea, $rooms, $selectedCarrier);
+        $deliveryTime = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
+
+        $budget->update([
+            'total_area' => $totalArea,
+            'total_amount' => $totalAmount,
+            'total_amount_installments' => $totalAmountInstallments,
+            'delivery_time' => $deliveryTime,
+        ]);
     }
 
     protected function formatCollectionReferringModel($value): ?string

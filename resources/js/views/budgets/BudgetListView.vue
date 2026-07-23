@@ -11,7 +11,7 @@
         :budgets="budgetList"
         :loading="loading"
         @duplicate="confirmDuplicate"
-        @create-order="confirmCreateOrder"
+        @create-order="openCreateOrderModal"
         @cancel="confirmCancel"
         @delete="confirmDelete"
       />
@@ -21,15 +21,24 @@
         class="justify-content-center mt-3"
       />
     </Page>
+
+    <CreateOrderModal
+      v-model="createOrderModalOpen"
+      :budget="selectedBudgetForOrder"
+      :submitting="creatingOrder"
+      @confirm="handleCreateOrderConfirm"
+      @close="closeCreateOrderModal"
+    />
   </section>
 </template>
 
 <script setup>
 import { Bootstrap5Pagination } from 'laravel-vue-pagination';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import BudgetFilters from '@/components/budgets/BudgetFilters.vue';
 import BudgetTable from '@/components/budgets/BudgetTable.vue';
+import CreateOrderModal from '@/components/budgets/CreateOrderModal.vue';
 import Page from '@/components/page/Page.vue';
 
 import { useBudgetsList } from '@/composables/useBudgetsList';
@@ -49,6 +58,10 @@ const {
   createOrder,
 } = useBudgetsList();
 
+const createOrderModalOpen = ref(false);
+const selectedBudgetForOrder = ref(null);
+const creatingOrder = ref(false);
+
 const confirmDuplicate = async (budget) => {
   const result = await window.Swal.fire({
     title: 'Duplicar orçamento?',
@@ -62,18 +75,36 @@ const confirmDuplicate = async (budget) => {
   if (result.isConfirmed) duplicateBudget(budget);
 };
 
-const confirmCreateOrder = async (budget) => {
-  const result = await window.Swal.fire({
-    title: 'Criar pedido?',
-    html: 'Revise se as medidas, quantidades, modelos, endereço e demais informações estão corretas antes de continuar.',
-    icon: 'info',
-    confirmButtonText: 'Criar pedido',
-    cancelButtonText: 'Cancelar',
-    showCancelButton: true,
-  });
+function openCreateOrderModal(budget) {
+  selectedBudgetForOrder.value = budget;
+  createOrderModalOpen.value = true;
+}
 
-  if (result.isConfirmed) createOrder(budget);
-};
+function closeCreateOrderModal() {
+  if (creatingOrder.value) {
+    return;
+  }
+
+  createOrderModalOpen.value = false;
+  selectedBudgetForOrder.value = null;
+}
+
+async function handleCreateOrderConfirm({ budget, walls }) {
+  if (!budget?.id || creatingOrder.value) {
+    return;
+  }
+
+  creatingOrder.value = true;
+  try {
+    await createOrder(budget, { walls });
+    createOrderModalOpen.value = false;
+    selectedBudgetForOrder.value = null;
+  } catch (error) {
+    // Erro já tratado no composable
+  } finally {
+    creatingOrder.value = false;
+  }
+}
 
 const confirmCancel = async (budget) => {
   const result = await window.Swal.fire({

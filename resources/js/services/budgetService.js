@@ -50,12 +50,12 @@ export const budgetService = {
     return data.data;
   },
 
-  async createOrder(id) {
+  async createOrder(id, payload = {}) {
     if (!id || id <= 0) {
       throw new Error('ID inválido');
     }
 
-    const { data } = await http.post(`${endpoint}/${id}/orders`);
+    const { data } = await http.post(`${endpoint}/${id}/orders`, payload);
     return data.data;
   },
 
