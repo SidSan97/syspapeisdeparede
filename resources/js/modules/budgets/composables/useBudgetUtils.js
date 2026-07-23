@@ -148,6 +148,7 @@ export function normalizeBudgetFromAPI(budgetData) {
       }
 
       rooms.push({
+        id: room.id ?? null,
         name: room.name || '',
         walls: walls.length > 0 ? walls : [createDefaultWall()],
       });

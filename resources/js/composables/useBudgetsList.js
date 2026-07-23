@@ -78,11 +78,11 @@ export function useBudgetsList() {
     }
   };
 
-  const createOrder = async (budget) => {
+  const createOrder = async (budget, payload = {}) => {
     if (!budget?.id) return;
 
     try {
-      const budgetUpdated = await budgetService.createOrder(budget.id);
+      const budgetUpdated = await budgetService.createOrder(budget.id, payload);
 
       toast.success('Pedido criado com sucesso.');
 
@@ -90,9 +90,12 @@ export function useBudgetsList() {
         name: 'orders.show',
         params: { id: budgetUpdated.order_id },
       });
+
+      return budgetUpdated;
     } catch (error) {
       console.error(error);
       toast.error('Opa! Erro ao criar o pedido. Tente novamente.');
+      throw error;
     }
   };
 
