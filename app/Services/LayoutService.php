@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BudgetWall;
+use App\Models\CollectionImage;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use Carbon\Carbon;
@@ -19,7 +20,9 @@ class LayoutService
      */
     public function transformLayouts(Collection $orderBudgets, ?string $typePage = null): array
     {
-        return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage) {
+        $collectionImagesById = $this->preloadCollectionReferringImages($orderBudgets);
+
+        return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage, $collectionImagesById) {
             $order = $orderBudget->order;
             $wall = $orderBudget->wall;
 
@@ -28,7 +31,7 @@ class LayoutService
             }
 
             // Obter imagem da parede específica
-            $wallImage = $this->getWallImage($wall);
+            $wallImage = $this->getWallImage($wall, $collectionImagesById);
             $deliveryDates = $this->calculateDeliveryDates($order);
 
             // Criar nome do card baseado na parede
@@ -125,10 +128,58 @@ class LayoutService
     }
 
     /**
-     * Busca a primeira imagem do modelo de coleção da parede
+     * Pré-carrega as artes referenciadas (Coleção Arts) para evitar N+1.
+     *
+     * @param  Collection<int, OrderBudget>  $orderBudgets
+     * @return Collection<int, CollectionImage>
      */
-    protected function getWallImage(BudgetWall $wall): ?string
+    protected function preloadCollectionReferringImages(Collection $orderBudgets): Collection
     {
+        $imageIds = $orderBudgets
+            ->map(function (OrderBudget $orderBudget) {
+                $wall = $orderBudget->wall;
+                if (! $wall || ! $this->isColecaoArtsModel($wall->collectionModel?->name)) {
+                    return null;
+                }
+
+                return $this->parseCollectionReferringImageId($wall->collection_referring_model);
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($imageIds === []) {
+            return collect();
+        }
+
+        return CollectionImage::query()
+            ->whereIn('id', $imageIds)
+            ->get()
+            ->keyBy('id');
+    }
+
+    /**
+     * Busca a imagem de capa da parede.
+     * Para o modelo "Coleção Arts", usa a arte escolhida em collection_referring_model.
+     *
+     * @param  Collection<int, CollectionImage>|null  $collectionImagesById
+     */
+    protected function getWallImage(BudgetWall $wall, ?Collection $collectionImagesById = null): ?string
+    {
+        if ($this->isColecaoArtsModel($wall->collectionModel?->name)) {
+            $imageId = $this->parseCollectionReferringImageId($wall->collection_referring_model);
+
+            if ($imageId) {
+                $image = $collectionImagesById?->get($imageId) ?? CollectionImage::query()->find($imageId);
+                $path = $image?->path_name ?: $image?->still_path_name;
+
+                if ($path) {
+                    return $this->makePublicUrl($path);
+                }
+            }
+        }
+
         if ($wall->collectionModel && $wall->collectionModel->files) {
             $firstFile = $wall->collectionModel->files->first();
             if ($firstFile) {
@@ -137,6 +188,38 @@ class LayoutService
         }
 
         return null;
+    }
+
+    protected function isColecaoArtsModel(?string $modelName): bool
+    {
+        $normalizedName = mb_strtolower(trim((string) $modelName));
+
+        return in_array($normalizedName, [
+            'coleção arts',
+            'colecao arts',
+            'coleção art',
+            'colecao art',
+        ], true);
+    }
+
+    protected function parseCollectionReferringImageId(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value) && $value > 0) {
+            return $value;
+        }
+
+        $stringValue = trim((string) $value);
+        if ($stringValue === '' || ! ctype_digit($stringValue)) {
+            return null;
+        }
+
+        $imageId = (int) $stringValue;
+
+        return $imageId > 0 ? $imageId : null;
     }
 
     /**
