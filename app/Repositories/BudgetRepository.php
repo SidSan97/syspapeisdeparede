@@ -94,7 +94,7 @@ class BudgetRepository
         );
         $deliveryTime = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
 
-        /** @var \App\Models\Budget $budget */
+        /** @var Budget $budget */
         $budget = DB::transaction(function () use (
             $data,
             $rooms,
@@ -199,7 +199,7 @@ class BudgetRepository
         );
         $deliveryTime = BudgetCalculator::calculateDeliveryTime($rooms, $selectedCarrier);
 
-        /** @var \App\Models\Budget $budget */
+        /** @var Budget $budget */
         $budget = DB::transaction(function () use (
             $budget,
             $data,

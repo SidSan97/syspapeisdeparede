@@ -33,7 +33,7 @@ class StoreBudgetRequest extends FormRequest
             ],
             'rooms.*.walls.*.width' => ['required', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.height' => ['required', 'numeric', 'min:0.01'],
-            'rooms.*.walls.*.model' => ['required', 'integer', 'exists:collection_models,id'],
+            'rooms.*.walls.*.model' => ['nullable', 'integer', 'exists:collection_models,id'],
             'rooms.*.walls.*.comment_referring_model' => ['nullable', 'string', 'max:500'],
             'rooms.*.walls.*.link_referring_model' => ['nullable', 'string', 'url', 'max:500'],
             'rooms.*.walls.*.files_referring_model' => ['nullable', 'array'],

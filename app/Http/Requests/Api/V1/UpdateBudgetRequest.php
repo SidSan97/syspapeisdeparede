@@ -43,7 +43,7 @@ class UpdateBudgetRequest extends FormRequest
             ],
             'rooms.*.walls.*.width' => ['required', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.height' => ['required', 'numeric', 'min:0.01'],
-            'rooms.*.walls.*.model' => ['required', 'integer', 'exists:collection_models,id'],
+            'rooms.*.walls.*.model' => ['nullable', 'integer', 'exists:collection_models,id'],
             'rooms.*.walls.*.comment_referring_model' => ['nullable', 'string', 'max:500'],
             'rooms.*.walls.*.link_referring_model' => ['nullable', 'string', 'url', 'max:500'],
             'rooms.*.walls.*.files_referring_model' => ['nullable', 'array'],
@@ -90,7 +90,7 @@ class UpdateBudgetRequest extends FormRequest
                 'required_if:dropshipping_data.person_type,PJ',
                 'nullable',
                 'string',
-                'max:18'
+                'max:18',
             ],
             'dropshipping_data.email' => ['required_with:dropshipping_data', 'email', 'max:255'],
             'dropshipping_data.phone' => ['required_with:dropshipping_data', 'string', 'max:15'],
@@ -109,20 +109,20 @@ class UpdateBudgetRequest extends FormRequest
     {
         $validator->after(function (Validator $validator) {
             $rooms = $this->input('rooms', []);
-            if (!is_array($rooms)) {
+            if (! is_array($rooms)) {
                 return;
             }
 
             $modelIds = [];
             foreach ($rooms as $room) {
                 foreach (($room['walls'] ?? []) as $wall) {
-                    if (!empty($wall['model'])) {
+                    if (! empty($wall['model'])) {
                         $modelIds[] = (int) $wall['model'];
                     }
                 }
             }
             $modelIds = array_values(array_unique($modelIds));
-            if (!$modelIds) {
+            if (! $modelIds) {
                 return;
             }
 
@@ -131,7 +131,7 @@ class UpdateBudgetRequest extends FormRequest
             foreach ($rooms as $roomIndex => $room) {
                 foreach (($room['walls'] ?? []) as $wallIndex => $wall) {
                     $modelId = isset($wall['model']) ? (int) $wall['model'] : null;
-                    if (!$modelId || !$models->has($modelId)) {
+                    if (! $modelId || ! $models->has($modelId)) {
                         continue;
                     }
 
@@ -143,22 +143,22 @@ class UpdateBudgetRequest extends FormRequest
 
                     $base = "rooms.$roomIndex.walls.$wallIndex";
 
-                    if ($needComment && !trim((string) ($wall['comment_referring_model'] ?? ''))) {
+                    if ($needComment && ! trim((string) ($wall['comment_referring_model'] ?? ''))) {
                         $validator->errors()->add("$base.comment_referring_model", 'Descrição do modelo é obrigatória para este modelo.');
                     }
 
-                    if ($needLink && !trim((string) ($wall['link_referring_model'] ?? ''))) {
+                    if ($needLink && ! trim((string) ($wall['link_referring_model'] ?? ''))) {
                         $validator->errors()->add("$base.link_referring_model", 'Link de referência é obrigatório para este modelo.');
                     }
 
                     if ($needFile) {
                         $files = $wall['files_referring_model'] ?? [];
-                        if (!is_array($files) || count(array_filter($files, fn ($v) => trim((string) $v) !== '')) === 0) {
+                        if (! is_array($files) || count(array_filter($files, fn ($v) => trim((string) $v) !== '')) === 0) {
                             $validator->errors()->add("$base.files_referring_model", 'Arquivo(s) de referência são obrigatórios para este modelo.');
                         }
                     }
 
-                    if ($needCollection && !trim((string) ($wall['collection_referring_model'] ?? ''))) {
+                    if ($needCollection && ! trim((string) ($wall['collection_referring_model'] ?? ''))) {
                         $validator->errors()->add("$base.collection_referring_model", 'Seleção de arte da coleção é obrigatória para este modelo.');
                     }
                 }
