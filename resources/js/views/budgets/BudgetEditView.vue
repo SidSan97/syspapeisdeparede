@@ -352,7 +352,7 @@
                               </button>
                             </div>
                             <div class="mt-4">
-                              <h6 class="mb-3">Definir modelo da parede</h6>
+                              <h6 class="mb-3">Definir modelo da parede <span class="text-muted fw-normal">(opcional)</span></h6>
                               <div v-if="modelsLoading" class="text-center text-muted py-3">
                                 Carregando modelos...
                               </div>
@@ -377,7 +377,7 @@
                                     :class="{
                                       'border-primary': wall.model === model.id,
                                     }"
-                                    @click="wall.model = model.id"
+                                    @click="wall.model = wall.model === model.id ? null : model.id"
                                     style="cursor: pointer"
                                   >
                                     <div class="card-body d-flex flex-column">
@@ -782,7 +782,7 @@ async function calculateFreight() {
 }
 
 function updateBudget() {
-  if (!validateBudget(budget, modelsLoading, productModels, showWarning, getModelById)) {
+  if (!validateBudget(budget, showWarning, getModelById)) {
     return;
   }
 

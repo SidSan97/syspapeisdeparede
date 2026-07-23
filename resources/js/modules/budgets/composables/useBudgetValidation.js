@@ -5,13 +5,7 @@
 /**
  * Valida um orçamento
  */
-export function validateBudget(
-  budget,
-  modelsLoading,
-  productModels,
-  showWarning,
-  getModelById = null,
-) {
+export function validateBudget(budget, showWarning, getModelById = null) {
   if (!budget.name) {
     showWarning('Por favor, informe o nome do orçamento');
     return false;
@@ -76,12 +70,7 @@ export function validateBudget(
         }
       }
 
-      if (!wall.model) {
-        showWarning(`Por favor, selecione um modelo para ${wallLabel} em ${roomLabel}`);
-        return false;
-      }
-
-      if (typeof getModelById === 'function') {
+      if (wall.model && typeof getModelById === 'function') {
         const model = getModelById(wall.model);
         const requests = model?.requests ?? {};
 
@@ -116,16 +105,6 @@ export function validateBudget(
         }
       }
     }
-  }
-
-  if (modelsLoading.value) {
-    showWarning('Aguarde o carregamento dos modelos antes de salvar.');
-    return false;
-  }
-
-  if (!productModels.value.length) {
-    showWarning('Nenhum modelo disponível no momento.');
-    return false;
   }
 
   if (budget.cep && budget.cep.length >= 8 && budget.selectedCarrier === null) {
