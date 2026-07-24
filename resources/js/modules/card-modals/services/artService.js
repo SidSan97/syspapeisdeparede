@@ -14,11 +14,11 @@ function buildRequestLayoutArtsUrl() {
   return `${endpoint}/request-layout-arts`;
 }
 
-function buildRequestParams({ orderId, budgetId } = {}) {
+function buildRequestParams({ orderId, budgetId, cardId } = {}) {
   const params = {};
 
-  if (orderId && budgetId) {
-    throw new Error('Use only orderId OR budgetId, not both');
+  if (orderId && budgetId && cardId) {
+    throw new Error('Use only orderId OR budgetId OR cardId, not both');
   }
 
   if (orderId) {
@@ -27,6 +27,9 @@ function buildRequestParams({ orderId, budgetId } = {}) {
 
   if (budgetId) {
     params.budget_id = budgetId;
+  }
+  if (cardId) {
+    params.card_id = cardId;
   }
 
   return params;
@@ -53,10 +56,10 @@ export const artService = {
   /**
    * Buscar artes de layout
    */
-  listRequestLayoutArts({ orderId, budgetId } = {}) {
+  listRequestLayoutArts({ orderId, budgetId, cardId } = {}) {
     return unwrap(
       http.get(buildRequestLayoutArtsUrl(), {
-        params: buildRequestParams({ orderId, budgetId }),
+        params: buildRequestParams({ orderId, budgetId, cardId}),
       }),
     );
   },

@@ -238,6 +238,7 @@ class BudgetController extends Controller
         $orderId = $validated['order_id'] ?? null;
         $budgetId = $validated['budget_id'] ?? null;
         $dealerId = $validated['dealer_id'] ?? null;
+        $cardId = $validated['card_id'] ?? null;
 
         $isAdmin = $user->isAdmin();
         $isDesigner = $user->isDesigner();
@@ -249,6 +250,10 @@ class BudgetController extends Controller
             'dealer:id,name',
             'orderBudget.wall.room',
         ]);
+
+        if ($cardId) {
+            $query->where('order_budget_id', $cardId);
+        }
 
         // Aplicar filtro por order_id ou budget_id
         if ($orderId) {
