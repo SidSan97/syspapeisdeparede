@@ -42,10 +42,7 @@
               </span>
             </div>
 
-            <h6 class="mb-3">
-              Definir modelo da parede
-              <span class="text-muted fw-normal">(opcional)</span>
-            </h6>
+            <h6 class="mb-3">Definir modelo da parede</h6>
 
             <div v-if="modelsLoading" class="text-center text-muted py-3">Carregando modelos...</div>
             <div v-else-if="modelsError" class="alert alert-danger" role="alert">
@@ -209,7 +206,7 @@ function validateWallRequirements() {
       const wallLabel = wall.name?.trim() || `Parede ${wallIndex + 1}`;
 
       if (!wall.model) {
-        continue;
+        return `Selecione um modelo para ${wallLabel} em ${roomLabel}.`;
       }
 
       const model = getModelById(wall.model);
