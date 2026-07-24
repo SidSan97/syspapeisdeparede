@@ -77,8 +77,7 @@
               :is-dropshipping-enabled="isDropshippingEnabled"
               :dropshipping-data="budget?.dropshipping_data"
             />
-            <RoomsCard :data="budget" :show-wall-status="false" />
-            <RequestArtsCard :data="budget" :is-order="false" />
+            <BudgetRoomsWithArtsCard :data="budget" />
           </div>
 
           <!-- Sidebar: Frete, Pagamento e Resumo -->
@@ -125,13 +124,12 @@ import BaseDropdown from '@/components/common/BaseDropdown.vue';
 
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
-import RoomsCard from '@/components/details/RoomsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
-import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
 import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
+import BudgetRoomsWithArtsCard from '@/components/budgets/BudgetRoomsWithArtsCard.vue';
 import CreateOrderModal from '@/components/budgets/CreateOrderModal.vue';
 
 import { useBudgetStore } from '@/stores/budgetStore';
