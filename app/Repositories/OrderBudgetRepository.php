@@ -137,6 +137,16 @@ class OrderBudgetRepository {
             'production_percentage' => $percentage,
         ]);
 
+        if ($percentage == 100) {
+            $orderBudget->update([
+                'production_date' => now()->toDateString(),
+            ]);
+        } else if ($percentage == 0) {
+            $orderBudget->update([
+                'production_date' => null,
+            ]);
+        }
+
         if ($user) {
             $this->historyService->logProductionPercentageUpdate($orderBudgetId, $user, $percentage, $typePage);
         }

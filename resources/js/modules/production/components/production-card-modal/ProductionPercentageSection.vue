@@ -1,17 +1,32 @@
 <template>
   <div v-if="card.production_column_names_id >= 2" class="production-percentage-section">
-    <div v-if="!isEditing" class="production-percentage-section-display">
-      <strong>
-        <span>Total produzido: </span>
-      </strong>
-      {{ formatProductionPercentage(card.production_percentage) }}%
-      <button
-        class="production-percentage-section-edit-btn"
-        @click="startEditing"
-        title="Editar porcentagem"
-      >
-        <IconEdit />
-      </button>
+    <div v-if="!isEditing"
+      class="production-percentage-section-display d-flex justify-content-between"
+    >
+      <div>
+        <strong>
+          <span>Total produzido: </span>
+        </strong>
+        {{ formatProductionPercentage(card.production_percentage) }}%
+        <button
+          class="production-percentage-section-edit-btn"
+          @click="startEditing"
+          title="Editar porcentagem"
+        >
+          <IconEdit />
+        </button>
+      </div>
+
+      <div>
+        <button
+          class="production-percentage-section-reopen-btn btn btn-secondary btn-sm"
+          :disabled="isReopening || isSaving"
+          @click="reopenCard"
+          v-if="formatProductionPercentage(card.production_percentage) == 100"
+        >
+          {{ isReopening ? 'Reabrindo...' : 'Reabrir card' }}
+        </button>
+      </div>
     </div>
     <div v-else class="production-percentage-section-edit">
       <div class="production-percentage-section-input-wrapper">
@@ -62,6 +77,7 @@ const isEditing = ref(false);
 const productionPercentageText = ref(0);
 const originalProductionPercentage = ref(0);
 const isSaving = ref(false);
+const isReopening = ref(false);
 
 // Inicializar quando o card mudar
 watch(
@@ -95,8 +111,76 @@ function cancelEditing() {
   isEditing.value = false;
 }
 
+function applyUpdatedPercentage(updated, percentage) {
+  if (props.card && updated) {
+    props.card.production_percentage = updated.production_percentage;
+    if (Object.prototype.hasOwnProperty.call(updated, 'production_date')) {
+      props.card.production_date = updated.production_date;
+    }
+    if (Object.prototype.hasOwnProperty.call(updated, 'production_column_names_id')) {
+      props.card.production_column_names_id = updated.production_column_names_id;
+    }
+  }
+
+  originalProductionPercentage.value = props.card?.production_percentage ?? percentage;
+  productionPercentageText.value = originalProductionPercentage.value;
+  isEditing.value = false;
+
+  emit('percentage-updated', percentage);
+}
+
+async function updateProductionPercentage(percentage) {
+  const response = await http.put(
+    `v1/orders/order-budgets/${props.card.id}/production-percentage`,
+    {
+      production_percentage: percentage,
+    },
+  );
+
+  return response?.data || null;
+}
+
+async function reopenCard() {
+  if (!props.card?.id || isReopening.value || isSaving.value) {
+    return;
+  }
+
+  const result = await window.Swal.fire({
+    icon: 'warning',
+    title: 'Reabrir card?',
+    text: 'A porcentagem de produção será zerada (0%).',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, reabrir',
+    cancelButtonText: 'Cancelar',
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  isReopening.value = true;
+
+  try {
+    const updated = await updateProductionPercentage(0);
+    applyUpdatedPercentage(updated, 0);
+    toast.success('Card reaberto com sucesso.');
+  } catch (error) {
+    console.error('Erro ao reabrir card:', error);
+    const errorMessage =
+      error.response?.data?.message || 'Erro ao reabrir o card. Tente novamente.';
+
+    if (window.Swal) {
+      window.Swal.fire('Erro!', errorMessage, 'error');
+    } else {
+      alert(errorMessage);
+    }
+  } finally {
+    isReopening.value = false;
+  }
+}
+
 async function save() {
-  if (!props.card?.id || isSaving.value) {
+  if (!props.card?.id || isSaving.value || isReopening.value) {
     return;
   }
 
@@ -136,26 +220,9 @@ async function save() {
   isSaving.value = true;
 
   try {
-    const response = await http.put(
-      `v1/orders/order-budgets/${props.card.id}/production-percentage`,
-      {
-        production_percentage: percentage,
-      },
-    );
-
-    const updated = response?.data || null;
-
-    // Atualizar o card localmente
-    if (props.card && updated) {
-      props.card.production_percentage = updated.production_percentage;
-    }
-
-    originalProductionPercentage.value = props.card?.production_percentage ?? percentage;
-    isEditing.value = false;
-
+    const updated = await updateProductionPercentage(percentage);
+    applyUpdatedPercentage(updated, percentage);
     toast.success('Porcentagem de produção atualizada com sucesso.');
-
-    emit('percentage-updated', percentage);
   } catch (error) {
     console.error('Erro ao atualizar porcentagem:', error);
     const errorMessage =
