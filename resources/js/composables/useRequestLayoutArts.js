@@ -32,6 +32,8 @@ export function useRequestLayoutArts(card) {
     try {
       loadingRequestArts.value = true;
 
+      const cardId = card.value.id;
+
       const orderId =
         card.value.order_id ||
         card.value.order?.id ||
@@ -42,7 +44,7 @@ export function useRequestLayoutArts(card) {
         card.value.budget?.id ||
         (card.value.budget && typeof card.value.budget === 'object' ? card.value.budget.id : null);
 
-      const response = await artService.listRequestLayoutArts({ orderId, budgetId });
+      const response = await artService.listRequestLayoutArts({ orderId, budgetId, cardId });
 
       let artsData = [];
       if (Array.isArray(response)) {

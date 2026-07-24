@@ -39,6 +39,11 @@ class GetRequestLayoutArtsRequest extends FormRequest
                 'integer',
                 'exists:users,id',
             ],
+            'card_id' => [
+                'nullable',
+                'integer',
+                'exists:order_budgets,id',
+            ],
         ];
     }
 
@@ -51,8 +56,8 @@ class GetRequestLayoutArtsRequest extends FormRequest
     {
         // Remover valores vazios, null ou strings vazias dos inputs
         $inputs = $this->all();
-        
-        foreach (['order_id', 'budget_id', 'dealer_id'] as $field) {
+
+        foreach (['order_id', 'budget_id', 'dealer_id', 'card_id'] as $field) {
             if (isset($inputs[$field]) && ($inputs[$field] === '' || $inputs[$field] === null || $inputs[$field] === 'null')) {
                 unset($inputs[$field]);
             } elseif (isset($inputs[$field])) {
@@ -60,7 +65,7 @@ class GetRequestLayoutArtsRequest extends FormRequest
                 $inputs[$field] = is_numeric($inputs[$field]) ? (int) $inputs[$field] : $inputs[$field];
             }
         }
-        
+
         $this->merge($inputs);
     }
 
@@ -80,6 +85,8 @@ class GetRequestLayoutArtsRequest extends FormRequest
             'budget_id.required_without' => 'É necessário fornecer order_id ou budget_id.',
             'dealer_id.integer' => 'O ID do revendedor deve ser um número inteiro.',
             'dealer_id.exists' => 'O revendedor selecionado não existe.',
+            'card_id.integer' => 'O ID do card deve ser um número inteiro.',
+            'card_id.exists' => 'O card selecionado não existe.',
         ];
     }
 }
