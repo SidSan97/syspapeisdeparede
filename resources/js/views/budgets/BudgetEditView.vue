@@ -797,6 +797,21 @@ function updateBudget() {
   saving.value = true;
 
   const payload = JSON.parse(JSON.stringify(budget));
+
+  // Modelo da parede é opcional: garante null em vez de string vazia
+  if (Array.isArray(payload.rooms)) {
+    payload.rooms.forEach((room) => {
+      if (!Array.isArray(room?.walls)) {
+        return;
+      }
+      room.walls.forEach((wall) => {
+        if (wall.model === '' || wall.model === undefined || wall.model === false) {
+          wall.model = null;
+        }
+      });
+    });
+  }
+
   if (
     payload.selectedCarrier !== null &&
     Array.isArray(payload.carriers) &&

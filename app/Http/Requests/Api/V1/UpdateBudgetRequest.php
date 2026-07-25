@@ -105,6 +105,32 @@ class UpdateBudgetRequest extends FormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $rooms = $this->input('rooms');
+        if (! is_array($rooms)) {
+            return;
+        }
+
+        foreach ($rooms as $roomIndex => $room) {
+            if (! is_array($room) || ! isset($room['walls']) || ! is_array($room['walls'])) {
+                continue;
+            }
+
+            foreach ($room['walls'] as $wallIndex => $wall) {
+                if (! is_array($wall)) {
+                    continue;
+                }
+
+                if (! array_key_exists('model', $wall) || $wall['model'] === '' || $wall['model'] === false) {
+                    $rooms[$roomIndex]['walls'][$wallIndex]['model'] = null;
+                }
+            }
+        }
+
+        $this->merge(['rooms' => $rooms]);
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
