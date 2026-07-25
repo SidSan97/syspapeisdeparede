@@ -46,7 +46,7 @@ import { useAuthStore } from '@/stores/auth';
 import Page from '@/components/page/Page.vue';
 
 // Icons
-import { IconBuildingStore, IconLibraryPhoto, IconPhotoShare, IconUsers } from '@tabler/icons-vue';
+import { IconBuildingStore, IconFileText, IconLibraryPhoto, IconPhotoShare, IconUsers } from '@tabler/icons-vue';
 
 const authStore = useAuthStore();
 
@@ -74,6 +74,12 @@ const availableItems = [
     description: 'Configure produtos associados à plataforma.',
     to: '/settings/tiny-erp',
     icon: IconBuildingStore,
+  },
+  {
+    label: 'Termos de uso',
+    description: 'Configure os termos de uso da plataforma.',
+    to: { name: 'settings.terms-of-use' },
+    icon: IconFileText,
   },
 ];
 
