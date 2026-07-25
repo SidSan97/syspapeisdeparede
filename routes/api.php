@@ -77,5 +77,6 @@ Route::prefix('v1')->group(function () {
         require __DIR__.'/v1/frenet-api.php';
         require __DIR__.'/v1/tiny-erp-api.php';
         require __DIR__.'/v1/wallet-api.php';
+        require __DIR__.'/v1/terms-of-use-api.php';
     });
 });

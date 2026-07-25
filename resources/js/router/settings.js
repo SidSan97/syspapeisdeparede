@@ -25,6 +25,12 @@ export default [
         component: () => import('../views/settings/tiny-erp/TinyErp.vue'),
       },
       {
+        path: 'terms-of-use',
+        name: 'settings.terms-of-use',
+        meta: { roles: ['super admin', 'admin'] },
+        component: () => import('../views/settings/SettingsTermsOfUseView.vue'),
+      },
+      {
         path: 'models',
         name: 'settings.models.list',
         meta: { roles: ['super admin', 'admin'] },
