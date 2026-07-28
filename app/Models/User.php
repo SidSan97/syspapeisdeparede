@@ -68,7 +68,7 @@ class User extends Authenticatable implements Commentator // , MustVerifyEmail
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
-            return Storage::url($this->avatar);
+            return Storage::disk('public')->url($this->avatar);
         }
 
         $hash = substr(md5($this->name ?? $this->email), 0, 6);
