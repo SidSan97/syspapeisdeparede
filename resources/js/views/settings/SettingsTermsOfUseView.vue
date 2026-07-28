@@ -12,7 +12,7 @@ const dialog = useDialog();
 
 const breadcrumbs = [
   { path: '/settings', breadcrumbName: 'Configurações' },
-  { path: '/settings/terms-of-use', breadcrumbName: 'Termos de uso' },
+  { path: '/settings/terms-of-use', breadcrumbName: 'Termo de Aprovação' },
 ];
 
 const DEFAULT_TERM = {
@@ -140,15 +140,15 @@ async function handleSubmit() {
 
     toast.success(data.message || 'Termos de uso salvos com sucesso!');
   } catch (error) {
-    console.error('Erro ao salvar termos de uso:', error);
-    toast.error(error.response?.data?.message || 'Erro ao salvar termos de uso.');
+    console.error('Erro ao salvar termo de aprovação:', error);
+    toast.error(error.response?.data?.message || 'Erro ao salvar termo de aprovação.');
   } finally {
     isSubmitting.value = false;
   }
 }
 
 onMounted(() => {
-  document.title = 'Termos de uso';
+  document.title = 'Termo de Aprovação';
   loadTerms();
 });
 </script>
@@ -156,7 +156,7 @@ onMounted(() => {
 <template>
   <section class="content">
     <Page
-      title="Termos de uso"
+      title="Termo de Aprovação"
       subtitle="Gerencie os textos exibidos aos usuários. Abra cada item do accordion para editar."
       :back-to="{ name: 'settings.home' }"
       :breadcrumbs="breadcrumbs"
