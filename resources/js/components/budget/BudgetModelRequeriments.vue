@@ -1,6 +1,6 @@
 <template>
   <div v-if="model && hasRequirements" class="border rounded p-3 bg-body-tertiary mt-2">
-    <div class="text-muted small mb-2">Requisitos do modelo selecionado</div>
+    <div class="text-muted small mb-2">Requisitos do modelo selecionado (opcional)</div>
 
     <div v-if="requiresComment" class="mb-3">
       <label class="form-label">Descrição do modelo</label>

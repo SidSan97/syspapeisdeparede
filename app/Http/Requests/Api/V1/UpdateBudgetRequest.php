@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests\Api\V1;
 
-use App\Models\CollectionModel;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 
 class UpdateBudgetRequest extends FormRequest
 {
@@ -129,66 +127,5 @@ class UpdateBudgetRequest extends FormRequest
         }
 
         $this->merge(['rooms' => $rooms]);
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $rooms = $this->input('rooms', []);
-            if (! is_array($rooms)) {
-                return;
-            }
-
-            $modelIds = [];
-            foreach ($rooms as $room) {
-                foreach (($room['walls'] ?? []) as $wall) {
-                    if (! empty($wall['model'])) {
-                        $modelIds[] = (int) $wall['model'];
-                    }
-                }
-            }
-            $modelIds = array_values(array_unique($modelIds));
-            if (! $modelIds) {
-                return;
-            }
-
-            $models = CollectionModel::query()->whereIn('id', $modelIds)->get()->keyBy('id');
-
-            foreach ($rooms as $roomIndex => $room) {
-                foreach (($room['walls'] ?? []) as $wallIndex => $wall) {
-                    $modelId = isset($wall['model']) ? (int) $wall['model'] : null;
-                    if (! $modelId || ! $models->has($modelId)) {
-                        continue;
-                    }
-
-                    $model = $models->get($modelId);
-                    $needComment = (bool) ($model->request_comment ?? false);
-                    $needLink = (bool) ($model->request_link ?? false);
-                    $needFile = (bool) ($model->request_file ?? false);
-                    $needCollection = (bool) ($model->request_collection ?? false);
-
-                    $base = "rooms.$roomIndex.walls.$wallIndex";
-
-                    if ($needComment && ! trim((string) ($wall['comment_referring_model'] ?? ''))) {
-                        $validator->errors()->add("$base.comment_referring_model", 'Descrição do modelo é obrigatória para este modelo.');
-                    }
-
-                    if ($needLink && ! trim((string) ($wall['link_referring_model'] ?? ''))) {
-                        $validator->errors()->add("$base.link_referring_model", 'Link de referência é obrigatório para este modelo.');
-                    }
-
-                    if ($needFile) {
-                        $files = $wall['files_referring_model'] ?? [];
-                        if (! is_array($files) || count(array_filter($files, fn ($v) => trim((string) $v) !== '')) === 0) {
-                            $validator->errors()->add("$base.files_referring_model", 'Arquivo(s) de referência são obrigatórios para este modelo.');
-                        }
-                    }
-
-                    if ($needCollection && ! trim((string) ($wall['collection_referring_model'] ?? ''))) {
-                        $validator->errors()->add("$base.collection_referring_model", 'Seleção de arte da coleção é obrigatória para este modelo.');
-                    }
-                }
-            }
-        });
     }
 }
