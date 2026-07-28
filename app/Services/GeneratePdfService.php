@@ -2,16 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Budget;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\Response;
 
 class GeneratePdfService
 {
     /**
-     * @param  \App\Models\Budget  $budget
-     * @param  float|null  $percentageValidated
-     * @param  float|null  $cashValue
-     * @param  float|null  $installmentValue
+     * @param  Budget  $budget
      */
     public function generateBudgetPdf(
         object $budget,
@@ -76,26 +74,22 @@ class GeneratePdfService
 
     /**
      * Gera PDF da etiqueta de separação
-     *
-     * @param  array  $label
-     * @return Response
      */
     public function generateSeparationLabelPdf(array $label): Response
     {
         $filename = 'etiqueta-separacao.pdf';
 
         $dataLabel = [
-            'title' => $label['title'],
-            'status' => strtoupper($label['status']),
+            'title' => $label['title'] ?? '',
+            'status' => strtoupper((string) ($label['status'] ?? '')),
+            'card_name' => $label['card_name'] ?? null,
+            'model_name' => $label['model_name'] ?? null,
+            'observation' => $label['observation'] ?? null,
+            'layout_quantity' => $label['layout_quantity'] ?? null,
+            'strip_groups' => $label['strip_groups'] ?? [],
+            'carrier_name' => $label['carrier_name'] ?? null,
+            'packer' => $label['packer'] ?? null,
         ];
-
-        if(isset($label['carrier_name']) && $label['carrier_name'] !== null) {
-            $dataLabel['carrier_name'] = $label['carrier_name'];
-        }
-
-        if(isset($label['packer']) && $label['packer'] !== null) {
-            $dataLabel['packer'] = $label['packer'];
-        }
 
         $pdf = Pdf::loadView('pdf.expedition.separation-label', $dataLabel)->setPaper('a4', 'portrait');
 
@@ -109,6 +103,6 @@ class GeneratePdfService
 
     protected function formatMoney(float $value): string
     {
-        return 'R$ ' . number_format($value, 2, ',', '.');
+        return 'R$ '.number_format($value, 2, ',', '.');
     }
 }
