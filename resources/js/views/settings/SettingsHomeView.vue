@@ -76,8 +76,8 @@ const availableItems = [
     icon: IconBuildingStore,
   },
   {
-    label: 'Termos de uso',
-    description: 'Configure os termos de uso da plataforma.',
+    label: 'Termo de Aprovação',
+    description: 'Configure os termos de aprovação da plataforma.',
     to: { name: 'settings.terms-of-use' },
     icon: IconFileText,
   },
