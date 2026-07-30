@@ -53,14 +53,22 @@ export function useLayoutCardCompletion(cardRef, emit) {
     return formatActivityCompact(seconds);
   });
 
-  async function handleComplete() {
+  async function handleComplete(payload = {}) {
     const card = toValue(cardRef);
     if (!card?.id || completing.value || isCompleted.value) {
       return;
     }
+
+    if (!payload.accepted_terms_of_use) {
+      toast.warning('É necessário aceitar o Termo de Uso para concluir o card.');
+      return;
+    }
+
     completing.value = true;
     try {
-      const data = await layoutService.completeOrderBudget(card.id);
+      const data = await layoutService.completeOrderBudget(card.id, {
+        accepted_terms_of_use: true,
+      });
       const merged = mergeActivityPayload(card, data);
       emit('activity-updated', {
         activity_running_since: merged.activity_running_since,
@@ -74,7 +82,10 @@ export function useLayoutCardCompletion(cardRef, emit) {
       toast.success('Card concluído.');
     } catch (error) {
       const message =
-        error?.response?.data?.message || error?.message || 'Não foi possível concluir o card.';
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.accepted_terms_of_use?.[0] ||
+        error?.message ||
+        'Não foi possível concluir o card.';
       toast.error(message);
     } finally {
       completing.value = false;
