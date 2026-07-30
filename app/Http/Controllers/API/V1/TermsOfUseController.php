@@ -52,7 +52,7 @@ class TermsOfUseController extends Controller
         Cache::forget(self::SETTING_KEY);
 
         return response()->json([
-            'message' => 'Termos de uso salvos com sucesso.',
+            'message' => 'Termo de Aprovação salvo com sucesso.',
             'data' => $terms,
         ]);
     }

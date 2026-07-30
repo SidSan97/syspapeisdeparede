@@ -730,7 +730,7 @@ const deliveryTimeDisplay = computed(() => {
 });
 
 function saveBudget() {
-  if (!validateBudget(budget, showWarning, getModelById)) {
+  if (!validateBudget(budget, showWarning)) {
     return;
   }
 

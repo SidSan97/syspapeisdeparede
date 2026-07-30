@@ -782,7 +782,7 @@ async function calculateFreight() {
 }
 
 function updateBudget() {
-  if (!validateBudget(budget, showWarning, getModelById)) {
+  if (!validateBudget(budget, showWarning)) {
     return;
   }
 
