@@ -68,9 +68,10 @@ export const layoutService = {
   },
 
   /** Marca o card como concluído (pausa o cronômetro automaticamente). */
-  async completeOrderBudget(orderBudgetId) {
+  async completeOrderBudget(orderBudgetId, payload = {}) {
     const { data } = await http.post(
       `v1/budgets/order-budgets/${orderBudgetId}/complete`,
+      payload,
     );
     return data;
   },
