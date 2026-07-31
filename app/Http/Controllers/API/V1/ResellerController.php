@@ -4,7 +4,10 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\ResellerResource;
+use App\Jobs\SyncTinyResellersJob;
 use App\Models\Reseller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ResellerController extends Controller
@@ -38,5 +41,19 @@ class ResellerController extends Controller
             ->get();
 
         return ResellerResource::collection($resellers);
+    }
+
+    /**
+     * Dispatch the job that synchronizes resellers (clientes) from Tiny ERP.
+     */
+    public function sync(): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        SyncTinyResellersJob::dispatch();
+
+        return response()->json([
+            'message' => 'Sincronização com o Tiny iniciada.',
+        ]);
     }
 }
