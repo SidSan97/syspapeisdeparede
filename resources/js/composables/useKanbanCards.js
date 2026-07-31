@@ -1,14 +1,24 @@
 import { ref } from 'vue';
 
+function cleanFilters(filters = {}) {
+  return Object.fromEntries(
+    Object.entries(filters).filter(([, value]) => {
+      if (value === null || value === undefined || value === false || value === '') return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    }),
+  );
+}
+
 export function useKanbanCards({ fetchCardsFn, updateCardColumnFn }, columnsRef) {
   const cards = ref([]);
   const loading = ref(false);
 
-  async function fetchCards() {
+  async function fetchCards(filters = {}) {
     try {
       loading.value = true;
 
-      const payload = await fetchCardsFn();
+      const payload = await fetchCardsFn(null, cleanFilters(filters));
 
       const firstColumnId = columnsRef.value[0]?.id ?? null;
 

@@ -1,8 +1,35 @@
 <template>
   <section class="content d-flex flex-column">
     <div class="container-fluid mt-3">
-      <PageHeader title="Layouts" />
+      <PageHeader title="Layouts">
+        <template #extra>
+          <div class="btn-group">
+            <button class="btn btn-secondary" title="Filtrar cartões (F)" @click="isFilterOpen = true">
+              <IconFilter2 size="16" />
+              Filtrar
+              <span v-if="activeFilterCount > 0" class="badge text-bg-primary ms-1">
+                {{ activeFilterCount }}
+              </span>
+            </button>
+            <button
+              v-if="activeFilterCount > 0"
+              class="btn btn-secondary"
+              title="Limpar Filtros (X)"
+              @click="handleResetFilters"
+            >
+              Limpar tudo
+            </button>
+          </div>
+        </template>
+      </PageHeader>
     </div>
+
+    <BoardFilterOffcanvas
+      v-model="isFilterOpen"
+      :filters="activeFilters"
+      @apply-filters="handleApplyFilters"
+      @reset-filters="handleResetFilters"
+    />
 
     <KanbanCanvas class="flex-grow-1">
       <div class="overflow-x-auto overflow-y-hidden h-100 w-100 px-2 py-0.5">
@@ -61,9 +88,10 @@
 </template>
 
 <script setup>
-import { onMounted, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef } from 'vue';
 import draggable from 'vuedraggable';
 
+import { IconFilter2 } from '@tabler/icons-vue';
 import { useDialog } from '@/composables/useDialog';
 import { useLayoutBoard } from '@/composables/useLayoutBoard';
 import { useLayoutCards } from '@/composables/useLayoutCards';
@@ -76,6 +104,7 @@ import LayoutCardModal from '@/modules/layouts/components/LayoutCardModal.vue';
 import KanbanCanvas from '@/components/kanban/KanbanCanvas.vue';
 import KanbanColumnSkeleton from '@/components/kanban/KanbanColumnSkeleton.vue';
 import KanbanColumnAdd from '@/components/kanban/KanbanColumnAdd.vue';
+import BoardFilterOffcanvas from '@/components/kanban/BoardFilterOffcanvas.vue';
 
 const dialog = useDialog();
 const board = useLayoutBoard();
@@ -88,6 +117,33 @@ const { columns } = board;
 const { loading: loadingCards } = cards;
 
 const selectedCard = shallowRef(null);
+
+const isFilterOpen = ref(false);
+const activeFilters = ref({});
+
+const activeFilterCount = computed(() => {
+  const filters = activeFilters.value;
+
+  return [
+    filters.is_completed !== null && filters.is_completed !== undefined,
+    Boolean(filters.delivery_date),
+    Boolean(filters.order_number),
+    Boolean(filters.quote_name),
+    Boolean(filters.unassigned),
+    Boolean(filters.assigned_to_me),
+    Boolean(filters.member_ids?.length),
+  ].filter(Boolean).length;
+});
+
+async function handleApplyFilters(filters) {
+  activeFilters.value = filters;
+  await cards.fetchCards(filters);
+}
+
+async function handleResetFilters() {
+  activeFilters.value = {};
+  await cards.fetchCards();
+}
 
 function handleCardMemberAdded(member) {
   if (!selectedCard.value) return;

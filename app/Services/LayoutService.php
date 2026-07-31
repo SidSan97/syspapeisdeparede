@@ -17,12 +17,13 @@ class LayoutService
      *
      * @param  Collection<int, OrderBudget>  $orderBudgets
      * @param  string|null  $typePage  Filtro de tipo de página ('layout' ou 'product')
+     * @param  array{delivery_date?: string|null}  $filters  Filtros aplicados sobre campos calculados (ex.: data de entrega)
      */
-    public function transformLayouts(Collection $orderBudgets, ?string $typePage = null): array
+    public function transformLayouts(Collection $orderBudgets, ?string $typePage = null, array $filters = []): array
     {
         $collectionImagesById = $this->preloadCollectionReferringImages($orderBudgets);
 
-        return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage, $collectionImagesById) {
+        return $orderBudgets->map(function (OrderBudget $orderBudget) use ($typePage, $collectionImagesById, $filters) {
             $order = $orderBudget->order;
             $wall = $orderBudget->wall;
 
@@ -33,6 +34,10 @@ class LayoutService
             // Obter imagem da parede específica
             $wallImage = $this->getWallImage($wall, $collectionImagesById);
             $deliveryDates = $this->calculateDeliveryDates($order);
+
+            if (! empty($filters['delivery_date']) && ! $this->matchesDeliveryDate($deliveryDates, $filters['delivery_date'])) {
+                return null;
+            }
 
             // Criar nome do card baseado na parede
             $roomName = $wall->room->name ?? 'Ambiente';
@@ -241,6 +246,16 @@ class LayoutService
             'start_full' => $startDate->format('Y-m-d'),
             'end_full' => $endDate->format('Y-m-d'),
         ];
+    }
+
+    /**
+     * Verifica se a data informada está dentro da janela de entrega calculada.
+     *
+     * @param  array{start_full: string, end_full: string}  $deliveryDates
+     */
+    protected function matchesDeliveryDate(array $deliveryDates, string $date): bool
+    {
+        return $date >= $deliveryDates['start_full'] && $date <= $deliveryDates['end_full'];
     }
 
     /**

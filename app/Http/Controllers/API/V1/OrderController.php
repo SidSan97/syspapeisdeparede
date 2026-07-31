@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use App\Actions\Order\MergeOrderAction;
 use App\Actions\Order\UpdateOrderAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\IndexOrderLayoutRequest;
 use App\Http\Requests\Api\V1\IndexOrderRequest;
 use App\Http\Requests\Api\V1\UpdateOrderRequest;
 use App\Http\Requests\Orders\GenerateOrderPaymentLinkRequest;
@@ -14,29 +15,36 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Models\OrderPaymentLink;
+use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use App\Services\LayoutService;
 use App\Services\GeneratePaymentService;
+use App\Services\LayoutService;
 use App\Services\OrderBoletoWalletPaymentService;
 use App\Services\OrderPaymentCompositionService;
-use App\Repositories\DropshippingRepository;
 use App\Services\TinyErpService;
 use App\Support\OrderStatus;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
     protected $repository;
+
     protected $layoutService;
+
     protected $generatePaymentService;
+
     protected $orderBudget;
+
     protected $orderBudgetRepository;
+
     protected $dropshippingRepository;
+
     protected $tinyErpService;
+
     protected $paymentCompositionService;
 
     public function __construct(
@@ -95,15 +103,17 @@ class OrderController extends Controller
     {
         $this->authorize('delete', $order);
 
-        DB::transaction(fn() => $order->delete());
+        DB::transaction(fn () => $order->delete());
 
         return response()->noContent();
     }
 
-    public function layouts(?int $orderId = null)
+    public function layouts(IndexOrderLayoutRequest $request, ?int $orderId = null)
     {
-        $orderBudgets = $this->repository->getLayoutsForApprove($orderId);
-        $data = $this->layoutService->transformLayouts($orderBudgets, 'layout');
+        $filters = $request->validated();
+
+        $orderBudgets = $this->repository->getLayoutsForApprove($orderId, $filters);
+        $data = $this->layoutService->transformLayouts($orderBudgets, 'layout', $filters);
 
         // TODO: Migrar para resource collection.
         // return OrderLayoutCardResource::collection($orderBudgets);
@@ -113,6 +123,7 @@ class OrderController extends Controller
     public function getByStatus(Request $request, string $status): JsonResponse
     {
         $orders = $this->repository->getByStatus($status);
+
         return OrderResource::collection($orders)->response();
     }
 
@@ -172,8 +183,8 @@ class OrderController extends Controller
             'name' => $order->name,
             'payment_method' => $paymentMethod,
             'installments' => $installments,
-            'item_name' => 'Pedido #' . $order->id . ' - ' . implode(' + ', $calculation['components']),
-            'item_description' => 'Componentes: ' . implode(', ', $calculation['components']),
+            'item_name' => 'Pedido #'.$order->id.' - '.implode(' + ', $calculation['components']),
+            'item_description' => 'Componentes: '.implode(', ', $calculation['components']),
             'item_amount' => (int) round($calculation['amount_total'] * 100),
             'installment_total' => (int) round($calculation['amount_total'] * 100),
             'shipping_cost' => 0,
@@ -187,8 +198,8 @@ class OrderController extends Controller
         $paymentLinkResponse = $this->generatePaymentService->generateLinkPayment($payload);
         $paymentLinkData = json_decode($paymentLinkResponse->getContent(), true);
 
-        if (!($paymentLinkData['success'] ?? false)) {
-            abort(500, 'Erro ao gerar link de pagamento: ' . ($paymentLinkData['message'] ?? 'Erro desconhecido'));
+        if (! ($paymentLinkData['success'] ?? false)) {
+            abort(500, 'Erro ao gerar link de pagamento: '.($paymentLinkData['message'] ?? 'Erro desconhecido'));
         }
 
         $apiResponse = $paymentLinkData['data'] ?? [];
@@ -197,7 +208,7 @@ class OrderController extends Controller
         $pagarmeOrderId = $apiResponse['id'] ?? null;
         $paymentLinkExternalId = $apiResponse['payment_link']['id'] ?? ($apiResponse['id'] ?? null);
 
-        if (!$paymentUrl) {
+        if (! $paymentUrl) {
             abort(500, 'URL de pagamento não encontrada na resposta');
         }
 
@@ -246,6 +257,7 @@ class OrderController extends Controller
                 if ((float) ($paid['ARTES'] ?? 0) > 0 && (float) ($remaining['ARTES'] ?? 0) > 0) {
                     $adjustments[] = 'ARTES';
                 }
+
                 continue;
             }
 
@@ -253,6 +265,7 @@ class OrderController extends Controller
                 if ((float) ($paid['FRETE'] ?? 0) > 0 && (float) ($remaining['FRETE'] ?? 0) > 0) {
                     $adjustments[] = 'FRETE';
                 }
+
                 continue;
             }
 
@@ -269,11 +282,13 @@ class OrderController extends Controller
         return array_values(array_unique($adjustments));
     }
 
-    public function productionLayouts(?int $orderId = null): JsonResponse
+    public function productionLayouts(IndexOrderLayoutRequest $request, ?int $orderId = null): JsonResponse
     {
-        $orderBudgets = $this->repository->getLayoutsForProduction($orderId);
+        $filters = $request->validated();
 
-        $data = $this->layoutService->transformLayouts($orderBudgets, 'product');
+        $orderBudgets = $this->repository->getLayoutsForProduction($orderId, $filters);
+
+        $data = $this->layoutService->transformLayouts($orderBudgets, 'product', $filters);
 
         return response()->json($data);
     }
