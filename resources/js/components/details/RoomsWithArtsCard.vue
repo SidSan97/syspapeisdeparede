@@ -37,9 +37,19 @@
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <strong>{{ wall.name || `Parede ${wall.wallIndex + 1}` }}</strong>
-                  <span v-if="wall.requestArts?.length" class="badge bg-secondary">
-                    {{ wall.requestArts.length }} interação(ões)
-                  </span>
+
+                  <div class="d-flex align-items-center gap-2">
+                    <span
+                      v-if="showWallStatus"
+                      class="badge"
+                      :class="getWallStatusClass(wall, room.roomIndex, wall.wallIndex)"
+                    >
+                      {{ getWallStatusLabel(wall, room.roomIndex, wall.wallIndex) }}
+                    </span>
+                    <span v-if="wall.requestArts?.length" class="badge bg-secondary">
+                      {{ wall.requestArts.length }} interação(ões)
+                    </span>
+                  </div>
                 </div>
 
                 <div class="row mb-3">
@@ -96,9 +106,12 @@
                   v-if="wall.requestArts?.length"
                   :arts="wall.requestArts"
                   :can-approve="isReseller"
+                  :can-respond="canRespond"
                   :updating-approval-status="updatingApprovalStatus"
+                  :uploading-art="uploadingArt"
                   :accordion-suffix="wall.id ?? `${room.roomIndex}-${wall.wallIndex}`"
                   @update-approval="handleUpdateApproval"
+                  @respond="handleRespond"
                 />
                 <div v-else class="mt-3 text-muted small">
                   Nenhuma solicitação de arte para esta parede.
@@ -117,9 +130,12 @@
             <WallRequestArtsList
               :arts="unmatchedRequestArts"
               :can-approve="isReseller"
+              :can-respond="canRespond"
               :updating-approval-status="updatingApprovalStatus"
+              :uploading-art="uploadingArt"
               accordion-suffix="unmatched"
               @update-approval="handleUpdateApproval"
+              @respond="handleRespond"
             />
           </div>
         </div>
@@ -132,10 +148,11 @@
 import { computed, onMounted, ref, watch } from 'vue';
 
 import SelectedModelsCard from '@/components/details/SelectedModelsCard.vue';
-import WallRequestArtsList from '@/components/budgets/WallRequestArtsList.vue';
+import WallRequestArtsList from '@/components/details/WallRequestArtsList.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
+import { useWallStatus } from '@/composables/useWallStatus';
 import { buildRoomsWithRequestArts } from '@/modules/budgets/composables/useRoomsWithRequestArts';
 import { requestArtService } from '@/services/requestArtService';
 
@@ -144,15 +161,26 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  /** Quando verdadeiro, as solicitações são buscadas pelo pedido em vez do orçamento. */
+  isOrder: {
+    type: Boolean,
+    default: false,
+  },
+  showWallStatus: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const auth = useAuthStore();
 const toast = useToast();
 const { formatNumber, formatDirection, resolveImageUrl } = useFormatting();
+const { getWallStatusLabel, getWallStatusClass } = useWallStatus(() => props.data);
 
 const rawArts = ref([]);
 const loadingRequestArts = ref(false);
 const updatingApprovalStatus = ref({});
+const uploadingArt = ref({});
 
 const isReseller = computed(() => {
   return (
@@ -162,6 +190,8 @@ const isReseller = computed(() => {
     )
   );
 });
+
+const canRespond = computed(() => props.isOrder && Boolean(auth.user) && isReseller.value);
 
 const grouped = computed(() =>
   buildRoomsWithRequestArts(props.data, rawArts.value, resolveImageUrl),
@@ -187,12 +217,13 @@ async function fetchRequestLayoutArts() {
     return;
   }
 
+  const params = props.isOrder
+    ? { order_id: props.data.id }
+    : { budget_id: props.data.id, dealer_id: auth.user.id };
+
   loadingRequestArts.value = true;
   try {
-    const data = await requestArtService.getRequestLayoutArts({
-      budget_id: props.data.id,
-      dealer_id: auth.user.id,
-    });
+    const data = await requestArtService.getRequestLayoutArts(params);
     const dataArray = Array.isArray(data) ? data : (data?.data ?? []);
     rawArts.value = Array.isArray(dataArray) ? dataArray : [];
   } catch (error) {
@@ -203,7 +234,7 @@ async function fetchRequestLayoutArts() {
   }
 }
 
-async function handleUpdateApproval({ art, status }) {
+async function handleUpdateApproval({ art, status, acceptedTermsOfUse = false }) {
   if (!art?.id) {
     return;
   }
@@ -213,6 +244,7 @@ async function handleUpdateApproval({ art, status }) {
     const response = await requestArtService.updateArtApprovalStatus({
       request_layout_art_id: art.id,
       approval_status: status,
+      accepted_terms_of_use: acceptedTermsOfUse,
     });
 
     art.approval_status = response?.approval_status ?? status;
@@ -229,6 +261,59 @@ async function handleUpdateApproval({ art, status }) {
     });
   } finally {
     delete updatingApprovalStatus.value[art.id];
+  }
+}
+
+async function handleRespond({ interaction, file, comment, reset }) {
+  if (!interaction?.card_id || !auth.user?.id) {
+    window.Swal.fire({
+      title: 'Erro',
+      text: 'Dados insuficientes para responder a interação.',
+      icon: 'error',
+      showCloseButton: true,
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  const orderId = props.isOrder ? props.data.id : (props.data.order_id ?? props.data.id);
+
+  const formData = new FormData();
+  if (file) {
+    formData.append('art_file', file);
+  }
+  formData.append('order_budget_id', interaction.card_id);
+  formData.append('dealer_id', auth.user.id);
+  formData.append('designer_id', auth.user.id);
+  formData.append('order_id', orderId);
+  formData.append('comment', comment);
+
+  uploadingArt.value[interaction.id] = true;
+  try {
+    const response = await requestArtService.uploadArt(formData);
+
+    if (!response.data?.id) {
+      throw new Error(response.data?.message || 'Erro ao enviar resposta');
+    }
+
+    reset();
+    await fetchRequestLayoutArts();
+    toast.success(response.data.message || 'Resposta enviada com sucesso.');
+  } catch (error) {
+    console.error('Erro ao responder interação:', error);
+    const errorMessage =
+      error?.response?.data?.message ??
+      error?.message ??
+      'Não foi possível enviar a arte. Tente novamente.';
+    window.Swal.fire({
+      title: 'Erro',
+      text: errorMessage,
+      icon: 'error',
+      showCloseButton: true,
+      confirmButtonText: 'OK',
+    });
+  } finally {
+    delete uploadingArt.value[interaction.id];
   }
 }
 

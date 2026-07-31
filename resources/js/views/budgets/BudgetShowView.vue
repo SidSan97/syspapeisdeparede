@@ -16,9 +16,7 @@
           </template>
 
           <li>
-            <button class="dropdown-item" type="button" @click="confirmDuplicate">
-              Duplicar
-            </button>
+            <button class="dropdown-item" type="button" @click="confirmDuplicate">Duplicar</button>
           </li>
           <li>
             <router-link
@@ -49,9 +47,7 @@
             </button>
           </li>
           <li v-if="!isCancelled(budget)">
-            <button class="dropdown-item" type="button" @click="confirmCancel">
-              Cancelar
-            </button>
+            <button class="dropdown-item" type="button" @click="confirmCancel">Cancelar</button>
           </li>
           <li>
             <hr class="dropdown-divider" />
@@ -77,7 +73,7 @@
               :is-dropshipping-enabled="isDropshippingEnabled"
               :dropshipping-data="budget?.dropshipping_data"
             />
-            <BudgetRoomsWithArtsCard :data="budget" />
+            <RoomsWithArtsCard :data="budget" />
           </div>
 
           <!-- Sidebar: Frete, Pagamento e Resumo -->
@@ -129,7 +125,7 @@ import PaymentCard from '@/components/details/PaymentCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
 import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
-import BudgetRoomsWithArtsCard from '@/components/budgets/BudgetRoomsWithArtsCard.vue';
+import RoomsWithArtsCard from '@/components/details/RoomsWithArtsCard.vue';
 import CreateOrderModal from '@/components/budgets/CreateOrderModal.vue';
 
 import { useBudgetStore } from '@/stores/budgetStore';
@@ -190,10 +186,7 @@ function isCancelled(b) {
 }
 
 function showCreateOrder(b) {
-  return (
-    b?.status === null ||
-    (b?.status && b.status.toString().toLowerCase() === 'em aberto')
-  );
+  return b?.status === null || (b?.status && b.status.toString().toLowerCase() === 'em aberto');
 }
 
 async function confirmDuplicate() {

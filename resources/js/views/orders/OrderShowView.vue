@@ -45,8 +45,7 @@
               :is-dropshipping-enabled="isDropshippingEnabled"
               :dropshipping-data="order.dropshipping_data"
             />
-            <RoomsCard :data="order" :show-wall-status="true" />
-            <RequestArtsCard :data="order" :is-order="true" />
+            <RoomsWithArtsCard :data="order" :is-order="true" :show-wall-status="true" />
           </div>
 
           <!-- Sidebar: Frete, Pagamento e Resumo -->
@@ -92,8 +91,7 @@ import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
 import DropshippingDataCard from '@/components/details/DropshippingDataCard.vue';
 import GeneratePaymentLinkModal from '@/components/details/GeneratePaymentLinkModal.vue';
 import PaymentCard from '@/components/details/PaymentCard.vue';
-import RequestArtsCard from '@/components/details/RequestArtsCard.vue';
-import RoomsCard from '@/components/details/RoomsCard.vue';
+import RoomsWithArtsCard from '@/components/details/RoomsWithArtsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import { orderService } from '@/services/orderService';

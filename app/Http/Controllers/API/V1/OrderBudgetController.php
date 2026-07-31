@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\CompleteOrderBudgetRequest;
 use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
 use App\Services\LayoutCardHistoryService;
@@ -193,7 +192,7 @@ class OrderBudgetController extends Controller
      * Marca o card como concluído na página de Layout. Pausa automaticamente
      * o cronômetro caso esteja em execução.
      */
-    public function complete(CompleteOrderBudgetRequest $request, OrderBudget $orderBudget): JsonResponse
+    public function complete(Request $request, OrderBudget $orderBudget): JsonResponse
     {
         if ($orderBudget->completed_at) {
             return response()->json($this->activityPayload($orderBudget));
