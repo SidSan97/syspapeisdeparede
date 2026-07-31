@@ -2,6 +2,18 @@
   <section class="content">
     <Page title="Orçamento" :back-to="{ name: 'budgets.list' }" :breadcrumbs="routes">
       <template #extra>
+        <router-link
+          class="btn btn-default"
+          :class="{ disabled: !canEditBudget(budget) }"
+          :to="{
+            name: 'budgets.edit',
+            params: { id: budget.id },
+          }"
+          v-if="budget"
+        >
+          Editar
+        </router-link>
+
         <BaseDropdown v-if="budget" align="end">
           <template #trigger="{ open, toggle }">
             <button
@@ -11,24 +23,14 @@
               :aria-expanded="open"
               @click="toggle"
             >
-              Ações <IconChevronDown size="14" />
+              Mais ações <IconChevronDown size="14" />
             </button>
           </template>
 
           <li>
-            <button class="dropdown-item" type="button" @click="confirmDuplicate">Duplicar</button>
-          </li>
-          <li>
-            <router-link
-              class="dropdown-item"
-              :class="{ disabled: !canEditBudget(budget) }"
-              :to="{
-                name: 'budgets.edit',
-                params: { id: budget.id },
-              }"
-            >
-              Editar
-            </router-link>
+            <button class="dropdown-item" type="button" @click="confirmDuplicate">
+              <IconCopy size="16" class="me-2" /> Duplicar
+            </button>
           </li>
           <li>
             <router-link
@@ -38,16 +40,18 @@
                 params: { id: budget.id },
               }"
             >
-              Imprimir
+              <IconPrinter size="16" class="me-2" /> Imprimir
             </router-link>
           </li>
           <li v-if="showCreateOrder(budget)">
             <button class="dropdown-item" type="button" @click="confirmCreateOrder">
-              Criar pedido
+              <IconInbox size="16" class="me-2" /> Criar pedido
             </button>
           </li>
           <li v-if="!isCancelled(budget)">
-            <button class="dropdown-item" type="button" @click="confirmCancel">Cancelar</button>
+            <button class="dropdown-item" type="button" @click="confirmCancel">
+              <IconBan size="16" class="me-2" /> Cancelar
+            </button>
           </li>
           <li>
             <hr class="dropdown-divider" />
@@ -59,7 +63,7 @@
               @click="confirmDelete"
               style="color: var(--ds-text-danger)"
             >
-              Excluir
+              <IconTrash size="16" class="me-2" /> Excluir
             </button>
           </li>
         </BaseDropdown>
@@ -119,7 +123,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { IconChevronDown } from '@tabler/icons-vue';
+import {
+  IconPrinter,
+  IconCopy,
+  IconChevronDown,
+  IconInbox,
+  IconBan,
+  IconTrash,
+} from '@tabler/icons-vue';
 import Page from '@/components/page/Page.vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';

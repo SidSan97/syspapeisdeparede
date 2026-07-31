@@ -12,11 +12,11 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
 import CollectionModelTable from '@/components/collection-models/CollectionModelTable.vue';
 import Page from '@/components/page/Page.vue';
 import { useCollectionModelList } from '@/composables/useCollectionModelList';
 import { useDialog } from '@/composables/useDialog';
-import { onMounted } from 'vue';
 
 const dialog = useDialog();
 

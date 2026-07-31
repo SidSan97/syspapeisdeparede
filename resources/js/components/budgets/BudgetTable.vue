@@ -70,12 +70,12 @@
                     params: { id: budget.id },
                   }"
                 >
-                  Visualizar
+                  <IconEye size="16" class="me-2" /> Visualizar
                 </router-link>
               </li>
               <li>
                 <button class="dropdown-item" type="button" @click="$emit('duplicate', budget)">
-                  Duplicar
+                  <IconCopy size="16" class="me-2" /> Duplicar
                 </button>
               </li>
               <li>
@@ -89,7 +89,7 @@
                     params: { id: budget.id },
                   }"
                 >
-                  Editar
+                  <IconEdit size="16" class="me-2" /> Editar
                 </router-link>
               </li>
               <li>
@@ -100,7 +100,7 @@
                     params: { id: budget.id },
                   }"
                 >
-                  Imprimir
+                  <IconPrinter size="16" class="me-2" /> Imprimir
                 </router-link>
               </li>
               <li
@@ -110,12 +110,12 @@
                 "
               >
                 <button class="dropdown-item" type="button" @click="$emit('create-order', budget)">
-                  Criar pedido
+                  <IconInbox size="16" class="me-2" /> Criar pedido
                 </button>
               </li>
               <li v-if="!isCancelled(budget)">
                 <button class="dropdown-item" type="button" @click="$emit('cancel', budget)">
-                  Cancelar
+                  <IconBan size="16" class="me-2" /> Cancelar
                 </button>
               </li>
               <li>
@@ -128,7 +128,7 @@
                   @click="$emit('delete', budget)"
                   style="color: var(--ds-text-danger)"
                 >
-                  Excluir
+                  <IconTrash size="16" class="me-2" /> Excluir
                 </button>
               </li>
             </BaseDropdown>
@@ -140,11 +140,20 @@
 </template>
 
 <script setup>
-import { IconDotsVertical } from '@tabler/icons-vue';
+import {
+  IconPrinter,
+  IconTrash,
+  IconBan,
+  IconInbox,
+  IconEdit,
+  IconDotsVertical,
+  IconEye,
+  IconCopy,
+} from '@tabler/icons-vue';
 import BudgetStatusBadge from './BudgetStatusBadge.vue';
+import BaseDropdown from '@/components/common/BaseDropdown.vue';
 import { formatDate } from '@/utils/dateUtils';
 import { useFormatting } from '@/composables/useFormatting';
-import BaseDropdown from '@/components/common/BaseDropdown.vue';
 
 const { formatCurrency } = useFormatting();
 
