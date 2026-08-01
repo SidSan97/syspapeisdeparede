@@ -14,7 +14,8 @@
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.6",
         "spatie/laravel-medialibrary": "^11.13",
-        "spatie/laravel-permission": "^6.21"
+        "spatie/laravel-permission": "^6.21",
+        "spatie/laravel-query-builder": "^7.3"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",
