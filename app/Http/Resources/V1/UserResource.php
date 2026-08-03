@@ -21,9 +21,6 @@ class UserResource extends JsonResource
             'avatar' => $this->avatar,
             'avatar_url' => $this->avatar_url,
 
-            // FIXME: Remover campo, pois usará somente permissions.
-            'user_type_id' => $this->user_type_id,
-
             'is_dropshipping' => (bool) $this->is_dropshipping,
 
             'reseller_id' => $this->reseller_id,

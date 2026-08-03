@@ -1,43 +1,67 @@
 <script setup>
-import BaseDropdown from '@/components/common/BaseDropdown.vue';
+import { IconPercentage50, IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-vue';
+
+import light from '@assets/img/themes/light.svg';
+import dark from '@assets/img/themes/dark.svg';
+import system from '@assets/img/themes/system.svg';
+
 import { useTheme } from '@/composables/useTheme';
-import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-vue';
+import BaseDropdown from '@/components/common/BaseDropdown.vue';
+import { IconChevronRight } from '@tabler/icons-vue';
 
 const { setTheme, theme } = useTheme();
 
 const themes = [
-  { key: 'light', label: 'Claro', icon: IconSun },
-  { key: 'dark', label: 'Escuro', icon: IconMoon },
-  { key: 'system', label: 'Auto', icon: IconDeviceDesktop },
+  { key: 'light', label: 'Claro', icon: IconSun, preview: light },
+  { key: 'dark', label: 'Escuro', icon: IconMoon, preview: dark },
+  { key: 'system', label: 'Corresponder ao sistema', icon: IconDeviceDesktop, preview: system },
 ];
 </script>
 
 <template>
-  <div class="position-static">
-    <BaseDropdown align="end">
-      <template #trigger="{ open, toggle }">
-        <button
-          class="btn btn-subtle px-2"
-          :class="{ show: open }"
-          id="bd-theme"
-          type="button"
-          :aria-expanded="open"
-          @click.prevent="toggle"
-        >
-          <span class="theme-icon-active">
-            <IconMoon v-if="theme === 'dark'" :size="18" />
-            <IconDeviceDesktop v-if="theme === 'system'" :size="18" />
-            <IconSun v-if="theme === 'light'" :size="18" />
-          </span>
-        </button>
-      </template>
+  <BaseDropdown align="start" direction="start">
+    <template #trigger="{ open, toggle }">
+      <button
+        class="dropdown-item"
+        :class="{ show: open }"
+        id="bd-theme"
+        type="button"
+        :aria-expanded="open"
+        @click.prevent="toggle"
+      >
+        <IconPercentage50 :size="18" class="me-2" />
+        Tema
+      </button>
+    </template>
 
+    <template #default="{ close }">
       <li v-for="t in themes" :key="t.key">
-        <button class="dropdown-item" :class="{ active: theme === t.key }" @click="setTheme(t.key)">
-          <component :is="t.icon" :size="18" class="me-2" />
+        <button
+          class="dropdown-item"
+          :class="{ active: theme === t.key }"
+          @click="
+            setTheme(t.key);
+            close();
+          "
+        >
+          <input
+            class="form-check-input align-middle my-0 me-2"
+            type="radio"
+            name="theme"
+            :value="t.key"
+            :checked="t.key === theme"
+          />
+          <img :src="t.preview" class="me-2" />
           <span>{{ t.label }}</span>
         </button>
       </li>
-    </BaseDropdown>
-  </div>
+    </template>
+  </BaseDropdown>
 </template>
+
+<style scoped>
+.dropdown,
+.dropdown :deep(> div) {
+  width: 100%;
+}
+</style>

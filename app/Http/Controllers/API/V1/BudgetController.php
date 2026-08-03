@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Actions\Budget\CreateBudgetAction;
-use App\Actions\Budget\DuplicateBudgetAction;
 use App\Actions\Budget\UpdateBudgetAction;
+use App\Filters\BudgetSearchFilter;
+use App\Filters\DateFromFilter;
+use App\Filters\DateToFilter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\IndexBudgetRequest;
 use App\Http\Requests\Api\V1\StoreBudgetRequest;
 use App\Http\Requests\Api\V1\UpdateBudgetRequest;
-use App\Http\Requests\Api\V1\UpdateBudgetStatusRequest;
 use App\Http\Requests\Budget\GetRequestLayoutArtsRequest;
 use App\Http\Requests\Budget\RegisterPaymentRequest;
 use App\Http\Requests\Budget\UpdateLayoutColumnRequest;
@@ -17,10 +18,11 @@ use App\Http\Requests\Budget\UpdateRequestLayoutArtStatusRequest;
 use App\Http\Requests\Budget\UploadArtRequest;
 use App\Http\Requests\Budget\UploadReferringFileRequest;
 use App\Http\Resources\BudgetResource;
+use App\Http\Resources\V1\BudgetCollection;
 use App\Models\Budget;
-use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\RequestLayoutArt;
+use App\Models\User;
 use App\Repositories\BudgetRepository;
 use App\Repositories\BudgetWallRepository;
 use App\Repositories\DropshippingRepository;
@@ -30,14 +32,13 @@ use App\Repositories\RequestLayoutArtRepository;
 use App\Services\GeneratePaymentService;
 use App\Services\LayoutService;
 use App\Services\TinyErpService;
-use App\Support\DocumentValidator;
-use App\Support\OrderBudgetStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class BudgetController extends Controller
 {
@@ -53,36 +54,48 @@ class BudgetController extends Controller
         protected TinyErpService $tinyErpService
     ) {}
 
-    public function index(IndexBudgetRequest $request): JsonResponse
+    public function index(IndexBudgetRequest $request): BudgetCollection
     {
-        $budgets = Budget::with(['user', 'tenant', 'primaryRoom'])
+        $budgets = QueryBuilder::for(Budget::class)
+            ->allowedFilters(
+                'status',
+                'user_id',
+
+                AllowedFilter::custom(
+                    'search',
+                    new BudgetSearchFilter
+                ),
+
+                AllowedFilter::custom(
+                    'created_from',
+                    new DateFromFilter
+                ),
+
+                AllowedFilter::custom(
+                    'created_to',
+                    new DateToFilter
+                ),
+            )
+            ->select([
+                'id',
+                'created_at',
+                'name',
+                'total_amount',
+                'total_amount_markup',
+                'status',
+            ])
+            // ->with(['user', 'tenant', 'primaryRoom'])
             ->forUser($request->user())
-            ->search($request->search)
-            ->byStatus($request->status)
-            ->byDateRange($request->date_from, $request->date_to)
-            ->byUserId($request->user_id)
             ->latest()
             ->paginate();
 
-        return BudgetResource::collection($budgets)->response();
+        return new BudgetCollection($budgets);
     }
 
-    public function show(Budget $budget): JsonResponse
-    {
-        $budget->load(['rooms.walls.collectionModel.files', 'dropshippingData']);
-
-        return (new BudgetResource($budget))->response();
-    }
-
-    public function duplicate(Budget $budget, DuplicateBudgetAction $action): JsonResponse
-    {
-        $duplicated = $action->execute($budget);
-
-        return (new BudgetResource($duplicated))->response();
-    }
-
-    public function store(StoreBudgetRequest $request, CreateBudgetAction $action): JsonResponse
-    {
+    public function store(
+        StoreBudgetRequest $request,
+        CreateBudgetAction $action
+    ): JsonResponse {
         $budget = $action->execute($request->validated());
 
         return (new BudgetResource($budget))
@@ -90,8 +103,21 @@ class BudgetController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function update(Budget $budget, UpdateBudgetRequest $request, UpdateBudgetAction $action): JsonResponse
+    public function show(Budget $budget): JsonResponse
     {
+        $budget->load([
+            'rooms.walls.collectionModel.files',
+            'dropshippingData',
+        ]);
+
+        return (new BudgetResource($budget))->response();
+    }
+
+    public function update(
+        Budget $budget,
+        UpdateBudgetRequest $request,
+        UpdateBudgetAction $action
+    ): JsonResponse {
         if ($budget->isApproved() && $budget->order_id) {
             abort(422, 'Orçamento aprovado com pedido vinculado não pode ser editado.');
         }
@@ -101,19 +127,6 @@ class BudgetController extends Controller
         return (new BudgetResource($budget))->response();
     }
 
-    public function updateStatus(UpdateBudgetStatusRequest $request, Budget $budget)
-    {
-        $translatedStatus = $request->getTranslatedStatus();
-
-        $budget->update([
-            'status' => $translatedStatus,
-        ]);
-
-        $budget->fresh(['rooms.walls.collectionModel']);
-
-        return new BudgetResource($budget);
-    }
-
     public function destroy(Budget $budget): Response
     {
         $budget->delete();
@@ -121,60 +134,10 @@ class BudgetController extends Controller
         return response()->noContent();
     }
 
-    public function createLayoutOrder(Order $order, Budget $budget)
-    {
-        $budget->loadMissing(['rooms.walls.collectionModel']);
-
-        // Atualizar status do orçamento
-        $budget->update(['status' => 'Aprovado']);
-
-        // Buscar coluna padrão e a coluna "Novos Layouts" para roteamento inicial dos cards
-        $firstColumn = LayoutColumnName::orderBy('id')->first();
-        $newLayoutsColumn = LayoutColumnName::query()
-            ->where('name', 'Novos Layouts')
-            ->first();
-
-        if (! $firstColumn) {
-            throw new \Exception('Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
-        }
-
-        // Criar um OrderBudget para cada parede do orçamento usando dados do Order
-        $orderBudgets = [];
-        $tenantId = $order->tenant_id ?? $budget->tenant_id;
-        $orderIdx = 1;
-
-        foreach ($budget->rooms as $room) {
-            foreach ($room->walls as $wall) {
-                $description = $wall->comment_referring_model ?? $order->comment_referring_model ?? null;
-
-                $modelName = mb_strtolower(trim((string) ($wall->collectionModel?->name ?? '')));
-                $shouldStartOnNewLayouts = in_array($modelName, [
-                    'arte do shutterstock',
-                    'coleção arts',
-                    'colecao arts',
-                ], true);
-                $targetColumnId = $shouldStartOnNewLayouts && $newLayoutsColumn
-                    ? $newLayoutsColumn->id
-                    : $firstColumn->id;
-
-                $orderBudgets[] = \App\Models\OrderBudget::create([
-                    'order_id' => $order->id,
-                    'tenant_id' => $tenantId,
-                    'budget_wall_id' => $wall->id,
-                    'status' => OrderBudgetStatus::APPROVE_LAYOUT,
-                    'layout_column_names_id' => $targetColumnId,
-                    'description' => $description,
-                    'order_index' => $orderIdx++,
-                ]);
-            }
-        }
-
-        return $orderBudgets;
-    }
-
     /** @deprecated */
-    public function updateLayoutColumn(UpdateLayoutColumnRequest $request): JsonResponse
-    {
+    public function updateLayoutColumn(
+        UpdateLayoutColumnRequest $request
+    ): JsonResponse {
         $validated = $request->validated();
 
         $user = $request->user();
@@ -189,11 +152,6 @@ class BudgetController extends Controller
         );
 
         return response()->json($orderBudget);
-    }
-
-    protected function formatMoney(float $value): string
-    {
-        return 'R$ ' . number_format($value, 2, ',', '.');
     }
 
     public function uploadArt(UploadArtRequest $request): JsonResponse
@@ -212,8 +170,9 @@ class BudgetController extends Controller
         return response()->json($data, 201);
     }
 
-    public function uploadReferringFile(UploadReferringFileRequest $request): JsonResponse
-    {
+    public function uploadReferringFile(
+        UploadReferringFileRequest $request
+    ): JsonResponse {
         $file = $request->file('file');
         $path = Storage::disk('public')->putFile('budgets/referring-models', $file);
 
@@ -225,8 +184,9 @@ class BudgetController extends Controller
      *
      * @param  Request  $request
      */
-    public function getRequestLayoutArts(GetRequestLayoutArtsRequest $request): JsonResponse
-    {
+    public function getRequestLayoutArts(
+        GetRequestLayoutArtsRequest $request
+    ): JsonResponse {
         $user = Auth::user();
 
         if (! $user) {
@@ -287,7 +247,7 @@ class BudgetController extends Controller
                 // Remover 'storage/' do início se já existir
                 $path = ltrim($art->path_file, '/');
                 $path = str_replace('storage/', '', $path);
-                $imageUrl = asset('storage/' . $path);
+                $imageUrl = asset('storage/'.$path);
             }
 
             // Obter informações da parede se disponível
@@ -347,7 +307,7 @@ class BudgetController extends Controller
 
     public function registerPayment(RegisterPaymentRequest $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         if (! $user || ! $user->isAdmin()) {
             abort(403, 'Você não tem permissão para registrar pagamentos.');

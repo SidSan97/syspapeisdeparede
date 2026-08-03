@@ -32,13 +32,8 @@
                   />
                 </div>
                 <div class="mb-3">
-                  <label for="budgetStatus" class="form-label">Status</label>
-                  <select v-model="budget.status" id="budgetStatus" class="form-control">
-                    <option :value="null">Sem status</option>
-                    <option value="Em aberto">Em aberto</option>
-                    <option value="Cancelado">Cancelado</option>
-                    <option value="Aprovado">Aprovado</option>
-                  </select>
+                  <label for="budgetStatus" class="form-label">Situação</label>
+                  <BudgetStatusSelect v-model="budget.status" id="budgetStatus" />
                 </div>
 
                 <!-- Checkbox Dropshipping (para admin, revendedor ou is_dropshipping === 1) -->
@@ -129,7 +124,9 @@
 
                             <div class="row">
                               <div class="col-md-6 mb-3">
-                                <label :for="`wall-name-${roomIndex}-${wallIndex}`" class="form-label"
+                                <label
+                                  :for="`wall-name-${roomIndex}-${wallIndex}`"
+                                  class="form-label"
                                   >Nome da Parede</label
                                 >
                                 <input
@@ -315,30 +312,30 @@
                                         placeholder="0.00"
                                       />
                                     </div>
-                                  <div class="col-md-6 mb-3">
-                                    <label
-                                      :for="`continuation-height-${roomIndex}-${wallIndex}-${continuationIndex}`"
-                                      class="form-label"
-                                    >
-                                      Altura (m)
-                                    </label>
-                                    <input
-                                      v-model.number="continuation.height"
-                                      type="number"
-                                      step="0.01"
-                                      :id="`continuation-height-${roomIndex}-${wallIndex}-${continuationIndex}`"
-                                      class="form-control"
-                                      placeholder="0.00"
-                                    />
+                                    <div class="col-md-6 mb-3">
+                                      <label
+                                        :for="`continuation-height-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                        class="form-label"
+                                      >
+                                        Altura (m)
+                                      </label>
+                                      <input
+                                        v-model.number="continuation.height"
+                                        type="number"
+                                        step="0.01"
+                                        :id="`continuation-height-${roomIndex}-${wallIndex}-${continuationIndex}`"
+                                        class="form-control"
+                                        placeholder="0.00"
+                                      />
+                                    </div>
                                   </div>
-                                </div>
 
-                                <WallPartMetrics
-                                  :metrics="getWallPartMetrics(wall, continuationIndex + 1)"
-                                />
+                                  <WallPartMetrics
+                                    :metrics="getWallPartMetrics(wall, continuationIndex + 1)"
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
 
                             <div class="d-flex justify-content-end">
                               <button
@@ -352,7 +349,10 @@
                               </button>
                             </div>
                             <div class="mt-4">
-                              <h6 class="mb-3">Definir modelo da parede <span class="text-muted fw-normal">(opcional)</span></h6>
+                              <h6 class="mb-3">
+                                Definir modelo da parede
+                                <span class="text-muted fw-normal">(opcional)</span>
+                              </h6>
                               <div v-if="modelsLoading" class="text-center text-muted py-3">
                                 Carregando modelos...
                               </div>
@@ -557,6 +557,7 @@ import { useRouter } from 'vue-router';
 
 // Icons
 import { IconPlus, IconTrash } from '@tabler/icons-vue';
+import BudgetStatusSelect from '@/components/budgets/BudgetStatusSelect.vue';
 
 const toast = useToast();
 const router = useRouter();

@@ -2,6 +2,9 @@
 
 namespace App\Traits;
 
+use App\Models\Budget;
+use Illuminate\Database\Eloquent\Builder;
+
 trait HasBudgetScopes
 {
     /**
@@ -20,56 +23,21 @@ trait HasBudgetScopes
     }
 
     /**
-     * Scope para busca por nome ou ID
+     * @param  Builder<Budget>  $query
+     * @return Builder<Budget>
      */
-    public function scopeSearch($query, ?string $search)
+    public function scopeSearch(Builder $query, ?string $search): Builder
     {
-        if (empty($search)) {
+        if (blank($search)) {
             return $query;
         }
 
-        return $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")->orWhere('id', 'like', "%{$search}%");
-        });
-    }
-
-    /**
-     * Scope para filtrar por status
-     */
-    public function scopeByStatus($query, ?string $status)
-    {
-        if (! empty($status) && $status !== 'all') {
-            return $query->where('status', $status);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Scope para filtrar por período (data de criação)
-     */
-    public function scopeByDateRange($query, ?string $dateFrom = null, ?string $dateTo = null)
-    {
-        if (! empty($dateFrom)) {
-            $query->whereDate('created_at', '>=', $dateFrom);
-        }
-
-        if (! empty($dateTo)) {
-            $query->whereDate('created_at', '<=', $dateTo);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Scope para filtrar por usuário/revendedor
-     */
-    public function scopeByUserId($query, ?int $userId)
-    {
-        if (! empty($userId)) {
-            return $query->where('user_id', $userId);
-        }
-
-        return $query;
+        return $query->where(
+            function ($q) use ($search) {
+                $q
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('id', $search);
+            }
+        );
     }
 }

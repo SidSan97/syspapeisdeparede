@@ -1,33 +1,23 @@
 <template>
-  <div class="card mb-4" :class="cardBorderClass">
-    <div class="card-header bg-transparent" :class="cardHeaderClass">
-      <h5 class="mb-0 fw-semibold">
-        <IconCircleCheck v-if="data.payment_status === 'paid'" class="text-success me-2" />
-        <IconExclamationCircle
-          v-else-if="data.payment_status === 'partial'"
-          class="text-warning me-2"
-        />
-
-        Pagamento
-      </h5>
+  <div class="mb-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <IconCash :size="18" />
+      <h2 class="mb-0 fs-sm fw-semibold">Pagamento</h2>
+      <span v-if="!hasPendingAmounts && data.paid" class="badge text-bg-success">
+        Pedido pago
+      </span>
     </div>
+
     <div class="card-body">
       <div class="mb-3">
         <div class="text-muted small">Método de Pagamento</div>
-        <div class="fw-semibold">
+        <div>
           {{ formatPaymentMethod(data.payment_method) }}
         </div>
       </div>
       <div v-if="data.installments" class="mb-3">
         <div class="text-muted small">Parcelas</div>
-        <div class="fw-semibold">{{ data.installments }}x</div>
-      </div>
-      <div v-if="!hasPendingAmounts && data.paid" class="mb-3">
-        <div class="alert alert-success mb-0">
-          <IconCircleCheck class="me-2" />
-
-          Pedido já está pago
-        </div>
+        <div>{{ data.installments }}x</div>
       </div>
       <div v-if="activePaymentLinkUrl && hasPendingAmounts" class="mb-3">
         <div
@@ -123,7 +113,7 @@
       <div v-if="isOrder && hasPendingAmounts" class="mb-0">
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-outline-default"
           @click="handleGeneratePaymentLink"
           :disabled="generatingPaymentLink"
         >
@@ -135,7 +125,7 @@
           ></span>
           <IconCreditCard v-else :size="18" class="me-2" />
 
-          {{ generatingPaymentLink ? 'Gerando...' : 'Pagar' }}
+          {{ generatingPaymentLink ? 'Gerando...' : 'Fazer pagamento' }}
         </button>
       </div>
     </div>
@@ -144,8 +134,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useToast } from '@/composables/useToast';
-import { useFormatting } from '@/composables/useFormatting';
 
 // Icons
 import {
@@ -157,6 +145,10 @@ import {
   IconExclamationCircle,
   IconExternalLink,
 } from '@tabler/icons-vue';
+
+import { useToast } from '@/composables/useToast';
+import { useFormatting } from '@/composables/useFormatting';
+import { IconCash } from '@tabler/icons-vue';
 
 const props = defineProps({
   data: {
@@ -369,36 +361,6 @@ const paidStatusText = computed(() => {
   return `${paidLinksCount.value} pago(s) de ${dataLinksCount.value} link(s)`;
 });
 const dataLinksCount = computed(() => (props.data?.payment_links || []).length);
-const cardBorderClass = computed(() => {
-  if (hasPendingAdjustmentRows.value) {
-    return 'border-warning border-2';
-  }
-
-  if (props.data?.payment_status === 'paid') {
-    return 'border-success border-2';
-  }
-
-  if (props.data?.payment_status === 'partial') {
-    return 'border-warning border-2';
-  }
-
-  return '';
-});
-const cardHeaderClass = computed(() => {
-  if (hasPendingAdjustmentRows.value) {
-    return 'bg-warning-subtle';
-  }
-
-  if (props.data?.payment_status === 'paid') {
-    return 'bg-success-subtle';
-  }
-
-  if (props.data?.payment_status === 'partial') {
-    return 'bg-warning-subtle';
-  }
-
-  return '';
-});
 
 function formatMoney(value) {
   return moneyFormatter.format(Number(value || 0));

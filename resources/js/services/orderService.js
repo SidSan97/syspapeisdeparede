@@ -1,5 +1,6 @@
 import { http } from '@/lib/http';
-import { createCrudService } from './baseCrudService';
+
+import { createCrudService } from '@/services/baseCrudService';
 
 const endpoint = '/v1/orders';
 
@@ -7,11 +8,11 @@ const crud = createCrudService(endpoint, {
   transformParams(params) {
     return {
       page: params?.page,
-      search: params?.search,
-      status: params?.status,
-      user_id: params?.user_id,
-      date_from: params?.date_from,
-      date_to: params?.date_to,
+      'filter[search]': params?.search,
+      'filter[status]': params?.status,
+      'filter[user_id]': params?.user_id,
+      'filter[created_from]': params?.date_from,
+      'filter[created_to]': params?.date_to,
       ...params?.filters,
     };
   },

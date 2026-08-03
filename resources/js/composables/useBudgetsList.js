@@ -1,12 +1,7 @@
 import { computed, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from '@/composables/useToast';
-import { budgetService } from '@/services/budgetService';
 import { useBudgetStore } from '@/stores/budgetStore';
 
 export function useBudgetsList() {
-  const router = useRouter();
-  const toast = useToast();
   const budgetStore = useBudgetStore();
 
   const filters = reactive({
@@ -18,7 +13,7 @@ export function useBudgetsList() {
     date_to: null,
   });
 
-  const budgetList = computed(() => budgetStore.budgets?.data || []);
+  const budgets = computed(() => budgetStore.budgets);
   const loading = computed(() => budgetStore.loadingBudgets);
 
   function fetchBudgets(params) {
@@ -33,81 +28,11 @@ export function useBudgetsList() {
     fetchBudgets();
   }
 
-  const duplicateBudget = async (budget) => {
-    if (!budget?.id) return;
-
-    try {
-      const created = await budgetService.duplicate(budget.id);
-
-      toast.success('Orçamento duplicado com sucesso.');
-
-      router.push({ name: 'budgets.edit', params: { id: created.id } });
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao duplicar o orçamento. Tente novamente.');
-    }
-  };
-
-  const cancelBudget = async (budget) => {
-    if (!budget?.id) return;
-
-    try {
-      await budgetService.cancel(budget.id);
-
-      toast.success('Orçamento cancelado com sucesso.');
-
-      fetchBudgets();
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao cancelar o orçamento. Tente novamente.');
-    }
-  };
-
-  const deleteBudget = async (budget) => {
-    if (!budget?.id) return;
-
-    try {
-      await budgetService.delete(budget.id);
-
-      toast.success('Orçamento excluído com sucesso.');
-
-      fetchBudgets();
-    } catch (error) {
-      console.error(error);
-      toast.error('Opa! Erro ao excluir o orçamento. Tente novamente.');
-    }
-  };
-
-  const createOrder = async (budget, payload = {}) => {
-    if (!budget?.id) return;
-
-    try {
-      const budgetUpdated = await budgetService.createOrder(budget.id, payload);
-
-      toast.success('Pedido criado com sucesso.');
-
-      router.push({
-        name: 'orders.show',
-        params: { id: budgetUpdated.order_id },
-      });
-
-      return budgetUpdated;
-    } catch (error) {
-      console.error(error);
-      toast.error('Opa! Erro ao criar o pedido. Tente novamente.');
-      throw error;
-    }
-  };
-
   return {
+    budgets,
     filters,
     loading,
-    budgetList,
     fetchBudgets,
     goToPage,
-    duplicateBudget,
-    cancelBudget,
-    deleteBudget,
-    createOrder,
   };
 }

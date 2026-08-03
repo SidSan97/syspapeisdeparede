@@ -5,7 +5,7 @@
         <button
           v-if="!isEditing"
           type="button"
-          class="btn btn-sm btn-subtle w-100 text-start"
+          class="btn btn-subtle text-start w-100 ps-3"
           @click="startEditing"
         >
           {{ column.name }}
@@ -25,17 +25,20 @@
           <template #trigger="{ open, toggle }">
             <button
               type="button"
-              class="btn btn-sm btn-subtle btn-icon"
+              class="btn btn-subtle btn-icon"
               :class="{ show: open }"
               @click.stop="toggle"
               :aria-expanded="open"
-              aria-label="Abrir menu da coluna"
+              title="Ações da Lista"
             >
               <IconDots :size="18" />
             </button>
           </template>
-          <li><button class="dropdown-item" @click="startEditing">Editar</button></li>
-          <li><button class="dropdown-item" @click="emit('delete')">Excluir</button></li>
+
+          <li><h6 class="dropdown-header">Ações da Lista</h6></li>
+          <li><button class="dropdown-item" @click="startEditing">Renomear</button></li>
+          <li><hr class="dropdown-divider" /></li>
+          <li><button class="dropdown-item" @click="emit('delete')">Excluir esta Lista</button></li>
         </BaseDropdown>
       </template>
     </KanbanColumnHeader>
@@ -108,4 +111,3 @@ onClickOutside(rootRef, () => {
   if (isEditing.value) cancel();
 });
 </script>
-

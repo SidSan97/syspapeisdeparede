@@ -4,17 +4,25 @@
       <PageHeader title="Layouts">
         <template #extra>
           <div class="btn-group">
-            <button class="btn btn-secondary" title="Filtrar cartões (F)" @click="isFilterOpen = true">
-              <IconFilter2 size="16" />
+            <button
+              class="btn btn-subtle"
+              title="Filtrar cartões"
+              @click="isFilterOpen = true"
+              :class="{
+                'btn-default': activeFilterCount > 0,
+              }"
+            >
+              <IconFilter2 size="18" />
+
               Filtrar
+
               <span v-if="activeFilterCount > 0" class="badge text-bg-primary ms-1">
                 {{ activeFilterCount }}
               </span>
             </button>
             <button
               v-if="activeFilterCount > 0"
-              class="btn btn-secondary"
-              title="Limpar Filtros (X)"
+              class="btn btn-default"
               @click="handleResetFilters"
             >
               Limpar tudo
@@ -198,7 +206,7 @@ function getFallbackColumnId(deletedId) {
 }
 
 async function handleDeleteColumn(columnId) {
-  const confirmed = await dialog.confirmDelete({ title: 'Excluir coluna?' });
+  const confirmed = await dialog.confirmDelete({ title: 'Excluir lista?' });
 
   if (!confirmed) return;
 

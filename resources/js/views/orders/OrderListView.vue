@@ -1,44 +1,42 @@
 <template>
   <section class="content">
-    <Page title="Pedidos">
-      <div>
-        <OrderFilters v-model="filters" @search="fetchOrders" />
-        <SelectionBar
-          :count="selectedCount"
-          selected-label="pedido selecionado"
-          selected-plural-label="pedidos selecionados"
-          @close="clearSelection"
-        >
-          <template #actions>
-            <button
-              :disabled="!canMerge"
-              class="btn btn-primary btn-sm"
-              :class="{ 'opacity-50': !canMerge }"
-              :title="
-                !canMerge
-                  ? `Selecione pelo menos 2 itens para mesclar`
-                  : 'Mesclar pedidos selecionados'
-              "
-              @click="confirmMerge"
-            >
-              Mesclar
-            </button>
-          </template>
-        </SelectionBar>
-        <OrderTable
-          :loading="loading"
-          :orders="orderList"
-          @cancel="confirmCancel"
-          @delete="confirmDelete"
-          @register-payment="handleRegisterPayment"
-          @update:selected="handleSelectionChange"
-        />
-        <Bootstrap5Pagination
-          :data="orderStore.orders"
-          @pagination-change-page="goToPage"
-          class="justify-content-center mt-3"
-        />
-      </div>
+    <Page title="Pedidos" full-width>
+      <OrderFilters v-model="filters" @search="fetchOrders" />
+      <SelectionBar
+        :count="selectedCount"
+        selected-label="pedido selecionado"
+        selected-plural-label="pedidos selecionados"
+        @close="clearSelection"
+      >
+        <template #actions>
+          <button
+            :disabled="!canMerge"
+            class="btn btn-primary btn-sm"
+            :class="{ 'opacity-50': !canMerge }"
+            :title="
+              !canMerge
+                ? `Selecione pelo menos 2 itens para mesclar`
+                : 'Mesclar pedidos selecionados'
+            "
+            @click="confirmMerge"
+          >
+            Mesclar
+          </button>
+        </template>
+      </SelectionBar>
+      <OrderTable
+        :loading="loading"
+        :orders="orderList"
+        @cancel="confirmCancel"
+        @delete="confirmDelete"
+        @register-payment="handleRegisterPayment"
+        @update:selected="handleSelectionChange"
+      />
+      <Bootstrap5Pagination
+        :data="orderStore.orders"
+        @pagination-change-page="goToPage"
+        class="justify-content-center mt-3"
+      />
     </Page>
     <OrderRegisterPaymentModal
       v-model="paymentModalVisible"

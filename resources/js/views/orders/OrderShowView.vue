@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <Page title="Pedido" :back-to="{ name: 'orders.list' }" :breadcrumbs="routes">
+    <Page :title="order?.name || 'Pedido'" :breadcrumbs="routes">
       <template #extra>
         <button
           class="btn btn-outline-default"
@@ -32,15 +32,34 @@
           Aprovar
         </button>
       </template>
+
+      <template #subtitle> <OrderStatusBadge :status="order?.status" /> </template>
+
       <div v-if="orderStore.loadingOrderById" class="text-center text-muted py-5">
         <div class="spinner-border" role="status">
           <span class="visually-hidden">Carregando...</span>
         </div>
       </div>
       <template v-else-if="order">
+        <BaseComment
+          :author="order?.reseller_name || 'Revendedor não informado'"
+          badge="revendedor"
+          class="mb-5"
+        >
+          <template #avatar>
+            <BaseAvatar :name="order?.reseller_name || 'N/A'" />
+          </template>
+
+          <div class="fs-xs">
+            <span v-if="order?.created_at">Criado {{ formatDate(order.created_at) }}</span>
+            &bull;
+            <span v-if="order?.updated_at">Atualizado em {{ formatDate(order.updated_at) }}</span>
+          </div>
+        </BaseComment>
+
         <div class="row">
           <div class="col-12 col-lg-8">
-            <BasicInfoCard :data="order" :is-dropshipping-enabled="isDropshippingEnabled" />
+            <!-- <BasicInfoCard :data="order" :is-dropshipping-enabled="isDropshippingEnabled" /> -->
             <DropshippingDataCard
               :is-dropshipping-enabled="isDropshippingEnabled"
               :dropshipping-data="order.dropshipping_data"
@@ -51,14 +70,20 @@
           <!-- Sidebar: Frete, Pagamento e Resumo -->
           <div class="col-12 col-lg-4">
             <ShippingCard :data="order" />
+
+            <hr />
+
             <PaymentCard
               :data="order"
               :is-order="true"
               :generating-payment-link="isGeneratingPaymentLink"
               @generate-payment-link="openPaymentModal"
             />
+
+            <hr />
+
             <SummaryCard :data="order" />
-            <AdditionalInfoCard :data="order" />
+            <!-- <AdditionalInfoCard :data="order" /> -->
           </div>
         </div>
       </template>
@@ -77,14 +102,17 @@
 </template>
 
 <script setup>
-import { ORDER_STATUS } from '@/constants/orderStatuses';
-import { walletService } from '@/services/walletService';
-import { useOrderStore } from '@/stores/orderStore';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ORDER_STATUS } from '@/constants/orderStatuses';
+import { walletService } from '@/services/walletService';
+import { useFormatting } from '@/composables/useFormatting';
+import { useOrderStore } from '@/stores/orderStore';
 
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import Page from '@/components/page/Page.vue';
+import BaseComment from '@/components/common/BaseComment.vue';
+import BaseAvatar from '@/components/common/BaseAvatar.vue';
 
 import AdditionalInfoCard from '@/components/details/AdditionalInfoCard.vue';
 import BasicInfoCard from '@/components/details/BasicInfoCard.vue';
@@ -95,9 +123,11 @@ import RoomsWithArtsCard from '@/components/details/RoomsWithArtsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
 import { orderService } from '@/services/orderService';
+import OrderStatusBadge from '@/components/orders/OrderStatusBadge.vue';
 
 const router = useRouter();
 const route = useRoute();
+const { formatDate } = useFormatting();
 const orderStore = useOrderStore();
 
 const isApproving = ref(false);

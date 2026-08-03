@@ -1,147 +1,143 @@
 <template>
-  <div class="card mb-4">
-    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-      <h5 class="mb-0 fw-semibold">Cômodos e solicitações de arte</h5>
-      <span v-if="!loadingRequestArts && totalRequestArts > 0" class="badge bg-secondary">
-        {{ totalRequestArts }} solicitação(ões)
-      </span>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="mb-0 fs-6 fw-semibold">Cômodos e solicitações de arte</h2>
+    <span v-if="!loadingRequestArts && totalRequestArts > 0" class="badge text-bg-neutral">
+      {{ totalRequestArts }} solicitação(ões)
+    </span>
+  </div>
 
-    <div class="card-body">
-      <div v-if="loadingRequestArts" class="text-center text-muted py-3">
-        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-        Carregando solicitações de artes...
+  <div v-if="loadingRequestArts" class="text-center text-muted py-3">
+    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+    Carregando solicitações de artes...
+  </div>
+
+  <div v-else-if="!rooms.length" class="text-center text-muted py-4">
+    Nenhum ambiente cadastrado
+  </div>
+
+  <template v-else>
+    <div v-for="room in rooms" :key="room.id ?? room.roomIndex" class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>{{ room.name || `Ambiente ${room.roomIndex + 1}` }}</strong>
+        <span v-if="room.requestArtsCount" class="badge bg-info">
+          {{ room.requestArtsCount }} arte(s)
+        </span>
       </div>
 
-      <div v-else-if="!rooms.length" class="text-center text-muted py-4">
-        Nenhum ambiente cadastrado
-      </div>
+      <div class="card-body">
+        <div v-if="!room.walls?.length" class="text-muted small">Nenhuma parede cadastrada</div>
 
-      <template v-else>
-        <div v-for="room in rooms" :key="room.id ?? room.roomIndex" class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <strong>{{ room.name || `Ambiente ${room.roomIndex + 1}` }}</strong>
-            <span v-if="room.requestArtsCount" class="badge bg-info">
-              {{ room.requestArtsCount }} arte(s)
-            </span>
-          </div>
-
+        <div
+          v-for="wall in room.walls"
+          :key="wall.id ?? `${room.roomIndex}-${wall.wallIndex}`"
+          class="card mb-3 border"
+        >
           <div class="card-body">
-            <div v-if="!room.walls?.length" class="text-muted small">Nenhuma parede cadastrada</div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <strong>{{ wall.name || `Parede ${wall.wallIndex + 1}` }}</strong>
 
-            <div
-              v-for="wall in room.walls"
-              :key="wall.id ?? `${room.roomIndex}-${wall.wallIndex}`"
-              class="card mb-3 border"
-            >
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <strong>{{ wall.name || `Parede ${wall.wallIndex + 1}` }}</strong>
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  v-if="showWallStatus"
+                  class="badge"
+                  :class="getWallStatusClass(wall, room.roomIndex, wall.wallIndex)"
+                >
+                  {{ getWallStatusLabel(wall, room.roomIndex, wall.wallIndex) }}
+                </span>
+                <span v-if="wall.requestArts?.length" class="badge bg-secondary">
+                  {{ wall.requestArts.length }} interação(ões)
+                </span>
+              </div>
+            </div>
 
-                  <div class="d-flex align-items-center gap-2">
-                    <span
-                      v-if="showWallStatus"
-                      class="badge"
-                      :class="getWallStatusClass(wall, room.roomIndex, wall.wallIndex)"
-                    >
-                      {{ getWallStatusLabel(wall, room.roomIndex, wall.wallIndex) }}
-                    </span>
-                    <span v-if="wall.requestArts?.length" class="badge bg-secondary">
-                      {{ wall.requestArts.length }} interação(ões)
-                    </span>
+            <div class="row mb-3">
+              <div v-if="wall.direction" class="col-md-4">
+                <div class="text-muted small">Direção</div>
+                <div class="fw-semibold">{{ formatDirection(wall.direction) }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Largura (m)</div>
+                <div class="fw-semibold">{{ formatNumber(wall.width) }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Altura (m)</div>
+                <div class="fw-semibold">{{ formatNumber(wall.height) }}</div>
+              </div>
+            </div>
+
+            <div v-if="wall.continuations?.length" class="mb-3">
+              <div class="text-muted small mb-2">Continuações</div>
+              <div
+                v-for="(continuation, contIndex) in wall.continuations"
+                :key="contIndex"
+                class="border-start border-primary ps-3 ms-2 mb-2"
+              >
+                <div class="row">
+                  <div v-if="continuation.name" class="col-md-4">
+                    <div class="text-muted small">Nome</div>
+                    <div class="fw-semibold">{{ continuation.name }}</div>
                   </div>
-                </div>
-
-                <div class="row mb-3">
-                  <div v-if="wall.direction" class="col-md-4">
-                    <div class="text-muted small">Direção</div>
-                    <div class="fw-semibold">{{ formatDirection(wall.direction) }}</div>
+                  <div v-if="continuationFitLabel(continuation)" class="col-md-4">
+                    <div class="text-muted small">Encaixe</div>
+                    <div class="fw-semibold">{{ continuationFitLabel(continuation) }}</div>
                   </div>
                   <div class="col-md-4">
                     <div class="text-muted small">Largura (m)</div>
-                    <div class="fw-semibold">{{ formatNumber(wall.width) }}</div>
+                    <div class="fw-semibold">{{ formatNumber(continuation.width) }}</div>
                   </div>
                   <div class="col-md-4">
                     <div class="text-muted small">Altura (m)</div>
-                    <div class="fw-semibold">{{ formatNumber(wall.height) }}</div>
+                    <div class="fw-semibold">{{ formatNumber(continuation.height) }}</div>
                   </div>
-                </div>
-
-                <div v-if="wall.continuations?.length" class="mb-3">
-                  <div class="text-muted small mb-2">Continuações</div>
-                  <div
-                    v-for="(continuation, contIndex) in wall.continuations"
-                    :key="contIndex"
-                    class="border-start border-primary ps-3 ms-2 mb-2"
-                  >
-                    <div class="row">
-                      <div v-if="continuation.name" class="col-md-4">
-                        <div class="text-muted small">Nome</div>
-                        <div class="fw-semibold">{{ continuation.name }}</div>
-                      </div>
-                      <div v-if="continuationFitLabel(continuation)" class="col-md-4">
-                        <div class="text-muted small">Encaixe</div>
-                        <div class="fw-semibold">{{ continuationFitLabel(continuation) }}</div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="text-muted small">Largura (m)</div>
-                        <div class="fw-semibold">{{ formatNumber(continuation.width) }}</div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="text-muted small">Altura (m)</div>
-                        <div class="fw-semibold">{{ formatNumber(continuation.height) }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <SelectedModelsCard :wall="wall" />
-
-                <div v-if="wall.total_area" class="alert alert-success mb-0 mt-3">
-                  <strong>Metros:</strong>
-                  {{ formatNumber(wall.total_area) }} m
-                </div>
-
-                <WallRequestArtsList
-                  v-if="wall.requestArts?.length"
-                  :arts="wall.requestArts"
-                  :can-approve="isReseller"
-                  :can-respond="canRespond"
-                  :updating-approval-status="updatingApprovalStatus"
-                  :uploading-art="uploadingArt"
-                  :accordion-suffix="wall.id ?? `${room.roomIndex}-${wall.wallIndex}`"
-                  @update-approval="handleUpdateApproval"
-                  @respond="handleRespond"
-                />
-                <div v-else class="mt-3 text-muted small">
-                  Nenhuma solicitação de arte para esta parede.
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div v-if="unmatchedRequestArts.length" class="card border-warning">
-          <div class="card-header bg-transparent">
-            <strong>Outras solicitações</strong>
-            <span class="text-muted small ms-2">(sem parede correspondente)</span>
-          </div>
-          <div class="card-body">
+            <SelectedModelsCard :wall="wall" />
+
+            <div v-if="wall.total_area" class="alert alert-success mb-0 mt-3">
+              <strong>Metros:</strong>
+              {{ formatNumber(wall.total_area) }} m
+            </div>
+
             <WallRequestArtsList
-              :arts="unmatchedRequestArts"
+              v-if="wall.requestArts?.length"
+              :arts="wall.requestArts"
               :can-approve="isReseller"
               :can-respond="canRespond"
               :updating-approval-status="updatingApprovalStatus"
               :uploading-art="uploadingArt"
-              accordion-suffix="unmatched"
+              :accordion-suffix="wall.id ?? `${room.roomIndex}-${wall.wallIndex}`"
               @update-approval="handleUpdateApproval"
               @respond="handleRespond"
             />
+            <div v-else class="mt-3 text-muted small">
+              Nenhuma solicitação de arte para esta parede.
+            </div>
           </div>
         </div>
-      </template>
+      </div>
     </div>
-  </div>
+
+    <div v-if="unmatchedRequestArts.length" class="card border-warning">
+      <div class="card-header bg-transparent">
+        <strong>Outras solicitações</strong>
+        <span class="text-muted small ms-2">(sem parede correspondente)</span>
+      </div>
+      <div class="card-body">
+        <WallRequestArtsList
+          :arts="unmatchedRequestArts"
+          :can-approve="isReseller"
+          :can-respond="canRespond"
+          :updating-approval-status="updatingApprovalStatus"
+          :uploading-art="uploadingArt"
+          accordion-suffix="unmatched"
+          @update-approval="handleUpdateApproval"
+          @respond="handleRespond"
+        />
+      </div>
+    </div>
+  </template>
 </template>
 
 <script setup>

@@ -29,11 +29,8 @@
       </div>
 
       <div class="col-12">
-        <button class="btn btn-default" type="button" @click="showMore = !showMore">
+        <button class="btn btn-default dropdown-toggle" type="button" @click="showMore = !showMore">
           Mais
-
-          <IconChevronUp v-if="showMore" :size="18" />
-          <IconChevronDown v-else :size="18" />
         </button>
       </div>
     </div>
@@ -64,7 +61,7 @@ import { ref, reactive, watch, computed } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 
 // Icons
-import { IconChevronDown, IconChevronUp, IconSearch } from '@tabler/icons-vue';
+import { IconSearch } from '@tabler/icons-vue';
 
 import { useAuthStore } from '@/stores/auth';
 import UserSelect from '@/components/users/UserSelect.vue';

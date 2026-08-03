@@ -1,36 +1,38 @@
 <template>
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead>
+    <table
+      class="table table-hover table-borderless align-middle mb-0"
+      style="--bs-table-color: var(--ds-text)"
+    >
+      <thead class="text-nowrap">
         <tr>
           <th scope="col" style="width: 64px">#</th>
-          <th scope="col" style="width: 64px">Data</th>
-          <th class="text-nowrap" scope="col">Orçamento</th>
-          <th class="text-nowrap" scope="col">Custo do orçamento</th>
-          <th class="text-nowrap" scope="col">Valor da venda</th>
-          <th class="text-nowrap" scope="col">Situação</th>
-          <th class="text-nowrap" scope="col" style="width: 64px">Ações</th>
+          <th scope="col" style="width: 100px">Data</th>
+          <th scope="col">Orçamento</th>
+          <th scope="col" style="width: 110px">Situação</th>
+          <th class="text-end" scope="col" style="width: 130px">Custo do orçamento</th>
+          <th class="text-end" scope="col" style="width: 130px">Valor da venda</th>
+          <th scope="col" style="width: 90px" />
         </tr>
       </thead>
-      <tbody>
+      <tbody class="table-group-divider">
         <tr v-if="loading">
           <td colspan="7" class="p-5 text-center text-muted fw-semibold">
             Carregando orçamentos...
           </td>
         </tr>
-        <tr v-else-if="budgets.length === 0">
+        <tr v-else-if="budgetList.length === 0">
           <td colspan="7" class="p-5 text-center text-muted fw-semibold">
             Nenhum orçamento encontrado.
           </td>
         </tr>
-        <tr v-for="budget in budgets" v-else :key="budget.id">
+        <tr v-for="budget in budgetList" v-else :key="budget.id">
           <th scope="row">{{ budget.id }}</th>
           <td>
             {{ formatDate(budget.created_at || budget.createdAt) }}
           </td>
           <td style="min-width: 240px">
             <router-link
-              class="btn btn-link text-decoration-none p-0 text-start fw-semibold"
               :to="{
                 name: 'budgets.show',
                 params: { id: budget.id },
@@ -40,25 +42,25 @@
             </router-link>
           </td>
           <td class="text-nowrap">
+            <BudgetStatusBadge :status="budget.status" />
+          </td>
+          <td class="text-nowrap text-end">
             {{ budgetCostValue(budget) != null ? formatCurrency(budgetCostValue(budget)) : '—' }}
           </td>
-          <td class="text-nowrap">
+          <td class="text-nowrap text-end">
             {{ markupSaleValue(budget) != null ? formatCurrency(markupSaleValue(budget)) : '—' }}
-          </td>
-          <td class="text-nowrap">
-            <BudgetStatusBadge :status="budget.status" />
           </td>
           <td>
             <BaseDropdown align="end">
-              <template #trigger="{ open, toggle }"
-                ><button
-                  class="btn btn-subtle btn-sm"
+              <template #trigger="{ open, toggle }">
+                <button
+                  class="btn btn-subtle btn-sm dropdown-toggle"
                   type="button"
                   :class="{ show: open }"
                   :aria-expanded="open"
                   @click="toggle"
                 >
-                  <IconDotsVertical :size="18" />
+                  Ações
                 </button>
               </template>
 
@@ -70,13 +72,8 @@
                     params: { id: budget.id },
                   }"
                 >
-                  <IconEye size="16" class="me-2" /> Visualizar
+                  <IconEye size="16" class="me-2" /> Ver detalhes
                 </router-link>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button" @click="$emit('duplicate', budget)">
-                  <IconCopy size="16" class="me-2" /> Duplicar
-                </button>
               </li>
               <li>
                 <router-link
@@ -113,6 +110,11 @@
                   <IconInbox size="16" class="me-2" /> Criar pedido
                 </button>
               </li>
+              <li>
+                <button class="dropdown-item" type="button" @click="$emit('duplicate', budget)">
+                  <IconCopy size="16" class="me-2" /> Duplicar
+                </button>
+              </li>
               <li v-if="!isCancelled(budget)">
                 <button class="dropdown-item" type="button" @click="$emit('cancel', budget)">
                   <IconBan size="16" class="me-2" /> Cancelar
@@ -140,13 +142,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import {
   IconPrinter,
   IconTrash,
   IconBan,
   IconInbox,
   IconEdit,
-  IconDotsVertical,
   IconEye,
   IconCopy,
 } from '@tabler/icons-vue';
@@ -155,11 +157,9 @@ import BaseDropdown from '@/components/common/BaseDropdown.vue';
 import { formatDate } from '@/utils/dateUtils';
 import { useFormatting } from '@/composables/useFormatting';
 
-const { formatCurrency } = useFormatting();
-
 const props = defineProps({
   budgets: {
-    type: Array,
+    type: Object,
     required: true,
   },
   loading: {
@@ -169,6 +169,10 @@ const props = defineProps({
 });
 
 defineEmits(['duplicate', 'create-order', 'cancel', 'delete']);
+
+const { formatCurrency } = useFormatting();
+
+const budgetList = computed(() => props.budgets?.data || []);
 
 const editBlockedTitle = 'Orçamento aprovado com pedido vinculado não pode ser editado.';
 
@@ -224,13 +228,3 @@ function markupSaleValue(budget) {
   return Number.isFinite(num) ? num : null;
 }
 </script>
-
-<style scoped>
-.btn-link {
-  color: var(--bs-body-color);
-}
-
-.btn-link:hover {
-  color: var(--bs-primary);
-}
-</style>

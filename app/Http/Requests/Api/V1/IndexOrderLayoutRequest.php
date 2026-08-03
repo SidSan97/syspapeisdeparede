@@ -28,4 +28,13 @@ class IndexOrderLayoutRequest extends FormRequest
             'member_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
+
+    protected function prepareForValidation()
+    {
+        if ($this->has('is_completed')) {
+            $this->merge([
+                'is_completed' => filter_var($this->is_completed, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
+            ]);
+        }
+    }
 }

@@ -4,13 +4,15 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Actions\Order\MergeOrderAction;
 use App\Actions\Order\UpdateOrderAction;
+use App\Filters\DateFromFilter;
+use App\Filters\DateToFilter;
+use App\Filters\OrderSearchFilter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\IndexOrderLayoutRequest;
 use App\Http\Requests\Api\V1\IndexOrderRequest;
 use App\Http\Requests\Api\V1\UpdateOrderRequest;
 use App\Http\Requests\Orders\GenerateOrderPaymentLinkRequest;
 use App\Http\Requests\Orders\MergeOrdersRequest;
-use App\Http\Resources\BudgetResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderBudget;
@@ -28,60 +30,53 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class OrderController extends Controller
 {
-    protected $repository;
-
-    protected $layoutService;
-
-    protected $generatePaymentService;
-
-    protected $orderBudget;
-
-    protected $orderBudgetRepository;
-
-    protected $dropshippingRepository;
-
-    protected $tinyErpService;
-
-    protected $paymentCompositionService;
-
     public function __construct(
-        OrderRepository $repository,
-        LayoutService $layoutService,
-        GeneratePaymentService $generatePaymentService,
-        OrderPaymentCompositionService $paymentCompositionService,
-        OrderBudgetRepository $orderBudgetRepository,
-        OrderBudget $orderBudget,
-        DropshippingRepository $dropshippingRepository,
-        TinyErpService $tinyErpService
+        protected OrderRepository $repository,
+        protected LayoutService $layoutService,
+        protected GeneratePaymentService $generatePaymentService,
+        protected OrderPaymentCompositionService $paymentCompositionService,
+        protected OrderBudgetRepository $orderBudgetRepository,
+        protected OrderBudget $orderBudget,
+        protected DropshippingRepository $dropshippingRepository,
+        protected TinyErpService $tinyErpService
     ) {
         $this->middleware('auth:sanctum');
-
-        $this->repository = $repository;
-        $this->layoutService = $layoutService;
-        $this->generatePaymentService = $generatePaymentService;
-        $this->paymentCompositionService = $paymentCompositionService;
-        $this->orderBudget = $orderBudget;
-        $this->orderBudgetRepository = $orderBudgetRepository;
-        $this->dropshippingRepository = $dropshippingRepository;
-        $this->tinyErpService = $tinyErpService;
     }
 
     public function index(IndexOrderRequest $request): JsonResponse
     {
-        $orders = Order::with(['user', 'tenant', 'primaryRoom', 'paymentLinks'])
-            ->orderByDesc('created_at')
+        $orders = QueryBuilder::for(Order::class)
+            ->allowedFilters(
+                'status',
+                'user_id',
+
+                AllowedFilter::custom(
+                    'search',
+                    new OrderSearchFilter
+                ),
+
+                AllowedFilter::custom(
+                    'created_from',
+                    new DateFromFilter
+                ),
+
+                AllowedFilter::custom(
+                    'created_to',
+                    new DateToFilter
+                ),
+            )
+            ->select(['id', 'created_at', 'name', 'total_amount', 'status'])
+            // ->with(['user', 'tenant', 'primaryRoom', 'paymentLinks'])
             ->forUser($request->user())
-            ->search($request->search)
-            ->byStatus($request->status)
-            ->byDateRange($request->date_from, $request->date_to)
-            ->byUserId($request->user_id)
             ->latest()
             ->paginate();
 
-        return BudgetResource::collection($orders)->response();
+        return OrderResource::collection($orders)->response();
     }
 
     public function show(Order $order): JsonResponse

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BudgetStatus;
 use App\Traits\HasBudgetScopes;
 use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,9 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Budget extends Model
 {
-    use HasBudgetScopes,
-        HasFactory,
-        HasTenantScope;
+    use HasBudgetScopes, HasFactory, HasTenantScope;
 
     protected $fillable = [
         'user_id',
@@ -37,20 +36,23 @@ class Budget extends Model
         'dropshipping_budget',
     ];
 
-    protected $casts = [
-        'total_area' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'total_amount_installments' => 'decimal:2',
-        'total_amount_markup' => 'decimal:2',
-        'total_amount_installments_markup' => 'decimal:2',
-        'delivery_time' => 'integer',
-        'selected_carrier_price' => 'decimal:2',
-        'selected_carrier_delivery_time' => 'integer',
-        'carriers_snapshot' => 'array',
-        'primary_budget_room_id' => 'integer',
-        'status' => 'string',
-        'dropshipping_budget' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'total_area' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'total_amount_installments' => 'decimal:2',
+            'total_amount_markup' => 'decimal:2',
+            'total_amount_installments_markup' => 'decimal:2',
+            'delivery_time' => 'integer',
+            'selected_carrier_price' => 'decimal:2',
+            'selected_carrier_delivery_time' => 'integer',
+            'carriers_snapshot' => 'array',
+            'primary_budget_room_id' => 'integer',
+            'status' => 'string',
+            'dropshipping_budget' => 'integer',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -92,6 +94,6 @@ class Budget extends Model
         // FIXME: Usar enum.
         $statusLower = strtolower(trim((string) ($budget->status ?? '')));
 
-        return $statusLower === 'aprovado';
+        return $statusLower === BudgetStatus::Approved->value;
     }
 }

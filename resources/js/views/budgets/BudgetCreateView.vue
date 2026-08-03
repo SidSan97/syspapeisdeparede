@@ -1,6 +1,6 @@
 <template>
   <section class="content">
-    <Page title="Criar orçamento" :breadcrumbs="routes">
+    <Page title="Criar um novo orçamento" :breadcrumbs="routes">
       <template #extra>
         <button class="btn btn-primary" type="button" @click="saveBudget" :disabled="saving">
           {{ saving ? 'Salvando...' : 'Salvar' }}
@@ -330,7 +330,10 @@
                           </div>
 
                           <div class="mt-4">
-                            <h6 class="mb-3">Definir modelo da parede <span class="text-muted fw-normal">(opcional)</span></h6>
+                            <h6 class="mb-3">
+                              Definir modelo da parede
+                              <span class="text-muted fw-normal">(opcional)</span>
+                            </h6>
                             <div v-if="modelsLoading" class="text-center text-muted py-3">
                               Carregando modelos...
                             </div>
