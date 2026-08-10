@@ -187,13 +187,13 @@ class TinyErpService
         }
     }
 
-    public function sendOrder(array $order, array  $dropshipping)
+    public function sendOrder(array $order, ?array $dropshipping)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'pedido' => $this->makeOrder($order, $dropshipping),
+                'pedido' => $this->makeOrder($order, $dropshipping ?? []),
             ];
 
             $queryString = http_build_query($params);
@@ -211,13 +211,13 @@ class TinyErpService
         }
     }
 
-    public function sendAccountPayable(array $order, array $dropshipping)
+    public function sendAccountPayable(array $order, ?array $dropshipping)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'conta' => $this->makeAccountPayable($order, $dropshipping),
+                'conta' => $this->makeAccountPayable($order, $dropshipping ?? []),
             ];
 
             $queryString = http_build_query($params);
@@ -299,13 +299,13 @@ class TinyErpService
         }
     }
 
-    public function sendInvoice(array $order, array $dropshipping)
+    public function sendInvoice(array $order, ?array $dropshipping)
     {
         try {
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'nota' => $this->makeInvoiceData($order, $dropshipping),
+                'nota' => $this->makeInvoiceData($order, $dropshipping ?? []),
             ];
 
             $queryString = http_build_query($params);
@@ -530,7 +530,7 @@ class TinyErpService
         }
     }
 
-    public function makeOrder(array $order, array  $dropshipping): string
+    public function makeOrder(array $order, ?array  $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
         $dataPrevista = $dataPedido->copy()->addDays($order['delivery_time']);

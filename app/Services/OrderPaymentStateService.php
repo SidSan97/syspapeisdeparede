@@ -7,13 +7,15 @@ use App\Models\Order;
 use App\Models\OrderPaymentLink;
 use App\Repositories\OrderBudgetRepository;
 use App\Support\OrderBudgetStatus;
+use App\Repositories\DropshippingRepository;
 
 class OrderPaymentStateService
 {
     public function __construct(
         protected OrderPaymentCompositionService $compositionService,
         protected TinyErpService $tinyErpService,
-        protected OrderBudgetRepository $orderBudgetRepository
+        protected OrderBudgetRepository $orderBudgetRepository,
+        protected DropshippingRepository $dropshippingRepository
     ) {}
 
     /**
@@ -22,6 +24,7 @@ class OrderPaymentStateService
     public function refreshPaidFlags(Order $order): void
     {
         $order->refresh();
+        $dropshipping = null;
 
         $composition = $this->compositionService->getOrderComposition($order);
 
@@ -34,6 +37,10 @@ class OrderPaymentStateService
             ->where('status', 'paid')
             ->sum('amount_total');
 
+        if($order->dropshipping_budget) {
+            $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+        }
+
         $isPaid = $paidAmount >= $orderTotal && $orderTotal > 0;
         $paymentStatus = $paidAmount <= 0 ? 'unpaid' : ($isPaid ? 'paid' : 'partial');
 
@@ -42,8 +49,11 @@ class OrderPaymentStateService
             'payment_status' => $paymentStatus,
         ]);
 
-        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $order->dropshipping_budget->toArray());
-        $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
+        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshipping->toArray());
+
+        if(isset($orderTiny['registros']['registro']['id'])) {
+            $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
+        }
     }
 
     public function linkContainsArtes(OrderPaymentLink $link): bool
