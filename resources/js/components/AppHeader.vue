@@ -18,8 +18,6 @@
         </ul>
       </div>
       <div class="d-flex align-items-center ms-auto gap-3 me-2 me-lg-3">
-        <NavTheme />
-
         <NavUser />
 
         <button
@@ -48,9 +46,8 @@
 
 <script setup>
 import { RouterLink } from 'vue-router';
-import { useSidebar } from '@/composables/useSidebar';
 import NavUser from './NavUser.vue';
-import NavTheme from './NavTheme.vue';
+import { useSidebar } from '@/composables/useSidebar';
 
 const { toggle } = useSidebar();
 

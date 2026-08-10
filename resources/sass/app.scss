@@ -27,6 +27,32 @@
   --bs-btn-padding-x: var(--bs-btn-padding-y);
 }
 
+.btn-xs {
+  --bs-btn-padding-x: var(--ds-space-050);
+  --bs-btn-padding-y: var(--ds-space-025);
+  --bs-btn-font-weight: 400;
+}
+
+.badge.text-bg-neutral {
+  color: var(--ds-text);
+  background-color: var(--ds-background-accent-gray-subtler,#dddee1);
+}
+
+.badge.text-bg-info {
+  color: var(--ds-text-accent-blue-bolder) !important;
+  background-color: var(--ds-background-accent-blue-subtler) !important;
+}
+
+.badge.text-bg-success {
+  color: var(--ds-text-accent-lime-bolder) !important;
+  background-color: var(--ds-background-accent-lime-subtler) !important;
+}
+
+.badge.text-bg-warning {
+  color: var(--ds-text-accent-orange-bolder) !important;
+  background-color: var(--ds-background-accent-orange-subtler) !important;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }

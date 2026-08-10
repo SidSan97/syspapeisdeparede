@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Actions\Budget\DuplicateBudgetAction;
+use App\Enums\BudgetStatus;
 use App\Models\Budget;
 use App\Models\BudgetRoom;
 use App\Models\Order;
@@ -54,20 +55,6 @@ class BudgetRepository
         return $query->get();
     }
 
-    public function paginate(array $filters = [])
-    {
-        $user = Auth::user();
-
-        return Budget::with(['user', 'tenant', 'primaryRoom'])
-            ->orderByDesc('created_at')
-            ->forUser($user)
-            ->search($filters['search'] ?? null)
-            ->byStatus($filters['status'] ?? null)
-            ->byDateRange($filters['date_from'] ?? null, $filters['date_to'] ?? null)
-            ->byUserId($filters['user_id'] ?? null)
-            ->paginate();
-    }
-
     public function getAllById(int $id)
     {
         return Budget::with(['rooms.walls.collectionModel', 'primaryRoom.walls.collectionModel'])
@@ -107,7 +94,7 @@ class BudgetRepository
             $user = Auth::user();
             $tenantId = $user->isTenant() ? $user->id : null;
 
-            $budget = Budget::create([
+            $budget = Budget::query()->create([
                 'user_id' => $user->id,
                 'tenant_id' => $tenantId,
                 'name' => $data['name'],
@@ -122,7 +109,7 @@ class BudgetRepository
                 'carriers_snapshot' => null,
                 'dropshipping_budget' => isset($data['dropshipping_budget']) ? (int) $data['dropshipping_budget'] : 0,
                 'raw_payload' => $data,
-                'status' => 'Em aberto',
+                'status' => BudgetStatus::Open->value,
             ]);
 
             foreach ($rooms as $roomIndex => $roomData) {
@@ -302,7 +289,7 @@ class BudgetRepository
     public function cancel(Budget $budget): Budget
     {
         $budget->update([
-            'status' => 'Cancelado',
+            'status' => BudgetStatus::Canceled->value,
         ]);
 
         return $budget->fresh(['rooms.walls.collectionModel']);
@@ -314,7 +301,7 @@ class BudgetRepository
             $budget->loadMissing(['rooms.walls.collectionModel']);
 
             $budget->update([
-                'status' => 'Aprovado',
+                'status' => BudgetStatus::Approved->value,
             ]);
 
             $wallsById = collect($data['walls'] ?? [])

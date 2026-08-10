@@ -1,8 +1,41 @@
 <template>
   <section class="content d-flex flex-column">
     <div class="container-fluid mt-3">
-      <PageHeader title="Produção" />
+      <PageHeader title="Produção">
+        <template #extra>
+          <div class="btn-group">
+            <button
+              class="btn btn-subtle"
+              title="Filtrar cartões"
+              @click="isFilterOpen = true"
+              :class="{
+                'btn-default': activeFilterCount > 0,
+              }"
+            >
+              <IconFilter2 size="18" />
+              Filtrar
+              <span v-if="activeFilterCount > 0" class="badge text-bg-primary ms-1">
+                {{ activeFilterCount }}
+              </span>
+            </button>
+            <button
+              v-if="activeFilterCount > 0"
+              class="btn btn-default"
+              @click="handleResetFilters"
+            >
+              Limpar tudo
+            </button>
+          </div>
+        </template>
+      </PageHeader>
     </div>
+
+    <BoardFilterOffcanvas
+      v-model="isFilterOpen"
+      :filters="activeFilters"
+      @apply-filters="handleApplyFilters"
+      @reset-filters="handleResetFilters"
+    />
 
     <KanbanCanvas class="flex-grow-1">
       <div class="overflow-x-auto h-100 w-100 px-2 py-0.5">
@@ -62,8 +95,9 @@
 </template>
 
 <script setup>
-import { onMounted, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef } from 'vue';
 import draggable from 'vuedraggable';
+import { IconFilter2 } from '@tabler/icons-vue';
 import ProductCardModal from '@/modules/production/components/ProductCardModal.vue';
 import ProductionColumn from '@/modules/production/components/ProductionColumn.vue';
 import ProductionCard from '@/modules/production/components/ProductionCard.vue';
@@ -73,6 +107,7 @@ import { useDialog } from '@/composables/useDialog';
 import KanbanColumnSkeleton from '@/components/kanban/KanbanColumnSkeleton.vue';
 import KanbanCanvas from '@/components/kanban/KanbanCanvas.vue';
 import KanbanColumnAdd from '@/components/kanban/KanbanColumnAdd.vue';
+import BoardFilterOffcanvas from '@/components/kanban/BoardFilterOffcanvas.vue';
 import { useProductionBoard } from '@/composables/useProductionBoard';
 import { useKanbanDrag } from '@/composables/useKanbanDrag';
 import { useToast } from '@/composables/useToast';
@@ -98,6 +133,33 @@ const { columns } = board;
 const { loading: loadingCards } = cards;
 
 const selectedCard = shallowRef(null);
+
+const isFilterOpen = ref(false);
+const activeFilters = ref({});
+
+const activeFilterCount = computed(() => {
+  const filters = activeFilters.value;
+
+  return [
+    filters.is_completed !== null && filters.is_completed !== undefined,
+    Boolean(filters.delivery_date),
+    Boolean(filters.order_number),
+    Boolean(filters.quote_name),
+    Boolean(filters.unassigned),
+    Boolean(filters.assigned_to_me),
+    Boolean(filters.member_ids?.length),
+  ].filter(Boolean).length;
+});
+
+async function handleApplyFilters(filters) {
+  activeFilters.value = filters;
+  await cards.fetchCards(filters);
+}
+
+async function handleResetFilters() {
+  activeFilters.value = {};
+  await cards.fetchCards();
+}
 
 function handleCardUpdated(updatedFields) {
   if (!selectedCard.value) return;
@@ -164,7 +226,7 @@ function getFallbackColumnId(deletedId) {
 }
 
 async function handleDeleteColumn(columnId) {
-  const confirmed = await dialog.confirmDelete({ title: 'Excluir coluna?' });
+  const confirmed = await dialog.confirmDelete({ title: 'Excluir lista?' });
 
   if (!confirmed) return;
 

@@ -1,5 +1,5 @@
 <script setup>
-import { IconDotsVertical } from '@tabler/icons-vue';
+import { IconDotsVertical, IconEdit, IconTrash } from '@tabler/icons-vue';
 import { useFormatting } from '@/composables/useFormatting';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
 
@@ -41,7 +41,17 @@ const { formatCurrency } = useFormatting();
           </td>
         </tr>
         <tr v-else v-for="model in models" :key="model.id">
-          <td class="text-nowrap">{{ model.name }}</td>
+          <td class="text-nowrap">
+            <router-link
+              class="text-body"
+              :to="{
+                name: 'settings.models.edit',
+                params: { id: model.id },
+              }"
+            >
+              {{ model.name }}
+            </router-link>
+          </td>
           <td class="text-nowrap">
             {{ formatCurrency(model.value) }}
           </td>
@@ -66,7 +76,7 @@ const { formatCurrency } = useFormatting();
                     params: { id: model.id },
                   }"
                 >
-                  Editar
+                  <IconEdit size="16" class="me-2" /> Editar
                 </router-link>
               </li>
               <li>
@@ -76,7 +86,7 @@ const { formatCurrency } = useFormatting();
                   type="button"
                   @click="$emit('delete', model)"
                 >
-                  Excluir
+                  <IconTrash size="16" class="me-2" /> Excluir
                 </button>
               </li>
             </BaseDropdown>

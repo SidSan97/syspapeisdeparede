@@ -28,7 +28,7 @@ class IndexOrderRequest extends FormRequest
             ],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-            'user_id' => ['nullable', 'integer'],
+            'user_id' => ['nullable', 'exists:users,id'],
         ];
     }
 

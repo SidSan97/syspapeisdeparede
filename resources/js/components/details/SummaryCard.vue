@@ -1,65 +1,67 @@
 <template>
-  <div class="card mb-4">
-    <div class="card-header bg-transparent">
-      <h5 class="mb-0 fw-semibold">Resumo</h5>
+  <div class="mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <IconNotes :size="18" />
+      <h5 class="mb-0 fs-sm fw-semibold">Resumo</h5>
+
+      <button class="btn btn-outline-default btn-sm ms-auto" @click="copyStripSummary">
+        <IconCopy :size="16" />
+        Copiar resumo
+      </button>
     </div>
-    <div class="card-body">
-      <div class="mb-3">
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Total de Ambientes:</span>
-          <strong>{{ data.rooms?.length || 0 }}</strong>
-        </div>
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Total de Paredes:</span>
-          <strong>{{ totalWalls }}</strong>
-        </div>
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Metros:</span>
-          <strong>{{ formatNumber(totalArea) }}</strong>
-        </div>
-        <div v-if="data.selected_carrier_price" class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Frete:</span>
-          <strong>{{ formatCurrency(data.selected_carrier_price) }}</strong>
-        </div>
-        <div v-if="artsTotal > 0" class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Valor das artes:</span>
-          <strong>{{ formatCurrency(artsTotal) }}</strong>
-        </div>
-        <div v-if="data.delivery_time" class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Prazo de entrega:</span>
-          <strong>{{ formatDeliveryTime(data.delivery_time) }}</strong>
-        </div>
-      </div>
-      <hr />
-      <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0 fw-semibold">Total à Vista:</h6>
-          <h5 class="mb-0 text-success">
-            {{ formatCurrency(data.total_amount) }}
-          </h5>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0 fw-semibold">Total a Prazo:</h6>
-          <h5 class="mb-0 text-primary">
-            {{ formatCurrency(data.total_amount_installments) }}
-          </h5>
-        </div>
-      </div>
 
-      <hr />
-
-      <div v-if="stripSummary" class="mt-3 small text-muted">
-        <strong class="text-body">Resumo de Faixas:</strong>
-        {{ stripSummary }}
+    <div class="fs-sm mb-3">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Total de Ambientes:</span>
+        <span>{{ data.rooms?.length || 0 }}</span>
       </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Total de Paredes:</span>
+        <span>{{ totalWalls }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Metros:</span>
+        <span>{{ formatNumber(totalArea) }}</span>
+      </div>
+      <div v-if="data.selected_carrier_price" class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Frete:</span>
+        <span>{{ formatCurrency(data.selected_carrier_price) }}</span>
+      </div>
+      <div v-if="artsTotal > 0" class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Valor das artes:</span>
+        <span>{{ formatCurrency(artsTotal) }}</span>
+      </div>
+      <div v-if="data.delivery_time" class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Prazo de entrega:</span>
+        <span>{{ formatDeliveryTime(data.delivery_time) }}</span>
+      </div>
+    </div>
 
-      <button class="btn btn-default mt-2" @click="copyStripSummary">Copiar resumo</button>
+    <hr />
+
+    <div class="d-flex justify-content-between align-items-center fs-sm fw-medium mb-1">
+      <span>Total à Vista:</span>
+      <span>{{ formatCurrency(data.total_amount) }}</span>
+    </div>
+    <div class="d-flex justify-content-between align-items-center fs-sm fw-medium mb-1">
+      <span>Total a Prazo:</span>
+      <span>{{ formatCurrency(data.total_amount_installments) }}</span>
+    </div>
+
+    <hr />
+
+    <div v-if="stripSummary" class="fs-sm">
+      <span class="fw-medium">Resumo de Faixas: </span>
+      <span class="text-muted">{{ stripSummary }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+
+import { IconNotes, IconCopy } from '@tabler/icons-vue';
+
 import { useToast } from '@/composables/useToast';
 import { useFormatting } from '@/composables/useFormatting';
 import { calculatePartsTotalArea } from '@/utils/calculateStripsUtils.js';

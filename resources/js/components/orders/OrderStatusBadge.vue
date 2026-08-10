@@ -1,10 +1,11 @@
 <template>
-  <span class="status-dot" :class="`status-dot-${variant}`"></span>
-  {{ label }}
+  <span :class="`badge text-bg-${color} fs-sm`">{{ label }}</span>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/constants/orderStatuses';
 
 const props = defineProps({
   status: {
@@ -13,54 +14,19 @@ const props = defineProps({
   },
 });
 
-const statusOptions = [
-  { label: 'Em aberto', value: 'em aberto' },
-  { label: 'Aprovado', value: 'aprovado' },
-  { label: 'Em produção', value: 'Em produção' },
-  { label: 'Enviado', value: 'Enviado' },
-  { label: 'Cancelado', value: 'cancelado' },
-];
-
 const label = computed(() => {
   if (!props.status) {
     return '—';
   }
-  const normalized = props.status.toString().toLowerCase();
-  const match = statusOptions.find((option) => option.value === normalized);
-  return match ? match.label : props.status;
+
+  return ORDER_STATUS_LABELS[props.status.toLocaleLowerCase()];
 });
 
-const variant = computed(() => {
-  const normalized = (props.status || '').toString().toLowerCase();
-  if (normalized.includes('cancel')) {
-    return 'danger';
+const color = computed(() => {
+  if (!props.status) {
+    return 'neutral';
   }
-  if (normalized.includes('aprov')) {
-    return 'success';
-  }
-  return 'info';
+
+  return ORDER_STATUS_COLORS[props.status.toLocaleLowerCase()];
 });
 </script>
-
-<style scoped>
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-  margin-right: 6px;
-}
-
-.status-dot-success {
-  background-color: var(--bs-success);
-}
-
-.status-dot-danger {
-  background-color: var(--bs-danger);
-}
-
-.status-dot-info {
-  background-color: var(--bs-info);
-}
-</style>

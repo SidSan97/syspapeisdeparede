@@ -20,20 +20,12 @@
       </div>
 
       <div class="col-12">
-        <select class="form-select" v-model="localFilters.status">
-          <option value="">Status</option>
-          <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
+        <BudgetStatusSelect v-model="localFilters.status" />
       </div>
 
       <div class="col-12">
-        <button class="btn btn-default" type="button" @click="showMore = !showMore">
+        <button class="btn btn-default dropdown-toggle" type="button" @click="showMore = !showMore">
           Mais
-
-          <IconChevronUp v-if="showMore" :size="18" />
-          <IconChevronDown v-else :size="18" />
         </button>
       </div>
     </div>
@@ -41,7 +33,7 @@
     <div v-if="showMore" class="row row-cols-lg-auto g-3 align-items-center mb-3">
       <div class="col-12">
         <div class="form-group mb-2">
-          <label class="form-label small mb-1">Período</label>
+          <label class="form-label small mb-1">Filtrar por data</label>
 
           <VueDatePicker
             v-model="localFilters.dateRange"
@@ -51,7 +43,7 @@
             :formats="{ input: 'dd/MM/yyyy' }"
             :enable-time-picker="false"
             auto-apply
-            placeholder="Selecione o período"
+            placeholder="Selecionar datas"
           />
         </div>
       </div>
@@ -62,9 +54,10 @@
 <script setup>
 import { ref, reactive, watch, computed } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
-import { IconChevronDown, IconChevronUp, IconSearch } from '@tabler/icons-vue';
+import { IconSearch } from '@tabler/icons-vue';
 import { useAuthStore } from '@/stores/auth';
 import UserSelect from '@/components/users/UserSelect.vue';
+import BudgetStatusSelect from '@/components/budgets/BudgetStatusSelect.vue';
 
 const props = defineProps({
   modelValue: {
@@ -77,12 +70,6 @@ const emit = defineEmits(['update:modelValue', 'search']);
 
 const authStore = useAuthStore();
 const isAdmin = computed(() => authStore.isAdmin());
-
-const statusOptions = [
-  { label: 'Em aberto', value: 'em aberto' },
-  { label: 'Aprovado', value: 'aprovado' },
-  { label: 'Cancelado', value: 'cancelado' },
-];
 
 const showMore = ref(false);
 

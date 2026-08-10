@@ -1,7 +1,7 @@
 <template>
   <div
     ref="rootRef"
-    class="kanban-column-header-drag d-flex align-items-center justify-content-between mb-2 px-2"
+    class="kanban-column-header-drag d-flex align-items-center justify-content-between mb-2"
   >
     <div class="flex-grow-1">
       <slot>
@@ -11,10 +11,12 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 ms-2">
-      <span v-if="count !== undefined" class="badge border text-body">{{ count }}</span>
-      <span v-if="badge" class="badge" :class="badge.class ?? 'bg-secondary'">{{
-        badge.label
-      }}</span>
+      <span v-if="count !== undefined" class="fs-sm pe-1" title="Totald e cartões">
+        {{ count }}
+      </span>
+      <span v-if="badge" class="badge" :class="badge.class ?? 'bg-secondary'">
+        {{ badge.label }}
+      </span>
 
       <slot name="actions" />
     </div>

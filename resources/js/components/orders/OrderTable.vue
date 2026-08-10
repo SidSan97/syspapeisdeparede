@@ -1,6 +1,9 @@
 <template>
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
+    <table
+      class="table table-hover table-borderless align-middle mb-0"
+      style="--bs-table-color: var(--ds-text)"
+    >
       <thead>
         <tr>
           <th scope="col" class="text-center" style="width: 40px">
@@ -13,18 +16,16 @@
             />
           </th>
           <th scope="col" style="width: 64px">#</th>
-          <th scope="col" style="width: 64px">Data</th>
+          <th scope="col" style="width: 100px">Data</th>
           <th class="text-nowrap" scope="col">Pedido</th>
-          <th v-if="showValuesColumn" class="text-nowrap" scope="col" style="width: 120px">
+          <th class="text-nowrap" scope="col" style="width: 110px">Situação</th>
+          <th v-if="showValuesColumn" class="text-nowrap text-end" scope="col" style="width: 130px">
             Valor total
           </th>
-          <th class="text-nowrap" scope="col">Situação</th>
-          <th v-if="showActionsColumn" class="text-nowrap" scope="col" style="width: 64px">
-            Ações
-          </th>
+          <th v-if="showActionsColumn" class="text-nowrap" scope="col" style="width: 90px" />
         </tr>
       </thead>
-      <tbody>
+      <tbody class="table-group-divider">
         <tr v-if="loading">
           <td colspan="7" class="p-5 text-center text-muted fw-semibold">Carregando pedidos...</td>
         </tr>
@@ -49,8 +50,6 @@
           <td style="min-width: 240px">
             <router-link
               v-if="nameClickable"
-              class="fw-semibold"
-              style="color: var(--bs-table-color-state)"
               :to="{
                 name: 'orders.show',
                 params: { id: order.id },
@@ -58,29 +57,29 @@
             >
               {{ order.name }}
             </router-link>
-            <span v-else class="fw-semibold">{{ order.name }}</span>
-          </td>
-          <td v-if="showValuesColumn" class="">
-            <span class="fw-semibold">{{
-              formatCurrency(
-                order.installments > 0 ? order.total_amount_installments : order.total_amount,
-              )
-            }}</span>
+            <span v-else>{{ order.name }}</span>
           </td>
           <td class="text-nowrap">
             <OrderStatusBadge :status="order.status" />
+          </td>
+          <td v-if="showValuesColumn" class="text-end">
+            {{
+              formatCurrency(
+                order.installments > 0 ? order.total_amount_installments : order.total_amount,
+              )
+            }}
           </td>
           <td v-if="showActionsColumn">
             <BaseDropdown align="end">
               <template #trigger="{ open, toggle }">
                 <button
-                  class="btn btn-subtle btn-sm"
+                  class="btn btn-subtle btn-sm dropdown-toggle"
                   type="button"
                   :class="{ show: open }"
                   :aria-expanded="open"
                   @click="toggle"
                 >
-                  <IconDotsVertical :size="18" />
+                  Ações
                 </button>
               </template>
 
@@ -92,7 +91,8 @@
                     params: { id: order.id },
                   }"
                 >
-                  Visualizar
+                  <IconEye :size="18" class="me-2" />
+                  Ver detalhes
                 </router-link>
               </li>
               <li v-if="order.status !== 'Aprovado' && canRegisterPayment && order.paid === 0">
@@ -101,6 +101,7 @@
                   type="button"
                   @click="$emit('register-payment', order)"
                 >
+                  <IconCash :size="18" class="me-2" />
                   Registrar pagamento
                 </button>
               </li>
@@ -112,6 +113,7 @@
                     params: { id: order.id },
                   }"
                 >
+                  <IconEdit :size="18" class="me-2" />
                   Editar
                 </router-link>
               </li>
@@ -123,11 +125,13 @@
                     params: { id: order.id },
                   }"
                 >
+                  <IconFileInvoice :size="18" class="me-2" />
                   Ver nota fiscal
                 </router-link>
               </li>
               <li v-if="!isCancelled(order)">
                 <button class="dropdown-item" type="button" @click="$emit('cancel', order)">
+                  <IconBan :size="18" class="me-2" />
                   Cancelar
                 </button>
               </li>
@@ -141,6 +145,7 @@
                   type="button"
                   @click="$emit('delete', order)"
                 >
+                  <IconTrash :size="18" class="me-2" />
                   Excluir
                 </button>
               </li>
@@ -161,6 +166,12 @@ import { useAuthStore } from '@/stores/auth';
 import { useOrderSelection } from '@/composables/useOrdersSelection';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
 import OrderStatusBadge from './OrderStatusBadge.vue';
+import { IconEye } from '@tabler/icons-vue';
+import { IconCash } from '@tabler/icons-vue';
+import { IconEdit } from '@tabler/icons-vue';
+import { IconFileInvoice } from '@tabler/icons-vue';
+import { IconBan } from '@tabler/icons-vue';
+import { IconTrash } from '@tabler/icons-vue';
 
 const { formatCurrency } = useFormatting();
 

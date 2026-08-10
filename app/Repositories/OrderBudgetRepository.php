@@ -1,17 +1,21 @@
 <?php
 
 namespace App\Repositories;
+
 use App\Models\Budget;
+use App\Models\BudgetWall;
 use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use App\Models\User;
 use App\Services\LayoutCardHistoryService;
 use App\Support\OrderBudgetStatus;
 use Illuminate\Support\Facades\DB;
 
-class OrderBudgetRepository {
-
+class OrderBudgetRepository
+{
     protected $orderBudget;
+
     protected $historyService;
 
     public function __construct(OrderBudget $orderBudget, LayoutCardHistoryService $historyService)
@@ -62,7 +66,7 @@ class OrderBudgetRepository {
     public function addMember(int $orderBudgetId, int $userId, $actionUser = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
-        $user = \App\Models\User::findOrFail($userId);
+        $user = User::findOrFail($userId);
 
         if ($orderBudget->users()->where('users.id', $user->id)->exists()) {
             throw new \Exception('Usuário já está adicionado a este card');
@@ -87,9 +91,9 @@ class OrderBudgetRepository {
     public function removeMember(int $orderBudgetId, int $userId, $actionUser = null, ?string $typePage = null)
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
-        $user = \App\Models\User::findOrFail($userId);
+        $user = User::findOrFail($userId);
 
-        if (!$orderBudget->users()->where('users.id', $user->id)->exists()) {
+        if (! $orderBudget->users()->where('users.id', $user->id)->exists()) {
             throw new \Exception('Usuário não está adicionado a este card');
         }
 
@@ -141,7 +145,7 @@ class OrderBudgetRepository {
             $orderBudget->update([
                 'production_date' => now()->toDateString(),
             ]);
-        } else if ($percentage == 0) {
+        } elseif ($percentage == 0) {
             $orderBudget->update([
                 'production_date' => null,
             ]);
@@ -209,19 +213,20 @@ class OrderBudgetRepository {
 
     public function paginateReadyForPicking(?string $search = null)
     {
-        $query = $this->orderBudget::where('production_percentage', 100)
+        $query = OrderBudget::query()
+            ->where('production_percentage', 100)
             ->with('order')
             ->where('ready_to_expedition', 0)
             ->orderBy('id', 'asc');
 
         // Filtro de busca
-        if (!empty($search)) {
+        if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('order', function ($orderQuery) use ($search) {
                     $orderQuery->where('name', 'like', "%{$search}%");
                 })
-                ->orWhere('id', 'like', "%{$search}%")
-                ->orWhere('order_id', 'like', "%{$search}%");
+                    ->orWhere('id', 'like', "%{$search}%")
+                    ->orWhere('order_id', 'like', "%{$search}%");
             });
         }
 
@@ -321,7 +326,7 @@ class OrderBudgetRepository {
     }
 
     /**
-     * @param  array<int, \App\Models\BudgetWall>  $walls
+     * @param  array<int, BudgetWall>  $walls
      */
     protected function syncOrderBudgetCardsForWalls(
         Order $order,
@@ -385,7 +390,7 @@ class OrderBudgetRepository {
     /**
      * Desvincula cards das paredes antes de remover ambientes, preservando histórico e dependências.
      *
-     * @param  iterable<int, \App\Models\BudgetWall>  $walls
+     * @param  iterable<int, BudgetWall>  $walls
      */
     public function detachCardsFromWalls(iterable $walls): void
     {

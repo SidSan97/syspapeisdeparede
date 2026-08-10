@@ -7,7 +7,6 @@ use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Services\OrderService;
 use App\Support\Budget\BudgetCalculator;
-use App\Support\OrderBudgetStatus;
 use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
@@ -29,7 +28,7 @@ class OrderRepository
         $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom', 'paymentLinks'])
             ->orderByDesc('created_at');
 
-        if (!$user->isAdmin() && !$user->isCommercial()) {
+        if (! $user->isAdmin() && ! $user->isCommercial()) {
             $query->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                     ->orWhere('tenant_id', $user->id);
@@ -59,14 +58,17 @@ class OrderRepository
         return Order::with('rooms.walls.collectionModel')->where('id', $id)->get();
     }
 
-    public function getLayoutsForApprove(?int $orderId = null)
+    public function getLayoutsForApprove(?int $orderId = null, array $filters = [])
     {
-        $query = OrderBudget::/*whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
-            ->*/whereNotNull('budget_wall_id');
+        $query = OrderBudget::query()
+        // ->whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
+            ->whereNotNull('budget_wall_id');
 
         if ($orderId !== null) {
             $query->where('order_id', $orderId);
         }
+
+        $this->applyBoardFilters($query, $filters);
 
         return $query->whereHas('order', function ($query) {
             $query->where('paid', '!=', 1)
@@ -86,7 +88,7 @@ class OrderRepository
                 'wall' => function ($query) {
                     $query->with([
                         'collectionModel.files',
-                        'room'
+                        'room',
                     ]);
                 },
                 'layoutColumnName',
@@ -97,13 +99,15 @@ class OrderRepository
             ->get();
     }
 
-    public function getLayoutsForProduction(?int $orderId = null)
+    public function getLayoutsForProduction(?int $orderId = null, array $filters = [])
     {
         $query = OrderBudget::whereNotNull('budget_wall_id');
 
         if ($orderId !== null) {
             $query->where('order_id', $orderId);
         }
+
+        $this->applyBoardFilters($query, $filters);
 
         return $query->whereHas('order', function ($query) {
             $query->where('paid', 1);
@@ -120,7 +124,7 @@ class OrderRepository
                 'wall' => function ($query) {
                     $query->with([
                         'collectionModel.files',
-                        'room'
+                        'room',
                     ]);
                 },
                 'layoutColumnName',
@@ -131,13 +135,49 @@ class OrderRepository
             ->get();
     }
 
+    /**
+     * Aplica os filtros do quadro Kanban (Layout/Produção) na query de OrderBudget.
+     *
+     * @param  array{is_completed?: bool|null, order_number?: int|null, quote_name?: string|null, unassigned?: bool|null, assigned_to_me?: bool|null, member_ids?: array<int>|null}  $filters
+     */
+    protected function applyBoardFilters($query, array $filters): void
+    {
+        if (array_key_exists('is_completed', $filters) && $filters['is_completed'] !== null) {
+            $filters['is_completed']
+                ? $query->whereNotNull('completed_at')
+                : $query->whereNull('completed_at');
+        }
+
+        if (! empty($filters['order_number'])) {
+            $query->where('order_id', (int) $filters['order_number']);
+        }
+
+        if (! empty($filters['quote_name'])) {
+            $query->whereHas('order', function ($query) use ($filters) {
+                $query->where('name', 'like', '%'.$filters['quote_name'].'%');
+            });
+        }
+
+        if (! empty($filters['unassigned'])) {
+            $query->whereDoesntHave('users');
+        } elseif (! empty($filters['assigned_to_me'])) {
+            $query->whereHas('users', function ($query) {
+                $query->where('users.id', Auth::id());
+            });
+        } elseif (! empty($filters['member_ids'])) {
+            $query->whereHas('users', function ($query) use ($filters) {
+                $query->whereIn('users.id', $filters['member_ids']);
+            });
+        }
+    }
+
     public function find(int $id): ?Order
     {
         $user = Auth::user();
 
         $query = Order::with(['rooms.walls.collectionModel', 'user', 'tenant', 'primaryRoom', 'paymentLinks']);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $query->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                     ->orWhere('tenant_id', $user->id);
@@ -162,7 +202,7 @@ class OrderRepository
 
     public function update(Order $order, array $data): Order
     {
-        if (!empty($data['rooms']) && is_array($data['rooms'])) {
+        if (! empty($data['rooms']) && is_array($data['rooms'])) {
             $rooms = $data['rooms'];
 
             // Recalcular totais quando a estrutura de ambientes/paredes muda
@@ -287,7 +327,7 @@ class OrderRepository
         $query = Order::with(['user', 'tenant', 'primaryRoom'])
             ->where('status', $status);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $query->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                     ->orWhere('tenant_id', $user->id);
@@ -301,7 +341,7 @@ class OrderRepository
     {
         return Order::with(['orderBudgets', 'user', 'tenant'])
             ->whereHas('orderBudgets')
-            //->where('nf_sent', 0)
+            // ->where('nf_sent', 0)
             ->whereDoesntHave('orderBudgets', function ($query) {
                 $query->where('ready_to_expedition', '!=', 1);
             })
@@ -516,4 +556,3 @@ class OrderRepository
         });
     }
 }
-

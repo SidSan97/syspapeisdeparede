@@ -1,4 +1,4 @@
-import http from 'http';
+import { http } from '@/lib/http';
 
 /**
  * Chamadas HTTP relacionadas à nota fiscal (Tiny ERP).

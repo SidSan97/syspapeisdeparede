@@ -4,6 +4,7 @@ namespace App\Actions\Budget;
 
 use App\Models\Budget;
 use App\Repositories\DropshippingRepository;
+use App\Support\OrderStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -35,7 +36,7 @@ class DuplicateBudgetAction
                 'selected_carrier_delivery_time' => $source->selected_carrier_delivery_time,
                 'carriers_snapshot' => $source->carriers_snapshot,
                 'primary_budget_room_id' => null,
-                'status' => $source->status,
+                'status' => OrderStatus::OPEN,
                 'dropshipping_budget' => $source->dropshipping_budget,
             ]);
 

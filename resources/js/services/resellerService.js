@@ -11,4 +11,10 @@ export const resellerService = {
 
     return data?.data ?? [];
   },
+
+  async sync() {
+    const { data } = await http.post('/v1/resellers/sync');
+
+    return data;
+  },
 };

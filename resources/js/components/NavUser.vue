@@ -1,9 +1,8 @@
 <script setup>
+import { IconLogout, IconSettings } from '@tabler/icons-vue';
+import NavTheme from './NavTheme.vue';
 import { useAuthStore } from '@/stores/auth';
 import BaseDropdown from '@/components/common/BaseDropdown.vue';
-
-// Icons
-import { IconLogout, IconUser, IconWallet } from '@tabler/icons-vue';
 
 const { user } = useAuthStore();
 
@@ -29,7 +28,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <BaseDropdown v-if="user">
+  <BaseDropdown v-if="user" style="--bs-dropdown-min-width: 19rem">
     <template #trigger="{ open, toggle }">
       <button
         class="btn btn-subtle p-1"
@@ -43,31 +42,31 @@ const handleLogout = () => {
       </button>
     </template>
 
-    <div class="dropdown-item-text">
+    <li><h6 class="dropdown-header text-uppercase fs-xs">Conta</h6></li>
+    <div class="py-1 px-3"></div>
+
+    <div class="dropdown-item-text pt-0">
       <div class="d-flex gap-3">
         <img class="avatar avatar-lg rounded-circle" :src="user.avatar_url" :alt="user.name" />
         <div>
-          <strong class="text-truncate">{{ user.name }}</strong>
+          <span class="text-truncate">{{ user.name }}</span>
           <p class="text-muted m-0 small">{{ user.email }}</p>
         </div>
       </div>
     </div>
 
-    <hr class="dropdown-divider" />
-
     <RouterLink :to="{ name: 'Profile' }" class="dropdown-item">
-      <IconUser :size="18" class="me-2" />
-      <span>Perfil</span>
+      <IconSettings :size="18" class="me-2" />
+      Configurações da conta
     </RouterLink>
 
-    <!-- <RouterLink to="/carteira" class="dropdown-item">
-      <IconWallet :size="18" class="me-2" />
-      <span>Ver saldo</span>
-    </RouterLink> -->
+    <NavTheme />
+
+    <hr class="dropdown-divider" />
 
     <a class="dropdown-item" href="#" @click.prevent="handleLogout">
       <IconLogout :size="18" class="me-2" />
-      <span>Sair</span>
-    </a>
+      Fazer logout</a
+    >
   </BaseDropdown>
 </template>

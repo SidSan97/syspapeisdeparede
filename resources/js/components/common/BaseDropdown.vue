@@ -8,9 +8,18 @@ const props = defineProps({
     default: 'start',
     validator: (v) => ['start', 'end'].includes(v),
   },
+  direction: {
+    type: String,
+    default: 'down',
+    validator: (v) => ['down', 'up', 'start', 'end'].includes(v),
+  },
 });
 
 const emit = defineEmits(['open', 'close']);
+
+defineOptions({
+  inheritAttrs: false,
+});
 
 const isOpen = ref(false);
 
@@ -60,26 +69,74 @@ function positionMenu() {
 
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const margin = 8;
 
-  let top = triggerRect.bottom;
-  let left;
+  let top = 0;
+  let left = 0;
 
-  if (props.align === 'end') {
-    left = triggerRect.right - menuRect.width;
-  } else {
-    left = triggerRect.left;
+  switch (props.direction) {
+    case 'up':
+      top = triggerRect.top - menuRect.height;
+
+      left = props.align === 'end' ? triggerRect.right - menuRect.width : triggerRect.left;
+
+      // Flip para baixo
+      if (top < margin) {
+        top = triggerRect.bottom;
+      }
+      break;
+
+    case 'start':
+      top = triggerRect.top;
+
+      left = triggerRect.left - menuRect.width;
+
+      // Flip para direita
+      if (left < margin) {
+        left = triggerRect.right;
+      }
+      break;
+
+    case 'end':
+      top = triggerRect.top;
+
+      left = triggerRect.right;
+
+      // Flip para esquerda
+      if (left + menuRect.width > viewportWidth - margin) {
+        left = triggerRect.left - menuRect.width;
+      }
+      break;
+
+    case 'down':
+    default:
+      top = triggerRect.bottom;
+
+      left = props.align === 'end' ? triggerRect.right - menuRect.width : triggerRect.left;
+
+      // Flip para cima
+      if (top + menuRect.height > viewportHeight - margin) {
+        top = triggerRect.top - menuRect.height;
+      }
+      break;
   }
 
-  if (top + menuRect.height > viewportHeight) {
-    top = triggerRect.top - menuRect.height;
+  // Mantém dentro da viewport horizontalmente
+  if (left < margin) {
+    left = margin;
   }
 
-  if (left + menuRect.width > viewportWidth) {
-    left = viewportWidth - menuRect.width - 8;
+  if (left + menuRect.width > viewportWidth - margin) {
+    left = viewportWidth - menuRect.width - margin;
   }
 
-  if (left < 0) {
-    left = 8;
+  // Mantém dentro da viewport verticalmente
+  if (top < margin) {
+    top = margin;
+  }
+
+  if (top + menuRect.height > viewportHeight - margin) {
+    top = viewportHeight - menuRect.height - margin;
   }
 
   styles.value = {
@@ -116,7 +173,9 @@ onBeforeUnmount(() => {
         v-show="isOpen"
         ref="menuRef"
         class="dropdown-menu show"
+        v-bind="$attrs"
         :style="{
+          ...$attrs.style,
           position: 'absolute',
           zIndex: 9999,
           ...styles,

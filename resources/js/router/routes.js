@@ -1,7 +1,8 @@
 import settings from './settings';
-import AppLayout from '../layouts/AppLayout.vue';
 import budgets from './budgets';
 import orders from './orders';
+
+import AppLayout from '@/layouts/AppLayout.vue';
 
 const routes = [
   {

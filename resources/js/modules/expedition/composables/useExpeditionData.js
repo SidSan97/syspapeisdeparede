@@ -29,7 +29,8 @@ export function useExpeditionData() {
       }
 
       const result = await expeditionService.fetchExpeditions(params);
-      expeditions.value = result.items;
+      expeditions.value = result.data;
+
       paginationData.value = result.pagination;
     } catch (error) {
       console.error('Erro ao buscar expedições:', error);
