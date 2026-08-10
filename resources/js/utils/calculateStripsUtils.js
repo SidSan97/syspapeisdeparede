@@ -221,9 +221,7 @@ export function calculatePartsTotalArea(rooms = []) {
       return;
     }
 
-    room.walls.forEach((wall) => {
-      total += calculateWallWithContinuations(wall).totalMetros;
-    });
+    total += calculateWallsSequence(room.walls).totalMetros;
   });
 
   return total;

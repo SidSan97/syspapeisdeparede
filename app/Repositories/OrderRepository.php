@@ -60,8 +60,9 @@ class OrderRepository
 
     public function getLayoutsForApprove(?int $orderId = null, array $filters = [])
     {
-        $query = OrderBudget::/*whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
-            ->*/ whereNotNull('budget_wall_id');
+        $query = OrderBudget::query()
+        // ->whereIn('status', ['Aprovar Layout', 'Pendente de Revisão'])
+            ->whereNotNull('budget_wall_id');
 
         if ($orderId !== null) {
             $query->where('order_id', $orderId);

@@ -25,8 +25,8 @@
                 id="filter-completed"
                 class="form-check-input"
                 type="checkbox"
-                :checked="localFilters.is_completed === true"
-                @change="setIsCompleted(true)"
+                :checked="localFilters.is_completed === 1"
+                @change="setIsCompleted(1)"
               />
               <label class="form-check-label" for="filter-completed">
                 Marcado como concluído
@@ -38,8 +38,8 @@
                 id="filter-not-completed"
                 class="form-check-input"
                 type="checkbox"
-                :checked="localFilters.is_completed === false"
-                @change="setIsCompleted(false)"
+                :checked="localFilters.is_completed === 0"
+                @change="setIsCompleted(0)"
               />
               <label class="form-check-label" for="filter-not-completed">
                 Não marcado como concluído
