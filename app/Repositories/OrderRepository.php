@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Budget;
 use App\Models\Order;
 use App\Models\OrderBudget;
+use App\Services\OrderPaymentCompositionService;
 use App\Services\OrderService;
 use App\Support\Budget\BudgetCalculator;
 use App\Support\OrderStatus;
@@ -19,6 +20,7 @@ class OrderRepository
         protected OrderBudgetRepository $orderBudgetRepository,
         protected DropshippingRepository $dropshippingRepository,
         protected OrderService $orderService,
+        protected OrderPaymentCompositionService $orderPaymentCompositionService,
     ) {}
 
     public function all(): Collection
@@ -70,12 +72,27 @@ class OrderRepository
 
         $this->applyBoardFilters($query, $filters);
 
+        $orderIdsWithArtesPaid = $this->resolveOrderIdsWithArtesFullyPaid($orderId);
+
         return $query->whereHas('order', function ($query) {
             $query->where('paid', '!=', 1)
                 ->whereIn('status', OrderStatus::variants(OrderStatus::APPROVED));
         })
-            ->whereHas('wall.collectionModel', function ($query) {
-                $query->where('request_art_on_payment', false);
+            ->where(function ($query) use ($orderIdsWithArtesPaid) {
+                // Modelos sem a flag: entram no Layout normalmente (antes do pagamento total).
+                $query->whereHas('wall.collectionModel', function ($query) {
+                    $query->where('request_art_on_payment', false);
+                });
+
+                // Modelos com request_art_on_payment: só após ARTES do pedido quitadas (pagamento parcial ok).
+                if ($orderIdsWithArtesPaid !== []) {
+                    $query->orWhere(function ($query) use ($orderIdsWithArtesPaid) {
+                        $query->whereIn('order_id', $orderIdsWithArtesPaid)
+                            ->whereHas('wall.collectionModel', function ($query) {
+                                $query->where('request_art_on_payment', true);
+                            });
+                    });
+                }
             })
             ->with([
                 'order' => function ($query) {
@@ -97,6 +114,34 @@ class OrderRepository
                 'activitySessions',
             ])
             ->get();
+    }
+
+    /**
+     * Pedidos aprovados ainda não pagos por completo em que o componente ARTES já está quitado.
+     * Restringe aos pedidos que têm ao menos uma parede com request_art_on_payment.
+     *
+     * @return list<int>
+     */
+    protected function resolveOrderIdsWithArtesFullyPaid(?int $orderId = null): array
+    {
+        $ordersQuery = Order::query()
+            ->where('paid', '!=', 1)
+            ->whereIn('status', OrderStatus::variants(OrderStatus::APPROVED))
+            ->whereHas('orderBudgets.wall.collectionModel', function ($query) {
+                $query->where('request_art_on_payment', true);
+            });
+
+        if ($orderId !== null) {
+            $ordersQuery->where('id', $orderId);
+        }
+
+        return $ordersQuery
+            ->get()
+            ->filter(fn (Order $order): bool => $this->orderPaymentCompositionService->areArtesFullyPaid($order))
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
     }
 
     public function getLayoutsForProduction(?int $orderId = null, array $filters = [])

@@ -36,6 +36,22 @@ class OrderPaymentCompositionService
         ];
     }
 
+    /**
+     * True quando o componente ARTES do pedido não tem saldo pendente.
+     */
+    public function areArtesFullyPaid(Order $order): bool
+    {
+        $composition = $this->getOrderComposition($order);
+        $paidArtes = (float) OrderPaymentLink::query()
+            ->where('order_id', $order->id)
+            ->where('status', 'paid')
+            ->sum('amount_artes');
+
+        $remaining = round(max(0, (float) $composition['ARTES'] - $paidArtes), 2);
+
+        return $remaining <= 0;
+    }
+
     public function calculateSelectedAmount(Order $order, array $components, string $paymentMethod): array
     {
         $composition = $this->getOrderComposition($order);
