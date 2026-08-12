@@ -155,8 +155,8 @@ class BudgetViewModel
     {
         return $walls
             ->values()
-            ->map(fn (BudgetWall $wall, int $index) => $this->formatWallLine($wall, $index))
-            ->implode('<br>');
+            ->map(fn (BudgetWall $wall, int $index) => '<div class="wall-summary">'.$this->formatWallLine($wall, $index).'</div>')
+            ->implode('');
     }
 
     /**
@@ -165,8 +165,8 @@ class BudgetViewModel
     private function wallModelNames(Collection $walls): string
     {
         return $walls
-            ->map(fn (BudgetWall $wall) => $wall->collectionModel->name ?? '—')
-            ->implode('<br>');
+            ->map(fn (BudgetWall $wall) => '<div class="wall-summary">'.e($wall->collectionModel->name ?? '—').'</div>')
+            ->implode('');
     }
 
     private function formatWallLine(BudgetWall $wall, int $wallIndex): string

@@ -1,7 +1,5 @@
 import { http } from '@/lib/http';
 
-const endpoint = '/budgets';
-
 export const budgetPdfService = {
   async generatePdf(id, totalAmount, totalAmountInstallments, mockupPercentage, observations = '') {
     const payload = {
@@ -11,7 +9,8 @@ export const budgetPdfService = {
       notes: observations || null,
     };
 
-    const response = await http.post(`${window.LaravelApp.appUrl}${endpoint}/${id}/pdf`, payload, {
+    // Rota API: POST /api/v1/budgets/{budget}/pdf
+    const response = await http.post(`/api/v1/budgets/${id}/pdf`, payload, {
       responseType: 'blob',
     });
 

@@ -55,3 +55,23 @@ body {
     padding-left: 5px;
     padding-right: 5px;
 }
+
+.grid tbody tr:not(:last-child) td {
+    vertical-align: middle;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.item-walls,
+.item-models {
+    margin-top: 4px;
+}
+
+.wall-summary {
+    line-height: 1.45;
+}
+
+.wall-summary + .wall-summary {
+    margin-top: 12px;
+    padding-top: 10px;
+}

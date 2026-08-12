@@ -11,11 +11,11 @@
     <tbody>
         @forelse($items ?? [] as $item)
             <tr>
-                <td>
+                <td class="item-cell">
                     <b>{{ $item['title'] }}</b>
-                    <p>{!! $item['description'] !!}</p>
+                    <div class="item-walls">{!! $item['description'] !!}</div>
                 </td>
-                <td>{{ $item['model_name'] }}</td>
+                <td class="item-models">{!! $item['model_name'] !!}</td>
                 <td style="text-align: right;">{{ $item['meters'] }}</td>
                 <td style="text-align: right;">{{ $item['total'] }}</td>
                 <td style="text-align: right;">{{ $item['installment_total'] }}</td>
