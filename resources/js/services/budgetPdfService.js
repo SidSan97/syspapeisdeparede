@@ -1,5 +1,11 @@
 import { http } from '@/lib/http';
 
+function resolveBudgetPdfUrl(id) {
+  const appUrl = String(window.LaravelApp?.appUrl || window.location.origin).replace(/\/$/, '');
+
+  return `${appUrl}/api/v1/budgets/${id}/pdf`;
+}
+
 export const budgetPdfService = {
   async generatePdf(id, totalAmount, totalAmountInstallments, mockupPercentage, observations = '') {
     const payload = {
@@ -9,8 +15,7 @@ export const budgetPdfService = {
       notes: observations || null,
     };
 
-    // Rota API: POST /api/v1/budgets/{budget}/pdf
-    const response = await http.post(`/api/v1/budgets/${id}/pdf`, payload, {
+    const response = await http.post(resolveBudgetPdfUrl(id), payload, {
       responseType: 'blob',
     });
 
