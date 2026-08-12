@@ -125,11 +125,11 @@ class GeneratePdfService
             'status' => strtoupper((string) ($label['status'] ?? '')),
             'card_name' => $label['card_name'] ?? null,
             'model_name' => $label['model_name'] ?? null,
+            'model_art_name' => $label['model_art_name'] ?? null,
             'observation' => $label['observation'] ?? null,
             'layout_quantity' => $label['layout_quantity'] ?? null,
             'strip_groups' => $label['strip_groups'] ?? [],
             'carrier_name' => $label['carrier_name'] ?? null,
-            'packer' => $label['packer'] ?? null,
         ];
     }
 

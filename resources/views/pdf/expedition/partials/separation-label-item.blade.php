@@ -31,7 +31,9 @@
     @if(!empty($label['model_name']))
         <div class="section">
             <div class="section-label">Modelo escolhido</div>
-            <div class="section-value">{{ $label['model_name'] }}</div>
+            <div class="section-value">
+                {{ $label['model_name'] }}@if(!empty($label['model_art_name'])) - {{ $label['model_art_name'] }}@endif
+            </div>
         </div>
     @endif
 
@@ -46,13 +48,6 @@
         <div class="section">
             <div class="section-label">Transportadora</div>
             <div class="section-value">{{ $label['carrier_name'] }}</div>
-        </div>
-    @endif
-
-    @if(!empty($label['packer']))
-        <div class="section">
-            <div class="section-label">Embalador</div>
-            <div class="section-value">{{ $label['packer'] }}</div>
         </div>
     @endif
 

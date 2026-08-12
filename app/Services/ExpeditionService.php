@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\CollectionImage;
 use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
 use App\Support\Budget\BudgetCalculator;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
@@ -33,9 +33,9 @@ class ExpeditionService
      *     title: string,
      *     status: string,
      *     carrier_name: ?string,
-     *     packer: ?string,
      *     card_name: ?string,
      *     model_name: ?string,
+     *     model_art_name: ?string,
      *     observation: ?string,
      *     layout_quantity: string,
      *     strip_groups: array<int, array{q: int, h: float}>
@@ -72,13 +72,19 @@ class ExpeditionService
             $status = 'complemento completo';
         }
 
+        $modelName = $wall?->collectionModel?->name;
+        $modelArtName = null;
+        if ($this->isColecaoArtsModel($modelName)) {
+            $modelArtName = $this->resolveCollectionArtName($wall?->collection_referring_model ?? null);
+        }
+
         $label = [
             'title' => $formattedOrderId.' - '.$resellerName,
             'status' => $status,
             'carrier_name' => $carrierName,
-            'packer' => Auth::user()?->name,
             'card_name' => $cardName !== '' ? $cardName : null,
-            'model_name' => $wall?->collectionModel?->name,
+            'model_name' => $modelName,
+            'model_art_name' => $modelArtName,
             'observation' => $order->observation,
             'layout_quantity' => $orderIndex.'/'.$maxIndex,
             'strip_groups' => $this->buildStripGroups($wall),
@@ -106,6 +112,50 @@ class ExpeditionService
         }
 
         return $labels;
+    }
+
+    protected function isColecaoArtsModel(?string $modelName): bool
+    {
+        $normalizedName = mb_strtolower(trim((string) $modelName));
+
+        return in_array($normalizedName, [
+            'coleção arts',
+            'colecao arts',
+            'coleção art',
+            'colecao art',
+        ], true);
+    }
+
+    protected function resolveCollectionArtName(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $imageId = null;
+        if (is_int($value) && $value > 0) {
+            $imageId = $value;
+        } else {
+            $stringValue = trim((string) $value);
+            if ($stringValue !== '' && ctype_digit($stringValue)) {
+                $imageId = (int) $stringValue;
+            } elseif ($stringValue !== '') {
+                return $stringValue;
+            }
+        }
+
+        if ($imageId === null || $imageId <= 0) {
+            return null;
+        }
+
+        $image = CollectionImage::query()->find($imageId);
+        if (! $image) {
+            return null;
+        }
+
+        $name = trim((string) ($image->name ?? ''));
+
+        return $name !== '' ? $name : null;
     }
 
     /**
