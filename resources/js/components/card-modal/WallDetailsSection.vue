@@ -70,10 +70,15 @@ import {
   calculateWallWithContinuations,
 } from '@/utils/calculateStripsUtils.js';
 import { copyBudgetSummaryText } from '@/utils/copyBudgetSummaryUtils';
+import { formatCardId } from '@/utils/cardUtils';
 import { IconRuler } from '@tabler/icons-vue';
 
 const props = defineProps({
   wall: {
+    type: Object,
+    default: null,
+  },
+  card: {
     type: Object,
     default: null,
   },
@@ -210,8 +215,33 @@ const installationDirectionsSummary = computed(() => {
   return label || '';
 });
 
+const stripSummaryCopyText = computed(() => {
+  const summary = stripSummary.value || '';
+  const card = props.card;
+
+  if (!card) {
+    return summary;
+  }
+
+  const orderId = formatCardId(card.order_id ?? card.order?.id);
+  const bracketLabel =
+    String(card.name || '').trim() ||
+    [card.order?.name, card.wall?.room?.name || props.wall?.room?.name, props.wall?.name]
+      .map((part) => String(part || '').trim())
+      .filter(Boolean)
+      .join(' - ');
+
+  if (!bracketLabel) {
+    return summary ? `${orderId} – ${summary}` : orderId;
+  }
+
+  return summary
+    ? `${orderId} [${bracketLabel}] – ${summary}`
+    : `${orderId} [${bracketLabel}]`;
+});
+
 async function copyStripSummary() {
-  const ok = await copyBudgetSummaryText(stripSummary.value || '');
+  const ok = await copyBudgetSummaryText(stripSummaryCopyText.value || '');
   if (ok) {
     toast?.success?.('Resumo copiado para a área de transferência');
   } else {

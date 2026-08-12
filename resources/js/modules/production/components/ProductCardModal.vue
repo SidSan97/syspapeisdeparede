@@ -71,7 +71,7 @@
 
             <AttachmentsSection :attachments="card.uploaded_files" />
 
-            <WallDetailsSection :wall="card.wall" />
+            <WallDetailsSection :wall="card.wall" :card="card" />
 
             <OthersWallsRooms
                 :cards="orderProductCards"
