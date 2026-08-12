@@ -212,6 +212,8 @@ function buildPreviewUrl() {
 
   const params = new URLSearchParams({
     mockup_percentage: String(mockupPercentage.value ?? MOCKUP_MIN),
+    total_amount: String(computedTotalCash.value),
+    total_amount_installments: String(computedTotalInstallment.value),
   });
 
   if (pdfObservations.value.trim()) {
@@ -236,8 +238,8 @@ watch(
   { immediate: true },
 );
 
-// Atualiza o iframe (com debounce) sempre que o markup ou as observações mudarem
-watch([mockupPercentage, pdfObservations], () => {
+// Atualiza o iframe (com debounce) sempre que o markup, totais ou observações mudarem
+watch([mockupPercentage, computedTotalCash, computedTotalInstallment, pdfObservations], () => {
   previewLoading.value = true;
   refreshPreviewUrl();
 });

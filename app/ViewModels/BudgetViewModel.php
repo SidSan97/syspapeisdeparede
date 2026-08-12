@@ -57,13 +57,20 @@ class BudgetViewModel
         $totalRooms = $rooms->count();
         $totalWalls = $rooms->sum(fn (BudgetRoom $room) => $room->walls->count());
         $totalMeters = $rooms->sum(fn (BudgetRoom $room) => BudgetCalculator::calculateRoomMeters($room));
-
-        $cashSum = $rooms->sum(fn (BudgetRoom $room) => BudgetCalculator::calculateRoomPriceVista($room));
-        $installmentSum = $rooms->sum(fn (BudgetRoom $room) => BudgetCalculator::calculateRoomPricePrazo($room));
         $shipping = (float) ($this->budget->selected_carrier_price ?? 0);
 
-        $totalInCash = round(($cashSum + $shipping) * $markup, 2);
-        $totalInInstallments = $installmentSum > 0 ? round(($installmentSum + $shipping) * $markup, 2) : null;
+        // Mesma regra do Vue: base do orçamento × markup (ou totais já finais via override).
+        $totalInCash = $this->resolveMarkedTotal(
+            'total_amount',
+            (float) ($this->budget->total_amount ?? 0),
+        );
+
+        $baseInstallment = (float) ($this->budget->total_amount_installments ?? 0);
+        $totalInInstallments = null;
+        if ($baseInstallment > 0 || $this->hasNumericOverride('total_amount_installments')) {
+            $resolvedInstallment = $this->resolveMarkedTotal('total_amount_installments', $baseInstallment);
+            $totalInInstallments = $resolvedInstallment > 0 ? $resolvedInstallment : null;
+        }
 
         return [
             'rooms' => $totalRooms,
@@ -285,5 +292,21 @@ class BudgetViewModel
         $markup = (float) ($this->overrides['mockup_percentage'] ?? $this->overrides['percentage'] ?? 1);
 
         return $markup > 0 ? $markup : 1.0;
+    }
+
+    private function hasNumericOverride(string $key): bool
+    {
+        return array_key_exists($key, $this->overrides)
+            && $this->overrides[$key] !== null
+            && $this->overrides[$key] !== '';
+    }
+
+    private function resolveMarkedTotal(string $overrideKey, float $baseAmount): float
+    {
+        if ($this->hasNumericOverride($overrideKey)) {
+            return round((float) $this->overrides[$overrideKey], 2);
+        }
+
+        return round($baseAmount * $this->markup(), 2);
     }
 }

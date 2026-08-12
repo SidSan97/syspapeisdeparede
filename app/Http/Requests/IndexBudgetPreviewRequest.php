@@ -20,6 +20,8 @@ class IndexBudgetPreviewRequest extends FormRequest
         return [
             'percentage' => ['nullable', 'numeric', 'min:0'],
             'mockup_percentage' => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'total_amount_installments' => ['nullable', 'numeric', 'min:0'],
             'observations' => ['nullable', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
