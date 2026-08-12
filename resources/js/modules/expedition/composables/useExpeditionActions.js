@@ -35,6 +35,51 @@ export function useExpeditionActions() {
     }
   }
 
+  async function generateSeparationLabels(orderBudgetIds, loading, onSuccess = null) {
+    if (!Array.isArray(orderBudgetIds) || orderBudgetIds.length === 0) {
+      return;
+    }
+
+    try {
+      loading.value = true;
+      const blobData = await expeditionService.viewSeparationLabelsPdf(orderBudgetIds);
+
+      const blob = new Blob([blobData], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      await window.Swal.fire({
+        title: 'Etiquetas geradas!',
+        text:
+          orderBudgetIds.length > 1
+            ? `${orderBudgetIds.length} etiquetas foram geradas no PDF.`
+            : 'A etiqueta foi gerada com sucesso.',
+        icon: 'success',
+        confirmButtonText: 'Entendi!',
+      });
+
+      if (typeof onSuccess === 'function') {
+        await onSuccess();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar etiquetas de separação:', error);
+      window.Swal.fire({
+        title: 'Erro ao gerar etiquetas!',
+        text:
+          error.response?.data?.message ||
+          'Não foi possível gerar as etiquetas selecionadas. Tente novamente mais tarde.',
+        icon: 'error',
+        confirmButtonText: 'Entendi!',
+      });
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function viewSeparationLabelPdf(orderBudgetId, loading) {
     try {
       loading.value = true;
@@ -212,6 +257,7 @@ export function useExpeditionActions() {
 
   return {
     generateSeparationLabel,
+    generateSeparationLabels,
     viewSeparationLabelPdf,
     generateInvoice,
     generateDanfe,

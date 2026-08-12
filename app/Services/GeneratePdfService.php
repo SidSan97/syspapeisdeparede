@@ -74,12 +74,53 @@ class GeneratePdfService
 
     /**
      * Gera PDF da etiqueta de separação
+     *
+     * @param  array<string, mixed>|array<int, array<string, mixed>>  $labelOrLabels
      */
-    public function generateSeparationLabelPdf(array $label): Response
+    public function generateSeparationLabelPdf(array $labelOrLabels): Response
     {
-        $filename = 'etiqueta-separacao.pdf';
+        $labels = array_is_list($labelOrLabels) && isset($labelOrLabels[0]) && is_array($labelOrLabels[0])
+            ? $labelOrLabels
+            : [$labelOrLabels];
 
-        $dataLabel = [
+        return $this->generateSeparationLabelsPdf($labels);
+    }
+
+    /**
+     * Gera PDF com uma ou mais etiquetas de separação (grid quando houver mais de uma).
+     *
+     * @param  array<int, array<string, mixed>>  $labels
+     */
+    public function generateSeparationLabelsPdf(array $labels): Response
+    {
+        $filename = count($labels) > 1
+            ? 'etiquetas-separacao.pdf'
+            : 'etiqueta-separacao.pdf';
+
+        $normalizedLabels = array_map(
+            fn (array $label): array => $this->normalizeSeparationLabel($label),
+            $labels
+        );
+
+        $pdf = Pdf::loadView('pdf.expedition.separation-label', [
+            'labels' => $normalizedLabels,
+        ])->setPaper('a4', 'portrait');
+
+        $domPdf = $pdf->getDomPDF();
+        $domPdf->set_option('isHtml5ParserEnabled', true);
+        $domPdf->set_option('isPhpEnabled', true);
+        $domPdf->set_option('defaultFont', 'DejaVu Sans');
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * @param  array<string, mixed>  $label
+     * @return array<string, mixed>
+     */
+    protected function normalizeSeparationLabel(array $label): array
+    {
+        return [
             'title' => $label['title'] ?? '',
             'status' => strtoupper((string) ($label['status'] ?? '')),
             'card_name' => $label['card_name'] ?? null,
@@ -90,15 +131,6 @@ class GeneratePdfService
             'carrier_name' => $label['carrier_name'] ?? null,
             'packer' => $label['packer'] ?? null,
         ];
-
-        $pdf = Pdf::loadView('pdf.expedition.separation-label', $dataLabel)->setPaper('a4', 'portrait');
-
-        $domPdf = $pdf->getDomPDF();
-        $domPdf->set_option('isHtml5ParserEnabled', true);
-        $domPdf->set_option('isPhpEnabled', true);
-        $domPdf->set_option('defaultFont', 'DejaVu Sans');
-
-        return $pdf->stream($filename);
     }
 
     protected function formatMoney(float $value): string

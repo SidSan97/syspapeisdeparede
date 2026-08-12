@@ -64,6 +64,14 @@ export const expeditionService = {
     });
     return response.data;
   },
+  async viewSeparationLabelsPdf(orderBudgetIds) {
+    const response = await http.post(
+      'v1/generate-separation-labels-pdf',
+      { order_budget_ids: orderBudgetIds },
+      { responseType: 'blob' },
+    );
+    return response.data;
+  },
   async generateInvoice(orderId) {
     const { data } = await http.post(`v1/generate-invoice/${orderId}`);
     return data;

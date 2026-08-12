@@ -23,6 +23,15 @@
             line-height: 1.35;
         }
 
+        .label-stack-item {
+            margin-bottom: 24px;
+            page-break-inside: avoid;
+        }
+
+        .label-stack-item:last-child {
+            margin-bottom: 0;
+        }
+
         .label-container {
             width: 100%;
             max-width: 14cm;
@@ -102,78 +111,13 @@
     </style>
 </head>
 <body>
-    <div class="label-container">
-        <div class="title">{{ $title }}</div>
-
-        @if(!empty($card_name))
-            <div class="section">
-                <div class="section-value">{{ $card_name }}</div>
-            </div>
-        @endif
-
-        @if(!empty($strip_groups))
-            <div class="section">
-                <table class="strips-table">
-                    <thead>
-                        <tr>
-                            <th>Qtd. Faixas</th>
-                            <th>Alt. Faixas (m)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($strip_groups as $group)
-                            <tr>
-                                <td>{{ $group['q'] }}</td>
-                                <td>{{ number_format((float) $group['h'], 2, '.', '') }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-
-        @if(!empty($model_name))
-            <div class="section">
-                <div class="section-label">Modelo escolhido</div>
-                <div class="section-value">{{ $model_name }}</div>
-            </div>
-        @endif
-
-        @if(!empty($observation))
-            <div class="section">
-                <div class="section-label">Observações</div>
-                <div class="section-value observation-value">{{ $observation }}</div>
-            </div>
-        @endif
-
-        @if(!empty($carrier_name))
-            <div class="section">
-                <div class="section-label">Transportadora</div>
-                <div class="section-value">{{ $carrier_name }}</div>
-            </div>
-        @endif
-
-        @if(!empty($packer))
-            <div class="section">
-                <div class="section-label">Embalador</div>
-                <div class="section-value">{{ $packer }}</div>
-            </div>
-        @endif
-
-        <div class="status">
-            @php
-                $statusParts = explode(' ', $status);
-            @endphp
-            @if(count($statusParts) > 1)
-                {{ strtoupper($statusParts[0]) }} <span class="status-bold">{{ strtoupper(implode(' ', array_slice($statusParts, 1))) }}</span>
-            @else
-                {{ strtoupper($status) }}
-            @endif
+    @foreach(($labels ?? []) as $label)
+        <div class="label-stack-item">
+            @include('pdf.expedition.partials.separation-label-item', [
+                'label' => $label,
+                'compact' => false,
+            ])
         </div>
-
-        @if(!empty($layout_quantity))
-            <div class="layout-quantity">{{ $layout_quantity }}</div>
-        @endif
-    </div>
+    @endforeach
 </body>
 </html>

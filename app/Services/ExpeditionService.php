@@ -90,6 +90,25 @@ class ExpeditionService
     }
 
     /**
+     * Gera etiquetas de separação para vários order budgets.
+     *
+     * @param  array<int, int>  $orderBudgetIds
+     * @return array<int, array<string, mixed>>
+     */
+    public function generateLabelsSeparation(array $orderBudgetIds): array
+    {
+        $labels = [];
+
+        foreach ($orderBudgetIds as $orderBudgetId) {
+            $orderBudget = $this->orderBudgetRepository->show((int) $orderBudgetId);
+            $order = $this->orderRepository->find($orderBudget->order_id);
+            $labels[] = $this->generateLabelSeparation($orderBudget, $order);
+        }
+
+        return $labels;
+    }
+
+    /**
      * @return array<int, array{q: int, h: float}>
      */
     protected function buildStripGroups(?object $wall): array

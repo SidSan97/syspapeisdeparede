@@ -34,71 +34,113 @@
         Não há itens prontos para separação no momento.
       </EmptyState>
 
-      <div v-else class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th scope="col" style="width: 64px">Nº</th>
-              <th scope="col" style="width: 64px">Data</th>
-              <th class="text-nowrap" scope="col">Pedido</th>
-              <th class="text-nowrap" scope="col" style="width: 120px">Valor total</th>
-              <th class="text-nowrap" scope="col" style="width: 64px">Opções</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="expedition in filteredItems" :key="expedition.id">
-              <th scope="row">{{ expedition.id }}</th>
-              <td>
-                {{ formatDate(expedition.order?.created_at || expedition.created_at) }}
-              </td>
-              <td style="min-width: 240px">
-                <div class="fw-semibold">
-                  {{ expedition.order?.name || '—' }}
-                </div>
-                <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
-                -
-                <small class="text-muted"
-                  >Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small
-                >
-              </td>
-              <td>
-                {{ formatCurrency(expedition.order?.total_amount || 0) }}
-              </td>
-              <td>
-                <div class="dropdown">
-                  <button
-                    class="btn btn-subtle btn-sm"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
+      <div v-else>
+        <div
+          v-if="selectedCount > 0"
+          class="d-flex align-items-center justify-content-between mb-3 p-3 rounded count-nf-section"
+        >
+          <div class="d-flex align-items-center">
+            <span class="fw-semibold me-2">{{ selectedCount }}</span>
+            <span class="text-muted">selecionado(s)</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="printingLabels"
+            @click="$emit('print-selected-labels', selectedIds)"
+          >
+            <span
+              v-if="printingLabels"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Imprimir etiquetas
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col" style="width: 50px">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    :checked="isAllSelected"
+                    @change="toggleSelectAll"
+                  />
+                </th>
+                <th scope="col" style="width: 64px">Nº</th>
+                <th scope="col" style="width: 64px">Data</th>
+                <th class="text-nowrap" scope="col">Pedido</th>
+                <th class="text-nowrap" scope="col" style="width: 120px">Valor total</th>
+                <th class="text-nowrap" scope="col" style="width: 64px">Opções</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="expedition in filteredItems" :key="expedition.id">
+                <td>
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    :checked="isSelected(expedition.id)"
+                    @change="toggleSelect(expedition.id)"
+                  />
+                </td>
+                <th scope="row">{{ expedition.id }}</th>
+                <td>
+                  {{ formatDate(expedition.order?.created_at || expedition.created_at) }}
+                </td>
+                <td style="min-width: 240px">
+                  <div class="fw-semibold">
+                    {{ expedition.order?.name || '—' }}
+                  </div>
+                  <small class="text-muted">Pedido #{{ expedition.order_id }}</small>
+                  -
+                  <small class="text-muted"
+                    >Layout {{ expedition.order_index }} de {{ expedition.total_index }}</small
                   >
-                    <IconDotsVertical :size="18" />
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        @click="$emit('view-details', expedition)"
-                      >
-                        Ver detalhes
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        @click="$emit('generate-separation-label', expedition)"
-                      >
-                        Gerar etiqueta de separação
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td>
+                  {{ formatCurrency(expedition.order?.total_amount || 0) }}
+                </td>
+                <td>
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-subtle btn-sm"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <IconDotsVertical :size="18" />
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          @click="$emit('view-details', expedition)"
+                        >
+                          Ver detalhes
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          @click="$emit('generate-separation-label', expedition)"
+                        >
+                          Gerar etiqueta de separação
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div
@@ -131,6 +173,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  printingLabels: {
+    type: Boolean,
+    default: false,
+  },
   paginationData: {
     type: Object,
     default: () => ({
@@ -147,11 +193,13 @@ const props = defineProps({
 const emit = defineEmits([
   'view-details',
   'generate-separation-label',
+  'print-selected-labels',
   'page-change',
   'search-change',
 ]);
 
 const searchQuery = ref('');
+const selectedIds = ref([]);
 
 const separations = computed(() => {
   return props.expeditions.filter((expedition) => {
@@ -163,9 +211,47 @@ const filteredItems = computed(() => {
   return separations.value;
 });
 
+const visibleIds = computed(() => filteredItems.value.map((item) => item.id));
+
+const selectedCount = computed(() => selectedIds.value.length);
+
+const isAllSelected = computed(() => {
+  return visibleIds.value.length > 0 && visibleIds.value.every((id) => selectedIds.value.includes(id));
+});
+
 watch(searchQuery, (newValue) => {
   emit('search-change', newValue);
 });
+
+watch(visibleIds, (ids) => {
+  selectedIds.value = selectedIds.value.filter((id) => ids.includes(id));
+});
+
+function isSelected(id) {
+  return selectedIds.value.includes(id);
+}
+
+function toggleSelect(id) {
+  if (isSelected(id)) {
+    selectedIds.value = selectedIds.value.filter((selectedId) => selectedId !== id);
+    return;
+  }
+
+  selectedIds.value = [...selectedIds.value, id];
+}
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedIds.value = [];
+    return;
+  }
+
+  selectedIds.value = [...visibleIds.value];
+}
+
+function clearSelection() {
+  selectedIds.value = [];
+}
 
 function handlePageChange(page) {
   emit('page-change', page);
@@ -184,4 +270,15 @@ function formatCurrency(value) {
   const numericValue = Number(value);
   return currencyFormatter.format(Number.isFinite(numericValue) ? numericValue : 0);
 }
+
+defineExpose({
+  clearSelection,
+});
 </script>
+
+<style scoped>
+.count-nf-section {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+}
+</style>

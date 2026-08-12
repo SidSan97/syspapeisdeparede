@@ -58,11 +58,14 @@
           role="tabpanel"
         >
           <SeparationTable
+            ref="separationTableRef"
             :expeditions="expeditions"
             :loading="loading"
+            :printing-labels="printingLabels"
             :pagination-data="paginationData"
             @view-details="viewDetails"
             @generate-separation-label="handleGenerateSeparationLabel"
+            @print-selected-labels="handlePrintSelectedLabels"
             @page-change="handleSeparationPageChange"
             @search-change="handleSeparationSearchChange"
           />
@@ -139,6 +142,9 @@ import { useExpeditionActions } from '@/modules/expedition/composables/useExpedi
 const activeTab = ref('separation');
 const selectedCarrier = ref(null);
 const selectedGroupingCarrier = ref(null);
+const printingLabels = ref(false);
+const separationTableRef = ref(null);
+const separationSearchQuery = ref('');
 
 // Composables
 const {
@@ -167,6 +173,7 @@ const {
 
 const {
   generateSeparationLabel,
+  generateSeparationLabels,
   generateInvoice,
   generateDanfe,
   printCarrierLabels,
@@ -188,6 +195,13 @@ function handleGenerateSeparationLabel(expedition) {
   generateSeparationLabel(expedition, loading);
 }
 
+async function handlePrintSelectedLabels(orderBudgetIds) {
+  await generateSeparationLabels(orderBudgetIds, printingLabels, async () => {
+    separationTableRef.value?.clearSelection?.();
+    await fetchExpeditions(paginationData.value?.current_page || 1, separationSearchQuery.value);
+  });
+}
+
 function handleGenerateInvoice(invoice) {
   generateInvoice(invoice, loading, fetchInvoices);
 }
@@ -199,8 +213,6 @@ function handleGenerateDanfe(id) {
 function handlePrintCarrierLabels(groupingId) {
   printCarrierLabels(groupingId, loading);
 }
-
-const separationSearchQuery = ref('');
 
 function handleSeparationPageChange(page) {
   fetchExpeditions(page, separationSearchQuery.value);

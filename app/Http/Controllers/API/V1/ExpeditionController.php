@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\GenerateSeparationLabelsPdfRequest;
+use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
-use Illuminate\Http\JsonResponse;
 use App\Services\ExpeditionService;
 use App\Services\GeneratePdfService;
-use Illuminate\Support\Facades\Log;
 use App\Services\TinyErpService;
-use App\Repositories\DropshippingRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExpeditionController extends Controller
 {
@@ -33,8 +35,7 @@ class ExpeditionController extends Controller
         GeneratePdfService $generatePdfService,
         TinyErpService $tinyErpService,
         DropshippingRepository $dropshippingRepository
-    )
-    {
+    ) {
         $this->middleware('auth:sanctum');
         $this->OrderRepository = $OrderRepository;
         $this->expeditionService = $expeditionService;
@@ -47,9 +48,6 @@ class ExpeditionController extends Controller
 
     /**
      * Gera etiqueta de separação para um pedido (retorna JSON)
-     *
-     * @param  int  $orderBudgetId
-     * @return JsonResponse
      */
     public function generateSeparationLabel(int $orderBudgetId): JsonResponse
     {
@@ -64,8 +62,7 @@ class ExpeditionController extends Controller
     /**
      * Gera PDF da etiqueta de separação
      *
-     * @param  int  $orderBudgetId
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
     public function generateSeparationLabelPdf(int $orderBudgetId)
     {
@@ -75,6 +72,17 @@ class ExpeditionController extends Controller
         $label = $this->expeditionService->generateLabelSeparation($orderBudgets, $order);
 
         return $this->generatePdfService->generateSeparationLabelPdf($label);
+    }
+
+    /**
+     * Gera PDF com etiquetas de separação para vários order budgets.
+     */
+    public function generateSeparationLabelsPdf(GenerateSeparationLabelsPdfRequest $request)
+    {
+        $orderBudgetIds = $request->validated('order_budget_ids');
+        $labels = $this->expeditionService->generateLabelsSeparation($orderBudgetIds);
+
+        return $this->generatePdfService->generateSeparationLabelsPdf($labels);
     }
 
     public function generateInvoice(int $orderId): JsonResponse
@@ -183,9 +191,9 @@ class ExpeditionController extends Controller
 
             // Enviar notas fiscais para expedição
             $sendExpedition = $this->tinyErpService->sendInvoiceToExpedition($invoiceIdsString, 'notafiscal');
-            //dd($sendExpedition);
+            // dd($sendExpedition);
 
-            if($sendExpedition['status'] === 'Erro') {
+            if ($sendExpedition['status'] === 'Erro') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao enviar nota fiscal para expedição. Tente novamente mais tarde.',
@@ -199,7 +207,7 @@ class ExpeditionController extends Controller
             // Incluir agrupamento de notas fiscais
             $includeGroupingInvoices = $this->tinyErpService->includeGroupingInvoices($sendExpedition['objetos'][0]['objeto']['idExpedicao']);
 
-            if($includeGroupingInvoices['status'] === 'Erro') {
+            if ($includeGroupingInvoices['status'] === 'Erro') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao incluir agrupamento de notas fiscais. Tente novamente mais tarde.',
@@ -210,7 +218,7 @@ class ExpeditionController extends Controller
             // Concluir agrupamento de notas fiscais
             $completeGrouping = $this->tinyErpService->completeGroupingInvoices($includeGroupingInvoices['idAgrupamento']);
 
-            if($completeGrouping['status'] === 'Erro') {
+            if ($completeGrouping['status'] === 'Erro') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao concluir agrupamento de notas fiscais. Tente novamente mais tarde.',
@@ -219,8 +227,8 @@ class ExpeditionController extends Controller
             }
 
             // Alterar status dos pedidos
-            foreach($validated['order_ids'] as $orderId) {
-                $this->orderRepository->changeStatusOrder((int)$orderId, 'Enviado');
+            foreach ($validated['order_ids'] as $orderId) {
+                $this->orderRepository->changeStatusOrder((int) $orderId, 'Enviado');
             }
 
             return response()->json([
@@ -234,7 +242,8 @@ class ExpeditionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Erro ao enviar nota fiscal para expedição: ' . $e->getMessage());
+            Log::error('Erro ao enviar nota fiscal para expedição: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao enviar notas fiscais para expedição',
