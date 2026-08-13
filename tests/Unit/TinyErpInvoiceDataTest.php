@@ -18,7 +18,7 @@ class TinyErpInvoiceDataTest extends TestCase
                 'total_amount' => 100,
                 'selected_carrier_name' => 'Jadlog - Package',
                 'selected_carrier_price' => 20,
-                'quantidade_volumes' => 4,
+                'quantity_volumes' => 4,
             ],
             [
                 'name' => 'Cliente Teste',

@@ -621,7 +621,7 @@ class TinyErpService
                     'nome' => trim(explode(' - ', $order['selected_carrier_name'])[0]),
                 ],
                 'frete_por_conta' => 'D',
-                'quantidade_volumes' => max(1, (int) ($order['quantidade_volumes'] ?? 1)),
+                'quantidade_volumes' => max(1, (int) ($order['quantity_volumes'] ?? 1)),
                 'forma_pagamento' => $order['payment_method'] === 'pix' ? 'pix' : 'multiplas',
                 'forma_envio' => $this->getShippingCodeByOrigin($order['selected_carrier_name']),
                 'valor_frete' => $order['selected_carrier_price'],

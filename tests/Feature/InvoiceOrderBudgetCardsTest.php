@@ -7,7 +7,6 @@ use App\Models\OrderBudget;
 use App\Models\User;
 use App\Support\OrderBudgetStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -154,7 +153,7 @@ class InvoiceOrderBudgetCardsTest extends TestCase
         $this->assertSame(1, (int) $first->fresh()->ready_to_expedition);
         $this->assertSame(1, (int) $second->fresh()->ready_to_expedition);
         $this->assertSame('João Embalador', $order->fresh()->packer_name);
-        $this->assertSame(3, Cache::get("expedition.invoice_volume_quantity.{$order->id}"));
+        $this->assertSame(3, (int) $order->fresh()->quantity_volumes);
 
         $ids = collect($this->getJson('/api/v1/orders/expedition?stage=in_separation')
             ->assertOk()

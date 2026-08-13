@@ -341,8 +341,7 @@ class ExpeditionService
     }
 
     /**
-     * Marca os cards do pedido como prontos para faturar e guarda o embalador.
-     * A quantidade de volumes fica em cache até a emissão da NF no Tiny.
+     * Marca os cards do pedido como prontos para faturar e guarda embalador/volumes.
      *
      * @param  array<int, int>  $orderBudgetIds
      */
@@ -360,28 +359,10 @@ class ExpeditionService
                 ->whereIn('id', $orderIds)
                 ->update([
                     'packer_name' => $packerName,
+                    'quantity_volumes' => $volumeQuantity,
                 ]);
-
-            foreach ($orderIds as $orderId) {
-                $this->rememberInvoiceVolumeQuantity($orderId, $volumeQuantity);
-            }
         }
 
         return $this->orderBudgetRepository->updateReadyToExpedition($orderBudgetIds);
-    }
-
-    public function rememberInvoiceVolumeQuantity(int $orderId, int $volumeQuantity): void
-    {
-        Cache::put($this->invoiceVolumeCacheKey($orderId), $volumeQuantity, now()->addDays(7));
-    }
-
-    public function pullInvoiceVolumeQuantity(int $orderId): int
-    {
-        return max(1, (int) Cache::pull($this->invoiceVolumeCacheKey($orderId), 1));
-    }
-
-    protected function invoiceVolumeCacheKey(int $orderId): string
-    {
-        return "expedition.invoice_volume_quantity.{$orderId}";
     }
 }

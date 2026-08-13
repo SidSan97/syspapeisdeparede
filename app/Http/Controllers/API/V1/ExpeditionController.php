@@ -90,10 +90,7 @@ class ExpeditionController extends Controller
         $order = $this->orderRepository->find($orderId);
         $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
 
-        $orderPayload = $order->toArray();
-        $orderPayload['quantidade_volumes'] = $this->expeditionService->pullInvoiceVolumeQuantity($order->id);
-
-        $invoiceData = $this->tinyErpService->sendInvoice($orderPayload, $dropshipping->toArray());
+        $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $dropshipping->toArray());
 
         if ($invoiceData['status'] === 'Erro') {
             $statusCode = $invoiceData['status_processamento'];

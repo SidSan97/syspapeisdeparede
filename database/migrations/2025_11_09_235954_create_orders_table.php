@@ -62,6 +62,7 @@ return new class extends Migration
             $table->string('nf_id')->nullable();
             $table->text('observation')->nullable();
             $table->string('packer_name')->nullable();
+            $table->unsignedInteger('quantity_volumes')->nullable();
 
             $table->timestamps();
 

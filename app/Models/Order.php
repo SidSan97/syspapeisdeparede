@@ -44,6 +44,7 @@ class Order extends Model
         'flags',
         'observation',
         'packer_name',
+        'quantity_volumes',
     ];
 
     protected $casts = [
@@ -69,6 +70,7 @@ class Order extends Model
         'payment_expiration_date' => 'string',
         'observation' => 'string',
         'packer_name' => 'string',
+        'quantity_volumes' => 'integer',
     ];
 
     /**
