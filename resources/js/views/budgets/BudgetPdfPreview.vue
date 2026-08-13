@@ -112,46 +112,12 @@
             </div>
           </div>
 
-          <div class="card mt-3">
-            <div class="card-body">
-              <h5 class="card-title">Preços por ambiente</h5>
-              <p class="text-muted small mb-3">
-                Edite os valores para atualizar o preview e os totais. Não altera o markup.
-              </p>
-
-              <div
-                v-for="item in editableItems"
-                :key="item.id"
-                class="border rounded p-3 mb-3"
-              >
-                <div class="fw-semibold mb-2">{{ item.title }}</div>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <label class="form-label small mb-1">À vista</label>
-                    <money
-                      v-model.number="item.total"
-                      v-bind="moneyConfig"
-                      class="form-control form-control-sm"
-                      @change="onItemPriceChange"
-                    />
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small mb-1">A prazo</label>
-                    <money
-                      v-model.number="item.installment_total"
-                      v-bind="moneyConfig"
-                      class="form-control form-control-sm"
-                      @change="onItemPriceChange"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="!editableItems.length" class="text-muted small">
-                Nenhum ambiente carregado.
-              </div>
-            </div>
-          </div>
+          <BudgetPdfRoomPricesCard
+            ref="roomPricesCard"
+            v-model="editableItems"
+            :budget-id="budget?.id"
+            @change="onItemPriceChange"
+          />
         </div>
       </div>
     </Page>
@@ -159,31 +125,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { useRoute } from 'vue-router';
 import Page from '@/components/page/Page.vue';
+import BudgetPdfRoomPricesCard from '@/components/budgets/BudgetPdfRoomPricesCard.vue';
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
 import { budgetPdfService } from '@/services/budgetPdfService';
 import { budgetService } from '@/services/budgetService';
-import { http } from '@/lib/http';
 
 const toast = useToast();
 const route = useRoute();
 const { formatCurrency } = useFormatting();
-
-const moneyConfig = {
-  decimal: ',',
-  thousands: '.',
-  precision: 2,
-  prefix: '',
-  allowBlank: false,
-  min: 0,
-  max: null,
-  disableNegative: true,
-  minimumNumberOfCharacters: 0,
-};
 
 const budget = ref(null);
 const loading = ref(true);
@@ -196,7 +150,7 @@ const pdfObservations = ref('');
 const previewUrl = ref('');
 const previewLoading = ref(false);
 const editableItems = ref([]);
-const syncingFromMarkup = ref(false);
+const roomPricesCard = ref(null);
 
 const freightCost = computed(() => {
   const raw =
@@ -232,33 +186,22 @@ async function loadBudget() {
 
   try {
     const payload = await budgetService.find(route.params.id);
-    if (payload) {
-      budget.value = payload;
-      mockupPercentage.value = MOCKUP_MIN;
-      await applyMarkup();
-    } else {
+    if (!payload) {
       error.value = 'Orçamento não encontrado';
+      return;
     }
+
+    budget.value = payload;
+    mockupPercentage.value = MOCKUP_MIN;
+    loading.value = false;
+    await nextTick();
+    await applyMarkup();
   } catch (err) {
     console.error('Erro ao carregar orçamento:', err);
     error.value = err.response?.data?.message || 'Erro ao carregar orçamento';
   } finally {
     loading.value = false;
   }
-}
-
-async function fetchPreviewItems(markup) {
-  if (!budget.value?.id) {
-    return [];
-  }
-
-  const { data } = await http.get(`/v1/budgets/${budget.value.id}/preview-items`, {
-    params: {
-      mockup_percentage: markup,
-    },
-  });
-
-  return data?.data?.items ?? [];
 }
 
 async function generatePdf() {
@@ -336,7 +279,7 @@ const refreshPreviewDebounced = useDebounceFn(() => {
 }, 400);
 
 function onItemPriceChange() {
-  if (syncingFromMarkup.value) {
+  if (roomPricesCard.value?.isSyncingFromMarkup?.()) {
     return;
   }
   refreshPreviewDebounced();
@@ -348,34 +291,13 @@ async function applyMarkup() {
   appliedMarkup.value = Number.isFinite(markup) && markup > 0 ? markup : MOCKUP_MIN;
 
   try {
-    syncingFromMarkup.value = true;
-    const items = await fetchPreviewItems(appliedMarkup.value);
-    editableItems.value = items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      total: Number(item.total) || 0,
-      installment_total: Number(item.installment_total) || 0,
-    }));
-  } catch (err) {
-    console.error('Erro ao carregar preços dos ambientes:', err);
-    toast.error('Não foi possível recalcular os preços dos ambientes.');
-  } finally {
-    syncingFromMarkup.value = false;
+    await roomPricesCard.value?.loadFromMarkup(appliedMarkup.value);
+  } catch {
+    // toast já tratado no componente
   }
 
   refreshPreview();
 }
-
-watch(
-  editableItems,
-  () => {
-    if (syncingFromMarkup.value || !budget.value?.id) {
-      return;
-    }
-    refreshPreviewDebounced();
-  },
-  { deep: true },
-);
 
 onMounted(() => {
   document.title = 'Preview PDF - Orçamento';
