@@ -3,6 +3,7 @@
 namespace App\Support\Budget;
 
 use App\Models\CollectionModel;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 
 class BudgetCalculator
@@ -39,23 +40,33 @@ class BudgetCalculator
     }
 
     /**
-     * Obtém o preço à vista do cache
+     * Obtém o preço à vista do cache (fallback: settings persistidos).
      */
     protected static function getPriceVista(): float
     {
         $data = self::getTinyErpAllData();
+        $price = (float) ($data['precoPromocionalVista'] ?? 0);
 
-        return (float) ($data['precoPromocionalVista'] ?? 0);
+        if ($price <= 0) {
+            $price = (float) Setting::get('tiny_erp_price_payment', 0);
+        }
+
+        return $price;
     }
 
     /**
-     * Obtém o preço a prazo do cache
+     * Obtém o preço a prazo do cache (fallback: settings persistidos).
      */
     protected static function getPricePrazo(): float
     {
         $data = self::getTinyErpAllData();
+        $price = (float) ($data['precoPromocionalPrazo'] ?? 0);
 
-        return (float) ($data['precoPromocionalPrazo'] ?? 0);
+        if ($price <= 0) {
+            $price = (float) Setting::get('tiny_erp_price_installment', 0);
+        }
+
+        return $price;
     }
 
     protected static function getContinuations(array $wall): array

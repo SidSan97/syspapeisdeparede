@@ -66,8 +66,13 @@
                   @blur="enforceMockupMin"
                 />
                 <small class="text-muted">
-                  Altere o markup para recalcular os valores da proposta.
+                  Informe o markup e clique em aplicar para recalcular a proposta.
                 </small>
+                <br />
+
+                <button type="button" class="btn btn-sm btn-primary mt-2" @click="applyMarkup">
+                  Aplicar markup
+                </button>
               </div>
 
               <div class="row">
@@ -113,8 +118,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import { useFormatting } from '@/composables/useFormatting';
@@ -126,32 +130,36 @@ const toast = useToast();
 const route = useRoute();
 const { formatCurrency } = useFormatting();
 
-// Estado do componente
 const budget = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const generatingPdf = ref(false);
 const MOCKUP_MIN = 2.1;
 const mockupPercentage = ref(MOCKUP_MIN);
+const appliedMarkup = ref(MOCKUP_MIN);
 const pdfObservations = ref('');
 const previewUrl = ref('');
 const previewLoading = ref(false);
 
-// Totais: markup só nos produtos; frete permanece estático.
-const baseTotalCash = computed(() => parseFloat(budget.value?.total_amount || 0));
-const baseTotalInstallment = computed(() =>
-  parseFloat(budget.value?.total_amount_installments || 0),
+// Totais usam só o markup aplicado (botão). Default 2.1. Frete estático.
+const baseTotalCash = computed(() => parseFloat(budget.value?.total_amount || 0) || 0);
+const baseTotalInstallment = computed(
+  () => parseFloat(budget.value?.total_amount_installments || 0) || 0,
 );
-const freightCost = computed(() =>
-  parseFloat(budget.value?.selected_carrier_price || 0),
-);
+const freightCost = computed(() => {
+  const raw =
+    budget.value?.selected_carrier_price ?? budget.value?.carrier_price ?? 0;
+  return parseFloat(raw) || 0;
+});
 const computedTotalCash = computed(() => {
+  const markup = appliedMarkup.value || MOCKUP_MIN;
   const products = Math.max(0, baseTotalCash.value - freightCost.value);
-  return products * mockupPercentage.value + freightCost.value;
+  return products * markup + freightCost.value;
 });
 const computedTotalInstallment = computed(() => {
+  const markup = appliedMarkup.value || MOCKUP_MIN;
   const products = Math.max(0, baseTotalInstallment.value - freightCost.value);
-  return products * mockupPercentage.value + freightCost.value;
+  return products * markup + freightCost.value;
 });
 
 const routes = [
@@ -168,6 +176,8 @@ async function loadBudget() {
     const payload = await budgetService.find(route.params.id);
     if (payload) {
       budget.value = payload;
+      mockupPercentage.value = MOCKUP_MIN;
+      applyMarkup();
     } else {
       error.value = 'Orçamento não encontrado';
     }
@@ -182,14 +192,14 @@ async function loadBudget() {
 async function generatePdf() {
   if (!budget.value?.id) return;
 
-  enforceMockupMin();
+  applyMarkup();
   generatingPdf.value = true;
   try {
     await budgetPdfService.generatePdf(
       budget.value.id,
       computedTotalCash.value,
       computedTotalInstallment.value,
-      mockupPercentage.value,
+      appliedMarkup.value,
       pdfObservations.value.trim(),
     );
 
@@ -215,7 +225,7 @@ function buildPreviewUrl() {
   }
 
   const params = new URLSearchParams({
-    mockup_percentage: String(mockupPercentage.value ?? MOCKUP_MIN),
+    mockup_percentage: String(appliedMarkup.value ?? MOCKUP_MIN),
     total_amount: String(computedTotalCash.value),
     total_amount_installments: String(computedTotalInstallment.value),
   });
@@ -227,26 +237,21 @@ function buildPreviewUrl() {
   return `${window.LaravelApp.appUrl}budgets/${budget.value.id}/preview?${params.toString()}`;
 }
 
-const refreshPreviewUrl = useDebounceFn(() => {
-  previewUrl.value = buildPreviewUrl();
-}, 500);
+function refreshPreview() {
+  if (!budget.value?.id) {
+    return;
+  }
 
-// Monta o preview assim que o budget for carregado
-watch(
-  budget,
-  () => {
-    if (budget.value) {
-      previewUrl.value = buildPreviewUrl();
-    }
-  },
-  { immediate: true },
-);
-
-// Atualiza o iframe (com debounce) sempre que o markup, totais ou observações mudarem
-watch([mockupPercentage, computedTotalCash, computedTotalInstallment, pdfObservations], () => {
   previewLoading.value = true;
-  refreshPreviewUrl();
-});
+  previewUrl.value = buildPreviewUrl();
+}
+
+function applyMarkup() {
+  enforceMockupMin();
+  const markup = Number(mockupPercentage.value);
+  appliedMarkup.value = Number.isFinite(markup) && markup > 0 ? markup : MOCKUP_MIN;
+  refreshPreview();
+}
 
 onMounted(() => {
   document.title = 'Preview PDF - Orçamento';
