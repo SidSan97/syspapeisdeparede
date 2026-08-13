@@ -137,18 +137,22 @@ const pdfObservations = ref('');
 const previewUrl = ref('');
 const previewLoading = ref(false);
 
-// Totais calculados a partir dos valores base do orçamento aplicando o markup.
-// Somente leitura: o usuário ajusta o markup, nunca os totais diretamente.
+// Totais: markup só nos produtos; frete permanece estático.
 const baseTotalCash = computed(() => parseFloat(budget.value?.total_amount || 0));
 const baseTotalInstallment = computed(() =>
   parseFloat(budget.value?.total_amount_installments || 0),
 );
-const computedTotalCash = computed(
-  () => baseTotalCash.value * mockupPercentage.value,
+const freightCost = computed(() =>
+  parseFloat(budget.value?.selected_carrier_price || 0),
 );
-const computedTotalInstallment = computed(
-  () => baseTotalInstallment.value * mockupPercentage.value,
-);
+const computedTotalCash = computed(() => {
+  const products = Math.max(0, baseTotalCash.value - freightCost.value);
+  return products * mockupPercentage.value + freightCost.value;
+});
+const computedTotalInstallment = computed(() => {
+  const products = Math.max(0, baseTotalInstallment.value - freightCost.value);
+  return products * mockupPercentage.value + freightCost.value;
+});
 
 const routes = [
   { path: '/', breadcrumbName: 'Início' },

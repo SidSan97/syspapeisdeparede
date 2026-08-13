@@ -52,23 +52,27 @@ class BudgetViewModel
     public function totals(): array
     {
         $rooms = $this->budget->rooms;
-        $markup = $this->markup();
 
         $totalRooms = $rooms->count();
         $totalWalls = $rooms->sum(fn (BudgetRoom $room) => $room->walls->count());
         $totalMeters = $rooms->sum(fn (BudgetRoom $room) => BudgetCalculator::calculateRoomMeters($room));
-        $shipping = (float) ($this->budget->selected_carrier_price ?? 0);
+        $shipping = round((float) ($this->budget->selected_carrier_price ?? 0), 2);
 
-        // Mesma regra do Vue: base do orçamento × markup (ou totais já finais via override).
+        // Markup só sobre produtos (total base − frete); frete entra de novo sem markup.
         $totalInCash = $this->resolveMarkedTotal(
             'total_amount',
             (float) ($this->budget->total_amount ?? 0),
+            $shipping,
         );
 
         $baseInstallment = (float) ($this->budget->total_amount_installments ?? 0);
         $totalInInstallments = null;
         if ($baseInstallment > 0 || $this->hasNumericOverride('total_amount_installments')) {
-            $resolvedInstallment = $this->resolveMarkedTotal('total_amount_installments', $baseInstallment);
+            $resolvedInstallment = $this->resolveMarkedTotal(
+                'total_amount_installments',
+                $baseInstallment,
+                $shipping,
+            );
             $totalInInstallments = $resolvedInstallment > 0 ? $resolvedInstallment : null;
         }
 
@@ -76,7 +80,7 @@ class BudgetViewModel
             'rooms' => $totalRooms,
             'walls' => $totalWalls,
             'meters' => round((float) $totalMeters, 2),
-            'shipping' => round($shipping * $markup, 2),
+            'shipping' => $shipping,
             'total_in_cash' => $totalInCash,
             'total_in_installments' => $totalInInstallments,
             'total' => $totalInCash,
@@ -301,12 +305,14 @@ class BudgetViewModel
             && $this->overrides[$key] !== '';
     }
 
-    private function resolveMarkedTotal(string $overrideKey, float $baseAmount): float
+    private function resolveMarkedTotal(string $overrideKey, float $baseAmount, float $shipping = 0.0): float
     {
         if ($this->hasNumericOverride($overrideKey)) {
             return round((float) $this->overrides[$overrideKey], 2);
         }
 
-        return round($baseAmount * $this->markup(), 2);
+        $products = max(0.0, $baseAmount - $shipping);
+
+        return round(($products * $this->markup()) + $shipping, 2);
     }
 }
