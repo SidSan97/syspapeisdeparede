@@ -87,7 +87,9 @@
           </div>
         </div>
 
-        <OrderChangeHistoryCard :histories="order.change_histories || []" />
+        <div class="col-lg-8">
+          <OrderChangeHistoryCard :histories="order.change_histories || []" />
+        </div>
       </template>
       <EmptyState v-else> Não foi possível carregar os detalhes. </EmptyState>
     </Page>
