@@ -90,7 +90,7 @@ class ExpeditionService
             'strip_groups' => $this->buildStripGroups($wall),
         ];
 
-        $this->orderBudgetRepository->updateReadyToExpedition($orderBudget->id);
+        $this->orderBudgetRepository->updatePickingLabelGenerated($orderBudget->id);
 
         return $label;
     }

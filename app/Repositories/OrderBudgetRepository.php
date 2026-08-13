@@ -168,6 +168,16 @@ class OrderBudgetRepository
         return $orderBudget->fresh();
     }
 
+    public function updatePickingLabelGenerated(int $orderBudgetId): OrderBudget
+    {
+        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+        $orderBudget->update([
+            'picking_label_generated' => 1,
+        ]);
+
+        return $orderBudget->fresh();
+    }
+
     public function updateReadyToExpedition(int $orderBudgetId): OrderBudget
     {
         $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);

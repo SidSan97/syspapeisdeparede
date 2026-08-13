@@ -26,6 +26,7 @@ return new class extends Migration
             $table->integer('order_index');
             $table->tinyInteger('ready_to_expedition')->default(0);
             $table->string('tinyErp_order_id')->nullable();
+            $table->integer('picking_label_generated')->default(0);
             $table->integer('tinyErp_order_expedition_id')->nullable();
             $table->datetime('activity_running_since')->nullable();
             $table->unsignedInteger('activity_elapsed_seconds')->default(0);
