@@ -17,6 +17,7 @@ Route::post('budgets/{budget}/copies', [BudgetDuplicateController::class, 'store
 Route::patch('budgets/{budget}/status', [BudgetStatusController::class, 'update']);
 Route::post('budgets/{budget}/orders', [BudgetOrderController::class, 'store']);
 Route::post('budgets/{budget}/pdf', [BudgetPreviewController::class, 'download']);
+Route::get('budgets/{budget}/preview-items', [BudgetPreviewController::class, 'items']);
 
 Route::post('budgets/register-payment', [BudgetController::class, 'registerPayment']);
 Route::post('budgets/layouts/update-column', [BudgetController::class, 'updateLayoutColumn']);

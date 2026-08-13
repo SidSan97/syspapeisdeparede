@@ -9,6 +9,7 @@ use App\Models\Budget;
 use App\Repositories\BudgetRepository;
 use App\Services\GeneratePdfService;
 use App\ViewModels\BudgetViewModel;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,7 +20,8 @@ class BudgetPreviewController extends Controller
         protected GeneratePdfService $generatePdfService,
     ) {}
 
-    public function index(Budget $budget,IndexBudgetPreviewRequest $request): View {
+    public function index(Budget $budget, IndexBudgetPreviewRequest $request): View
+    {
         $budget->load([
             'rooms.walls.collectionModel',
             'tenant.reseller',
@@ -32,11 +34,34 @@ class BudgetPreviewController extends Controller
             overrides: $validated
         );
 
-        $mockupPercentage = (float) ($validated['mockup_percentage'] ?? $validated['percentage'] ?? 1);
+        $mockupPercentage = (float) ($validated['mockup_percentage'] ?? $validated['percentage'] ?? 2.1);
 
-        $this->repository->updateMarkup($budget, $mockupPercentage > 0 ? $mockupPercentage : 1.0);
+        $this->repository->updateMarkup($budget, $mockupPercentage > 0 ? $mockupPercentage : 2.1);
 
         return view('documents.budgets.budget', compact('viewModel'));
+    }
+
+    public function items(Budget $budget, IndexBudgetPreviewRequest $request): JsonResponse
+    {
+        $budget->load(['rooms.walls.collectionModel']);
+
+        $validated = $request->validated();
+
+        $viewModel = new BudgetViewModel(
+            budget: $budget,
+            overrides: $validated
+        );
+
+        $totals = $viewModel->totals();
+
+        return response()->json([
+            'data' => [
+                'items' => $viewModel->itemAmounts(),
+                'shipping' => $totals['shipping'],
+                'total_in_cash' => $totals['total_in_cash'],
+                'total_in_installments' => $totals['total_in_installments'],
+            ],
+        ]);
     }
 
     public function download(
@@ -53,9 +78,9 @@ class BudgetPreviewController extends Controller
             overrides: $validated
         );
 
-        $mockupPercentage = (float) ($validated['mockup_percentage'] ?? $validated['percentage'] ?? 1);
+        $mockupPercentage = (float) ($validated['mockup_percentage'] ?? $validated['percentage'] ?? 2.1);
 
-        $this->repository->updateMarkup($budget, $mockupPercentage > 0 ? $mockupPercentage : 1.0);
+        $this->repository->updateMarkup($budget, $mockupPercentage > 0 ? $mockupPercentage : 2.1);
 
         return $action->execute($viewModel);
     }

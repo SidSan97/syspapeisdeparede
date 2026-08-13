@@ -33,6 +33,19 @@ class BudgetViewModel
             ->all();
     }
 
+    /**
+     * Valores numéricos por ambiente (para inputs editáveis no preview).
+     *
+     * @return array<int, array{id: int, title: string, total: float, installment_total: float}>
+     */
+    public function itemAmounts(): array
+    {
+        return $this->budget->rooms
+            ->values()
+            ->map(fn (BudgetRoom $room, int $index) => $this->mapItemAmounts($room, $index))
+            ->all();
+    }
+
     public function estimatedDelivery(): ?string
     {
         $deliveryTime = $this->budget->delivery_time;
@@ -146,17 +159,69 @@ class BudgetViewModel
      */
     private function mapItem(BudgetRoom $room, int $index): array
     {
+        $amounts = $this->mapItemAmounts($room, $index);
         $walls = $room->walls;
-        $markup = $this->markup();
 
         return [
-            'title' => $room->name ?: ('Ambiente '.($index + 1)),
+            'title' => $amounts['title'],
             'description' => $this->wallLines($walls),
             'model_name' => $this->wallModelNames($walls),
             'meters' => number_format(BudgetCalculator::calculateRoomMeters($room), 2, ',', '.'),
-            'total' => money_view(round(BudgetCalculator::calculateRoomPriceVista($room) * $markup, 2)),
-            'installment_total' => money_view(round(BudgetCalculator::calculateRoomPricePrazo($room) * $markup, 2)),
+            'total' => money_view($amounts['total']),
+            'installment_total' => money_view($amounts['installment_total']),
         ];
+    }
+
+    /**
+     * @return array{id: int, title: string, total: float, installment_total: float}
+     */
+    private function mapItemAmounts(BudgetRoom $room, int $index): array
+    {
+        $markup = $this->markup();
+        $override = $this->itemOverride($room, $index);
+
+        $total = array_key_exists('total', $override)
+            ? round((float) $override['total'], 2)
+            : round(BudgetCalculator::calculateRoomPriceVista($room) * $markup, 2);
+
+        $installmentTotal = array_key_exists('installment_total', $override)
+            ? round((float) $override['installment_total'], 2)
+            : round(BudgetCalculator::calculateRoomPricePrazo($room) * $markup, 2);
+
+        return [
+            'id' => (int) $room->id,
+            'title' => $room->name ?: ('Ambiente '.($index + 1)),
+            'total' => $total,
+            'installment_total' => $installmentTotal,
+        ];
+    }
+
+    /**
+     * @return array{total?: mixed, installment_total?: mixed}
+     */
+    private function itemOverride(BudgetRoom $room, int $index): array
+    {
+        $items = $this->overrides['items'] ?? null;
+
+        if (! is_array($items)) {
+            return [];
+        }
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            if (isset($item['id']) && (int) $item['id'] === (int) $room->id) {
+                return $item;
+            }
+        }
+
+        if (isset($items[$index]) && is_array($items[$index])) {
+            return $items[$index];
+        }
+
+        return [];
     }
 
     /**
@@ -289,13 +354,14 @@ class BudgetViewModel
     }
 
     /**
-     * Fator multiplicador de markup informado pelo usuário (mín. matemático de 1, ou seja, sem markup).
+     * Fator multiplicador de markup. Fallback padrão da proposta: 2.1
      */
     private function markup(): float
     {
-        $markup = (float) ($this->overrides['mockup_percentage'] ?? $this->overrides['percentage'] ?? 1);
+        $defaultMarkup = 2.1;
+        $markup = (float) ($this->overrides['mockup_percentage'] ?? $this->overrides['percentage'] ?? $defaultMarkup);
 
-        return $markup > 0 ? $markup : 1.0;
+        return $markup > 0 ? $markup : $defaultMarkup;
     }
 
     private function hasNumericOverride(string $key): bool

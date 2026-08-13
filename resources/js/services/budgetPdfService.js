@@ -7,12 +7,20 @@ function resolveBudgetPdfUrl(id) {
 }
 
 export const budgetPdfService = {
-  async generatePdf(id, totalAmount, totalAmountInstallments, mockupPercentage, observations = '') {
+  async generatePdf(
+    id,
+    totalAmount,
+    totalAmountInstallments,
+    mockupPercentage,
+    observations = '',
+    items = [],
+  ) {
     const payload = {
       total_amount: totalAmount,
       total_amount_installments: totalAmountInstallments,
       mockup_percentage: mockupPercentage,
       notes: observations || null,
+      items,
     };
 
     const response = await http.post(resolveBudgetPdfUrl(id), payload, {

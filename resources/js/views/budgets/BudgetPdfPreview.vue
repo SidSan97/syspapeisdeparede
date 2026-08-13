@@ -1,5 +1,5 @@
 <template>
-  <section class="content">
+  <section class="content mb-3">
     <Page
       title="Orçamento"
       :back-to="{ name: 'budgets.show', params: { id: route.params.id } }"
@@ -111,6 +111,47 @@
               </div>
             </div>
           </div>
+
+          <div class="card mt-3">
+            <div class="card-body">
+              <h5 class="card-title">Preços por ambiente</h5>
+              <p class="text-muted small mb-3">
+                Edite os valores para atualizar o preview e os totais. Não altera o markup.
+              </p>
+
+              <div
+                v-for="item in editableItems"
+                :key="item.id"
+                class="border rounded p-3 mb-3"
+              >
+                <div class="fw-semibold mb-2">{{ item.title }}</div>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small mb-1">À vista</label>
+                    <money
+                      v-model.number="item.total"
+                      v-bind="moneyConfig"
+                      class="form-control form-control-sm"
+                      @change="onItemPriceChange"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1">A prazo</label>
+                    <money
+                      v-model.number="item.installment_total"
+                      v-bind="moneyConfig"
+                      class="form-control form-control-sm"
+                      @change="onItemPriceChange"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="!editableItems.length" class="text-muted small">
+                Nenhum ambiente carregado.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Page>
@@ -118,17 +159,31 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { useRoute } from 'vue-router';
 import Page from '@/components/page/Page.vue';
 import { useFormatting } from '@/composables/useFormatting';
 import { useToast } from '@/composables/useToast';
 import { budgetPdfService } from '@/services/budgetPdfService';
 import { budgetService } from '@/services/budgetService';
+import { http } from '@/lib/http';
 
 const toast = useToast();
 const route = useRoute();
 const { formatCurrency } = useFormatting();
+
+const moneyConfig = {
+  decimal: ',',
+  thousands: '.',
+  precision: 2,
+  prefix: '',
+  allowBlank: false,
+  min: 0,
+  max: null,
+  disableNegative: true,
+  minimumNumberOfCharacters: 0,
+};
 
 const budget = ref(null);
 const loading = ref(true);
@@ -140,26 +195,29 @@ const appliedMarkup = ref(MOCKUP_MIN);
 const pdfObservations = ref('');
 const previewUrl = ref('');
 const previewLoading = ref(false);
+const editableItems = ref([]);
+const syncingFromMarkup = ref(false);
 
-// Totais usam só o markup aplicado (botão). Default 2.1. Frete estático.
-const baseTotalCash = computed(() => parseFloat(budget.value?.total_amount || 0) || 0);
-const baseTotalInstallment = computed(
-  () => parseFloat(budget.value?.total_amount_installments || 0) || 0,
-);
 const freightCost = computed(() => {
   const raw =
     budget.value?.selected_carrier_price ?? budget.value?.carrier_price ?? 0;
   return parseFloat(raw) || 0;
 });
+
 const computedTotalCash = computed(() => {
-  const markup = appliedMarkup.value || MOCKUP_MIN;
-  const products = Math.max(0, baseTotalCash.value - freightCost.value);
-  return products * markup + freightCost.value;
+  const itemsSum = editableItems.value.reduce(
+    (sum, item) => sum + (Number(item.total) || 0),
+    0,
+  );
+  return itemsSum + freightCost.value;
 });
+
 const computedTotalInstallment = computed(() => {
-  const markup = appliedMarkup.value || MOCKUP_MIN;
-  const products = Math.max(0, baseTotalInstallment.value - freightCost.value);
-  return products * markup + freightCost.value;
+  const itemsSum = editableItems.value.reduce(
+    (sum, item) => sum + (Number(item.installment_total) || 0),
+    0,
+  );
+  return itemsSum + freightCost.value;
 });
 
 const routes = [
@@ -177,7 +235,7 @@ async function loadBudget() {
     if (payload) {
       budget.value = payload;
       mockupPercentage.value = MOCKUP_MIN;
-      applyMarkup();
+      await applyMarkup();
     } else {
       error.value = 'Orçamento não encontrado';
     }
@@ -189,10 +247,23 @@ async function loadBudget() {
   }
 }
 
+async function fetchPreviewItems(markup) {
+  if (!budget.value?.id) {
+    return [];
+  }
+
+  const { data } = await http.get(`/v1/budgets/${budget.value.id}/preview-items`, {
+    params: {
+      mockup_percentage: markup,
+    },
+  });
+
+  return data?.data?.items ?? [];
+}
+
 async function generatePdf() {
   if (!budget.value?.id) return;
 
-  applyMarkup();
   generatingPdf.value = true;
   try {
     await budgetPdfService.generatePdf(
@@ -201,6 +272,11 @@ async function generatePdf() {
       computedTotalInstallment.value,
       appliedMarkup.value,
       pdfObservations.value.trim(),
+      editableItems.value.map((item) => ({
+        id: item.id,
+        total: Number(item.total) || 0,
+        installment_total: Number(item.installment_total) || 0,
+      })),
     );
 
     toast.success('PDF gerado com sucesso');
@@ -230,6 +306,15 @@ function buildPreviewUrl() {
     total_amount_installments: String(computedTotalInstallment.value),
   });
 
+  editableItems.value.forEach((item, index) => {
+    params.set(`items[${index}][id]`, String(item.id));
+    params.set(`items[${index}][total]`, String(Number(item.total) || 0));
+    params.set(
+      `items[${index}][installment_total]`,
+      String(Number(item.installment_total) || 0),
+    );
+  });
+
   if (pdfObservations.value.trim()) {
     params.set('notes', pdfObservations.value.trim());
   }
@@ -246,12 +331,51 @@ function refreshPreview() {
   previewUrl.value = buildPreviewUrl();
 }
 
-function applyMarkup() {
+const refreshPreviewDebounced = useDebounceFn(() => {
+  refreshPreview();
+}, 400);
+
+function onItemPriceChange() {
+  if (syncingFromMarkup.value) {
+    return;
+  }
+  refreshPreviewDebounced();
+}
+
+async function applyMarkup() {
   enforceMockupMin();
   const markup = Number(mockupPercentage.value);
   appliedMarkup.value = Number.isFinite(markup) && markup > 0 ? markup : MOCKUP_MIN;
+
+  try {
+    syncingFromMarkup.value = true;
+    const items = await fetchPreviewItems(appliedMarkup.value);
+    editableItems.value = items.map((item) => ({
+      id: item.id,
+      title: item.title,
+      total: Number(item.total) || 0,
+      installment_total: Number(item.installment_total) || 0,
+    }));
+  } catch (err) {
+    console.error('Erro ao carregar preços dos ambientes:', err);
+    toast.error('Não foi possível recalcular os preços dos ambientes.');
+  } finally {
+    syncingFromMarkup.value = false;
+  }
+
   refreshPreview();
 }
+
+watch(
+  editableItems,
+  () => {
+    if (syncingFromMarkup.value || !budget.value?.id) {
+      return;
+    }
+    refreshPreviewDebounced();
+  },
+  { deep: true },
+);
 
 onMounted(() => {
   document.title = 'Preview PDF - Orçamento';

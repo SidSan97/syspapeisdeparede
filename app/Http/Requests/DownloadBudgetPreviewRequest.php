@@ -26,6 +26,10 @@ class DownloadBudgetPreviewRequest extends FormRequest
             'total_amount_installments' => ['nullable', 'numeric', 'min:0'],
             'observations' => ['nullable', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'items' => ['nullable', 'array'],
+            'items.*.id' => ['required_with:items', 'integer'],
+            'items.*.total' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.installment_total' => ['required_with:items', 'numeric', 'min:0'],
         ];
     }
 }
