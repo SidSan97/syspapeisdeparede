@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LayoutColumnName;
+use App\Models\ProductionColumnName;
 use App\Models\User;
 use App\Repositories\LayoutCardHistoryRepository;
 
@@ -56,13 +57,13 @@ class LayoutCardHistoryService
         $columnName = 'Coluna';
 
         if ($typePage === 'product') {
-            $column = \App\Models\ProductionColumnName::find($columnId);
+            $column = ProductionColumnName::find($columnId);
             if ($column) {
                 $columnName = $column->name;
             }
         } else {
             // Default para layout
-            $column = \App\Models\LayoutColumnName::find($columnId);
+            $column = LayoutColumnName::find($columnId);
             if ($column) {
                 $columnName = $column->name;
             }
@@ -115,5 +116,10 @@ class LayoutCardHistoryService
         $description = "{$user->name} concluiu o card.";
         $this->historyRepository->create($cardId, $description, $typePage);
     }
-}
 
+    public function logCardReopened(int $cardId, User $user, ?string $typePage = null): void
+    {
+        $description = "{$user->name} reabriu o card.";
+        $this->historyRepository->create($cardId, $description, $typePage);
+    }
+}

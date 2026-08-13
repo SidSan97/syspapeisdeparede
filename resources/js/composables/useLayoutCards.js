@@ -29,6 +29,7 @@ export function useLayoutCards(columnsRef) {
 export function useLayoutCardCompletion(cardRef, emit) {
   const toast = useToast();
   const completing = ref(false);
+  const reopening = ref(false);
 
   const isCompleted = computed(() => isCardCompleted(toValue(cardRef)));
 
@@ -53,9 +54,22 @@ export function useLayoutCardCompletion(cardRef, emit) {
     return formatActivityCompact(seconds);
   });
 
+  function emitActivityUpdated(card, data) {
+    const merged = mergeActivityPayload(card, data);
+    emit('activity-updated', {
+      activity_running_since: merged.activity_running_since,
+      activity_elapsed_seconds: merged.activity_elapsed_seconds,
+      activity_total_seconds: merged.activity_total_seconds,
+      activity_is_running: merged.activity_is_running,
+      activity_sessions: merged.activity_sessions,
+      completed_at: merged.completed_at,
+      is_completed: merged.is_completed,
+    });
+  }
+
   async function handleComplete(payload = {}) {
     const card = toValue(cardRef);
-    if (!card?.id || completing.value || isCompleted.value) {
+    if (!card?.id || completing.value || reopening.value || isCompleted.value) {
       return;
     }
 
@@ -69,16 +83,7 @@ export function useLayoutCardCompletion(cardRef, emit) {
       const data = await layoutService.completeOrderBudget(card.id, {
         accepted_terms_of_use: true,
       });
-      const merged = mergeActivityPayload(card, data);
-      emit('activity-updated', {
-        activity_running_since: merged.activity_running_since,
-        activity_elapsed_seconds: merged.activity_elapsed_seconds,
-        activity_total_seconds: merged.activity_total_seconds,
-        activity_is_running: merged.activity_is_running,
-        activity_sessions: merged.activity_sessions,
-        completed_at: merged.completed_at,
-        is_completed: merged.is_completed,
-      });
+      emitActivityUpdated(card, data);
       toast.success('Card concluído.');
     } catch (error) {
       const message =
@@ -92,11 +97,46 @@ export function useLayoutCardCompletion(cardRef, emit) {
     }
   }
 
+  async function handleReopen() {
+    const card = toValue(cardRef);
+    if (!card?.id || reopening.value || completing.value || !isCompleted.value) {
+      return;
+    }
+
+    const result = await window.Swal.fire({
+      icon: 'warning',
+      title: 'Reabrir card?',
+      text: 'O card voltará a ficar disponível para edição e movimentação.',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, reabrir',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    reopening.value = true;
+    try {
+      const data = await layoutService.reopenOrderBudget(card.id);
+      emitActivityUpdated(card, data);
+      toast.success('Card reaberto com sucesso.');
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || error?.message || 'Não foi possível reabrir o card.';
+      toast.error(message);
+    } finally {
+      reopening.value = false;
+    }
+  }
+
   return {
     completing,
+    reopening,
     isCompleted,
     completedAtLabel,
     completedDurationLabel,
     handleComplete,
+    handleReopen,
   };
 }

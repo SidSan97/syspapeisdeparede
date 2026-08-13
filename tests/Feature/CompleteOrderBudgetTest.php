@@ -60,6 +60,45 @@ class CompleteOrderBudgetTest extends TestCase
         $this->assertNotNull($orderBudget->fresh()->completed_at);
     }
 
+    public function test_guest_cannot_reopen_order_budget(): void
+    {
+        $orderBudget = $this->createOrderBudget();
+        $orderBudget->forceFill(['completed_at' => now()])->save();
+
+        $this->postJson("/api/v1/budgets/order-budgets/{$orderBudget->id}/reopen")
+            ->assertUnauthorized();
+    }
+
+    public function test_reopen_clears_completed_at(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $orderBudget = $this->createOrderBudget($user);
+        $orderBudget->forceFill(['completed_at' => now()])->save();
+
+        $this->postJson("/api/v1/budgets/order-budgets/{$orderBudget->id}/reopen")
+            ->assertOk()
+            ->assertJsonPath('is_completed', false)
+            ->assertJsonPath('completed_at', null);
+
+        $this->assertNull($orderBudget->fresh()->completed_at);
+    }
+
+    public function test_reopen_is_idempotent_when_card_is_already_open(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $orderBudget = $this->createOrderBudget($user);
+
+        $this->postJson("/api/v1/budgets/order-budgets/{$orderBudget->id}/reopen")
+            ->assertOk()
+            ->assertJsonPath('is_completed', false);
+
+        $this->assertNull($orderBudget->fresh()->completed_at);
+    }
+
     protected function createOrderBudget(?User $user = null): OrderBudget
     {
         $user ??= User::factory()->create();

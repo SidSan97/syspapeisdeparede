@@ -77,4 +77,10 @@ export const layoutService = {
     );
     return data;
   },
+
+  /** Reabre o card concluído na página de Layout. */
+  async reopenOrderBudget(orderBudgetId) {
+    const { data } = await http.post(`v1/budgets/order-budgets/${orderBudgetId}/reopen`);
+    return data;
+  },
 };

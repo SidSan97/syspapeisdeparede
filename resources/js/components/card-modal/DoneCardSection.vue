@@ -20,6 +20,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  reopening: {
+    type: Boolean,
+    default: false,
+  },
   /** Identificador do order_budget (para habilitar o botão Concluir). */
   cardId: {
     type: [Number, String],
@@ -27,7 +31,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['complete']);
+const emit = defineEmits(['complete', 'reopen']);
 
 const BUDGET_APPROVAL_TERM_ID = 'budget_approval';
 
@@ -110,6 +114,14 @@ function confirmComplete() {
   }
 
   emit('complete', { accepted_terms_of_use: true });
+}
+
+function reopenCard() {
+  if (!props.cardId || props.reopening || props.completing) {
+    return;
+  }
+
+  emit('reopen');
 }
 
 watch(
@@ -215,14 +227,31 @@ watch(
     </div>
   </div>
 
-  <div v-else class="alert alert-success d-flex align-items-center gap-2 py-2 mb-4">
-    <IconCircleCheck :size="20" />
-    <div>
-      Card concluído em
-      <strong>{{ completedAtLabel }}</strong>
-      <span v-if="completedDurationLabel" class="ms-2 text-body-secondary">
-        · Duração total: <strong>{{ completedDurationLabel }}</strong>
-      </span>
+  <div v-else class="mb-4">
+    <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-2">
+      <IconCircleCheck :size="20" />
+      <div>
+        Card concluído em
+        <strong>{{ completedAtLabel }}</strong>
+        <span v-if="completedDurationLabel" class="ms-2 text-body-secondary">
+          · Duração total: <strong>{{ completedDurationLabel }}</strong>
+        </span>
+      </div>
     </div>
+
+    <button
+      type="button"
+      class="btn btn-secondary btn-sm"
+      :disabled="reopening || completing || !cardId"
+      @click="reopenCard"
+    >
+      <span
+        v-if="reopening"
+        class="spinner-border spinner-border-sm me-1"
+        role="status"
+        aria-hidden="true"
+      ></span>
+      {{ reopening ? 'Reabrindo...' : 'Reabrir card' }}
+    </button>
   </div>
 </template>

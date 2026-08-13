@@ -34,6 +34,7 @@ Route::delete('budgets/order-budgets/{orderBudget}/members/{member}', [OrderBudg
 Route::post('budgets/order-budgets/{orderBudget}/activity/start', [OrderBudgetController::class, 'startActivity']);
 Route::post('budgets/order-budgets/{orderBudget}/activity/pause', [OrderBudgetController::class, 'pauseActivity']);
 Route::post('budgets/order-budgets/{orderBudget}/complete', [OrderBudgetController::class, 'complete']);
+Route::post('budgets/order-budgets/{orderBudget}/reopen', [OrderBudgetController::class, 'reopen']);
 Route::post('budgets/order-budgets/upload-art', [BudgetController::class, 'uploadArt']);
 
 Route::apiResource('budgets', BudgetController::class);

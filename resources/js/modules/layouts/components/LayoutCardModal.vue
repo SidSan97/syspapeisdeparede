@@ -57,10 +57,12 @@
               <DoneCardSection
                 :is-completed="isCompleted"
                 :completing="completing"
+                :reopening="reopening"
                 :completed-at-label="completedAtLabel"
                 :completed-duration-label="completedDurationLabel"
                 :card-id="card?.id"
                 @complete="handleComplete"
+                @reopen="handleReopen"
               />
 
               <DescriptionSection :card="card" typePage="layout" />
@@ -259,10 +261,12 @@ const { requestLayoutArts, loadingRequestArts, fetchRequestLayoutArts } =
 
 const {
   completing,
+  reopening,
   isCompleted,
   completedAtLabel,
   completedDurationLabel,
   handleComplete,
+  handleReopen,
 } = useLayoutCardCompletion(cardRef, emit);
 
 const coverImage = computed(() => getCoverImage(props.card));

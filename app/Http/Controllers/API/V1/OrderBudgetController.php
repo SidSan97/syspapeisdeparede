@@ -8,6 +8,7 @@ use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
 use App\Services\LayoutCardHistoryService;
 use App\Services\OrderBudgetActivityService;
+use BeyondCode\Comments\Comment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -68,7 +69,7 @@ class OrderBudgetController extends Controller
         ]);
 
         $orderBudget = OrderBudget::findOrFail($orderBudgetId);
-        $comment = \BeyondCode\Comments\Comment::findOrFail($commentId);
+        $comment = Comment::findOrFail($commentId);
 
         // Verificar se o comentário pertence ao order_budget
         if ($comment->commentable_id !== $orderBudget->id || $comment->commentable_type !== OrderBudget::class) {
@@ -93,7 +94,7 @@ class OrderBudgetController extends Controller
     public function deleteComment(Request $request, int $orderBudgetId, int $commentId)
     {
         $orderBudget = OrderBudget::findOrFail($orderBudgetId);
-        $comment = \BeyondCode\Comments\Comment::findOrFail($commentId);
+        $comment = Comment::findOrFail($commentId);
 
         // Verificar se o comentário pertence ao order_budget
         if ($comment->commentable_id !== $orderBudget->id || $comment->commentable_type !== OrderBudget::class) {
@@ -147,7 +148,7 @@ class OrderBudgetController extends Controller
             return $response;
         }
 
-        if (!$orderBudget->activity_running_since) {
+        if (! $orderBudget->activity_running_since) {
             $orderBudget->forceFill(['activity_running_since' => now()]);
             $orderBudget->save();
 
@@ -168,7 +169,7 @@ class OrderBudgetController extends Controller
             return $response;
         }
 
-        if (!$orderBudget->activity_running_since) {
+        if (! $orderBudget->activity_running_since) {
             return response()->json($this->activityPayload($orderBudget));
         }
 
@@ -217,11 +218,32 @@ class OrderBudgetController extends Controller
     }
 
     /**
+     * Reabre o card na página de Layout (remove a marcação de concluído).
+     */
+    public function reopen(Request $request, OrderBudget $orderBudget): JsonResponse
+    {
+        if (! $orderBudget->completed_at) {
+            return response()->json($this->activityPayload($orderBudget));
+        }
+
+        $orderBudget->forceFill([
+            'completed_at' => null,
+        ]);
+        $orderBudget->save();
+
+        if ($user = $request->user()) {
+            $this->layoutCardHistoryService->logCardReopened($orderBudget->id, $user, 'layout');
+        }
+
+        return response()->json($this->activityPayload($orderBudget));
+    }
+
+    /**
      * Retorna 422 caso o card já esteja concluído, ou null para seguir o fluxo.
      */
     protected function ensureNotCompleted(OrderBudget $orderBudget): ?JsonResponse
     {
-        if (!$orderBudget->completed_at) {
+        if (! $orderBudget->completed_at) {
             return null;
         }
 
