@@ -144,10 +144,10 @@ const baseTotalInstallment = computed(() =>
   parseFloat(budget.value?.total_amount_installments || 0),
 );
 const computedTotalCash = computed(
-  () => Math.round(baseTotalCash.value * mockupPercentage.value * 100) / 100,
+  () => baseTotalCash.value * mockupPercentage.value,
 );
 const computedTotalInstallment = computed(
-  () => Math.round(baseTotalInstallment.value * mockupPercentage.value * 100) / 100,
+  () => baseTotalInstallment.value * mockupPercentage.value,
 );
 
 const routes = [

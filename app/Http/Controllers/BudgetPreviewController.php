@@ -19,10 +19,7 @@ class BudgetPreviewController extends Controller
         protected GeneratePdfService $generatePdfService,
     ) {}
 
-    public function index(
-        Budget $budget,
-        IndexBudgetPreviewRequest $request
-    ): View {
+    public function index(Budget $budget,IndexBudgetPreviewRequest $request): View {
         $budget->load([
             'rooms.walls.collectionModel',
             'tenant.reseller',
