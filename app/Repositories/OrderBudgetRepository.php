@@ -178,15 +178,35 @@ class OrderBudgetRepository
         return $orderBudget->fresh();
     }
 
-    public function updateReadyToExpedition(int $orderBudgetId): OrderBudget
+    /**
+     * @param  array<int, int>  $orderBudgetIds
+     * @return int Quantidade de cards atualizados
+     */
+    public function updateReadyToExpedition(array $orderBudgetIds): int
     {
-        $orderBudget = $this->orderBudget::findOrFail($orderBudgetId);
+        $ids = array_values(array_unique(array_map('intval', $orderBudgetIds)));
 
-        $orderBudget->update([
-            'ready_to_expedition' => 1,
-        ]);
+        if ($ids === []) {
+            return 0;
+        }
 
-        return $orderBudget->fresh();
+        $orderIds = OrderBudget::query()
+            ->whereIn('id', $ids)
+            ->pluck('order_id')
+            ->unique()
+            ->all();
+
+        if ($orderIds === []) {
+            return 0;
+        }
+
+        return OrderBudget::query()
+            ->whereIn('order_id', $orderIds)
+            ->where('ready_to_expedition', 0)
+            ->where('picking_label_generated', 1)
+            ->update([
+                'ready_to_expedition' => 1,
+            ]);
     }
 
     public function getReadyForPicking()
@@ -194,42 +214,25 @@ class OrderBudgetRepository
         return $this->orderBudget::where('production_percentage', 100)
             ->with('order')
             ->where('ready_to_expedition', 0)
+            ->where('picking_label_generated', '!=', 1)
             ->orderBy('id', 'asc')
             ->get()
-            ->map(function ($orderBudget) {
-                return [
-                    'id' => $orderBudget->id,
-                    'order_id' => $orderBudget->order_id,
-                    'description' => $orderBudget->description,
-                    'name' => $orderBudget->order->name ?? $orderBudget->description ?? null,
-                    'production_percentage' => $orderBudget->production_percentage,
-                    'production_date' => $orderBudget->production_date,
-                    'order_index' => $orderBudget->order_index,
-                    'total_index' => $orderBudget->max('order_index'),
-                    'created_at' => $orderBudget->created_at,
-                    'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
-                    'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
-                    'ready_to_expedition' => $orderBudget->ready_to_expedition,
-                    'order' => $orderBudget->order ? [
-                        'id' => $orderBudget->order->id,
-                        'name' => $orderBudget->order->name,
-                        'total_amount' => $orderBudget->order->total_amount,
-                        'status' => $orderBudget->order->status,
-                        'created_at' => $orderBudget->order->created_at,
-                    ] : null,
-                ];
-            });
+            ->map(fn (OrderBudget $orderBudget) => $this->mapPickingItem($orderBudget));
     }
 
-    public function paginateReadyForPicking(?string $search = null)
+    public function paginateReadyForPicking(?string $search = null, bool $pickingLabelGenerated = false)
     {
         $query = OrderBudget::query()
             ->where('production_percentage', 100)
             ->with('order')
             ->where('ready_to_expedition', 0)
+            ->when(
+                $pickingLabelGenerated,
+                fn ($query) => $query->where('picking_label_generated', 1),
+                fn ($query) => $query->where('picking_label_generated', '!=', 1),
+            )
             ->orderBy('id', 'asc');
 
-        // Filtro de busca
         if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('order', function ($orderQuery) use ($search) {
@@ -241,33 +244,98 @@ class OrderBudgetRepository
         }
 
         $paginated = $query->paginate();
+        $invoiceMeta = $this->resolveInvoiceMeta($paginated->getCollection()->pluck('order_id')->all());
 
-        // Transformar os itens
-        $paginated->getCollection()->transform(function ($orderBudget) {
-            return [
-                'id' => $orderBudget->id,
-                'order_id' => $orderBudget->order_id,
-                'description' => $orderBudget->description,
-                'name' => $orderBudget->order->name ?? $orderBudget->description ?? null,
-                'production_percentage' => $orderBudget->production_percentage,
-                'production_date' => $orderBudget->production_date,
-                'order_index' => $orderBudget->order_index,
-                'total_index' => $orderBudget->order ? $orderBudget->order->orderBudgets()->max('order_index') ?? $orderBudget->order_index : $orderBudget->order_index,
-                'created_at' => $orderBudget->created_at,
-                'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
-                'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
-                'ready_to_expedition' => $orderBudget->ready_to_expedition,
-                'order' => $orderBudget->order ? [
-                    'id' => $orderBudget->order->id,
-                    'name' => $orderBudget->order->name,
-                    'total_amount' => $orderBudget->order->total_amount,
-                    'status' => $orderBudget->order->status,
-                    'created_at' => $orderBudget->order->created_at,
-                ] : null,
-            ];
-        });
+        $paginated->getCollection()->transform(
+            fn (OrderBudget $orderBudget) => $this->mapPickingItem($orderBudget, $invoiceMeta)
+        );
 
         return $paginated;
+    }
+
+    /**
+     * @param  array<int, int|string>  $orderIds
+     * @return array{pending_order_ids: array<int, int>, ids_by_order: array<int, array<int, int>>, total_index_by_order: array<int, int>}
+     */
+    protected function resolveInvoiceMeta(array $orderIds): array
+    {
+        $orderIds = array_values(array_unique(array_filter(array_map('intval', $orderIds))));
+
+        if ($orderIds === []) {
+            return [
+                'pending_order_ids' => [],
+                'ids_by_order' => [],
+                'total_index_by_order' => [],
+            ];
+        }
+
+        $pendingOrderIds = OrderBudget::query()
+            ->whereIn('order_id', $orderIds)
+            ->where('picking_label_generated', '!=', 1)
+            ->pluck('order_id')
+            ->unique()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $idsByOrder = OrderBudget::query()
+            ->whereIn('order_id', $orderIds)
+            ->where('ready_to_expedition', 0)
+            ->get(['id', 'order_id'])
+            ->groupBy('order_id')
+            ->map(fn ($cards) => $cards->pluck('id')->map(fn ($id) => (int) $id)->values()->all())
+            ->mapWithKeys(fn ($ids, $orderId) => [(int) $orderId => $ids])
+            ->all();
+
+        $totalIndexByOrder = OrderBudget::query()
+            ->whereIn('order_id', $orderIds)
+            ->selectRaw('order_id, MAX(order_index) as total_index')
+            ->groupBy('order_id')
+            ->pluck('total_index', 'order_id')
+            ->mapWithKeys(fn ($totalIndex, $orderId) => [(int) $orderId => (int) $totalIndex])
+            ->all();
+
+        return [
+            'pending_order_ids' => $pendingOrderIds,
+            'ids_by_order' => $idsByOrder,
+            'total_index_by_order' => $totalIndexByOrder,
+        ];
+    }
+
+    /**
+     * @param  array{pending_order_ids?: array<int, int>, ids_by_order?: array<int, array<int, int>>, total_index_by_order?: array<int, int>}  $invoiceMeta
+     * @return array<string, mixed>
+     */
+    protected function mapPickingItem(OrderBudget $orderBudget, array $invoiceMeta = []): array
+    {
+        $orderId = (int) $orderBudget->order_id;
+        $pendingOrderIds = $invoiceMeta['pending_order_ids'] ?? [];
+        $idsByOrder = $invoiceMeta['ids_by_order'] ?? [];
+        $totalIndexByOrder = $invoiceMeta['total_index_by_order'] ?? [];
+
+        return [
+            'id' => $orderBudget->id,
+            'order_id' => $orderBudget->order_id,
+            'description' => $orderBudget->description,
+            'name' => $orderBudget->order->name ?? $orderBudget->description ?? null,
+            'production_percentage' => $orderBudget->production_percentage,
+            'production_date' => $orderBudget->production_date,
+            'order_index' => $orderBudget->order_index,
+            'total_index' => $totalIndexByOrder[$orderId] ?? $orderBudget->order_index,
+            'created_at' => $orderBudget->created_at,
+            'tinyErp_order_id' => $orderBudget->tinyErp_order_id,
+            'tinyErp_order_expedition_id' => $orderBudget->tinyErp_order_expedition_id,
+            'ready_to_expedition' => $orderBudget->ready_to_expedition,
+            'picking_label_generated' => (int) $orderBudget->picking_label_generated,
+            'can_invoice_order' => ! in_array($orderId, $pendingOrderIds, true),
+            'order_budget_ids' => $idsByOrder[$orderId] ?? [(int) $orderBudget->id],
+            'order' => $orderBudget->order ? [
+                'id' => $orderBudget->order->id,
+                'name' => $orderBudget->order->name,
+                'total_amount' => $orderBudget->order->total_amount,
+                'status' => $orderBudget->order->status,
+                'created_at' => $orderBudget->order->created_at,
+            ] : null,
+        ];
     }
 
     public function updateTinyErpOrderId(int $orderId, string $tinyErpOrderId)

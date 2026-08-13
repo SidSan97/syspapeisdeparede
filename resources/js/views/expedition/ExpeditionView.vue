@@ -17,6 +17,17 @@
         <li class="nav-item" role="presentation">
           <button
             class="nav-link"
+            :class="{ active: activeTab === 'in-separation' }"
+            @click="activeTab = 'in-separation'"
+            type="button"
+            role="tab"
+          >
+            Em separação
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
             :class="{ active: activeTab === 'invoice' }"
             @click="activeTab = 'invoice'"
             type="button"
@@ -68,6 +79,25 @@
             @print-selected-labels="handlePrintSelectedLabels"
             @page-change="handleSeparationPageChange"
             @search-change="handleSeparationSearchChange"
+          />
+        </div>
+
+        <!-- Aba Em separação -->
+        <div
+          v-show="activeTab === 'in-separation'"
+          class="tab-pane"
+          :class="{ active: activeTab === 'in-separation' }"
+          role="tabpanel"
+        >
+          <InSeparationTable
+            :expeditions="inSeparationExpeditions"
+            :loading="loadingInSeparation"
+            :invoicing="invoicingOrderCards"
+            :pagination-data="inSeparationPaginationData"
+            @view-details="viewDetails"
+            @invoice-order-cards="handleInvoiceOrderCards"
+            @page-change="handleInSeparationPageChange"
+            @search-change="handleInSeparationSearchChange"
           />
         </div>
 
@@ -132,6 +162,7 @@
 import { onMounted, ref, watch } from 'vue';
 import Page from '@/components/page/Page.vue';
 import SeparationTable from '@/modules/expedition/components/SeparationTable.vue';
+import InSeparationTable from '@/modules/expedition/components/InSeparationTable.vue';
 import ExpeditionTable from '@/modules/expedition/components/ExpeditionTable.vue';
 import InvoiceTable from '@/modules/expedition/components/InvoiceTable.vue';
 import GroupingsTable from '@/modules/expedition/components/GroupingsTable.vue';
@@ -143,19 +174,24 @@ const activeTab = ref('separation');
 const selectedCarrier = ref(null);
 const selectedGroupingCarrier = ref(null);
 const printingLabels = ref(false);
+const invoicingOrderCards = ref(false);
 const separationTableRef = ref(null);
 const separationSearchQuery = ref('');
+const inSeparationSearchQuery = ref('');
 
-// Composables
 const {
   expeditions,
+  inSeparationExpeditions,
   invoices,
   invoicesList,
   groupings,
   loading,
+  loadingInSeparation,
   loadingGroupings,
   paginationData,
+  inSeparationPaginationData,
   fetchExpeditions,
+  fetchInSeparation,
   fetchInvoices,
   searchInvoices,
   searchGroupings,
@@ -177,6 +213,7 @@ const {
   generateInvoice,
   generateDanfe,
   printCarrierLabels,
+  invoiceOrderCards,
   viewDetails,
   viewInvoiceDetails,
   viewGroupingDetails,
@@ -192,13 +229,39 @@ function expedir() {
 }
 
 function handleGenerateSeparationLabel(expedition) {
-  generateSeparationLabel(expedition, loading);
+  generateSeparationLabel(expedition, loading, async () => {
+    await Promise.all([
+      fetchExpeditions(paginationData.value?.current_page || 1, separationSearchQuery.value),
+      fetchInSeparation(
+        inSeparationPaginationData.value?.current_page || 1,
+        inSeparationSearchQuery.value,
+      ),
+    ]);
+  });
 }
 
 async function handlePrintSelectedLabels(orderBudgetIds) {
   await generateSeparationLabels(orderBudgetIds, printingLabels, async () => {
     separationTableRef.value?.clearSelection?.();
-    await fetchExpeditions(paginationData.value?.current_page || 1, separationSearchQuery.value);
+    await Promise.all([
+      fetchExpeditions(paginationData.value?.current_page || 1, separationSearchQuery.value),
+      fetchInSeparation(
+        inSeparationPaginationData.value?.current_page || 1,
+        inSeparationSearchQuery.value,
+      ),
+    ]);
+  });
+}
+
+function handleInvoiceOrderCards(expedition) {
+  invoiceOrderCards(expedition, invoicingOrderCards, async () => {
+    await Promise.all([
+      fetchInSeparation(
+        inSeparationPaginationData.value?.current_page || 1,
+        inSeparationSearchQuery.value,
+      ),
+      fetchInvoices(),
+    ]);
   });
 }
 
@@ -223,7 +286,23 @@ function handleSeparationSearchChange(search) {
   fetchExpeditions(1, search);
 }
 
+function handleInSeparationPageChange(page) {
+  fetchInSeparation(page, inSeparationSearchQuery.value);
+}
+
+function handleInSeparationSearchChange(search) {
+  inSeparationSearchQuery.value = search;
+  fetchInSeparation(1, search);
+}
+
 watch(activeTab, (newTab) => {
+  if (newTab === 'in-separation') {
+    fetchInSeparation(
+      inSeparationPaginationData.value?.current_page || 1,
+      inSeparationSearchQuery.value,
+    );
+  }
+
   if (newTab === 'invoice' && invoices.value.length === 0) {
     fetchInvoices();
   }

@@ -5,7 +5,7 @@ import { showCopyLinkAlert } from '@/utils/sweetalertHelpers';
 export function useExpeditionActions() {
   const router = useRouter();
 
-  async function generateSeparationLabel(expedition, loading) {
+  async function generateSeparationLabel(expedition, loading, onSuccess = null) {
     try {
       loading.value = true;
       await expeditionService.generateSeparationLabel(expedition.id);
@@ -21,6 +21,10 @@ export function useExpeditionActions() {
 
       if (result.isConfirmed) {
         await viewSeparationLabelPdf(expedition.id, loading);
+      }
+
+      if (typeof onSuccess === 'function') {
+        await onSuccess();
       }
     } catch (error) {
       console.error('Erro ao gerar etiqueta de separação:', error);
@@ -228,6 +232,45 @@ export function useExpeditionActions() {
     }
   }
 
+  async function invoiceOrderCards(expedition, loading, onSuccess = null) {
+    const orderBudgetIds = Array.isArray(expedition?.order_budget_ids)
+      ? expedition.order_budget_ids
+      : [expedition?.id].filter(Boolean);
+
+    if (orderBudgetIds.length === 0) {
+      return;
+    }
+
+    try {
+      loading.value = true;
+      await expeditionService.invoiceOrderCards(orderBudgetIds);
+
+      await window.Swal.fire({
+        title: 'Cards enviados para faturamento!',
+        text: 'Os cards do pedido foram marcados como prontos para faturar.',
+        icon: 'success',
+        confirmButtonText: 'Entendi!',
+      });
+
+      if (typeof onSuccess === 'function') {
+        await onSuccess();
+      }
+    } catch (error) {
+      console.error('Erro ao faturar cards do pedido:', error);
+      window.Swal.fire({
+        title: 'Não foi possível faturar os cards!',
+        text:
+          error.response?.data?.message ||
+          error.response?.data?.errors?.order_budget_ids?.[0] ||
+          'Verifique se todos os cards do pedido já tiveram etiqueta gerada.',
+        icon: 'error',
+        confirmButtonText: 'Entendi!',
+      });
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function viewDetails(expedition) {
     // TODO: Implementar ação de ver detalhes
     console.log('Ver detalhes da expedição:', expedition);
@@ -262,6 +305,7 @@ export function useExpeditionActions() {
     generateInvoice,
     generateDanfe,
     printCarrierLabels,
+    invoiceOrderCards,
     viewDetails,
     viewInvoiceDetails,
     viewGroupingDetails,

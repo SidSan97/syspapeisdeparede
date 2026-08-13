@@ -1,27 +1,48 @@
 import { ref } from 'vue';
 import { expeditionService } from '../services/expeditionService';
 
+const emptyPagination = {
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
+};
+
+function resolvePagination(result) {
+  if (result?.pagination) {
+    return result.pagination;
+  }
+
+  return {
+    current_page: result?.current_page ?? 1,
+    last_page: result?.last_page ?? 1,
+    per_page: result?.per_page ?? 15,
+    total: result?.total ?? 0,
+    from: result?.from ?? 0,
+    to: result?.to ?? 0,
+  };
+}
+
 export function useExpeditionData() {
   const expeditions = ref([]);
+  const inSeparationExpeditions = ref([]);
   const invoices = ref([]);
   const invoicesList = ref([]);
   const groupings = ref([]);
   const loading = ref(true);
+  const loadingInSeparation = ref(false);
   const loadingGroupings = ref(false);
-  const paginationData = ref({
-    current_page: 1,
-    last_page: 1,
-    per_page: 15,
-    total: 0,
-    from: 0,
-    to: 0,
-  });
+  const paginationData = ref({ ...emptyPagination });
+  const inSeparationPaginationData = ref({ ...emptyPagination });
 
   async function fetchExpeditions(page = 1, search = null) {
     try {
       loading.value = true;
       const params = {
         page,
+        stage: 'separation',
       };
 
       if (search && search.trim()) {
@@ -29,22 +50,38 @@ export function useExpeditionData() {
       }
 
       const result = await expeditionService.fetchExpeditions(params);
-      expeditions.value = result.data;
-
-      paginationData.value = result.pagination;
+      expeditions.value = result.data ?? [];
+      paginationData.value = resolvePagination(result);
     } catch (error) {
       console.error('Erro ao buscar expedições:', error);
       expeditions.value = [];
-      paginationData.value = {
-        current_page: 1,
-        last_page: 1,
-        per_page: 15,
-        total: 0,
-        from: 0,
-        to: 0,
-      };
+      paginationData.value = { ...emptyPagination };
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function fetchInSeparation(page = 1, search = null) {
+    try {
+      loadingInSeparation.value = true;
+      const params = {
+        page,
+        stage: 'in_separation',
+      };
+
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+
+      const result = await expeditionService.fetchExpeditions(params);
+      inSeparationExpeditions.value = result.data ?? [];
+      inSeparationPaginationData.value = resolvePagination(result);
+    } catch (error) {
+      console.error('Erro ao buscar cards em separação:', error);
+      inSeparationExpeditions.value = [];
+      inSeparationPaginationData.value = { ...emptyPagination };
+    } finally {
+      loadingInSeparation.value = false;
     }
   }
 
@@ -122,13 +159,17 @@ export function useExpeditionData() {
 
   return {
     expeditions,
+    inSeparationExpeditions,
     invoices,
     invoicesList,
     groupings,
     loading,
+    loadingInSeparation,
     loadingGroupings,
     paginationData,
+    inSeparationPaginationData,
     fetchExpeditions,
+    fetchInSeparation,
     fetchInvoices,
     searchInvoices,
     searchGroupings,

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Api\V1\InvoiceOrderBudgetCardsRequest;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class OrderExpeditionController extends Controller
 {
@@ -23,18 +24,29 @@ class OrderExpeditionController extends Controller
     public function expedition(Request $request): JsonResponse
     {
         $search = $request->input('search');
+        $inSeparation = $request->input('stage') === 'in_separation';
 
-        $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($search);
+        $paginatedBudgets = $this->orderBudgetRepository->paginateReadyForPicking($search, $inSeparation);
 
-        // Retorna a estrutura padrão de paginação do Laravel
         return response()->json($paginatedBudgets);
+    }
+
+    public function invoiceOrderCards(InvoiceOrderBudgetCardsRequest $request): JsonResponse
+    {
+        $updated = $this->orderBudgetRepository->updateReadyToExpedition(
+            $request->validated('order_budget_ids')
+        );
+
+        return response()->json([
+            'updated' => $updated,
+            'message' => 'Cards enviados para faturamento.',
+        ]);
     }
 
     public function readyForInvoice(): JsonResponse
     {
         $orders = $this->repository->getReadyForInvoice();
 
-        // Retorna diretamente a coleção de pedidos prontos para faturar
         return response()->json($orders);
     }
 }

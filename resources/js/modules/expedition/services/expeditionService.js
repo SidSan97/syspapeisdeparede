@@ -8,6 +8,7 @@ const crud = createCrudService(endpoint, {
     return {
       page: params?.page,
       search: params?.search,
+      stage: params?.stage,
     };
   },
 });
@@ -90,6 +91,12 @@ export const expeditionService = {
   },
   async printCarrierLabels(groupingId) {
     const { data } = await http.get(`v1/generate-grouping-print-label/${groupingId}`);
+    return data;
+  },
+  async invoiceOrderCards(orderBudgetIds) {
+    const { data } = await http.post('v1/orders/order-budgets/ready-to-expedition', {
+      order_budget_ids: orderBudgetIds,
+    });
     return data;
   },
 };

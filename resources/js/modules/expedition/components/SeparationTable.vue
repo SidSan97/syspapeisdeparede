@@ -203,7 +203,10 @@ const selectedIds = ref([]);
 
 const separations = computed(() => {
   return props.expeditions.filter((expedition) => {
-    return expedition?.ready_to_expedition === 0;
+    return (
+      Number(expedition?.ready_to_expedition) === 0 &&
+      Number(expedition?.picking_label_generated) !== 1
+    );
   });
 });
 
