@@ -10,7 +10,7 @@ export const ORDER_STATUS_LABELS = {
   [ORDER_STATUS.OPEN]: 'Em aberto',
   [ORDER_STATUS.APPROVED]: 'Aprovado',
   [ORDER_STATUS.IN_PRODUCTION]: 'Em produção',
-  [ORDER_STATUS.SENT]: 'Enviadoo',
+  [ORDER_STATUS.SENT]: 'Enviado',
   [ORDER_STATUS.CANCELED]: 'Cancelado',
 };
 

@@ -24,6 +24,7 @@ class OrderResource extends JsonResource
             'dropshippingData',
             'paymentLinks',
             'orderBudgets',
+            'changeHistories.user',
         ]);
 
         $data = $this->resource->toArray();
@@ -266,6 +267,19 @@ class OrderResource extends JsonResource
             'paid' => $paidByComponent,
             'remaining' => $remainingByComponent,
         ];
+
+        $data['change_histories'] = collect($this->resource->changeHistories ?? [])
+            ->map(function ($history) {
+                return [
+                    'id' => $history->id,
+                    'description' => $history->description,
+                    'changes' => $history->changes,
+                    'user_name' => $history->user?->name,
+                    'created_at' => $history->created_at,
+                ];
+            })
+            ->values()
+            ->toArray();
 
         return $data;
     }

@@ -51,6 +51,11 @@ class UpdateOrderRequest extends FormRequest
             'rooms.*.name' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls' => ['nullable', 'array'],
             'rooms.*.walls.*.name' => ['nullable', 'string', 'max:255'],
+            'rooms.*.walls.*.direction' => [
+                'nullable',
+                'string',
+                Rule::in(['left-to-right', 'right-to-left']),
+            ],
             'rooms.*.walls.*.width' => ['nullable', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.height' => ['nullable', 'numeric', 'min:0.01'],
             'rooms.*.walls.*.model' => ['nullable', 'integer', 'exists:collection_models,id'],
@@ -61,6 +66,20 @@ class UpdateOrderRequest extends FormRequest
             'rooms.*.walls.*.collection_referring_model' => ['nullable', 'string', 'max:255'],
             'rooms.*.walls.*.continueSameArt' => ['nullable', 'boolean'],
             'rooms.*.walls.*.continuations' => ['nullable', 'array'],
+            'rooms.*.walls.*.continuations.*.name' => ['nullable', 'string', 'max:255'],
+            'rooms.*.walls.*.continuations.*.width' => ['nullable', 'numeric', 'min:0.01'],
+            'rooms.*.walls.*.continuations.*.height' => ['nullable', 'numeric', 'min:0.01'],
+            'rooms.*.walls.*.continuations.*.sameArt' => ['nullable', 'boolean'],
+            'rooms.*.walls.*.continuations.*.direction' => [
+                'nullable',
+                'string',
+                Rule::in(['left-to-right', 'right-to-left']),
+            ],
+            'rooms.*.walls.*.continuations.*.fit' => [
+                'nullable',
+                'string',
+                Rule::in(['Inicial', 'Superior', 'Inferior', 'Central']),
+            ],
         ];
     }
 

@@ -315,7 +315,7 @@ class OrderRepository
                         $room->walls()->create([
                             'tenant_id' => $tenantId,
                             'name' => $wallData['name'] ?? null,
-                            'direction' => $wallData['direction'] ?? null,
+                            'direction' => $this->resolveWallDirection($wallData),
                             'position' => $wallIndex,
                             'width' => $wallData['width'] ?? null,
                             'height' => $wallData['height'] ?? null,
@@ -557,7 +557,7 @@ class OrderRepository
                     $room->walls()->create([
                         'tenant_id' => $tenantId,
                         'name' => $wallData['name'] ?? null,
-                        'direction' => $wallData['direction'] ?? null,
+                        'direction' => $this->resolveWallDirection($wallData),
                         'position' => $wallIndex,
                         'width' => $wallData['width'] ?? null,
                         'height' => $wallData['height'] ?? null,
@@ -599,5 +599,31 @@ class OrderRepository
 
             return $order->fresh(['user', 'tenant', 'primaryRoom', 'rooms.walls.collectionModel', 'dropshippingData']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $wallData
+     */
+    protected function resolveWallDirection(array $wallData): ?string
+    {
+        $direction = trim((string) ($wallData['direction'] ?? ''));
+
+        if ($direction !== '') {
+            return $direction;
+        }
+
+        foreach (($wallData['continuations'] ?? []) as $continuation) {
+            if (! is_array($continuation)) {
+                continue;
+            }
+
+            $continuationDirection = trim((string) ($continuation['direction'] ?? ''));
+
+            if ($continuationDirection !== '') {
+                return $continuationDirection;
+            }
+        }
+
+        return null;
     }
 }

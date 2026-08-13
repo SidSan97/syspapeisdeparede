@@ -112,5 +112,10 @@ class Order extends Model
     {
         return $this->hasMany(OrderPaymentLink::class);
     }
+
+    public function changeHistories(): HasMany
+    {
+        return $this->hasMany(OrderChangeHistory::class)->latest();
+    }
 }
 

@@ -86,6 +86,8 @@
             <!-- <AdditionalInfoCard :data="order" /> -->
           </div>
         </div>
+
+        <OrderChangeHistoryCard :histories="order.change_histories || []" />
       </template>
       <EmptyState v-else> Não foi possível carregar os detalhes. </EmptyState>
     </Page>
@@ -122,6 +124,7 @@ import PaymentCard from '@/components/details/PaymentCard.vue';
 import RoomsWithArtsCard from '@/components/details/RoomsWithArtsCard.vue';
 import ShippingCard from '@/components/details/ShippingCard.vue';
 import SummaryCard from '@/components/details/SummaryCard.vue';
+import OrderChangeHistoryCard from '@/components/details/OrderChangeHistoryCard.vue';
 import { orderService } from '@/services/orderService';
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge.vue';
 

@@ -5,8 +5,10 @@ namespace App\Actions\Order;
 use App\Models\Order;
 use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderRepository;
+use App\Services\OrderChangeHistoryService;
 use App\Services\OrderEditWalletCreditService;
 use App\Services\OrderPaymentCompositionService;
+use App\Support\OrderStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -16,12 +18,18 @@ class UpdateOrderAction
         protected OrderRepository $repository,
         protected DropshippingRepository $dropshippingRepository,
         protected OrderPaymentCompositionService $paymentCompositionService,
-        protected OrderEditWalletCreditService $walletService
+        protected OrderEditWalletCreditService $walletService,
+        protected OrderChangeHistoryService $changeHistoryService,
     ) {}
 
     public function execute(Order $order, array $data): Order
     {
         return DB::transaction(function () use ($order, $data) {
+            $wasApproved = OrderStatus::is($order->status, OrderStatus::APPROVED);
+            $snapshotBefore = $wasApproved
+                ? $this->changeHistoryService->snapshot($order)
+                : null;
+
             $compositionBefore = null;
             if (
                 ! empty($data['rooms']) && is_array($data['rooms'])
@@ -32,7 +40,7 @@ class UpdateOrderAction
 
             $order = $this->repository->update($order, $data);
 
-            if (!empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
+            if (! empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
                 $existingDropshipping = $order->dropshippingData;
 
                 if ($existingDropshipping) {
@@ -56,7 +64,17 @@ class UpdateOrderAction
                 $this->walletService->creditIfCompositionDecreased($order->fresh(), $compositionBefore);
             }
 
-            return $order->fresh();
+            $order = $order->fresh(['rooms.walls', 'tenant']);
+
+            if ($snapshotBefore !== null && $order) {
+                $this->changeHistoryService->logApprovedOrderEdit(
+                    $order,
+                    $snapshotBefore,
+                    $this->changeHistoryService->snapshot($order),
+                );
+            }
+
+            return $order;
         });
     }
 }

@@ -13,6 +13,17 @@
       </div>
 
       <div v-else>
+        <div
+          v-if="isApprovedOrder"
+          class="alert alert-warning"
+          role="alert"
+        >
+          <strong>Atenção:</strong>
+          Este pedido já está aprovado. Editar o pedido pode gerar
+          <strong>novos custos</strong> e
+          <strong>alterações no prazo de entrega</strong>.
+        </div>
+
         <div class="row">
           <div class="col-12 col-lg-8">
             <p><strong>Revendedor: </strong> {{ budget.reseller_name }}</p>
@@ -800,6 +811,7 @@ import {
   calculateWallWithContinuations,
 } from '@/utils/calculateStripsUtils.js';
 import { buildStripSummaryFromParts } from '@/utils/stripSummaryUtils';
+import { ORDER_STATUS } from '@/constants/orderStatuses';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -913,6 +925,7 @@ const createDefaultContinuation = () => ({
   width: null,
   height: null,
   sameArt: false,
+  direction: '',
   fit: 'Central',
 });
 
@@ -1020,6 +1033,11 @@ const budget = reactive({
 
 const canEnableDropshipping = computed(() => {
   return auth.hasRole(['admin', 'reseller']) || auth.user?.is_dropshipping === 1;
+});
+
+const isApprovedOrder = computed(() => {
+  const status = String(budget.status || '').toLowerCase();
+  return status === ORDER_STATUS.APPROVED || status === 'aprovado';
 });
 
 async function searchTinyErpProducts() {
@@ -1226,6 +1244,7 @@ function normalizeOrderFromAPI(orderData) {
                 width: cont.width ? Number(cont.width) : null,
                 height: cont.height ? Number(cont.height) : null,
                 sameArt: Boolean(cont.sameArt ?? false),
+                direction: cont.direction || '',
                 fit: cont.fit === 'Inicial' ? 'Central' : (cont.fit || 'Central'),
               }));
             }
