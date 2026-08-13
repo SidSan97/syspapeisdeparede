@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    use HasFactory, HasTenantScope, HasOrderScopes;
+    use HasFactory, HasOrderScopes, HasTenantScope;
 
     protected $fillable = [
         'user_id',
@@ -43,6 +43,7 @@ class Order extends Model
         'nf_id',
         'flags',
         'observation',
+        'packer_name',
     ];
 
     protected $casts = [
@@ -67,6 +68,7 @@ class Order extends Model
         'link_payment' => 'string',
         'payment_expiration_date' => 'string',
         'observation' => 'string',
+        'packer_name' => 'string',
     ];
 
     /**
@@ -118,4 +120,3 @@ class Order extends Model
         return $this->hasMany(OrderChangeHistory::class)->latest();
     }
 }
-

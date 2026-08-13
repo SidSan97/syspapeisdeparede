@@ -7,6 +7,7 @@ use App\Models\OrderBudget;
 use App\Models\User;
 use App\Support\OrderBudgetStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -120,6 +121,7 @@ class InvoiceOrderBudgetCardsTest extends TestCase
 
         $this->postJson('/api/v1/orders/order-budgets/ready-to-expedition', [
             'order_budget_ids' => [$labeled->id],
+            ...$this->packingPayload(),
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('order_budget_ids');
@@ -144,12 +146,15 @@ class InvoiceOrderBudgetCardsTest extends TestCase
 
         $this->postJson('/api/v1/orders/order-budgets/ready-to-expedition', [
             'order_budget_ids' => [$first->id, $second->id],
+            ...$this->packingPayload(),
         ])
             ->assertOk()
             ->assertJsonPath('updated', 2);
 
         $this->assertSame(1, (int) $first->fresh()->ready_to_expedition);
         $this->assertSame(1, (int) $second->fresh()->ready_to_expedition);
+        $this->assertSame('João Embalador', $order->fresh()->packer_name);
+        $this->assertSame(3, Cache::get("expedition.invoice_volume_quantity.{$order->id}"));
 
         $ids = collect($this->getJson('/api/v1/orders/expedition?stage=in_separation')
             ->assertOk()
@@ -159,6 +164,38 @@ class InvoiceOrderBudgetCardsTest extends TestCase
 
         $this->assertNotContains($first->id, $ids);
         $this->assertNotContains($second->id, $ids);
+    }
+
+    public function test_invoice_requires_packer_name_and_volume_quantity(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $order = $this->createOrder($user);
+        $card = $this->createPickingCard($user, $order, [
+            'picking_label_generated' => 1,
+            'order_index' => 1,
+        ]);
+
+        $this->postJson('/api/v1/orders/order-budgets/ready-to-expedition', [
+            'order_budget_ids' => [$card->id],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['packer_name', 'quantidade_volumes']);
+
+        $this->assertNull($order->fresh()->packer_name);
+        $this->assertSame(0, (int) $card->fresh()->ready_to_expedition);
+    }
+
+    /**
+     * @return array{packer_name: string, quantidade_volumes: int}
+     */
+    protected function packingPayload(): array
+    {
+        return [
+            'packer_name' => 'João Embalador',
+            'quantidade_volumes' => 3,
+        ];
     }
 
     protected function createOrder(User $user): Order

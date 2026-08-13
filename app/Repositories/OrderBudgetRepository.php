@@ -334,6 +334,7 @@ class OrderBudgetRepository
                 'total_amount' => $orderBudget->order->total_amount,
                 'status' => $orderBudget->order->status,
                 'created_at' => $orderBudget->order->created_at,
+                'packer_name' => $orderBudget->order->packer_name,
             ] : null,
         ];
     }

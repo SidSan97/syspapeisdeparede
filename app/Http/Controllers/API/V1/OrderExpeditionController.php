@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\InvoiceOrderBudgetCardsRequest;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
+use App\Services\ExpeditionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,12 +14,17 @@ class OrderExpeditionController extends Controller
 {
     protected $orderBudgetRepository;
     protected $repository;
+    protected $expeditionService;
 
-    public function __construct(OrderBudgetRepository $orderBudgetRepository, OrderRepository $orderRepository)
-    {
+    public function __construct(
+        OrderBudgetRepository $orderBudgetRepository,
+        OrderRepository $orderRepository,
+        ExpeditionService $expeditionService
+    ) {
         $this->middleware('auth:sanctum');
         $this->orderBudgetRepository = $orderBudgetRepository;
         $this->repository = $orderRepository;
+        $this->expeditionService = $expeditionService;
     }
 
     public function expedition(Request $request): JsonResponse
@@ -33,8 +39,12 @@ class OrderExpeditionController extends Controller
 
     public function invoiceOrderCards(InvoiceOrderBudgetCardsRequest $request): JsonResponse
     {
-        $updated = $this->orderBudgetRepository->updateReadyToExpedition(
-            $request->validated('order_budget_ids')
+        $validated = $request->validated();
+
+        $updated = $this->expeditionService->markOrderCardsReadyForInvoice(
+            $validated['order_budget_ids'],
+            $validated['packer_name'],
+            (int) $validated['quantidade_volumes']
         );
 
         return response()->json([

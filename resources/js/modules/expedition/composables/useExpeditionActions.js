@@ -243,7 +243,10 @@ export function useExpeditionActions() {
 
     try {
       loading.value = true;
-      await expeditionService.invoiceOrderCards(orderBudgetIds);
+      await expeditionService.invoiceOrderCards(orderBudgetIds, {
+        packer_name: expedition.packer_name,
+        quantidade_volumes: expedition.quantidade_volumes,
+      });
 
       await window.Swal.fire({
         title: 'Cards enviados para faturamento!',

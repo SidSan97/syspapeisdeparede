@@ -93,9 +93,11 @@ export const expeditionService = {
     const { data } = await http.get(`v1/generate-grouping-print-label/${groupingId}`);
     return data;
   },
-  async invoiceOrderCards(orderBudgetIds) {
+  async invoiceOrderCards(orderBudgetIds, packing = {}) {
     const { data } = await http.post('v1/orders/order-budgets/ready-to-expedition', {
       order_budget_ids: orderBudgetIds,
+      packer_name: packing.packer_name,
+      quantidade_volumes: packing.quantidade_volumes,
     });
     return data;
   },

@@ -94,7 +94,7 @@
                             ? ''
                             : 'Aguarde a geração de etiqueta de todos os cards deste pedido.'
                         "
-                        @click="$emit('invoice-order-cards', expedition)"
+                        @click="openInvoiceModal(expedition)"
                       >
                         Faturar cards do pedido
                       </button>
@@ -116,6 +116,14 @@
         <PaginationNav :data="paginationData" @pagination-change-page="handlePageChange" />
       </div>
     </div>
+
+    <InvoiceOrderCardsModal
+      v-model="showInvoiceModal"
+      :loading="invoicing"
+      :order-label="selectedExpedition?.order_id"
+      :initial-packer-name="selectedExpedition?.order?.packer_name || ''"
+      @confirm="confirmInvoiceOrderCards"
+    />
   </div>
 </template>
 
@@ -123,6 +131,7 @@
 import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/empty-state/EmptyState.vue';
 import PaginationNav from '@/components/pagination/PaginationNav.vue';
+import InvoiceOrderCardsModal from '@/modules/expedition/components/InvoiceOrderCardsModal.vue';
 import { formatDate } from '@/utils/dateUtils';
 import { IconDotsVertical, IconSearch, IconTruckDelivery } from '@tabler/icons-vue';
 
@@ -155,6 +164,8 @@ const props = defineProps({
 const emit = defineEmits(['view-details', 'invoice-order-cards', 'page-change', 'search-change']);
 
 const searchQuery = ref('');
+const showInvoiceModal = ref(false);
+const selectedExpedition = ref(null);
 
 const filteredItems = computed(() => {
   return props.expeditions.filter((expedition) => {
@@ -171,6 +182,28 @@ watch(searchQuery, (newValue) => {
 
 function canInvoiceOrder(expedition) {
   return Boolean(expedition?.can_invoice_order);
+}
+
+function openInvoiceModal(expedition) {
+  if (!canInvoiceOrder(expedition) || props.invoicing) {
+    return;
+  }
+
+  selectedExpedition.value = expedition;
+  showInvoiceModal.value = true;
+}
+
+function confirmInvoiceOrderCards({ packer_name, quantidade_volumes }) {
+  if (!selectedExpedition.value) {
+    return;
+  }
+
+  emit('invoice-order-cards', {
+    ...selectedExpedition.value,
+    packer_name,
+    quantidade_volumes,
+  });
+  showInvoiceModal.value = false;
 }
 
 function handlePageChange(page) {

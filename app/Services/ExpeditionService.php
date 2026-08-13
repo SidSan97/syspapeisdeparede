@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CollectionImage;
+use App\Models\Order;
 use App\Models\OrderBudget;
 use App\Repositories\OrderBudgetRepository;
 use App\Repositories\OrderRepository;
@@ -13,9 +14,7 @@ use Illuminate\Validation\ValidationException;
 class ExpeditionService
 {
     protected $orderRepository;
-
     protected $orderBudgetRepository;
-
     protected $tinyErpService;
 
     public function __construct(
@@ -339,5 +338,50 @@ class ExpeditionService
         return [
             'notas_fiscais' => $filteredInvoices,
         ];
+    }
+
+    /**
+     * Marca os cards do pedido como prontos para faturar e guarda o embalador.
+     * A quantidade de volumes fica em cache até a emissão da NF no Tiny.
+     *
+     * @param  array<int, int>  $orderBudgetIds
+     */
+    public function markOrderCardsReadyForInvoice(array $orderBudgetIds, string $packerName, int $volumeQuantity): int
+    {
+        $orderIds = OrderBudget::query()
+            ->whereIn('id', $orderBudgetIds)
+            ->pluck('order_id')
+            ->unique()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($orderIds !== []) {
+            Order::query()
+                ->whereIn('id', $orderIds)
+                ->update([
+                    'packer_name' => $packerName,
+                ]);
+
+            foreach ($orderIds as $orderId) {
+                $this->rememberInvoiceVolumeQuantity($orderId, $volumeQuantity);
+            }
+        }
+
+        return $this->orderBudgetRepository->updateReadyToExpedition($orderBudgetIds);
+    }
+
+    public function rememberInvoiceVolumeQuantity(int $orderId, int $volumeQuantity): void
+    {
+        Cache::put($this->invoiceVolumeCacheKey($orderId), $volumeQuantity, now()->addDays(7));
+    }
+
+    public function pullInvoiceVolumeQuantity(int $orderId): int
+    {
+        return max(1, (int) Cache::pull($this->invoiceVolumeCacheKey($orderId), 1));
+    }
+
+    protected function invoiceVolumeCacheKey(int $orderId): string
+    {
+        return "expedition.invoice_volume_quantity.{$orderId}";
     }
 }

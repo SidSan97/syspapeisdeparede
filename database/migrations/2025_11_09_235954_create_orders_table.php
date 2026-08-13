@@ -61,6 +61,7 @@ return new class extends Migration
             $table->tinyInteger('nf_sent')->default(0);
             $table->string('nf_id')->nullable();
             $table->text('observation')->nullable();
+            $table->string('packer_name')->nullable();
 
             $table->timestamps();
 

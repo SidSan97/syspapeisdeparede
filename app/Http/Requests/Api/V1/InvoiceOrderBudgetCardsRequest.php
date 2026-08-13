@@ -22,6 +22,8 @@ class InvoiceOrderBudgetCardsRequest extends FormRequest
         return [
             'order_budget_ids' => ['required', 'array', 'min:1'],
             'order_budget_ids.*' => ['required', 'integer', 'distinct', 'exists:order_budgets,id'],
+            'packer_name' => ['required', 'string', 'max:255'],
+            'quantidade_volumes' => ['required', 'integer', 'min:1', 'max:9999'],
         ];
     }
 
@@ -34,6 +36,9 @@ class InvoiceOrderBudgetCardsRequest extends FormRequest
             'order_budget_ids.required' => 'Selecione ao menos um card para faturar.',
             'order_budget_ids.min' => 'Selecione ao menos um card para faturar.',
             'order_budget_ids.*.exists' => 'Um ou mais cards selecionados não foram encontrados.',
+            'packer_name.required' => 'Informe o nome do embalador.',
+            'quantidade_volumes.required' => 'Informe a quantidade de volumes.',
+            'quantidade_volumes.min' => 'A quantidade de volumes deve ser no mínimo 1.',
         ];
     }
 

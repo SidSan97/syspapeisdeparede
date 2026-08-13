@@ -2,18 +2,20 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class TinyErpService
 {
     protected $client;
+
     protected $token;
+
     protected $apiUrl;
 
     public function __construct()
@@ -37,17 +39,17 @@ class TinyErpService
             $gtin = config('app.tiny_erp_settings.tiny_erp_gtin')
                 ?? config('app.tiny_erp_settings.gtin');
 
-            if (!empty($gtin)) {
+            if (! empty($gtin)) {
                 $params['gtin'] = $gtin;
             }
 
             // Remove valores nulos e vazios antes de construir a query string
-            $params = array_filter($params, function($value) {
+            $params = array_filter($params, function ($value) {
                 return $value !== null && $value !== '';
             });
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/produtos.pesquisa.php?' . $queryString;
+            $url = $this->apiUrl.'/produtos.pesquisa.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -57,10 +59,11 @@ class TinyErpService
             return $data['retorno'];
 
         } catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar produtos: ' . $e->getMessage());
+            Log::error('Erro inesperado ao buscar produtos: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar produtos: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar produtos: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -74,12 +77,12 @@ class TinyErpService
                 'id' => $productId,
             ];
 
-            $params = array_filter($params, function($value) {
+            $params = array_filter($params, function ($value) {
                 return $value !== null && $value !== '';
             });
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/produto.obter.php?' . $queryString;
+            $url = $this->apiUrl.'/produto.obter.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -87,12 +90,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar produto: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar produto: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar produto: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar produto: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -105,12 +108,12 @@ class TinyErpService
                 'formato' => 'json',
             ];
 
-            $params = array_filter($params, function($value) {
+            $params = array_filter($params, function ($value) {
                 return $value !== null && $value !== '';
             });
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/listas.precos.pesquisa.php?' . $queryString;
+            $url = $this->apiUrl.'/listas.precos.pesquisa.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -118,12 +121,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar lista de preços: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar lista de preços: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar lista de preços: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar lista de preços: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -137,12 +140,12 @@ class TinyErpService
                 'idListaPreco' => $listPriceId,
             ];
 
-            $params = array_filter($params, function($value) {
+            $params = array_filter($params, function ($value) {
                 return $value !== null && $value !== '';
             });
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/listas.precos.excecoes.php?' . $queryString;
+            $url = $this->apiUrl.'/listas.precos.excecoes.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -150,12 +153,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar lista de preços: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar lista de preços: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar lista de preços: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar lista de preços: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -169,7 +172,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/formas.envio.pesquisa.php?' . $queryString;
+            $url = $this->apiUrl.'/formas.envio.pesquisa.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -177,12 +180,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar tipos de transportadores: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar tipos de transportadores: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar tipos de transportadores: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar tipos de transportadores: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -197,7 +200,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/pedido.incluir.php?' . $queryString;
+            $url = $this->apiUrl.'/pedido.incluir.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -205,9 +208,8 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao enviar pedido: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar pedido: '.$e->getMessage());
         }
     }
 
@@ -221,7 +223,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/conta.pagar.incluir.php?' . $queryString;
+            $url = $this->apiUrl.'/conta.pagar.incluir.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -229,12 +231,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao enviar conta a pagar: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar conta a pagar: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao enviar conta a pagar: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao enviar conta a pagar: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -249,11 +251,11 @@ class TinyErpService
             ];
 
             if ($orderId) {
-                $params['numeroEcommerce'] = (int)$orderId;
+                $params['numeroEcommerce'] = (int) $orderId;
             }
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/notas.fiscais.pesquisa.php?' . $queryString;
+            $url = $this->apiUrl.'/notas.fiscais.pesquisa.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -261,12 +263,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar notas fiscais: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar notas fiscais: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar notas fiscais: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar notas fiscais: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -281,7 +283,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.pesquisar.agrupamentos.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.pesquisar.agrupamentos.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -289,12 +291,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao buscar agrupamentos de notas fiscais: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao buscar agrupamentos de notas fiscais: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao buscar agrupamentos de notas fiscais: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao buscar agrupamentos de notas fiscais: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -309,7 +311,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/nota.fiscal.incluir.php?' . $queryString;
+            $url = $this->apiUrl.'/nota.fiscal.incluir.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -317,12 +319,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao enviar nota fiscal: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar nota fiscal: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao enviar nota fiscal: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao enviar nota fiscal: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -339,7 +341,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/nota.fiscal.emitir.php?' . $queryString;
+            $url = $this->apiUrl.'/nota.fiscal.emitir.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -347,12 +349,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao emitir nota fiscal: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao emitir nota fiscal: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao emitir nota fiscal: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao emitir nota fiscal: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -367,7 +369,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/nota.fiscal.obter.link.php?' . $queryString;
+            $url = $this->apiUrl.'/nota.fiscal.obter.link.php?'.$queryString;
 
             $response = $this->client->get($url);
 
@@ -375,12 +377,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao obter link da DANFE: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao obter link da DANFE: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao obter link da DANFE: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao obter link da DANFE: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -396,7 +398,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.liberar.objetos.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.liberar.objetos.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -404,12 +406,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao enviar objeto a expedição: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao enviar objeto a expedição: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao enviar objeto a expedição: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao enviar objeto a expedição: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -420,11 +422,11 @@ class TinyErpService
             $params = [
                 'token' => $this->token,
                 'formato' => 'json',
-                'idsExpedicao' => $invoicesIds
+                'idsExpedicao' => $invoicesIds,
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.incluir.agrupamento.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.incluir.agrupamento.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -432,12 +434,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao incluir agrupamento de notas fiscais: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao incluir agrupamento de notas fiscais: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao incluir agrupamento de notas fiscais: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao incluir agrupamento de notas fiscais: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -454,7 +456,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.alterar.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.alterar.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -462,15 +464,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao alterar expedição: ' . $e->getMessage());
-        }
-        catch (RequestException $e) {
-            Log::error('Erro ao alterar expedição: ' . $e->getMessage());
-        }
-        catch (GuzzleException $e) {
-            Log::error('Erro ao alterar expedição: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao alterar expedição: '.$e->getMessage());
+        } catch (RequestException $e) {
+            Log::error('Erro ao alterar expedição: '.$e->getMessage());
+        } catch (GuzzleException $e) {
+            Log::error('Erro ao alterar expedição: '.$e->getMessage());
         }
     }
 
@@ -484,7 +483,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.concluir.agrupamento.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.concluir.agrupamento.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -492,12 +491,12 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao concluir agrupamento de notas fiscais: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao concluir agrupamento de notas fiscais: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao concluir agrupamento de notas fiscais: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao concluir agrupamento de notas fiscais: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -512,7 +511,7 @@ class TinyErpService
             ];
 
             $queryString = http_build_query($params);
-            $url = $this->apiUrl . '/expedicao.obter.etiquetas.impressao.php?' . $queryString;
+            $url = $this->apiUrl.'/expedicao.obter.etiquetas.impressao.php?'.$queryString;
 
             $response = $this->client->post($url);
 
@@ -520,27 +519,27 @@ class TinyErpService
             $data = json_decode($body, true);
 
             return $data['retorno'];
-        }
-        catch (\Exception $e) {
-            Log::error('Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: ' . $e->getMessage(),
+                'message' => 'Erro inesperado ao gerar etiquetas de impressão dos agrupamentos: '.$e->getMessage(),
             ], 500);
         }
     }
 
-    public function makeOrder(array $order, ?array  $dropshipping): string
+    public function makeOrder(array $order, ?array $dropshipping): string
     {
         $dataPedido = Carbon::parse($order['created_at']);
         $dataPrevista = $dataPedido->copy()->addDays($order['delivery_time']);
 
         $orderData = [
             'pedido' => [
-               'data_pedido' => $dataPedido->format('d/m/Y'),
-               'data_prevista' => $dataPrevista->format('d/m/Y'),
-               'cliente' => $this->makeClientData($dropshipping),
-               'itens' => [
+                'data_pedido' => $dataPedido->format('d/m/Y'),
+                'data_prevista' => $dataPrevista->format('d/m/Y'),
+                'cliente' => $this->makeClientData($dropshipping),
+                'itens' => [
                     [
                         'item' => [
                             'codigo' => $order['id'],
@@ -548,8 +547,8 @@ class TinyErpService
                             'unidade' => 'UN',
                             'quantidade' => 1,
                             'valor_unitario' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'nome_transportador' => trim(explode(' - ', $order['selected_carrier_name'])[0]),
                 'forma_pagamento' => $order['payment_method'] === 'pix' ? 'pix' : 'credito',
@@ -563,7 +562,7 @@ class TinyErpService
                 'intermediador' => [
                     'nome' => 'Papel de parede',
                     'cnpj' => '13.023.181/0001-13',
-                ]
+                ],
             ],
         ];
 
@@ -576,13 +575,13 @@ class TinyErpService
         $conta = [
             'conta' => [
                 'cliente' => $this->makeClientData($dropshipping),
-                "data" => $currentDate->format('d/m/Y'),
-                "vencimento" => $currentDate->copy()->addDays(3)->format('d/m/Y'),
-                "valor" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
-                "nro_documento" => "",
-                "categoria" => "",
-                "ocorrencia" => $order['payment_method'] === 'pix' ? 'U' : 'P',
-                "numero_parcelas" => $order['payment_method'] === 'pix' ? 0 : $order['installments'],
+                'data' => $currentDate->format('d/m/Y'),
+                'vencimento' => $currentDate->copy()->addDays(3)->format('d/m/Y'),
+                'valor' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+                'nro_documento' => '',
+                'categoria' => '',
+                'ocorrencia' => $order['payment_method'] === 'pix' ? 'U' : 'P',
+                'numero_parcelas' => $order['payment_method'] === 'pix' ? 0 : $order['installments'],
             ],
         ];
 
@@ -593,42 +592,43 @@ class TinyErpService
     {
         $data = [
             'nota_fiscal' => [
-                //'data_emissao' => Carbon::now()->format('d/m/Y'),
-                "natureza_operacao" => "Venda de Mercadorias",
-                //"hora_entrada_saida" => "15:30",
-                //"data_entrada_saida" => Carbon::now()->format('d/m/Y'),
-                "tipo" => "S",
+                // 'data_emissao' => Carbon::now()->format('d/m/Y'),
+                'natureza_operacao' => 'Venda de Mercadorias',
+                // "hora_entrada_saida" => "15:30",
+                // "data_entrada_saida" => Carbon::now()->format('d/m/Y'),
+                'tipo' => 'S',
                 'cliente' => $this->makeClientData($dropshipping),
                 'endereco_entrega' => $this->makeAddressData($dropshipping),
-                "itens" => [
+                'itens' => [
                     [
-                        "item" => [
-                            "descricao" => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
-                            "valor_unitario" => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
-                            "gtin_ean" => config('app.tiny_erp_settings.tiny_erp_gtin')
+                        'item' => [
+                            'descricao' => $order['comment_referring_model'] ?? 'Orçamento para papel de parede',
+                            'valor_unitario' => $order['payment_method'] === 'pix' ? $order['total_amount'] : $order['total_amount_installments'],
+                            'gtin_ean' => config('app.tiny_erp_settings.tiny_erp_gtin')
                                 ?? config('app.tiny_erp_settings.gtin')
                                 ?? '',
-                            "quantidade" => 1,
-                            "unidade" => "UN",
-                            "ncm" => config('app.tiny_erp_settings.tiny_erp_ncm')
+                            'quantidade' => 1,
+                            'unidade' => 'UN',
+                            'ncm' => config('app.tiny_erp_settings.tiny_erp_ncm')
                                 ?? config('app.tiny_erp_settings.ncm')
-                                ?? "4814.20.00",
-                            "tipo" => "P",
-                            "origem" => "0"
-                        ]
-                    ]
+                                ?? '4814.20.00',
+                            'tipo' => 'P',
+                            'origem' => '0',
+                        ],
+                    ],
                 ],
-                "transportador" => [
-                    "nome" => trim(explode(' - ', $order['selected_carrier_name'])[0])
+                'transportador' => [
+                    'nome' => trim(explode(' - ', $order['selected_carrier_name'])[0]),
                 ],
-                "frete_por_conta" => "D",
-                "forma_pagamento" => $order['payment_method'] === 'pix' ? 'pix' : 'multiplas',
-                "forma_envio" => $this->getShippingCodeByOrigin($order['selected_carrier_name']),
-                "valor_frete" => $order['selected_carrier_price'],
-                "finalidade" => "3",
-                "obs" => "NF emitida pelo sistema Papel de parede",
-                "ecommerce" => "Sistema de Papel de parede",
-                "numero_pedido_ecommerce" => $order['id'],
+                'frete_por_conta' => 'D',
+                'quantidade_volumes' => max(1, (int) ($order['quantidade_volumes'] ?? 1)),
+                'forma_pagamento' => $order['payment_method'] === 'pix' ? 'pix' : 'multiplas',
+                'forma_envio' => $this->getShippingCodeByOrigin($order['selected_carrier_name']),
+                'valor_frete' => $order['selected_carrier_price'],
+                'finalidade' => '3',
+                'obs' => 'NF emitida pelo sistema Papel de parede',
+                'ecommerce' => 'Sistema de Papel de parede',
+                'numero_pedido_ecommerce' => $order['id'],
             ],
         ];
 
@@ -651,15 +651,15 @@ class TinyErpService
                     'altura' => $tinyErpData['alturaEmbalagem'],
                     'largura' => $tinyErpData['larguraEmbalagem'],
                     'comprimento' => $tinyErpData['comprimentoEmbalagem'],
-                    'diametro' => $tinyErpData['diametroEmbalagem']
+                    'diametro' => $tinyErpData['diametroEmbalagem'],
                 ],
                 /*'formaFrete' => [
                     'id' => $this->getCarrierId(trim(explode(' - ', $carrier)[0])),
                     'descricao' => $carrier
                 ],*/
                 'transportadora' => [
-                    'nome' => trim(explode(' - ', $carrier)[0])
-                ]
+                    'nome' => trim(explode(' - ', $carrier)[0]),
+                ],
             ],
         ];
 
@@ -683,7 +683,7 @@ class TinyErpService
             'cidade' => $dropshipping['city'],
             'uf' => $dropshipping['uf'],
             'fone' => $dropshipping['phone'] ?? '',
-            'atualizar_cliente' => 'N'
+            'atualizar_cliente' => 'N',
         ];
     }
 
@@ -701,15 +701,16 @@ class TinyErpService
             'cep' => $dropshipping['cep'],
             'cidade' => $dropshipping['city'],
             'uf' => $dropshipping['uf'],
-            'fone' => $dropshipping['phone'] ?? ''
+            'fone' => $dropshipping['phone'] ?? '',
         ];
     }
 
     /**
      * Retorna o código da transportadora baseado no nome da origem
      *
-     * @param string $origem Nome da origem/transportadora
+     * @param  string  $origem  Nome da origem/transportadora
      * @return string|null Código da transportadora ou null se não encontrado
+     *
      * @reference link: https://tiny.com.br/api-docs/api2-pedidos-incluir
      */
     public function getShippingCodeByOrigin(string $origem): ?string
