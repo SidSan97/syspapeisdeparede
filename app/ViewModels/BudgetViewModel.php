@@ -150,8 +150,8 @@ class BudgetViewModel
             'description' => $this->wallLines($walls),
             'model_name' => $this->wallModelNames($walls),
             'meters' => number_format(BudgetCalculator::calculateRoomMeters($room), 2, ',', '.'),
-            'total' => money_view($this->overrides['total_amount']),
-            'installment_total' => money_view($this->overrides['total_amount_installments']),
+            'total' => money_view(round(BudgetCalculator::calculateRoomPriceVista($room) * $markup, 2)),
+            'installment_total' => money_view(round(BudgetCalculator::calculateRoomPricePrazo($room) * $markup, 2)),
         ];
     }
 

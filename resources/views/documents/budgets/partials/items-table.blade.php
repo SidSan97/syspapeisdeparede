@@ -27,6 +27,7 @@
                 </td>
             </tr>
         @endforelse
+
         <tr>
             <td style="border-right: none;">
                 <p><b>Total de ambientes:</b> {{ $totals['rooms'] }}</p>

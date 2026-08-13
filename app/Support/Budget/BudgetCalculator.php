@@ -815,17 +815,46 @@ class BudgetCalculator
         ];
     }
 
-    public static function calculateRoomMeters(object|array $room): float
+    /**
+     * Normaliza paredes de um ambiente para o mesmo formato usado em calculateTotalArea / calculateWallsSequence.
+     *
+     * @return array<int, array{width: mixed, height: mixed, continueSameArt: bool, continuations: array, model: mixed}>
+     */
+    public static function normalizeRoomWallsForCalculation(object|array $room): array
     {
         $walls = is_array($room) ? ($room['walls'] ?? []) : ($room->walls ?? []);
-        $total = 0.0;
+        $normalized = [];
 
         foreach ($walls as $wall) {
-            $sequence = self::calculateWallWithContinuations(self::normalizeWallForCalculation($wall));
-            $total += (float) ($sequence['totalMetros'] ?? 0);
+            if (is_array($wall)) {
+                $normalized[] = [
+                    'width' => $wall['width'] ?? null,
+                    'height' => $wall['height'] ?? null,
+                    'continueSameArt' => (bool) ($wall['continueSameArt'] ?? $wall['continue_same_art'] ?? false),
+                    'continuations' => is_array($wall['continuations'] ?? null) ? $wall['continuations'] : [],
+                    'model' => $wall['model'] ?? ($wall['collection_model_id'] ?? null),
+                ];
+
+                continue;
+            }
+
+            $normalized[] = [
+                'width' => $wall->width,
+                'height' => $wall->height,
+                'continueSameArt' => (bool) ($wall->continue_same_art ?? false),
+                'continuations' => is_array($wall->continuations ?? null) ? $wall->continuations : [],
+                'model' => $wall->collection_model_id,
+            ];
         }
 
-        return round($total, 2);
+        return $normalized;
+    }
+
+    public static function calculateRoomMeters(object|array $room): float
+    {
+        $sequence = self::calculateWallsSequence(self::normalizeRoomWallsForCalculation($room));
+
+        return round((float) ($sequence['totalMetros'] ?? 0), 2);
     }
 
     public static function calculateRoomModelCost(object|array $room): float

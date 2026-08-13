@@ -2,7 +2,7 @@
     <tbody>
         <tr>
             <th style="width: 20%;">Frete</th>
-            <td>{{ $totals['shipping'] }}</td>
+            <td>{{ money_view($totals['shipping']) }}</td>
         </tr>
         <tr>
             <th style="width: 20%;">Previsão de entrega</th>
