@@ -23,7 +23,7 @@ class OrderBudgetActivityService
 
         return OrderBudgetActivitySession::query()->create([
             'order_budget_id' => $orderBudget->id,
-            'tenant_id' => $orderBudget->tenant_id,
+            'tenant_id' => $orderBudget->tenant_id ?? auth()->user()->id,
             'started_at' => $startedAt,
             'ended_at' => $endedAt,
             'duration_seconds' => $durationSeconds,
