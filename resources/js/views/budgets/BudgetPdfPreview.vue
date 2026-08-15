@@ -42,6 +42,7 @@
             </div>
             <iframe
               v-if="previewUrl"
+              :key="previewUrl"
               :src="previewUrl"
               class="pdf-preview-iframe"
               title="Preview do orçamento"
@@ -270,8 +271,15 @@ function refreshPreview() {
     return;
   }
 
+  const nextUrl = buildPreviewUrl();
+
+  if (nextUrl === previewUrl.value) {
+    previewLoading.value = false;
+    return;
+  }
+
   previewLoading.value = true;
-  previewUrl.value = buildPreviewUrl();
+  previewUrl.value = nextUrl;
 }
 
 const refreshPreviewDebounced = useDebounceFn(() => {

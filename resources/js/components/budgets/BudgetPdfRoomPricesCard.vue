@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { http } from '@/lib/http';
 import { useToast } from '@/composables/useToast';
 
@@ -128,6 +128,9 @@ async function loadFromMarkup(markup) {
     }));
 
     items.value = nextItems;
+
+    // Aguarda o flush do watch deep para não emitir `change` após o sync.
+    await nextTick();
 
     return nextItems;
   } catch (err) {
