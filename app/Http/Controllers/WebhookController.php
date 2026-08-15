@@ -75,7 +75,7 @@ class WebhookController extends Controller
             return;
         }
 
-        $paymentLink = $this->resolvePaymentLink($order->id, $data, $paidCharge);
+        $paymentLink = $this->resolvePaymentLink($orderId, $data, $paidCharge);
 
         if ($paymentLink && $paymentLink->status !== 'paid') {
             $paymentLink->update([
@@ -122,23 +122,18 @@ class WebhookController extends Controller
     }
 
     /**
-     * Extrai o ID do pedido local a partir de items[].description (ex.: "Pedido #121 - ARTES").
+     * Extrai o ID do pedido local a partir do link de pagamento
      */
     protected function resolveOrderId(array $data): ?int
     {
-        foreach ($data['items'] ?? [] as $item) {
-            $description = (string) ($item['description'] ?? '');
+        $paymentLinkId = $data['id'];
+        return OrderPaymentLink::query()
+            ->where(function ($query) use ($paymentLinkId) {
+            $query->where('external_order_id', (string) $paymentLinkId)
+                ->orWhere('external_payment_link_id', (string) $paymentLinkId);
+    })
+    ->value('order_id');
 
-            if (preg_match('/#(\d+)\s*-/', $description, $matches)) {
-                $id = (int) $matches[1];
-
-                if ($id > 0) {
-                    return $id;
-                }
-            }
-        }
-
-        return null;
     }
 
     /**

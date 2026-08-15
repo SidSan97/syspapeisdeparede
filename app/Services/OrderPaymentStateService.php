@@ -70,7 +70,7 @@ class OrderPaymentStateService
             'payment_status' => $paymentStatus,
         ]);
 
-        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshipping->toArray());
+        $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshipping?->toArray());
 
         if (isset($orderTiny['registros']['registro']['id'])) {
             $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
@@ -86,6 +86,7 @@ class OrderPaymentStateService
 
     /**
      * Quando o pagamento inclui artes, atualiza status dos cards (OrderBudget):
+     * - modelo com request_art_on_payment: Aguardando Arte;
      * - modelo sem exigência de link (ou sem modelo): Arte Recebida;
      * - modelo com request_link: Arte Recebida se link_referring_model preenchido, senão Aguardando Arte.
      */
@@ -100,8 +101,17 @@ class OrderPaymentStateService
             }
 
             $model = $wall->collectionModel;
+
+            if ($model?->request_art_on_payment) {
+                if ($orderBudget->status != OrderBudgetStatus::WAITING_ART) {
+                    $orderBudget->update(['status' => OrderBudgetStatus::WAITING_ART]);
+                }
+
+                continue;
+            }
+
             if (! $model || ! $model->request_link) {
-                if (! OrderBudgetStatus::is($orderBudget->status, OrderBudgetStatus::ART_RECEIVED)) {
+                if ($orderBudget->status != OrderBudgetStatus::ART_RECEIVED) {
                     $orderBudget->update(['status' => OrderBudgetStatus::ART_RECEIVED]);
                 }
 
@@ -112,7 +122,7 @@ class OrderPaymentStateService
                 ? OrderBudgetStatus::ART_RECEIVED
                 : OrderBudgetStatus::WAITING_ART;
 
-            if (! OrderBudgetStatus::is($orderBudget->status, $newStatus)) {
+            if ($orderBudget->status != $newStatus) {
                 $orderBudget->update(['status' => $newStatus]);
             }
         }
