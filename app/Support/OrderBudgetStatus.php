@@ -8,7 +8,9 @@ class OrderBudgetStatus
 
     public const PENDING_REVIEW = 'Pendente de Revisão';
 
-    public const LAYOUT_IN_APPROVAL = 'Layout em aprovação';
+    public const LAYOUT_IN_APPROVAL = 'Layout em Aprovação';
+
+    public const LAYOUT_APPROVED = 'Layout Aprovado';
 
     public const WAITING_ART = 'Aguardando Arte';
 
@@ -27,6 +29,11 @@ class OrderBudgetStatus
         self::APPROVE_LAYOUT => [
             'Aprovar Layout',
             'aprovar layout',
+        ],
+        self::LAYOUT_APPROVED => [
+            'Layout aprovado',
+            'layout aprovado',
+            'Layout Aprovado',
         ],
         self::PENDING_REVIEW => [
             'Pendente de Revisão',
@@ -71,6 +78,7 @@ class OrderBudgetStatus
             self::APPROVE_LAYOUT,
             self::PENDING_REVIEW,
             self::LAYOUT_IN_APPROVAL,
+            self::LAYOUT_APPROVED,
             self::WAITING_ART,
             self::ART_RECEIVED,
             self::RELEASED_FOR_PRODUCTION,

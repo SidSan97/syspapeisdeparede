@@ -112,6 +112,11 @@ class RequestLayoutArtRepository
             $orderBudget->wall->update([
                 'files_referring_model' => [$requestLayoutArt->path_file],
             ]);
+
+            //Atualiza o status do card (order_budget) para layout aprovado
+            $orderBudget->update([
+                'status' => OrderBudgetStatus::LAYOUT_APPROVED,
+            ]);
         });
 
         return $requestLayoutArt->fresh();
