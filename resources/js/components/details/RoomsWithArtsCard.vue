@@ -245,6 +245,12 @@ async function handleUpdateApproval({ art, status, acceptedTermsOfUse = false })
 
     art.approval_status = response?.approval_status ?? status;
     toast.success(response?.message || 'Status atualizado com sucesso.');
+
+    if (status === 'approved') {
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    }
   } catch (error) {
     const errorMessage =
       error?.response?.data?.message ?? 'Não foi possível atualizar o status da iteração.';

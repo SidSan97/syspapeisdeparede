@@ -443,7 +443,7 @@ class OrderBudgetRepository
             $orderBudget = OrderBudget::query()->create([
                 'order_id' => $order->id,
                 'budget_wall_id' => $wall->id,
-                'status' => OrderBudgetStatus::APPROVE_LAYOUT,
+                'status' => $this->resolveInitialStatusFromWall($wall),
                 'tenant_id' => $tenantId,
                 'layout_column_names_id' => $this->resolveInitialLayoutColumnId(
                     $wall->collectionModel?->name,
@@ -464,6 +464,24 @@ class OrderBudgetRepository
             })
             ->get()
             ->each(fn (OrderBudget $card) => $this->deleteOrderBudgetCard($card));
+    }
+
+    /**
+     * Define o status inicial do card conforme as flags do modelo da parede.
+     */
+    protected function resolveInitialStatusFromWall(BudgetWall $wall): string
+    {
+        $model = $wall->collectionModel;
+
+        if ($model?->request_layout) {
+            return OrderBudgetStatus::WAITING_ART;
+        }
+
+        if ($model?->request_art_on_payment) {
+            return OrderBudgetStatus::WAITING_PAYMENT;
+        }
+
+        return OrderBudgetStatus::IN_PRODUCTION;
     }
 
     /**

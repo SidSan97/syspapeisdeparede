@@ -41,11 +41,6 @@ export function useWallStatus(source) {
     return null;
   }
 
-  function hasPendingArtPayment() {
-    const remainingArt = Number(data.value?.payment_breakdown?.remaining?.ARTES ?? 0);
-    return remainingArt > 0;
-  }
-
   function getWallGlobalIndex(roomIndex, wallIndex) {
     let index = 0;
     const rooms = data.value?.rooms || [];
@@ -79,10 +74,6 @@ export function useWallStatus(source) {
     const orderStatus = normalizeStatus(data.value?.status);
     if (orderStatus === 'Enviado' || orderStatus === 'Entregue') {
       return orderStatus;
-    }
-
-    if (hasPendingArtPayment()) {
-      return 'Aguardando pagamento';
     }
 
     const card = resolveCardByWall(wall, roomIndex, wallIndex);

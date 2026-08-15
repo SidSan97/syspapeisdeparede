@@ -14,9 +14,13 @@ class OrderBudgetStatus
 
     public const WAITING_ART = 'Aguardando Arte';
 
+    public const WAITING_PAYMENT = 'Aguardando pagamento';
+
     public const ART_RECEIVED = 'Arte Recebida';
 
     public const RELEASED_FOR_PRODUCTION = 'Liberado para produção';
+
+    public const IN_PRODUCTION = 'Em produção';
 
     public const APPROVED = 'Aprovado';
 
@@ -51,6 +55,11 @@ class OrderBudgetStatus
             'Aguardando Arte',
             'aguardando arte',
         ],
+        self::WAITING_PAYMENT => [
+            'Aguardando pagamento',
+            'aguardando pagamento',
+            'Aguardando Pagamento',
+        ],
         self::ART_RECEIVED => [
             'Arte Recebida',
             'arte recebida',
@@ -60,6 +69,13 @@ class OrderBudgetStatus
             'liberado para produção',
             'Liberado para producao',
             'liberado para producao',
+        ],
+        self::IN_PRODUCTION => [
+            'Em produção',
+            'em produção',
+            'Em producao',
+            'em producao',
+            'Em Produção',
         ],
         self::APPROVED => [
             'Aprovado',
@@ -80,8 +96,10 @@ class OrderBudgetStatus
             self::LAYOUT_IN_APPROVAL,
             self::LAYOUT_APPROVED,
             self::WAITING_ART,
+            self::WAITING_PAYMENT,
             self::ART_RECEIVED,
             self::RELEASED_FOR_PRODUCTION,
+            self::IN_PRODUCTION,
             self::APPROVED,
         ];
     }

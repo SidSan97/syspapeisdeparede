@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers\API\V1;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\OrderResource;
+use App\Models\LayoutColumnName;
 use App\Models\Order;
 use App\Models\OrderBudget;
-use App\Repositories\OrderBudgetRepository;
 use App\Repositories\DropshippingRepository;
+use App\Repositories\OrderBudgetRepository;
+use App\Services\ProductionReportService;
 use App\Services\TinyErpService;
-use App\Http\Resources\OrderResource;
-use App\Http\Controllers\Controller;
 use App\Support\OrderBudgetStatus;
 use App\Support\OrderStatus;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class OrderProductionController extends Controller
 {
@@ -50,18 +52,18 @@ class OrderProductionController extends Controller
             $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
         }
 
-        $textFlag   = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
+        $textFlag = $order->paid ? 'Pagamento recebido' : 'Aguardando pagamento';
         $order->update(['status' => OrderStatus::APPROVED, 'flags' => $textFlag]);
 
         // Buscar a primeira coluna de layout disponível (padrão: Desenhista)
-        $firstColumn = \App\Models\LayoutColumnName::orderBy('id')->first();
+        $firstColumn = LayoutColumnName::orderBy('id')->first();
 
-        if (!$firstColumn) {
+        if (! $firstColumn) {
             abort(400, 'Nenhuma coluna de layout configurada. Configure pelo menos uma coluna antes de aprovar orçamentos.');
         }
 
-        $this->orderBudget->where('order_id', $order->id)
-            ->update(['status' => OrderBudgetStatus::RELEASED_FOR_PRODUCTION]);
+        /*$this->orderBudget->where('order_id', $order->id)
+            ->update(['status' => OrderBudgetStatus::RELEASED_FOR_PRODUCTION]);*/
 
         return (new OrderResource($order->refresh()))->response();
     }
@@ -79,7 +81,7 @@ class OrderProductionController extends Controller
         $order->update(['flags' => 'Produção concluída', 'status' => 'Enviado']);
 
         // Gerar relatório de produção
-        $productionReportService = app(\App\Services\ProductionReportService::class);
+        $productionReportService = app(ProductionReportService::class);
         $productionReportService->generateMarkAsProducedReport($orderBudget, $user);
 
         return response()->json($orderBudget);
@@ -101,7 +103,7 @@ class OrderProductionController extends Controller
 
         if ($validated['production_percentage'] == 100) {
             // Gerar relatório de produção quando atinge 100%
-            $productionReportService = app(\App\Services\ProductionReportService::class);
+            $productionReportService = app(ProductionReportService::class);
             $productionReportService->generateProductionPercentageReport(
                 $orderBudget,
                 $user,
