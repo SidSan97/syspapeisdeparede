@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\BudgetWall;
 use App\Models\Order;
 use App\Models\OrderPaymentLink;
+use App\Repositories\DropshippingRepository;
 use App\Repositories\OrderBudgetRepository;
 use App\Support\OrderBudgetStatus;
-use App\Repositories\DropshippingRepository;
 
 class OrderPaymentStateService
 {
@@ -17,6 +17,27 @@ class OrderPaymentStateService
         protected OrderBudgetRepository $orderBudgetRepository,
         protected DropshippingRepository $dropshippingRepository
     ) {}
+
+    /**
+     * Desfaz o estado de pago do pedido (ex.: após edição estrutural).
+     * Mantém o histórico dos links, mas marca como pendente para nova quitação.
+     */
+    public function markAsUnpaidPending(Order $order): void
+    {
+        OrderPaymentLink::query()
+            ->where('order_id', $order->id)
+            ->where('status', 'paid')
+            ->update([
+                'status' => 'pending',
+                'paid_at' => null,
+            ]);
+
+        $order->update([
+            'paid' => 0,
+            'payment_status' => 'unpaid',
+            'flags' => 'Aguardando pagamento',
+        ]);
+    }
 
     /**
      * Recalcula paid / payment_status do pedido a partir dos links pagos.
@@ -37,7 +58,7 @@ class OrderPaymentStateService
             ->where('status', 'paid')
             ->sum('amount_total');
 
-        if($order->dropshipping_budget) {
+        if ($order->dropshipping_budget) {
             $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
         }
 
@@ -51,7 +72,7 @@ class OrderPaymentStateService
 
         $orderTiny = $this->tinyErpService->sendOrder($order->toArray(), $dropshipping->toArray());
 
-        if(isset($orderTiny['registros']['registro']['id'])) {
+        if (isset($orderTiny['registros']['registro']['id'])) {
             $this->orderBudgetRepository->updateTinyErpOrderId($order->id, $orderTiny['registros']['registro']['id']);
         }
     }

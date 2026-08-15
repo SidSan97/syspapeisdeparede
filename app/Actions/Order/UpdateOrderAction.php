@@ -8,6 +8,8 @@ use App\Repositories\OrderRepository;
 use App\Services\OrderChangeHistoryService;
 use App\Services\OrderEditWalletCreditService;
 use App\Services\OrderPaymentCompositionService;
+use App\Services\OrderPaymentStateService;
+use App\Services\OrderStructureComparisonService;
 use App\Support\OrderStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,15 +22,27 @@ class UpdateOrderAction
         protected OrderPaymentCompositionService $paymentCompositionService,
         protected OrderEditWalletCreditService $walletService,
         protected OrderChangeHistoryService $changeHistoryService,
+        protected OrderPaymentStateService $paymentStateService,
+        protected OrderStructureComparisonService $structureComparisonService,
     ) {}
 
     public function execute(Order $order, array $data): Order
     {
         return DB::transaction(function () use ($order, $data) {
             $wasApproved = OrderStatus::is($order->status, OrderStatus::APPROVED);
+            $wasPaid = (int) $order->paid === 1;
             $snapshotBefore = $wasApproved
                 ? $this->changeHistoryService->snapshot($order)
                 : null;
+
+            $hasStructuralRoomChanges = ! empty($data['rooms']) && is_array($data['rooms'])
+                && $this->structureComparisonService->hasStructuralRoomChanges($order, $data['rooms']);
+
+            // Nome, status, observação, dropshipping (ou rooms sem mudança estrutural)
+            // não devem recriar paredes nem invalidar o pagamento.
+            if (! empty($data['rooms']) && is_array($data['rooms']) && ! $hasStructuralRoomChanges) {
+                unset($data['rooms']);
+            }
 
             $compositionBefore = null;
             if (
@@ -40,7 +54,7 @@ class UpdateOrderAction
 
             $order = $this->repository->update($order, $data);
 
-            if (! empty($data['dropshipping_data']) && $data['dropshipping_budget'] === 1) {
+            if (! empty($data['dropshipping_data']) && ($data['dropshipping_budget'] ?? null) === 1) {
                 $existingDropshipping = $order->dropshippingData;
 
                 if ($existingDropshipping) {
@@ -62,6 +76,10 @@ class UpdateOrderAction
 
             if ($compositionBefore !== null) {
                 $this->walletService->creditIfCompositionDecreased($order->fresh(), $compositionBefore);
+            }
+
+            if ($hasStructuralRoomChanges && $wasPaid) {
+                $this->paymentStateService->markAsUnpaidPending($order->fresh());
             }
 
             $order = $order->fresh(['rooms.walls', 'tenant']);
