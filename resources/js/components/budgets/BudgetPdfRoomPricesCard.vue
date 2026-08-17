@@ -6,31 +6,40 @@
         Edite os valores para atualizar o preview e os totais. Não altera o markup.
       </p>
 
-      <div v-for="item in items" :key="item.id" class="border rounded p-3 mb-3">
-        <div class="fw-semibold mb-2">{{ item.title }}</div>
-        <div class="row g-2">
-          <div class="col-6">
-            <label class="form-label small mb-1">À vista</label>
-            <money
-              v-model.number="item.total"
-              v-bind="moneyConfig"
-              class="form-control form-control-sm"
-              @change="emitChange"
-            />
-          </div>
-          <div class="col-6">
-            <label class="form-label small mb-1">A prazo</label>
-            <money
-              v-model.number="item.installment_total"
-              v-bind="moneyConfig"
-              class="form-control form-control-sm"
-              @change="emitChange"
-            />
-          </div>
-        </div>
+      <div v-if="items.length" class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Ambiente</th>
+              <th>À vista</th>
+              <th>A prazo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in items" :key="item.id">
+              <td>{{ item.title }}</td>
+              <td>
+                <money
+                  v-model.number="item.total"
+                  v-bind="moneyConfig"
+                  class="form-control form-control-sm"
+                  @change="emitChange"
+                />
+              </td>
+              <td>
+                <money
+                  v-model.number="item.installment_total"
+                  v-bind="moneyConfig"
+                  class="form-control form-control-sm"
+                  @change="emitChange"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div v-if="!items.length" class="text-muted small">Nenhum ambiente carregado.</div>
+      <div v-else class="text-muted small">Nenhum ambiente carregado.</div>
     </div>
   </div>
 </template>

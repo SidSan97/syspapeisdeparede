@@ -33,7 +33,7 @@
       </div>
 
       <div v-else class="row g-4 pdf-preview-layout">
-        <div class="col-lg-8">
+        <div class="col-lg-7">
           <div class="pdf-preview-frame-wrapper">
             <div v-if="previewLoading" class="pdf-preview-loading">
               <div class="spinner-border spinner-border-sm" role="status">
@@ -51,7 +51,7 @@
           </div>
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-5">
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Valores da proposta</h5>
@@ -263,7 +263,7 @@ function buildPreviewUrl() {
     params.set('notes', pdfObservations.value.trim());
   }
 
-  return `${window.LaravelApp.appUrl}budgets/${budget.value.id}/preview?${params.toString()}`;
+  return `${window.LaravelApp.appUrl}/budgets/${budget.value.id}/preview?${params.toString()}`;
 }
 
 function refreshPreview() {
