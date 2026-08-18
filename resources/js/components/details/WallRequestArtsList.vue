@@ -304,7 +304,7 @@ function isUpdating(artId) {
   return Boolean(props.updatingApprovalStatus?.[artId]);
 }
 
-/** A aprovação só acontece após o aceite do termo de uso. */
+/** A aprovação só acontece após o aceite do Termo de aprovação. */
 function openApprovalTerms(interaction, art) {
   pendingApproval.value = { interaction, art };
   termsModalOpen.value = true;

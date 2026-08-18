@@ -10,13 +10,13 @@
     @close="handleClose"
   >
     <template #header>
-      <h5 class="modal-title">{{ term?.title || 'Termo de Uso' }}</h5>
+      <h5 class="modal-title">{{ term?.title || 'Termo de aprovação' }}</h5>
     </template>
 
     <template #body>
       <div v-if="loading" class="text-muted d-flex align-items-center gap-2">
         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        Carregando termo de uso...
+        Carregando Termo de aprovação...
       </div>
 
       <div v-else-if="loadError" class="alert alert-warning mb-0">
@@ -35,7 +35,7 @@
             :disabled="submitting"
           />
           <label class="form-check-label" :for="checkboxId">
-            Li e estou de acordo com o Termo de Uso
+            Li e estou de acordo com o Termo de aprovação
           </label>
         </div>
       </template>
@@ -123,12 +123,12 @@ async function loadTerm() {
       null;
 
     if (!term.value) {
-      loadError.value = 'Termo de uso não encontrado. Cadastre-o em Configurações.';
+      loadError.value = 'Termo de aprovação não encontrado. Cadastre-o em Configurações.';
     }
   } catch (error) {
-    console.error('Erro ao carregar termo de uso:', error);
+    console.error('Erro ao carregar Termo de aprovação:', error);
     term.value = null;
-    loadError.value = 'Não foi possível carregar o Termo de Uso.';
+    loadError.value = 'Não foi possível carregar o Termo de aprovação.';
   } finally {
     loading.value = false;
   }

@@ -74,7 +74,7 @@ export function useLayoutCardCompletion(cardRef, emit) {
     }
 
     if (!payload.accepted_terms_of_use) {
-      toast.warning('É necessário aceitar o Termo de Uso para concluir o card.');
+      toast.warning('É necessário aceitar o Termo de aprovação para concluir o card.');
       return;
     }
 

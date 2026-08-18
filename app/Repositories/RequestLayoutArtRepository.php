@@ -23,7 +23,7 @@ class RequestLayoutArtRepository
         int $dealerId,
         int $designerId,
         int $orderId,
-        string $comment = null
+        ?string $comment = null
     ): array {
         return DB::transaction(function () use ($file, $orderBudgetId, $dealerId, $designerId, $orderId, $comment) {
             $interaction = RequestLayoutArtInteraction::firstOrCreate(
@@ -33,8 +33,8 @@ class RequestLayoutArtRepository
 
             $path = '';
             if ($file) {
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('request_layouts_art', $filename, 'public');
+                $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                $path = $file->storeAs('request_layouts_art', $filename, 'public');
             }
 
             $requestLayoutArt = RequestLayoutArt::create([
@@ -50,21 +50,24 @@ class RequestLayoutArtRepository
 
             $orderBudget = OrderBudget::findOrFail($orderBudgetId);
 
+            $status = $file
+                ? OrderBudgetStatus::ART_RECEIVED
+                : OrderBudgetStatus::PENDING_REVIEW;
+
             $orderBudget->update([
-                'status' => OrderBudgetStatus::PENDING_REVIEW,
+                'status' => $status,
             ]);
 
-            // Atualizar status do orçamento
             if ($orderBudget->budget) {
                 $orderBudget->budget->update([
-                    'status' => OrderBudgetStatus::PENDING_REVIEW,
+                    'status' => $status,
                 ]);
             }
 
             return [
                 'id' => $requestLayoutArt->id,
                 'path_file' => $path,
-                'url' => $path ? asset('storage/' . $path) : null,
+                'url' => $path ? asset('storage/'.$path) : null,
                 'interaction_id' => $interaction->id,
             ];
         });
@@ -104,7 +107,7 @@ class RequestLayoutArtRepository
             }
 
             $orderBudget = OrderBudget::with('wall')->find($requestLayoutArt->order_budget_id);
-            if (!$orderBudget || !$orderBudget->wall) {
+            if (! $orderBudget || ! $orderBudget->wall) {
                 return;
             }
 
@@ -113,7 +116,7 @@ class RequestLayoutArtRepository
                 'files_referring_model' => [$requestLayoutArt->path_file],
             ]);
 
-            //Atualiza o status do card (order_budget) para layout aprovado
+            // Atualiza o status do card (order_budget) para layout aprovado
             $orderBudget->update([
                 'status' => OrderBudgetStatus::LAYOUT_APPROVED,
             ]);
@@ -122,4 +125,3 @@ class RequestLayoutArtRepository
         return $requestLayoutArt->fresh();
     }
 }
-

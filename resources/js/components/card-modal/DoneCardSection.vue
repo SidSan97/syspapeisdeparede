@@ -81,11 +81,11 @@ async function loadBudgetApprovalTerm() {
       : null;
 
     if (!term.value) {
-      termsError.value = 'Termo de uso não encontrado. Configure em Configurações.';
+      termsError.value = 'Termo de aprovação não encontrado. Configure em Configurações.';
     }
   } catch (error) {
-    console.error('Erro ao carregar termo de uso:', error);
-    termsError.value = 'Não foi possível carregar o Termo de Uso.';
+    console.error('Erro ao carregar Termo de aprovação:', error);
+    termsError.value = 'Não foi possível carregar o Termo de aprovação.';
     term.value = null;
   } finally {
     loadingTerms.value = false;
@@ -157,7 +157,7 @@ watch(
 
     <div v-else class="card border">
       <div class="card-header d-flex align-items-center justify-content-between py-2">
-        <strong class="small mb-0">{{ term?.title || 'Termo de Uso' }}</strong>
+        <strong class="small mb-0">{{ term?.title || 'Termo de aprovação' }}</strong>
         <button
           type="button"
           class="btn btn-sm btn-link text-body-secondary p-0"
@@ -172,7 +172,7 @@ watch(
       <div class="card-body">
         <div v-if="loadingTerms" class="text-muted d-flex align-items-center gap-2 small">
           <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          Carregando termo de uso…
+          Carregando Termo de aprovação…
         </div>
 
         <div v-else-if="termsError" class="alert alert-warning py-2 mb-3 small">
@@ -195,7 +195,7 @@ watch(
             :disabled="completing || loadingTerms || !!termsError"
           />
           <label class="form-check-label" for="accepted-terms-of-use">
-            Li e estou de acordo com o Termo de Uso
+            Li e estou de acordo com o Termo de aprovação
           </label>
         </div>
 

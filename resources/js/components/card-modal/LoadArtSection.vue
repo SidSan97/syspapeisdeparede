@@ -112,7 +112,7 @@ async function handleUpload() {
     }
 
     if (props.card) {
-      props.card.status = ORDER_BUDGET_STATUS.PENDING_REVIEW;
+      props.card.status = ORDER_BUDGET_STATUS.ART_RECEIVED;
     }
 
     selectedFile.value = null;

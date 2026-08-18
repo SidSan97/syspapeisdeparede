@@ -32,8 +32,8 @@ class UpdateRequestLayoutArtStatusRequest extends FormRequest
             'request_layout_art_id.exists' => 'A iteração selecionada não existe.',
             'approval_status.required' => 'O status de aprovação é obrigatório.',
             'approval_status.in' => 'O status deve ser approved ou rejected.',
-            'accepted_terms_of_use.required' => 'É necessário aceitar o Termo de Uso para aprovar a arte.',
-            'accepted_terms_of_use.accepted' => 'É necessário aceitar o Termo de Uso para aprovar a arte.',
+            'accepted_terms_of_use.required' => 'É necessário aceitar o Termo de aprovação para aprovar a arte.',
+            'accepted_terms_of_use.accepted' => 'É necessário aceitar o Termo de aprovação para aprovar a arte.',
         ];
     }
 }

@@ -28,8 +28,8 @@ class CompleteOrderBudgetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'accepted_terms_of_use.required' => 'É necessário aceitar o Termo de Uso para concluir o card.',
-            'accepted_terms_of_use.accepted' => 'É necessário aceitar o Termo de Uso para concluir o card.',
+            'accepted_terms_of_use.required' => 'É necessário aceitar o Termo de aprovação para concluir o card.',
+            'accepted_terms_of_use.accepted' => 'É necessário aceitar o Termo de aprovação para concluir o card.',
         ];
     }
 }
