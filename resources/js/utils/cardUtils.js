@@ -1,3 +1,8 @@
+import {
+  canonicalizeOrderBudgetStatus,
+  ORDER_BUDGET_STATUS_BADGE_CLASSES,
+} from '@/constants/orderBudgetStatuses';
+
 /**
  * Formata o ID do card com 5 dígitos
  * @param {number|string} id - ID do card
@@ -295,18 +300,11 @@ export function getProductionTimerClass(card, currentTime, _prefix = 'production
  * @returns {string}
  */
 export function getOrderBudgetStatusBadgeClass(status) {
-  if (!status) {
+  const canonical = canonicalizeOrderBudgetStatus(status);
+
+  if (!canonical) {
     return 'bg-secondary';
   }
-  const s = String(status).toLowerCase();
-  if (s.includes('aprovar layout')) {
-    return 'bg-warning text-dark';
-  }
-  if (s.includes('pendente')) {
-    return 'bg-info';
-  }
-  if (s.includes('aprovad') || s.includes('conclu')) {
-    return 'bg-success';
-  }
-  return 'bg-secondary';
+
+  return ORDER_BUDGET_STATUS_BADGE_CLASSES[canonical] ?? 'bg-secondary';
 }

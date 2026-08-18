@@ -1,4 +1,5 @@
 import { computed, toValue } from 'vue';
+import { ORDER_BUDGET_STATUS, canonicalizeOrderBudgetStatus } from '@/constants/orderBudgetStatuses';
 
 /**
  * Resolve o status exibido em cada parede a partir dos cards (order_budgets) do pedido.
@@ -19,24 +20,32 @@ export function useWallStatus(source) {
   });
 
   function normalizeStatus(rawStatus) {
-    const value = String(rawStatus || '')
-      .trim()
-      .toLowerCase();
+    const canonical = canonicalizeOrderBudgetStatus(rawStatus);
 
-    if (value.includes('aguardando pagamento')) return 'Aguardando pagamento';
-    if (value.includes('aguardando arte')) return 'Aguardando Arte';
-    if (value.includes('arte recebida')) return 'Arte Recebida';
-    if (value.includes('layout aprovado')) return 'Layout Aprovado';
-    if (
-      value.includes('em produção') ||
-      value.includes('em producao') ||
-      value.includes('liberado para produção') ||
-      value.includes('liberado para producao')
-    ) {
-      return 'Em Produção';
+    if (canonical === ORDER_BUDGET_STATUS.WAITING_ART) {
+      return ORDER_BUDGET_STATUS.WAITING_ART;
     }
-    if (value.includes('enviado')) return 'Enviado';
-    if (value.includes('entregue')) return 'Entregue';
+    if (canonical === ORDER_BUDGET_STATUS.WAITING_PAYMENT) {
+      return ORDER_BUDGET_STATUS.WAITING_PAYMENT;
+    }
+    if (canonical === ORDER_BUDGET_STATUS.ART_RECEIVED) {
+      return ORDER_BUDGET_STATUS.ART_RECEIVED;
+    }
+    if (canonical === ORDER_BUDGET_STATUS.LAYOUT_APPROVED) {
+      return ORDER_BUDGET_STATUS.LAYOUT_APPROVED;
+    }
+    if (
+      canonical === ORDER_BUDGET_STATUS.RELEASED_FOR_PRODUCTION ||
+      canonical === ORDER_BUDGET_STATUS.IN_PRODUCTION
+    ) {
+      return ORDER_BUDGET_STATUS.IN_PRODUCTION;
+    }
+    if (canonical === ORDER_BUDGET_STATUS.SENT) {
+      return ORDER_BUDGET_STATUS.SENT;
+    }
+    if (canonical === ORDER_BUDGET_STATUS.DELIVERED) {
+      return ORDER_BUDGET_STATUS.DELIVERED;
+    }
 
     return null;
   }
@@ -72,23 +81,25 @@ export function useWallStatus(source) {
 
   function getWallStatusLabel(wall, roomIndex, wallIndex) {
     const orderStatus = normalizeStatus(data.value?.status);
-    if (orderStatus === 'Enviado' || orderStatus === 'Entregue') {
+    if (orderStatus === ORDER_BUDGET_STATUS.SENT || orderStatus === ORDER_BUDGET_STATUS.DELIVERED) {
       return orderStatus;
     }
 
     const card = resolveCardByWall(wall, roomIndex, wallIndex);
 
-    return normalizeStatus(card?.status) ?? 'Aguardando Arte';
+    return normalizeStatus(card?.status) ?? ORDER_BUDGET_STATUS.WAITING_ART;
   }
 
   function getWallStatusClass(wall, roomIndex, wallIndex) {
     const status = getWallStatusLabel(wall, roomIndex, wallIndex);
 
-    if (status === 'Aguardando pagamento') return 'text-bg-warning';
-    if (status === 'Arte Recebida') return 'text-bg-info';
-    if (status === 'Layout Aprovado') return 'text-bg-primary';
-    if (status === 'Em Produção') return 'text-bg-dark';
-    if (status === 'Enviado' || status === 'Entregue') return 'text-bg-success';
+    if (status === ORDER_BUDGET_STATUS.WAITING_PAYMENT) return 'text-bg-warning';
+    if (status === ORDER_BUDGET_STATUS.ART_RECEIVED) return 'text-bg-info';
+    if (status === ORDER_BUDGET_STATUS.LAYOUT_APPROVED) return 'text-bg-primary';
+    if (status === ORDER_BUDGET_STATUS.IN_PRODUCTION) return 'text-bg-dark';
+    if (status === ORDER_BUDGET_STATUS.SENT || status === ORDER_BUDGET_STATUS.DELIVERED) {
+      return 'text-bg-success';
+    }
 
     return 'text-bg-secondary';
   }

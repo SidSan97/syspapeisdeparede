@@ -48,6 +48,7 @@ import { useToast } from '@/composables/useToast';
 import { artService } from '@/modules/card-modals/services/artService';
 import { useAuthStore } from '@/stores/auth';
 import { IconUpload } from '@tabler/icons-vue';
+import { ORDER_BUDGET_STATUS } from '@/constants/orderBudgetStatuses';
 
 const props = defineProps({
   card: {
@@ -111,10 +112,7 @@ async function handleUpload() {
     }
 
     if (props.card) {
-      props.card.status = 'Pendente de Revisão';
-      if (props.card.order) {
-        props.card.order.status = 'Pendente de Revisão';
-      }
+      props.card.status = ORDER_BUDGET_STATUS.PENDING_REVIEW;
     }
 
     selectedFile.value = null;
