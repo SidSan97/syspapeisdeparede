@@ -78,6 +78,8 @@ async function fetchUser() {
       id: user.id,
       name: user.name,
       email: user.email,
+      password: '',
+      password_confirmation: '',
       role: user.roles?.[0] || '',
       is_dropshipping: Boolean(user.is_dropshipping),
       wallet_balance: parseFloat(user.wallet_balance ?? 0),

@@ -11,7 +11,13 @@ class UpdateUserAction
     {
         $newBalance = isset($data['wallet_balance']) ? (float) $data['wallet_balance'] : null;
 
-        $user->update(Arr::except($data, 'wallet_balance'));
+        $data = Arr::except($data, ['wallet_balance', 'password_confirmation']);
+
+        if (blank($data['password'] ?? null)) {
+            unset($data['password']);
+        }
+
+        $user->update($data);
 
         $user->syncRoles([$role]);
 

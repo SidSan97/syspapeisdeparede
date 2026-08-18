@@ -72,16 +72,19 @@
         </template>
       </BaseInput>
 
-      <div v-if="!form.id" class="row">
+      <div class="row">
         <BaseInput
           v-model="form.password"
           label="Senha"
           name="password"
           type="password"
-          required
+          :required="!form.id"
           autocomplete="new-password"
           :disabled="loading"
           form-group-class="mb-3"
+          :label-description="
+            form.id ? 'Deixe em branco para manter a senha atual.' : undefined
+          "
           :class="{ 'is-invalid': form.errors.has('password') }"
         >
           <template #bottom>
@@ -94,7 +97,7 @@
           label="Confirme a senha"
           name="password_confirmation"
           type="password"
-          required
+          :required="!form.id"
           autocomplete="new-password"
           :disabled="loading"
           form-group-class="mb-3"
