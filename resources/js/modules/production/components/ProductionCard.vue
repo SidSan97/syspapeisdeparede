@@ -24,12 +24,16 @@
             class="fs-sm mb-0 flex-grow-1 d-flex align-items-start gap-1"
             :class="{ 'text-body-secondary': isFullyProduced }"
           >
-            <IconCircleCheckFilled
+            <button
               v-if="isFullyProduced"
-              :size="16"
-              class="text-success flex-shrink-0 mt-1"
-              title="Produção concluída (100%)"
-            />
+              type="button"
+              class="btn p-0 border-0 bg-transparent flex-shrink-0 mt-1 production-card-reopen"
+              title="Reabrir card"
+              :disabled="isReopening"
+              @click.stop="handleReopen"
+            >
+              <IconCircleCheckFilled :size="16" class="text-success" />
+            </button>
             <span>{{ itemName }}</span>
           </p>
         </div>
@@ -131,6 +135,7 @@ import { calculateWallWithContinuations } from '@/utils/calculateStripsUtils';
 
 // Icons
 import { useFormatting } from '@/composables/useFormatting';
+import { useReopenProductionCard } from '@/modules/production/composables/useReopenProductionCard';
 
 const props = defineProps({
   card: {
@@ -142,6 +147,7 @@ const props = defineProps({
 const emit = defineEmits(['drag-start', 'click']);
 
 const { formatDateOnly, formatNumber } = useFormatting();
+const { isReopening, reopenCard } = useReopenProductionCard();
 
 let timerInterval = null;
 
@@ -240,6 +246,14 @@ function handleClick() {
   emit('click');
 }
 
+async function handleReopen() {
+  if (isReopening.value) {
+    return;
+  }
+
+  await reopenCard(props.card);
+}
+
 function handleDragStart(event) {
   emit('drag-start', event);
 }
@@ -271,6 +285,22 @@ function handleDragStart(event) {
 .production-card:focus-visible {
   outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
+}
+
+.production-card-reopen {
+  cursor: pointer;
+  line-height: 1;
+}
+
+.production-card-reopen:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.production-card-reopen:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .production-deadline-badge {

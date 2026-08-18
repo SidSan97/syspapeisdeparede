@@ -19,8 +19,11 @@ use Illuminate\Http\Request;
 class OrderProductionController extends Controller
 {
     protected $orderBudgetRepository;
+
     protected $orderBudget;
+
     protected $dropshippingRepository;
+
     protected $tinyErpService;
 
     public function __construct(
@@ -87,33 +90,34 @@ class OrderProductionController extends Controller
         return response()->json($orderBudget);
     }
 
-    public function updateProductionPercentage(Order $order, Request $request): JsonResponse
+    public function updateProductionPercentage(Request $request, OrderBudget $orderBudget): JsonResponse
     {
         $validated = $request->validate([
             'production_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $user = $request->user();
-        $orderBudget = $this->orderBudgetRepository->updateProductionPercentage(
-            $order->id,
+        $updatedOrderBudget = $this->orderBudgetRepository->updateProductionPercentage(
+            $orderBudget->id,
             $validated['production_percentage'],
             $user,
             'product'
         );
 
+        $order = $orderBudget->order()->firstOrFail();
+
         if ($validated['production_percentage'] == 100) {
-            // Gerar relatório de produção quando atinge 100%
             $productionReportService = app(ProductionReportService::class);
             $productionReportService->generateProductionPercentageReport(
-                $orderBudget,
+                $updatedOrderBudget,
                 $user,
                 $validated['production_percentage']
             );
-            $order->update(['flags' => 'Produção concluída', 'status' => 'Enviado']);
+            $order->update(['flags' => 'Produção concluída', 'status' => OrderStatus::SENT]);
         } else {
-            $order->update(['flags' => 'Produção em andamento', 'status' => 'Em produção']);
+            $order->update(['flags' => 'Produção em andamento', 'status' => OrderStatus::IN_PRODUCTION]);
         }
 
-        return response()->json($orderBudget);
+        return response()->json($updatedOrderBudget);
     }
 }

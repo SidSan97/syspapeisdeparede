@@ -20,14 +20,20 @@
                 @click="markAsProduced"
                 :disabled="markingAsProduced"
                 v-if="card.production_column_names_id < 2"
+                title="Marcar como produzido"
               >
                 <IconCircle />
               </button>
-              <IconCircleCheck
-                v-else-if="card.production_percentage == 100"
-                class="text-success"
-                :size="20"
-              />
+              <button
+                v-else-if="isFullyProduced"
+                type="button"
+                class="btn btn-sm btn-subtle rounded-pill p-2"
+                title="Reabrir card"
+                :disabled="isReopening || markingAsProduced"
+                @click="handleReopen"
+              >
+                <IconCircleCheck class="text-success" :size="20" />
+              </button>
               <IconCircleHalf2 v-else class="text-secondary" :size="20" />
 
               <div class="gap-2">
@@ -65,7 +71,11 @@
               </div>
             </div>
 
-            <ProductionPercentageSection :card="card" />
+            <ProductionPercentageSection
+              :card="card"
+              :reopening="isReopening"
+              @reopen="handleReopen"
+            />
 
             <DescriptionSection :card="card" typePage="product" />
 
@@ -146,6 +156,7 @@ import { useProductionReportsStore } from '@/stores/productionReports';
 import { productionService } from '@/services/productionService';
 import { getCardDisplayName, getOrderBudgetStatusBadgeClass } from '@/utils/cardUtils';
 import { getCoverImage } from '@/modules/card-modals/composables/useCardUtils';
+import { useReopenProductionCard } from '@/modules/production/composables/useReopenProductionCard';
 import BaseModal from '@/components/common/BaseModal.vue';
 import MembersSection from '@/components/card-modal/MembersSection.vue';
 import DescriptionSection from '@/components/card-modal/DescriptionSection.vue';
@@ -183,6 +194,7 @@ const loadingOrderProductCards = ref(false);
 
 const toast = useToast();
 const auth = useAuthStore();
+const { isReopening, reopenCard } = useReopenProductionCard();
 
 const productionReportsStore = useProductionReportsStore();
 
@@ -206,6 +218,12 @@ const markingAsProduced = computed(() => {
 
 const coverImage = computed(() => {
   return getCoverImage(props.card);
+});
+
+const isFullyProduced = computed(() => {
+  return (
+    props.card?.production_percentage === 100 || Number(props.card?.production_percentage) === 100
+  );
 });
 
 function applyFreshCard(cardId) {
@@ -264,6 +282,24 @@ function handleMemberAdded(member) {
 
 function handleMemberRemoved(memberId) {
   emit('member-removed', memberId);
+}
+
+async function handleReopen() {
+  if (!props.card?.id || isReopening.value || markingAsProduced.value) {
+    return;
+  }
+
+  const updated = await reopenCard(props.card);
+
+  if (!updated) {
+    return;
+  }
+
+  emit('card-updated', {
+    production_percentage: updated.production_percentage,
+    production_date: updated.production_date,
+    production_column_names_id: updated.production_column_names_id,
+  });
 }
 
 async function markAsProduced() {

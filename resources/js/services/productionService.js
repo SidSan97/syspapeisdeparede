@@ -85,4 +85,17 @@ export const productionService = {
     const { data } = await http.post(`v1/orders/order-budgets/${orderBudgetId}/mark-as-produced`);
     return data || null;
   },
+
+  async updateProductionPercentage(orderBudgetId, percentage) {
+    if (!orderBudgetId) {
+      throw new Error('ID do card é obrigatório');
+    }
+
+    const { data } = await http.put(
+      `v1/orders/order-budgets/${orderBudgetId}/production-percentage`,
+      { production_percentage: percentage },
+    );
+
+    return data || null;
+  },
 };

@@ -22,7 +22,7 @@ Route::post('orders/{order}/generate-payment-link', [OrderController::class, 'ge
 
 // Order Budgets
 Route::post('orders/order-budgets/{orderBudget}/mark-as-produced', [OrderProductionController::class, 'markAsProduced']);
-Route::put('orders/order-budgets/{order}/production-percentage', [OrderProductionController::class, 'updateProductionPercentage']);
+Route::put('orders/order-budgets/{orderBudget}/production-percentage', [OrderProductionController::class, 'updateProductionPercentage']);
 Route::get('orders/order-budgets/{orderBudget}/production-reports', [OrderReportController::class, 'getProductionReports']);
 Route::get('orders/production-reports/{report}/download-pdf', [OrderReportController::class, 'downloadProductionReportPdf']);
 
