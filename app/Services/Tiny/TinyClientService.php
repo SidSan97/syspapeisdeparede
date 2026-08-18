@@ -5,22 +5,13 @@ namespace App\Services\Tiny;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class TinyClientService
 {
-    private const CONTACTS_ENDPOINT = 'contatos.pesquisa.php';
-
-    private readonly string $token;
-
-    private readonly string $baseUrl;
-
-    public function __construct()
-    {
-        $this->token = (string) config('services.tiny_erp.token');
-        $this->baseUrl = (string) config('services.tiny_erp.api_url');
-    }
+    public function __construct(
+        protected TinyHttpClient $http,
+    ) {}
 
     /**
      * Search a single page of contacts on the Tiny ERP API.
@@ -31,19 +22,10 @@ class TinyClientService
      */
     public function searchContacts(?string $search = null, int $page = 1): array
     {
-        $response = Http::baseUrl($this->baseUrl)
-            ->timeout(30)
-            ->retry(3, 200)
-            ->get(self::CONTACTS_ENDPOINT, array_filter([
-                'token' => $this->token,
-                'formato' => 'json',
-                'pesquisa' => $search,
-                'pagina' => $page,
-            ], fn (mixed $value): bool => $value !== null));
-
-        $response->throw();
-
-        return (array) $response->json('retorno', []);
+        return $this->http->get('contatos.pesquisa.php', array_filter([
+            'pesquisa' => $search,
+            'pagina' => $page,
+        ], fn (mixed $value): bool => $value !== null));
     }
 
     /**
