@@ -4,6 +4,10 @@ defineProps({
     type: String,
     default: null,
   },
+  time: {
+    type: String,
+    default: null,
+  },
   badge: {
     type: String,
     default: null,
@@ -17,7 +21,12 @@ defineProps({
 
     <div class="flex-1">
       <div class="d-flex align-items-center gap-1">
-        <div v-if="author" class="text-body-secondary fs-sm fw-medium">{{ author }}</div>
+        <slot name="author">
+          <div v-if="author" class="text-body-secondary fs-sm fw-medium">{{ author }}</div>
+        </slot>
+        <slot name="time">
+          <div v-if="time" class="text-body-secondary fs-sm">{{ time }}</div>
+        </slot>
         <span v-if="badge" class="badge text-bg-neutral fs-sm">{{ badge }}</span>
       </div>
       <slot />

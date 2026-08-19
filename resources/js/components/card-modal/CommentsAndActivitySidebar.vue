@@ -1,5 +1,5 @@
 <template>
-  <aside class="comments-activity-sidebar p-4 border-start h-100">
+  <aside class="comments-activity-sidebar p-4">
     <div
       class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header"
     >
@@ -8,8 +8,8 @@
 
         Comentários e atividade
       </h3>
-      <button class="btn btn-default" type="button" @click="toggleDetails">
-        {{ showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes' }}
+      <button class="btn btn-outline-default" type="button" @click="toggleDetails">
+        {{ showDetails ? 'Ocultar detalhes' : 'Mostrar detalhes' }}
       </button>
     </div>
 
@@ -41,29 +41,24 @@
             class="p-3 bg-body rounded comments-activity-activity-item"
             :class="{ 'is-history': activity.type === 'history' }"
           >
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="d-flex align-items-center gap-2">
-                <div
+          <BaseComment
+              :author="activity.type == 'history' ? 'Histórico' : getActivityUser(activity)"
+              :time="formatDate(activity.created_at || activity.date)"
+            >
+              <template #avatar>
+                <BaseAvatar
                   v-if="activity.type !== 'history'"
-                  class="rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold flex-shrink-0 comments-activity-avatar"
+                  :name="getInitials(getActivityUser(activity))"
                   :style="{
                     backgroundColor: getAvatarColor(getActivityUser(activity)),
                   }"
                 >
                   {{ getInitials(getActivityUser(activity)) }}
-                </div>
-                <BaseAvatar v-else :icon="IconHistory" variant="success" />
-                <span
-                  v-if="activity.type !== 'history'"
-                  class="fw-semibold text-body comments-activity-author"
-                  >{{ getActivityUser(activity) }}</span
-                >
-                <span v-else class="fw-semibold text-body comments-activity-author">Histórico</span>
-              </div>
-              <span class="comments-activity-date">{{
-                formatDate(activity.created_at || activity.date)
-              }}</span>
-            </div>
+                </BaseAvatar>
+                <BaseAvatar v-else :icon="IconHistory" />
+              </template>
+              <p class="fs-sm">{{ getActivityText(activity) }}</p>
+            </BaseComment>
             <div class="comments-activity-content" v-html="getActivityText(activity)"></div>
           </div>
         </div>
@@ -79,6 +74,7 @@ import { useToast } from '@/composables/useToast';
 import { commentService } from '@/modules/card-modals/services/commentService';
 import CommentInput from '@/components/CommentInput.vue';
 import CommentItem from '@/components/CommentItem.vue';
+import BaseComment from '../common/BaseComment.vue';
 
 // Icons
 import { IconHistory, IconMessage } from '@tabler/icons-vue';
@@ -385,7 +381,6 @@ async function onDeleteComment(commentId) {
   top: 1.5rem;
   max-height: calc(90vh - 200px);
   overflow-y: auto;
-  background-color: var(--ds-surface-sunken);
 }
 
 .comments-activity-sidebar-title {

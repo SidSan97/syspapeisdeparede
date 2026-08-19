@@ -18,6 +18,7 @@
       tabindex="-1"
       role="dialog"
       @click.self="handleBackdropClick"
+      v-bind="$attrs"
     >
       <div
         class="modal-dialog"

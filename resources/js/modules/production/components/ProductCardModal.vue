@@ -3,14 +3,23 @@
     v-model="isVisible"
     size="xl"
     :show-footer="false"
-    :scrollable="true"
     @close="handleClose"
+    class="modal-production"
+    :show-close-button="false"
   >
+    <template #header="{}">
+      <div v-if="coverImage" class="layout-modal-cover rounded-top">
+        <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" class="rounded-top" />
+      </div>
+      <div class="position-absolute top-0 end-0 p-3">
+        <button type="button" class="btn btn-light btn-icon rounded-circle" @click="handleClose">
+          <IconX size="16" />
+        </button>
+      </div>
+    </template>
+
     <template #body>
       <div class="row g-0 flex-fill">
-        <div v-if="coverImage" class="layout-modal-cover">
-          <img :src="coverImage" :alt="`Imagem de capa de ${card.name}`" />
-        </div>
 
         <div class="col-md-7 overflow-y-auto h-100">
           <main class="p-4">
@@ -58,13 +67,13 @@
               </div>
               <div class="col col-md-auto">
                 <h3 class="fs-xs text-body-secondary">Prazo</h3>
-                <div class="btn btn-default">
+                <div class="btn btn-outline-default text-body-secondary">
                   <span
                     >{{ card.delivery_date_start }}
                     -
                     {{ card.delivery_date_end }}</span
                   >
-                  <span class="badge bg-info fs-xs fw-semibold ms-2">
+                  <span class="badge text-bg-info fs-xs fw-semibold ms-2">
                     {{ card.delivery_time }} dias
                   </span>
                 </div>
@@ -129,7 +138,10 @@
           </main>
         </div>
 
-        <div class="col-md-5 overflow-y-auto h-100">
+        <div
+          class="col-md-5 border-start rounded-end"
+          style="background-color: var(--ds-background-accent-gray-subtlest)"
+        >
           <CommentsAndActivitySidebar
             :card="card"
             v-model:showDetails="showDetails"
@@ -169,6 +181,7 @@ import ProductionReportsSection from './production-card-modal/ProductionReportsS
 import RequestArtsSection from '@/components/card-modal/RequestArtsSection.vue';
 import CommentsAndActivitySidebar from '@/components/card-modal/CommentsAndActivitySidebar.vue';
 import { useRequestLayoutArts } from '@/composables/useRequestLayoutArts';
+import { IconX } from '@tabler/icons-vue';
 
 const props = defineProps({
   card: {
@@ -355,4 +368,8 @@ watch(
 
 <style lang="scss" scoped>
 @import '@/scss/card-modal.scss';
+.production-modal {
+  --bs-modal-padding: 0;
+  --bs-modal-header-padding: 0;
+}
 </style>

@@ -53,7 +53,7 @@
       </div>
 
       <div class="d-flex align-items-center gap-2">
-        <span class="badge d-inline-flex align-items-center" :class="deliveryBadgeClass">
+        <span v-if="hasComments" class="badge text-bg-transparent d-inline-flex align-items-center">
           <IconClock :size="14" class="me-1" />
           {{ deliveryRangeText }}
         </span>
@@ -74,10 +74,7 @@
           {{ activitiesCount }}
         </span>
 
-        <span
-          v-if="hasUploads"
-          class="badge text-bg-transparent d-inline-flex align-items-center"
-        >
+        <span v-if="hasUploads" class="badge text-bg-transparent d-inline-flex align-items-center">
           <IconPaperclip :size="14" class="me-1" />
           {{ uploadedFilesCount }}
         </span>
@@ -301,24 +298,5 @@ function handleDragStart(event) {
   outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
   border-radius: 999px;
-}
-
-.production-deadline-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fff;
-  max-width: 100%;
-}
-
-.production-deadline-badge--success {
-  background-color: #198754;
-}
-
-.production-deadline-badge--warning {
-  background-color: #fd7e14;
-}
-
-.production-deadline-badge--danger {
-  background-color: #dc3545;
 }
 </style>

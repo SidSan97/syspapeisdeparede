@@ -6,7 +6,12 @@
       <header class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="fs-sm fw-bold text-body m-0">Descrição</h3>
 
-        <button type="button" class="btn btn-default btn-sm" @click="startEdit" v-if="!isEditing">
+        <button
+          type="button"
+          class="btn btn-default"
+          @click="startEdit"
+          v-if="!isEditing"
+        >
           Editar
         </button>
       </header>

@@ -25,11 +25,7 @@ export function getDropshippingClientDisplayName(dropshipping) {
 
   const rawName = dropshipping.name ?? dropshipping.nome;
   const name =
-    typeof rawName === 'string'
-      ? rawName.trim()
-      : rawName != null
-        ? String(rawName).trim()
-        : '';
+  typeof rawName === 'string' ? rawName.trim() : rawName != null ? String(rawName).trim() : '';
 
   return name || null;
 }
@@ -286,12 +282,12 @@ export function getProductionTimerClass(card, currentTime, _prefix = 'production
   const days = calendarDaysUntil(deliveryDate, now);
 
   if (days < 0) {
-    return 'production-deadline-badge--danger';
+    return 'text-bg-danger';
   }
   if (days < 6) {
-    return 'production-deadline-badge--warning';
+    return 'text-bg-warning';
   }
-  return 'production-deadline-badge--success';
+  return 'text-bg-success';
 }
 
 /**
@@ -300,11 +296,11 @@ export function getProductionTimerClass(card, currentTime, _prefix = 'production
  * @returns {string}
  */
 export function getOrderBudgetStatusBadgeClass(status) {
-  const canonical = canonicalizeOrderBudgetStatus(status);
+const canonical = canonicalizeOrderBudgetStatus(status);
 
-  if (!canonical) {
-    return 'bg-secondary';
-  }
+if (!canonical) {
+  return 'text-bg-secondary';
+}
 
-  return ORDER_BUDGET_STATUS_BADGE_CLASSES[canonical] ?? 'bg-secondary';
+return ORDER_BUDGET_STATUS_BADGE_CLASSES[canonical] ?? 'text-bg-secondary';
 }

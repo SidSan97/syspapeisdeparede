@@ -1,63 +1,67 @@
 <template>
-  <div v-if="wall" class="wall-details-section mb-4">
-    <h3 class="fs-6 fw-semibold text-body mb-3 d-flex align-items-center gap-2">
-      <IconRuler />
+  <section v-if="wall" class="wall-details-section d-flex gap-3 mb-4">
+    <IconRuler size="32" class="py-1" />
 
-      Detalhes da Parede
-    </h3>
+    <div class="flex-fill">
+      <header class="mb-3">
+        <h3 class="fs-sm fw-bold text-body m-0">Detalhes da Parede</h3>
+      </header>
 
-    <div class="table-responsive">
-      <table class="table table-sm table-striped table-bordered table-hover mb-0 align-middle">
-        <thead class="table-light">
-          <tr>
-            <th scope="col">Parede</th>
-            <th scope="col" class="text-end text-nowrap">Largura (m)</th>
-            <th scope="col" class="text-end text-nowrap">Altura (m)</th>
-            <th scope="col" class="text-end text-nowrap">Qtd. Faixas</th>
-            <th scope="col" class="text-end text-nowrap">Alt. Faixas (m)</th>
-            <th scope="col">Encaixe</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>{{ wall.name || 'Não informado' }}</td>
-            <td class="text-end">{{ formatDimensions(wall.width) }}</td>
-            <td class="text-end">{{ formatDimensions(wall.height) }}</td>
-            <td class="text-end">{{ formatStripCount(mainWallStripCount) }}</td>
-            <td class="text-end">{{ formatDimensions(wall.strip_height) }}</td>
-            <td>Inicial</td>
-          </tr>
-          <tr v-for="(continuation, index) in visibleContinuations" :key="`cont-${index}`">
-            <td>{{ continuationRowLabel(continuation, index) }}</td>
-            <td class="text-end">{{ formatDimensions(continuation.width) }}</td>
-            <td class="text-end">{{ formatDimensions(continuation.height) }}</td>
-            <td class="text-end">{{ formatStripCount(continuationStripCount(index)) }}</td>
-            <td class="text-end">{{ formatDimensions(continuationStripHeight(index)) }}</td>
-            <td>{{ continuationFitDisplay(continuation) }}</td>
-          </tr>
-        </tbody>
-        <tfoot v-if="installationDirectionsSummary" class="table-group-divider">
-          <tr>
-            <td colspan="6" class="bg-body-secondary">
-              <div
-                class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-baseline gap-2"
-              >
-                <span class="fw-semibold mb-0">Sentido de instalação:</span>
-                <span class="fw-semibold text-md-end mb-0">{{ installationDirectionsSummary }}</span>
-              </div>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-bordered table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Parede</th>
+              <th scope="col" class="text-end text-nowrap">Largura (m)</th>
+              <th scope="col" class="text-end text-nowrap">Altura (m)</th>
+              <th scope="col" class="text-end text-nowrap">Qtd. Faixas</th>
+              <th scope="col" class="text-end text-nowrap">Alt. Faixas (m)</th>
+              <th scope="col">Encaixe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ wall.name || 'Não informado' }}</td>
+              <td class="text-end">{{ formatDimensions(wall.width) }}</td>
+              <td class="text-end">{{ formatDimensions(wall.height) }}</td>
+              <td class="text-end">{{ formatStripCount(mainWallStripCount) }}</td>
+              <td class="text-end">{{ formatDimensions(wall.strip_height) }}</td>
+              <td>Inicial</td>
+            </tr>
+            <tr v-for="(continuation, index) in visibleContinuations" :key="`cont-${index}`">
+              <td>{{ continuationRowLabel(continuation, index) }}</td>
+              <td class="text-end">{{ formatDimensions(continuation.width) }}</td>
+              <td class="text-end">{{ formatDimensions(continuation.height) }}</td>
+              <td class="text-end">{{ formatStripCount(continuationStripCount(index)) }}</td>
+              <td class="text-end">{{ formatDimensions(continuationStripHeight(index)) }}</td>
+              <td>{{ continuationFitDisplay(continuation) }}</td>
+            </tr>
+          </tbody>
+          <tfoot v-if="installationDirectionsSummary" class="table-group-divider">
+            <tr>
+              <td colspan="6" class="bg-body-secondary">
+                <div
+                  class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-baseline gap-2"
+                >
+                  <span class="fw-semibold mb-0">Sentido de instalação:</span>
+                  <span class="fw-semibold text-md-end mb-0">{{
+                    installationDirectionsSummary
+                  }}</span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div v-if="stripSummary" class="mt-3 small text-muted">
+        <strong class="text-body">Resumo de Faixas:</strong>
+        {{ stripSummary }}
+      </div>
+
+      <button class="btn btn-outline-default mt-2" @click="copyStripSummary">Copiar resumo</button>
     </div>
-
-    <div v-if="stripSummary" class="mt-3 small text-muted">
-      <strong class="text-body">Resumo de Faixas:</strong>
-      {{ stripSummary }}
-    </div>
-
-    <button class="btn btn-default mt-2" @click="copyStripSummary">Copiar resumo</button>
-  </div>
+  </section>
 </template>
 
 <script setup>

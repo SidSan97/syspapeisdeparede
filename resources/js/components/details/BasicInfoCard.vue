@@ -56,22 +56,22 @@ const statusBadgeClass = computed(() => {
   const status = (props.data?.status || '').toString().toLowerCase();
 
   if (status.includes('cancelado') || status.includes('cancel')) {
-    return 'bg-danger';
+    return 'text-bg-danger';
   }
   if (
     status.includes('aprovado') ||
     status.includes('aprovar layout') ||
     status.includes('liberado')
   ) {
-    return 'bg-success';
+    return 'text-bg-success';
   }
   if (status.includes('pendente') || status.includes('revisão')) {
-    return 'bg-warning';
+    return 'text-bg-warning';
   }
   if (status.includes('em aberto') || status.includes('aberto')) {
-    return 'bg-info';
+    return 'text-bg-info';
   }
 
-  return 'bg-secondary';
+  return 'text-bg-secondary';
 });
 </script>

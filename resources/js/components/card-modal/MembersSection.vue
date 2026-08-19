@@ -29,8 +29,8 @@
 
         <BaseDropdown @open="fetchMembers">
           <template #trigger="{ open, toggle }">
-            <button class="avatar btn btn-default avatar-btn" @click="toggle">
-              <IconPlus :size="18" class="p-1" />
+            <button class="avatar btn btn-outline-default avatar-btn" @click="toggle">
+              <IconPlus :size="16" class="p-1" />
             </button>
           </template>
 
@@ -71,7 +71,7 @@
     <div class="mb-4 mt-2">
       <button
         v-if="!isCurrentUserMember"
-        class="btn btn-default btn-sm"
+        class="btn btn-outline-default btn-sm"
         @click="handleAdd(auth.user)"
         :disabled="!auth.user || loadingAdd === auth.user?.id"
       >

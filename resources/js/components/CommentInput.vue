@@ -46,7 +46,8 @@ const onKeyupEsc = (event) => {
     v-show="!showInput"
     @click="open"
     type="button"
-    class="btn btn-subtle w-100 text-start bg-body rounded-3 shadow"
+    class="btn btn-outline-default fw-normal w-100 text-start shadow-sm"
+    style="--bs-btn-color: var(--ds-text-subtle); --bs-btn-bg: var(--ds-background-input)"
   >
     Escrever um comentário...
   </button>
