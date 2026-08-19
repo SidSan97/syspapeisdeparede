@@ -105,7 +105,7 @@ class ExpeditionController extends Controller
         if ($invoiceData['status'] === 'Erro') {
             $statusCode = $invoiceData['status_processamento'];
             $errors = $statusCode == 2 ? $invoiceData['registros']['registro']['erros'] : $invoiceData['erros'];
-            throw new \RuntimeException(is_string($errors) ? $errors : json_encode($errors));
+            throw new \RuntimeException(is_string($errors) ? $errors : json_encode($errors, JSON_UNESCAPED_UNICODE));
         }
 
         $nfData = [
@@ -117,7 +117,7 @@ class ExpeditionController extends Controller
         $issueInvoice = $this->tinyErpService->issueInvoice($nfData);
 
         if ($issueInvoice['status'] === 'Erro') {
-            throw new \RuntimeException(json_encode($issueInvoice['erros']));
+            throw new \RuntimeException(json_encode($issueInvoice['erros'], JSON_UNESCAPED_UNICODE));
         }
 
         $this->orderRepository->updateNfSent($orderId);
@@ -163,7 +163,7 @@ class ExpeditionController extends Controller
         $danfe = $this->tinyErpService->generateDanfe($id);
 
         if ($danfe['status'] === 'Erro') {
-            throw new \RuntimeException(json_encode($danfe['erros']));
+            throw new \RuntimeException(json_encode($danfe['erros'], JSON_UNESCAPED_UNICODE));
         }
 
         return response()->json($danfe);
@@ -174,7 +174,7 @@ class ExpeditionController extends Controller
         $label = $this->tinyErpService->printCarrierLabels($groupingId);
 
         if ($label['status'] === 'Erro') {
-            throw new \RuntimeException(json_encode($label['erros']));
+            throw new \RuntimeException(json_encode($label['erros'], JSON_UNESCAPED_UNICODE));
         }
 
         return response()->json($label);
