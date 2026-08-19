@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
+use App\Repositories\ResellerRepository;
 
 class ExpeditionController extends Controller
 {
@@ -26,6 +27,7 @@ class ExpeditionController extends Controller
     protected $generatePdfService;
     protected $tinyErpService;
     protected $dropshippingRepository;
+    protected $resellerRepository;
 
     public function __construct(
         OrderRepository $OrderRepository,
@@ -34,7 +36,8 @@ class ExpeditionController extends Controller
         OrderRepository $orderRepository,
         GeneratePdfService $generatePdfService,
         TinyErpService $tinyErpService,
-        DropshippingRepository $dropshippingRepository
+        DropshippingRepository $dropshippingRepository,
+        ResellerRepository $resellerRepository
     ) {
         $this->middleware('auth:sanctum');
         $this->OrderRepository = $OrderRepository;
@@ -44,6 +47,7 @@ class ExpeditionController extends Controller
         $this->generatePdfService = $generatePdfService;
         $this->tinyErpService = $tinyErpService;
         $this->dropshippingRepository = $dropshippingRepository;
+        $this->resellerRepository = $resellerRepository;
     }
 
     /**
@@ -87,10 +91,16 @@ class ExpeditionController extends Controller
 
     public function generateInvoice(int $orderId): JsonResponse
     {
+        $data = null;
         $order = $this->orderRepository->find($orderId);
-        $dropshipping = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
 
-        $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $dropshipping->toArray());
+        if($order->dropshipping_budget) {
+            $data = $this->dropshippingRepository->findDropshippingByOrderId($order->id);
+        } else {
+            $data = $this->resellerRepository->findResellerByTenantId($order->tenant_id);
+        }
+
+        $invoiceData = $this->tinyErpService->sendInvoice($order->toArray(), $data->toArray());
 
         if ($invoiceData['status'] === 'Erro') {
             $statusCode = $invoiceData['status_processamento'];
