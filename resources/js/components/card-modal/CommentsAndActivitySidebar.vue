@@ -3,9 +3,8 @@
     <div
       class="d-flex align-items-center justify-content-between gap-3 mb-3 comments-activity-sidebar-header"
     >
-      <h3 class="fs-sm m-0">
+      <h3 class="fs-sm fw-semibold m-0 d-flex align-items-center">
         <IconMessage :size="18" class="me-2" />
-
         Comentários e atividade
       </h3>
       <button class="btn btn-outline-default" type="button" @click="toggleDetails">
@@ -15,9 +14,7 @@
 
     <CommentInput v-model="newCommentText" @save="saveNewComment" />
 
-    <!-- Lista de comentários e atividades (visível apenas quando showDetails é true) -->
     <div v-if="showDetails">
-      <!-- Lista de comentários -->
       <div class="d-flex flex-column gap-3 my-3">
         <CommentItem
           v-for="(comment, index) in comments"
@@ -26,23 +23,21 @@
           :saving="isSavingComment"
           @delete="onDeleteComment"
           @save="onUpdateComment"
-        ></CommentItem>
+        />
         <div v-if="comments.length === 0" class="comments-activity-info text-muted">
           Nenhum comentário ainda.
         </div>
       </div>
 
-      <!-- Atividades e Histórico -->
       <div class="comments-activity-activity">
-        <div v-if="activityItems.length > 0" class="d-flex flex-column gap-3">
+        <div v-if="activityItems.length > 0" class="d-flex flex-column gap-5">
           <div
             v-for="(activity, activityIndex) in activityItems"
             :key="activity.id || activityIndex"
-            class="p-3 bg-body rounded comments-activity-activity-item"
-            :class="{ 'is-history': activity.type === 'history' }"
+            class="comments-activity-activity-item"
           >
-          <BaseComment
-              :author="activity.type == 'history' ? 'Histórico' : getActivityUser(activity)"
+            <BaseComment
+              :author="activity.type === 'history' ? 'Histórico' : getActivityUser(activity)"
               :time="formatDate(activity.created_at || activity.date)"
             >
               <template #avatar>
@@ -55,11 +50,15 @@
                 >
                   {{ getInitials(getActivityUser(activity)) }}
                 </BaseAvatar>
-                <BaseAvatar v-else :icon="IconHistory" />
+                <BaseAvatar v-else :icon="IconHistory"  />
               </template>
-              <p class="fs-sm">{{ getActivityText(activity) }}</p>
+              <template #author>
+                <div class="fs-sm fw-semibold">
+                  {{ activity.type === 'history' ? 'Histórico' : getActivityUser(activity) }}
+                </div>
+              </template>
+              <p class="fs-sm mb-0 mt-1">{{ getActivityText(activity) }}</p>
             </BaseComment>
-            <div class="comments-activity-content" v-html="getActivityText(activity)"></div>
           </div>
         </div>
         <div v-else class="comments-activity-info text-muted">Nenhuma atividade registrada.</div>
@@ -383,62 +382,10 @@ async function onDeleteComment(commentId) {
   overflow-y: auto;
 }
 
-.comments-activity-sidebar-title {
-  font-size: 0.9375rem;
-}
-
-.comments-activity-avatar {
-  width: 32px;
-  height: 32px;
-  font-size: 0.75rem;
-}
-
-.comments-activity-author {
-  font-size: 0.8125rem;
-}
-
-.comments-activity-date {
-  font-size: 0.75rem;
-}
-
-.comments-activity-text {
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-.comments-activity-actions {
-  min-height: 24px;
-}
-
-.comments-activity-action-separator {
-  font-size: 0.6875rem;
-  padding: 0 0.125rem;
-}
-
-.comments-activity-action-btn {
-  font-size: 12px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .comments-activity-activity-item {
-  &.is-history {
-    border-left: 3px solid var(--bs-success);
+  :deep(.avatar) {
+    flex-shrink: 0;
   }
-}
-
-.comments-activity-content {
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.comments-activity-icon {
-  width: 32px;
-  height: 32px;
-  font-size: 0.875rem;
 }
 
 .comments-activity-info {
